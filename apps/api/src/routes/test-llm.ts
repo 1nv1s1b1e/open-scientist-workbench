@@ -22,15 +22,13 @@ testLlm.post('/api/test-llm', async (c) => {
   const start = Date.now()
 
   try {
-    const model = createModelFromConfig(
-      {
-        provider: req.provider,
-        model: req.model,
-        ...(req.baseURL ? { baseURL: req.baseURL } : {}),
-        thinkingLevel: 'off',
-      },
-      req.apiKey,
-    )
+    const model = createModelFromConfig({
+      provider: req.provider,
+      model: req.model,
+      ...(req.baseURL ? { baseURL: req.baseURL } : {}),
+      thinkingLevel: 'off',
+      apiKey: req.apiKey,
+    })
     const result = await generateTextFn({
       model,
       prompt: req.prompt,
