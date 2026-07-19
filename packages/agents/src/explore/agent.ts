@@ -1,4 +1,5 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
+import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { EvalResultSchema } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
@@ -7,10 +8,16 @@ import {
   discoverSkills,
 } from '@open-scientist/skills'
 import { createBashToolForHypothesis } from '@open-scientist/tools'
-import { isStepCount, type LanguageModel, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, type ToolSet } from 'ai'
 
 export interface ExploreAgentDeps {
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * this factory via `createModelFromConfig`. Never pass a `LanguageModel`
+   * instance across the workflow boundary (workflow args are structured-clone
+   * serialized and cannot carry bound methods / SDK clients).
+   */
+  modelConfig: ModelArg
   /** Project name — drives workspace dir isolation. */
   project: string
   /** Hypothesis id — each hypothesis gets its own isolated bash workspace. */
@@ -48,7 +55,13 @@ export async function getDefaultExploreTools(project: string, hypoId: string): P
   }
 }
 
-export async function createExploreAgent({ model, project, hypoId, tools }: ExploreAgentDeps) {
+export async function createExploreAgent({
+  modelConfig,
+  project,
+  hypoId,
+  tools,
+}: ExploreAgentDeps) {
+  const model = createModelFromConfig(modelConfig)
   const resolvedTools = tools ?? (await getDefaultExploreTools(project, hypoId))
 
   return new WorkflowAgent({

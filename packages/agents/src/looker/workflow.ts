@@ -1,10 +1,15 @@
 'use workflow'
 
 import type { ModelCallStreamPart } from '@ai-sdk/workflow'
+import type { ModelArg } from '@open-scientist/config'
 import type { EvidenceAlignment } from '@open-scientist/schema'
-import type { LanguageModel } from 'ai'
 import { getWritable } from 'workflow'
-import { createLookerAgent } from './agent.js'
+import type { LookerAgent, LookerAgentDeps } from './agent.js'
+
+/** Local typed shape of `./agent.js` — avoids `typeof import()` (which bundles). */
+interface AgentModule {
+  createLookerAgent: (deps: LookerAgentDeps) => Promise<LookerAgent>
+}
 
 export interface LookerWorkflowInput {
   /** Hypothesis id — drives per-hypothesis workspace isolation + HelixDB scoping. */
@@ -19,8 +24,12 @@ export interface LookerWorkflowInput {
     timestamp: string
     wavelength: string
   }
-  /** Pre-resolved language model (Sisyphus resolves via getAgentModel before spawning). */
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * `createLookerAgent` via `createModelFromConfig`. The workflow body only
+   * forwards the plain object; it never touches a `LanguageModel` instance.
+   */
+  modelConfig: ModelArg
 }
 
 /**
@@ -39,8 +48,19 @@ export interface LookerWorkflowInput {
  * from (projectId, hypoId). No HelixDB clients or DB handles cross the boundary.
  */
 export async function lookerWorkflow(input: LookerWorkflowInput): Promise<EvidenceAlignment> {
-  const agent = await createLookerAgent({
-    model: input.model,
+  // Dynamic import keeps `./agent.js` (and its tools/skills/config import chain
+  // that pulls node:fs/node:path) out of the esbuild workflow bundle — only
+  // `'use step'` functions may touch Node modules. The workflow VM executes
+  // this dynamic import at runtime, resolving the module via the host runtime.
+  //
+  // The import specifier is stored in a variable so esbuild cannot statically
+  // resolve it and therefore leaves it as a runtime import() instead of
+  // bundling ./agent.js (and its node:* transitive deps) into the workflow
+  // bundle.
+  const agentSpecifier = './agent.js'
+  const agentModule = (await import(agentSpecifier)) as AgentModule
+  const agent = await agentModule.createLookerAgent({
+    modelConfig: input.modelConfig,
     project: input.projectId,
     hypoId: input.hypoId,
   })

@@ -1,23 +1,67 @@
 'use workflow'
 
 import type { ModelCallStreamPart } from '@ai-sdk/workflow'
-import { MAX_ROUNDS } from '@open-scientist/config'
-import type { EvalResult, Hypothesis, TournamentResult } from '@open-scientist/schema'
-import type { LanguageModel } from 'ai'
+import type { ModelArg } from '@open-scientist/config'
+import type { EvalResult, Hypothesis, OracleOutput, TournamentResult } from '@open-scientist/schema'
 import { getWritable } from 'workflow'
-import { librarianWorkflow } from '../librarian/workflow.js'
-import { oracleWorkflow } from '../oracle/workflow.js'
+import type { Run } from 'workflow/api'
 import type { ConvergenceEntry } from '../prometheus/workflow.js'
-import { prometheusWorkflow } from '../prometheus/workflow.js'
-import {
-  applyOraclePruning,
-  buildConvergenceEntry,
-  computeLeader,
-  shouldStopByPrometheus,
-  shouldStopByTarget,
-  updateHypothesesWithEval,
-} from './logic.js'
-import { snapshotStep, spawnExploreEvalStep, waitForRunStep } from './steps/index.js'
+import type { RoundSnapshot, SpawnExploreEvalArgs } from './steps/index.js'
+
+/** Local typed shape of `./steps/index.js` — avoids `typeof import()` (which bundles). */
+interface StepsModule {
+  spawnExploreEvalStep: (args: SpawnExploreEvalArgs) => Promise<Run<EvalResult>>
+  waitForRunStep: <T>(run: Run<T>) => Promise<T>
+  snapshotStep: (snapshot: RoundSnapshot) => Promise<{ path: string }>
+}
+
+/** Local typed shape of `./logic.js` — avoids `typeof import()` (which bundles). */
+interface LogicModule {
+  updateHypothesesWithEval: (hypotheses: Hypothesis[], evalResults: EvalResult[]) => Hypothesis[]
+  computeLeader: (hypotheses: Hypothesis[]) => { bestF1: number; leadingHypoId: string | null }
+  shouldStopByTarget: (bestF1: number) => boolean
+  applyOraclePruning: (hypotheses: Hypothesis[], oracleOutput: OracleOutput) => Hypothesis[]
+  buildConvergenceEntry: (round: number, bestF1: number, count: number) => ConvergenceEntry
+  shouldStopByPrometheus: (shouldContinue: boolean, round: number) => boolean
+}
+
+/** Local typed shape of the sub-workflow modules. */
+interface LibrarianWorkflowModule {
+  librarianWorkflow: (input: {
+    seed: string
+    projectId: string
+    runId: string
+    modelConfig: ModelArg
+  }) => Promise<{ hypotheses: Hypothesis[] }>
+}
+interface OracleWorkflowModule {
+  oracleWorkflow: (input: {
+    projectId: string
+    runId: string
+    round: number
+    hypotheses: Hypothesis[]
+    evalResults: EvalResult[]
+    modelConfig: ModelArg
+  }) => Promise<OracleOutput>
+}
+interface PrometheusWorkflowModule {
+  prometheusWorkflow: (input: {
+    projectId: string
+    runId: string
+    round: number
+    convergenceHistory: ConvergenceEntry[]
+    currentBestF1: number
+    isFinalRound: boolean
+    winningHypothesis?: { hypoId: string; statement: string }
+    modelConfig: ModelArg
+  }) => Promise<{
+    shouldContinue: boolean
+    mhdConfig?: { cfgPath: string; observationProposal: string } | null
+  }>
+}
+interface ConfigModule {
+  MAX_ROUNDS: number
+}
 
 export type { TournamentInput, TournamentResult } from '@open-scientist/schema'
 
@@ -29,8 +73,15 @@ export interface TournamentWorkflowInput {
   projectId: string
   /** Run identifier — passed through runtimeContext for persistence + lineage. */
   runId: string
-  /** Pre-resolved language model (the API layer resolves via getAgentModel before spawning). */
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — forwarded verbatim to every sub-agent
+   * workflow. Each sub-agent's `createXxxAgent` factory reconstructs a
+   * `LanguageModel` via `createModelFromConfig(modelConfig)`.
+   * The tournament workflow never holds a `LanguageModel` instance itself,
+   * because workflow args are structured-clone serialized at every spawn
+   * boundary and cannot carry bound methods / SDK clients.
+   */
+  modelConfig: ModelArg
 }
 
 /**
@@ -73,18 +124,51 @@ export interface TournamentWorkflowInput {
  * driving the approval tool. See `createSisyphusAgent`.
  *
  * runtimeContext discipline: only serializable identifiers (projectId / runId /
- * round) cross the workflow + step boundaries. The LanguageModel is passed as
- * an argument (not in runtimeContext) because workflow args are serialized via
- * structured clone, not the runtimeContext channel — this matches the pattern
- * used by the other 5 sub-agent workflows.
+ * round) cross the workflow + step boundaries. The model descriptor
+ * (`ModelArg` — a plain object) is threaded through workflow args at every
+ * spawn boundary and reconstructed into a `LanguageModel` inside each
+ * `createXxxAgent` factory; no `LanguageModel` instance ever crosses a
+ * structured-clone boundary.
  */
 export async function tournamentWorkflow(
   input: TournamentWorkflowInput,
 ): Promise<TournamentResult> {
-  const { seed, projectId, runId, model } = input
+  const { seed, projectId, runId, modelConfig } = input
+
+  // Dynamic imports keep heavy / Node-touching modules out of the esbuild
+  // workflow bundle:
+  //   - sub-workflow modules (librarian/oracle/prometheus/explore) each pull
+  //     their own agent.ts → tools/skills/config → node:fs/node:path chain;
+  //     workflow functions may not transitively import Node modules.
+  //   - ./steps/index.js pulls getRoundsDir from @open-scientist/config
+  //     (node:path) + workflow/api's start() (fine in steps, but the static
+  //     import would still drag the config chain into the workflow bundle).
+  //   - ./logic.js imports MAX_ROUNDS/TARGET_F1 from @open-scientist/config
+  //     (the config barrel re-exports paths.ts → node:path).
+  //   - @open-scientist/config itself re-exports paths.ts (node:path) +
+  //     settings.ts (node:fs/promises).
+  //
+  // The import specifiers are stored in variables so esbuild cannot statically
+  // resolve them and therefore leaves them as runtime import() calls instead
+  // of bundling the modules (and their node:* transitive deps) into the
+  // workflow bundle. The workflow VM executes these dynamic imports at runtime
+  // against the host Node runtime.
+  const librarianSpecifier = '../librarian/workflow.js'
+  const librarianModule = (await import(librarianSpecifier)) as LibrarianWorkflowModule
+  const oracleSpecifier = '../oracle/workflow.js'
+  const oracleModule = (await import(oracleSpecifier)) as OracleWorkflowModule
+  const prometheusSpecifier = '../prometheus/workflow.js'
+  const prometheusModule = (await import(prometheusSpecifier)) as PrometheusWorkflowModule
+  const stepsSpecifier = './steps/index.js'
+  const stepsModule = (await import(stepsSpecifier)) as StepsModule
+  const logicSpecifier = './logic.js'
+  const logicModule = (await import(logicSpecifier)) as LogicModule
+  const configSpecifier = '@open-scientist/config'
+  const configModule = (await import(configSpecifier)) as ConfigModule
+  const { MAX_ROUNDS } = configModule
 
   // ─── Round 1: Librarian generates the hypothesis pool (direct await) ───
-  const hypoPool = await librarianWorkflow({ seed, projectId, runId, model })
+  const hypoPool = await librarianModule.librarianWorkflow({ seed, projectId, runId, modelConfig })
   let hypotheses: Hypothesis[] = [...hypoPool.hypotheses]
 
   // Best-F1 + convergence tracking across rounds.
@@ -113,31 +197,32 @@ export async function tournamentWorkflow(
     // awaits.
     const exploreRuns = await Promise.all(
       hypotheses.map((h) =>
-        spawnExploreEvalStep({
+        stepsModule.spawnExploreEvalStep({
           hypoId: h.id,
           projectId,
           runId,
           round,
           hypothesis: { statement: h.statement, pythonCode: h.pythonCode },
-          model,
+          modelConfig,
         }),
       ),
     )
     const evalResults: EvalResult[] = await Promise.all(
-      exploreRuns.map((run) => waitForRunStep<EvalResult>(run)),
+      exploreRuns.map((run) => stepsModule.waitForRunStep<EvalResult>(run)),
     )
 
     // ── Update hypotheses with F1 + status from this round's evaluations ──
-    hypotheses = updateHypothesesWithEval(hypotheses, evalResults)
+    hypotheses = logicModule.updateHypothesesWithEval(hypotheses, evalResults)
 
-    const { bestF1: roundBestF1, leadingHypoId: roundLeader } = computeLeader(hypotheses)
+    const { bestF1: roundBestF1, leadingHypoId: roundLeader } =
+      logicModule.computeLeader(hypotheses)
     bestF1 = roundBestF1
     leadingHypoId = roundLeader
 
-    convergenceHistory.push(buildConvergenceEntry(round, bestF1, hypotheses.length))
+    convergenceHistory.push(logicModule.buildConvergenceEntry(round, bestF1, hypotheses.length))
 
     // ── Persist round snapshot (durable, retriable) ──
-    await snapshotStep({
+    await stepsModule.snapshotStep({
       round,
       runId,
       projectId,
@@ -157,22 +242,22 @@ export async function tournamentWorkflow(
     })
 
     // ── Convergence check #1: F1 target hit → skip Oracle/Prometheus, go to final ──
-    if (shouldStopByTarget(bestF1)) {
+    if (logicModule.shouldStopByTarget(bestF1)) {
       break
     }
 
     // ── Oracle: critique + mutate + eliminate (direct await) ──
-    const oracleOutput = await oracleWorkflow({
+    const oracleOutput = await oracleModule.oracleWorkflow({
       projectId,
       runId,
       round,
       hypotheses,
       evalResults,
-      model,
+      modelConfig,
     })
 
     // Apply Oracle's pruning + mutations to the pool.
-    hypotheses = applyOraclePruning(hypotheses, oracleOutput)
+    hypotheses = logicModule.applyOraclePruning(hypotheses, oracleOutput)
 
     // Oracle may declare a winner early (clear convergence this round).
     if (oracleOutput.winningHypoId) {
@@ -191,18 +276,18 @@ export async function tournamentWorkflow(
     // now the tournament runs fully automatic.
 
     // ── Prometheus: plan next round (direct await) ──
-    const prometheusOutput = await prometheusWorkflow({
+    const prometheusOutput = await prometheusModule.prometheusWorkflow({
       projectId,
       runId,
       round,
       convergenceHistory,
       currentBestF1: bestF1,
       isFinalRound: false,
-      model,
+      modelConfig,
     })
 
     // ── Convergence check #2: Prometheus says stop OR round cap hit ──
-    if (shouldStopByPrometheus(prometheusOutput.shouldContinue, round)) {
+    if (logicModule.shouldStopByPrometheus(prometheusOutput.shouldContinue, round)) {
       break
     }
   }
@@ -211,7 +296,7 @@ export async function tournamentWorkflow(
   const winningStatement =
     leadingHypoId != null ? (hypotheses.find((h) => h.id === leadingHypoId)?.statement ?? '') : ''
 
-  const finalPrometheus = await prometheusWorkflow({
+  const finalPrometheus = await prometheusModule.prometheusWorkflow({
     projectId,
     runId,
     round: totalRounds,
@@ -220,7 +305,7 @@ export async function tournamentWorkflow(
     isFinalRound: true,
     winningHypothesis:
       leadingHypoId != null ? { hypoId: leadingHypoId, statement: winningStatement } : undefined,
-    model,
+    modelConfig,
   })
 
   if (finalPrometheus.mhdConfig) {

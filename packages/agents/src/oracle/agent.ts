@@ -1,4 +1,5 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
+import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { OracleOutputSchema } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
@@ -12,10 +13,16 @@ import {
   createBashToolForHypothesis,
   getCritiquesByHypothesisTool,
 } from '@open-scientist/tools'
-import { isStepCount, type LanguageModel, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, type ToolSet } from 'ai'
 
 export interface OracleAgentDeps {
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * this factory via `createModelFromConfig`. Never pass a `LanguageModel`
+   * instance across the workflow boundary (workflow args are structured-clone
+   * serialized and cannot carry bound methods / SDK clients).
+   */
+  modelConfig: ModelArg
   /** Project name (used for workspace isolation + HelixDB scoping). */
   projectId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
@@ -56,7 +63,8 @@ export async function getDefaultOracleTools(projectId: string): Promise<ToolSet>
   }
 }
 
-export async function createOracleAgent({ model, projectId, tools }: OracleAgentDeps) {
+export async function createOracleAgent({ modelConfig, projectId, tools }: OracleAgentDeps) {
+  const model = createModelFromConfig(modelConfig)
   const resolvedTools = tools ?? (await getDefaultOracleTools(projectId))
 
   return new WorkflowAgent({

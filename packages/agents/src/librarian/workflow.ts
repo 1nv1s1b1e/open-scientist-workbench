@@ -1,10 +1,15 @@
 'use workflow'
 
 import type { ModelCallStreamPart } from '@ai-sdk/workflow'
+import type { ModelArg } from '@open-scientist/config'
 import type { HypothesisPool } from '@open-scientist/schema'
-import type { LanguageModel } from 'ai'
 import { getWritable } from 'workflow'
-import { createLibrarianAgent } from './agent.js'
+import type { LibrarianAgent, LibrarianAgentDeps } from './agent.js'
+
+/** Local typed shape of `./agent.js` — avoids `typeof import()` (which bundles). */
+interface AgentModule {
+  createLibrarianAgent: (deps: LibrarianAgentDeps) => Promise<LibrarianAgent>
+}
 
 export interface LibrarianWorkflowInput {
   /** Seed hypothesis text from the user / Sisyphus. */
@@ -13,8 +18,12 @@ export interface LibrarianWorkflowInput {
   projectId: string
   /** Run identifier — passed through runtimeContext for persistence + lineage. */
   runId: string
-  /** Pre-resolved language model (Sisyphus resolves via getAgentModel before spawning). */
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * `createLibrarianAgent` via `createModelFromConfig`. The workflow body only
+   * forwards the plain object; it never touches a `LanguageModel` instance.
+   */
+  modelConfig: ModelArg
 }
 
 /**
@@ -29,8 +38,21 @@ export interface LibrarianWorkflowInput {
  * no HelixDB clients or DB handles cross the boundary.
  */
 export async function librarianWorkflow(input: LibrarianWorkflowInput): Promise<HypothesisPool> {
-  const agent = await createLibrarianAgent({
-    model: input.model,
+  // Dynamic import keeps `./agent.js` (and its tools/skills/config import chain
+  // that pulls node:fs/node:path) out of the esbuild workflow bundle — only
+  // `'use step'` functions may touch Node modules. The workflow VM executes
+  // this dynamic import at runtime, resolving the module via the host runtime.
+  //
+  // The import specifier is stored in a variable so esbuild cannot statically
+  // resolve it and therefore leaves it as a runtime import() instead of
+  // bundling ./agent.js (and its node:* transitive deps) into the workflow
+  // bundle. The typed shape is re-declared locally as `AgentModule` so no
+  // `typeof import('./agent.js')` type query (which would pull the module
+  // into the bundle) is needed.
+  const agentSpecifier = './agent.js'
+  const agentModule = (await import(agentSpecifier)) as AgentModule
+  const agent = await agentModule.createLibrarianAgent({
+    modelConfig: input.modelConfig,
     projectId: input.projectId,
   })
 

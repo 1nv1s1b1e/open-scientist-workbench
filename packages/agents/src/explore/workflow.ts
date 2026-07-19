@@ -1,10 +1,15 @@
 'use workflow'
 
 import type { ModelCallStreamPart } from '@ai-sdk/workflow'
+import type { ModelArg } from '@open-scientist/config'
 import type { EvalResult } from '@open-scientist/schema'
-import type { LanguageModel } from 'ai'
 import { getWritable } from 'workflow'
-import { createExploreAgent } from './agent.js'
+import type { ExploreAgent, ExploreAgentDeps } from './agent.js'
+
+/** Local typed shape of `./agent.js` — avoids `typeof import()` (which bundles). */
+interface AgentModule {
+  createExploreAgent: (deps: ExploreAgentDeps) => Promise<ExploreAgent>
+}
 
 export interface ExploreWorkflowInput {
   /** Hypothesis id — drives per-hypothesis workspace isolation. */
@@ -20,8 +25,12 @@ export interface ExploreWorkflowInput {
     statement: string
     pythonCode: string
   }
-  /** Pre-resolved language model (Sisyphus resolves via getAgentModel before spawning). */
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * `createExploreAgent` via `createModelFromConfig`. The workflow body only
+   * forwards the plain object; it never touches a `LanguageModel` instance.
+   */
+  modelConfig: ModelArg
 }
 
 /**
@@ -37,8 +46,19 @@ export interface ExploreWorkflowInput {
  * workspace is reconstructed inside createExploreAgent from (projectId, hypoId).
  */
 export async function exploreWorkflow(input: ExploreWorkflowInput): Promise<EvalResult> {
-  const agent = await createExploreAgent({
-    model: input.model,
+  // Dynamic import keeps `./agent.js` (and its tools/skills/config import chain
+  // that pulls node:fs/node:path) out of the esbuild workflow bundle — only
+  // `'use step'` functions may touch Node modules. The workflow VM executes
+  // this dynamic import at runtime, resolving the module via the host runtime.
+  //
+  // The import specifier is stored in a variable so esbuild cannot statically
+  // resolve it and therefore leaves it as a runtime import() instead of
+  // bundling ./agent.js (and its node:* transitive deps) into the workflow
+  // bundle.
+  const agentSpecifier = './agent.js'
+  const agentModule = (await import(agentSpecifier)) as AgentModule
+  const agent = await agentModule.createExploreAgent({
+    modelConfig: input.modelConfig,
     project: input.projectId,
     hypoId: input.hypoId,
   })

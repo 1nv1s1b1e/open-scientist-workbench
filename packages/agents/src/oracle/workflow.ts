@@ -1,11 +1,21 @@
 'use workflow'
 
 import type { ModelCallStreamPart } from '@ai-sdk/workflow'
+import type { ModelArg } from '@open-scientist/config'
 import type { EvalResult, Hypothesis, OracleOutput } from '@open-scientist/schema'
-import type { LanguageModel } from 'ai'
 import { getWritable } from 'workflow'
-import { createOracleAgent } from './agent.js'
-import { buildEvalSummaryBlock, buildHypothesesBlock } from './logic.js'
+import type { OracleAgent, OracleAgentDeps } from './agent.js'
+
+/** Local typed shape of `./agent.js` — avoids `typeof import()` (which bundles). */
+interface AgentModule {
+  createOracleAgent: (deps: OracleAgentDeps) => Promise<OracleAgent>
+}
+
+/** Local typed shape of `./logic.js` — avoids `typeof import()` (which bundles). */
+interface LogicModule {
+  buildHypothesesBlock: (hypotheses: Hypothesis[], evalResults: EvalResult[]) => string
+  buildEvalSummaryBlock: (evalResults: EvalResult[]) => string
+}
 
 export interface OracleWorkflowInput {
   /** Project name — drives workspace dir + HelixDB scoping. */
@@ -18,8 +28,12 @@ export interface OracleWorkflowInput {
   hypotheses: Hypothesis[]
   /** Explore evaluation results aligned 1:1 with hypotheses by hypoId. */
   evalResults: EvalResult[]
-  /** Pre-resolved language model (Sisyphus resolves via getAgentModel before spawning). */
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * `createOracleAgent` via `createModelFromConfig`. The workflow body only
+   * forwards the plain object; it never touches a `LanguageModel` instance.
+   */
+  modelConfig: ModelArg
 }
 
 /**
@@ -35,13 +49,27 @@ export interface OracleWorkflowInput {
  * (projectId / runId / round); no HelixDB clients or DB handles cross the boundary.
  */
 export async function oracleWorkflow(input: OracleWorkflowInput): Promise<OracleOutput> {
-  const agent = await createOracleAgent({
-    model: input.model,
+  // Dynamic imports keep `./agent.js` (and its tools/skills/config import chain
+  // that pulls node:fs/node:path) and `./logic.js` (zod-only — safe, but kept
+  // dynamic for symmetry + to avoid bundling anything beyond the workflow body)
+  // out of the esbuild workflow bundle. Only `'use step'` functions may touch
+  // Node modules. The workflow VM executes these dynamic imports at runtime.
+  //
+  // The import specifiers are stored in variables so esbuild cannot statically
+  // resolve them and therefore leaves them as runtime import() calls instead
+  // of bundling the modules (and their node:* transitive deps) into the
+  // workflow bundle.
+  const agentSpecifier = './agent.js'
+  const agentModule = (await import(agentSpecifier)) as AgentModule
+  const logicSpecifier = './logic.js'
+  const logicModule = (await import(logicSpecifier)) as LogicModule
+  const agent = await agentModule.createOracleAgent({
+    modelConfig: input.modelConfig,
     projectId: input.projectId,
   })
 
-  const hypothesesBlock = buildHypothesesBlock(input.hypotheses, input.evalResults)
-  const evalSummaryBlock = buildEvalSummaryBlock(input.evalResults)
+  const hypothesesBlock = logicModule.buildHypothesesBlock(input.hypotheses, input.evalResults)
+  const evalSummaryBlock = logicModule.buildEvalSummaryBlock(input.evalResults)
 
   const result = await agent.stream({
     messages: [

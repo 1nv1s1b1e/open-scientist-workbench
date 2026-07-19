@@ -1,4 +1,5 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
+import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { PrometheusOutputSchema } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
@@ -7,10 +8,16 @@ import {
   discoverSkills,
 } from '@open-scientist/skills'
 import { createBashToolForHypothesis, mhdConfigTool } from '@open-scientist/tools'
-import { isStepCount, type LanguageModel, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, type ToolSet } from 'ai'
 
 export interface PrometheusAgentDeps {
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * this factory via `createModelFromConfig`. Never pass a `LanguageModel`
+   * instance across the workflow boundary (workflow args are structured-clone
+   * serialized and cannot carry bound methods / SDK clients).
+   */
+  modelConfig: ModelArg
   /** Project name — drives shared prometheus workspace dir isolation. */
   projectId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
@@ -60,7 +67,12 @@ export async function getDefaultPrometheusTools(projectId: string): Promise<Tool
   }
 }
 
-export async function createPrometheusAgent({ model, projectId, tools }: PrometheusAgentDeps) {
+export async function createPrometheusAgent({
+  modelConfig,
+  projectId,
+  tools,
+}: PrometheusAgentDeps) {
+  const model = createModelFromConfig(modelConfig)
   const resolvedTools = tools ?? (await getDefaultPrometheusTools(projectId))
 
   return new WorkflowAgent({

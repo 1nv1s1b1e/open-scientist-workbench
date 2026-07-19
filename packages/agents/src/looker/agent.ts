@@ -1,4 +1,5 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
+import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { EvidenceAlignmentSchema } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
@@ -12,10 +13,16 @@ import {
   fitsAlignTool,
   getEvidenceByHypothesisTool,
 } from '@open-scientist/tools'
-import { isStepCount, type LanguageModel, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, type ToolSet } from 'ai'
 
 export interface LookerAgentDeps {
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * this factory via `createModelFromConfig`. Never pass a `LanguageModel`
+   * instance across the workflow boundary (workflow args are structured-clone
+   * serialized and cannot carry bound methods / SDK clients).
+   */
+  modelConfig: ModelArg
   /** Project name — drives workspace dir isolation + HelixDB scoping. */
   project: string
   /** Hypothesis id — each hypothesis gets its own isolated bash workspace. */
@@ -66,7 +73,8 @@ export async function getDefaultLookerTools(project: string, hypoId: string): Pr
   }
 }
 
-export async function createLookerAgent({ model, project, hypoId, tools }: LookerAgentDeps) {
+export async function createLookerAgent({ modelConfig, project, hypoId, tools }: LookerAgentDeps) {
+  const model = createModelFromConfig(modelConfig)
   const resolvedTools = tools ?? (await getDefaultLookerTools(project, hypoId))
 
   return new WorkflowAgent({

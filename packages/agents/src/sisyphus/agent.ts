@@ -1,10 +1,20 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
+import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { TournamentResultSchema } from '@open-scientist/schema'
-import { isStepCount, type LanguageModel, Output, type ToolSet, tool } from 'ai'
+import { isStepCount, Output, type ToolSet, tool } from 'ai'
 import { z } from 'zod'
 
 export interface SisyphusAgentDeps {
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * this factory via `createModelFromConfig`. Kept for uniformity with the other
+   * 5 agents even though `tournamentWorkflow` currently drives the tournament
+   * via deterministic Workflow Composition rather than Sisyphus' own LLM loop.
+   * Never pass a `LanguageModel` instance across the workflow boundary (workflow
+   * args are structured-clone serialized and cannot carry bound methods / SDK
+   * clients).
+   */
+  modelConfig: ModelArg
   /** Optional override toolset. When omitted, default tools are assembled. */
   tools?: ToolSet
 }
@@ -91,7 +101,8 @@ export async function getDefaultSisyphusTools(): Promise<ToolSet> {
  * Output schema (TournamentResult) + stopWhen (isStepCount(50)) are fixed by
  * the SPEC — do not change them.
  */
-export async function createSisyphusAgent({ model, tools }: SisyphusAgentDeps) {
+export async function createSisyphusAgent({ modelConfig, tools }: SisyphusAgentDeps) {
+  const model = createModelFromConfig(modelConfig)
   const resolvedTools = tools ?? (await getDefaultSisyphusTools())
 
   return new WorkflowAgent({

@@ -1,4 +1,5 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
+import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { HypothesisPoolSchema } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
@@ -12,10 +13,16 @@ import {
   searchHypothesesTool,
   searchPapersTool,
 } from '@open-scientist/tools'
-import { isStepCount, type LanguageModel, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, type ToolSet } from 'ai'
 
 export interface LibrarianAgentDeps {
-  model: LanguageModel
+  /**
+   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
+   * this factory via `createModelFromConfig`. Never pass a `LanguageModel`
+   * instance across the workflow boundary (workflow args are structured-clone
+   * serialized and cannot carry bound methods / SDK clients).
+   */
+  modelConfig: ModelArg
   /** Project name (used for workspace isolation + HelixDB scoping). */
   projectId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
@@ -53,7 +60,8 @@ export async function getDefaultLibrarianTools(projectId: string): Promise<ToolS
   }
 }
 
-export async function createLibrarianAgent({ model, projectId, tools }: LibrarianAgentDeps) {
+export async function createLibrarianAgent({ modelConfig, projectId, tools }: LibrarianAgentDeps) {
+  const model = createModelFromConfig(modelConfig)
   const resolvedTools = tools ?? (await getDefaultLibrarianTools(projectId))
 
   return new WorkflowAgent({

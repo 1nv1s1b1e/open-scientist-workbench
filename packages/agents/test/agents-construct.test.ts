@@ -1,4 +1,4 @@
-import type { LanguageModel } from 'ai'
+import type { ModelArg } from '@open-scientist/config'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   createExploreAgent,
@@ -10,32 +10,23 @@ import {
 } from '../src/index.js'
 
 /**
- * Minimal LanguageModel stub satisfying the `LanguageModel` union (V3 variant).
- * No real network calls — we only assert agent construction + tool wiring, never
- * agent.stream().
+ * Serializable `ModelArg` fixture for agent-construction tests.
+ *
+ * `createXxxAgent` reconstructs a `LanguageModel` via `createModelFromConfig`,
+ * which dispatches to the OpenAI provider factory → `createOpenAI({ apiKey,
+ * baseURL }).chat(model)`. The factory only needs a syntactically-valid config
+ * to BUILD the model handle; no network call happens at construction time
+ * (none of these tests invoke `agent.stream()`). The `baseURL` is a dummy that
+ * is never hit.
  */
-function fakeModel(): LanguageModel {
+function fakeModelConfig(): ModelArg {
   return {
-    specificationVersion: 'v3',
-    provider: 'test',
-    modelId: 'test-model',
-    supportedUrls: {},
-    doGenerate: async () =>
-      ({
-        content: [],
-        finishReason: { type: 'stop' },
-        usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-        warnings: [],
-      }) as never,
-    doStream: async () =>
-      ({
-        stream: new ReadableStream({
-          start(controller) {
-            controller.close()
-          },
-        }),
-      }) as never,
-  } as unknown as LanguageModel
+    provider: 'openai',
+    model: 'test-model',
+    baseURL: 'http://test.invalid',
+    apiKey: 'sk-test',
+    thinkingLevel: 'medium',
+  }
 }
 
 const PROJECT = 'construct-test-project'
@@ -51,13 +42,13 @@ describe('agent construction', () => {
   })
 
   it('constructs sisyphus agent with id + tools', async () => {
-    const agent = await createSisyphusAgent({ model: fakeModel() })
+    const agent = await createSisyphusAgent({ modelConfig: fakeModelConfig() })
     expect(agent.id).toBe('sisyphus')
     expect(Object.keys(agent.tools).sort()).toEqual(['review_leading_hypothesis'])
   })
 
   it('constructs librarian agent with id + tools', async () => {
-    const agent = await createLibrarianAgent({ model: fakeModel(), projectId: PROJECT })
+    const agent = await createLibrarianAgent({ modelConfig: fakeModelConfig(), projectId: PROJECT })
     expect(agent.id).toBe('librarian')
     expect(Object.keys(agent.tools).sort()).toEqual(
       [
@@ -73,13 +64,17 @@ describe('agent construction', () => {
   })
 
   it('constructs explore agent with id + tools', async () => {
-    const agent = await createExploreAgent({ model: fakeModel(), project: PROJECT, hypoId: HYPO })
+    const agent = await createExploreAgent({
+      modelConfig: fakeModelConfig(),
+      project: PROJECT,
+      hypoId: HYPO,
+    })
     expect(agent.id).toBe('explore')
     expect(Object.keys(agent.tools).sort()).toEqual(['bash', 'loadSkill', 'readFile', 'writeFile'])
   })
 
   it('constructs oracle agent with id + tools', async () => {
-    const agent = await createOracleAgent({ model: fakeModel(), projectId: PROJECT })
+    const agent = await createOracleAgent({ modelConfig: fakeModelConfig(), projectId: PROJECT })
     expect(agent.id).toBe('oracle')
     expect(Object.keys(agent.tools).sort()).toEqual(
       [
@@ -95,7 +90,11 @@ describe('agent construction', () => {
   })
 
   it('constructs looker agent with id + tools', async () => {
-    const agent = await createLookerAgent({ model: fakeModel(), project: PROJECT, hypoId: HYPO })
+    const agent = await createLookerAgent({
+      modelConfig: fakeModelConfig(),
+      project: PROJECT,
+      hypoId: HYPO,
+    })
     expect(agent.id).toBe('looker')
     expect(Object.keys(agent.tools).sort()).toEqual(
       [
@@ -111,7 +110,10 @@ describe('agent construction', () => {
   })
 
   it('constructs prometheus agent with id + tools', async () => {
-    const agent = await createPrometheusAgent({ model: fakeModel(), projectId: PROJECT })
+    const agent = await createPrometheusAgent({
+      modelConfig: fakeModelConfig(),
+      projectId: PROJECT,
+    })
     expect(agent.id).toBe('prometheus')
     expect(Object.keys(agent.tools).sort()).toEqual([
       'bash',
@@ -123,7 +125,7 @@ describe('agent construction', () => {
   })
 
   it('sisyphus tool keys are exactly the orchestrator-only set', async () => {
-    const agent = await createSisyphusAgent({ model: fakeModel() })
+    const agent = await createSisyphusAgent({ modelConfig: fakeModelConfig() })
     // Sisyphus is a pure orchestrator — no bash / helix / file tools.
     expect(agent.tools).not.toHaveProperty('bash')
     expect(agent.tools).not.toHaveProperty('loadSkill')
@@ -131,7 +133,10 @@ describe('agent construction', () => {
 
   it('override tools replace default toolset', async () => {
     const custom = { customTool: { description: 'x', inputSchema: { _type: 'object' } } }
-    const agent = await createSisyphusAgent({ model: fakeModel(), tools: custom as never })
+    const agent = await createSisyphusAgent({
+      modelConfig: fakeModelConfig(),
+      tools: custom as never,
+    })
     expect(Object.keys(agent.tools)).toEqual(['customTool'])
   })
 })
