@@ -1,0 +1,27 @@
+{
+  "name": "@open-scientist/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@open-scientist/helix": "workspace:*",
+    "@open-scientist/schema": "workspace:*",
+    "@open-scientist/storage": "workspace:*",
+    "@ai-sdk/mcp": "^2.0.15",
+    "@ai-sdk/provider": "latest",
+    "@ai-sdk/provider-utils": "latest",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "ai": "latest",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

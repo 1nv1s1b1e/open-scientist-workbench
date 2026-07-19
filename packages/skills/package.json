@@ -1,0 +1,22 @@
+{
+  "name": "@open-scientist/skills",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@open-scientist/schema": "workspace:*",
+    "@open-scientist/config": "workspace:*",
+    "ai": "^7.0.31",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
