@@ -1,0 +1,21 @@
+{
+  "name": "open-scientist",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @open-scientist/api dev",
+    "build": "pnpm -r build",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "db:generate": "pnpm --filter @open-scientist/storage db:generate",
+    "db:migrate": "pnpm --filter @open-scientist/storage db:migrate"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
+    "@types/node": "^22.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^2.0.0"
+  }
+}

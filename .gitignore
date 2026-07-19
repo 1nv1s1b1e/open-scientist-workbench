@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.nitro/
+.output/
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+queries.json

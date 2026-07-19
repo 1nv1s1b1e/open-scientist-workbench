@@ -1,0 +1,10 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+allowBuilds:
+  '@swc/core': false
+  better-sqlite3: true
+  cbor-extract: false
+  esbuild: true
+minimumReleaseAgeExclude:
+  - hono@4.12.31
