@@ -1,17 +1,17 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Hono } from 'hono'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { closeGlobalDb, closeProjectDb } from '@open-scientist/storage'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import app from '../src/index.js'
 
 /**
- * Each test runs in a fresh module graph (vi.resetModules) so the config
- * package's module-scope `env` constant (captured at import time from
- * process.env.BASE_DIR) points at a unique temp dir. This also resets the
- * global-db singleton, so each test gets a clean SQLite credential store.
+ * `env` is a Proxy that re-reads `process.env.BASE_DIR` on every access, and
+ * the global/project db caches are keyed by BASE_DIR, so each test just sets
+ * BASE_DIR at a fresh temp dir — no vi.resetModules(). afterEach closes all
+ * cached sqlite handles so the temp dir can be removed.
  */
 let tmp: string
-let app: Hono
 
 // Hono's `app.request` returns a fetch Response; `.json()` is typed `unknown`.
 // The test bodies assert on a mix of object + array shapes, so the helper
@@ -21,21 +21,18 @@ async function json(res: Response): Promise<any> {
   return await res.json()
 }
 
-async function loadApp(baseDir: string): Promise<typeof import('../src/index.js')> {
-  process.env.BASE_DIR = baseDir
-  vi.resetModules()
-  return import('../src/index.js')
-}
-
-beforeEach(async () => {
+beforeEach(() => {
   tmp = mkdtempSync(join(tmpdir(), 'os-api-routes-'))
-  app = (await loadApp(tmp)).default
+  process.env.BASE_DIR = tmp
 })
 
 afterEach(() => {
+  closeGlobalDb()
+  // Close any project dbs that POST /api/projects may have created. Names are
+  // deterministic from the test bodies; closing unknown names is a no-op.
+  for (const name of ['my-proj', 'proj-a', 'proj-b', 'exists-proj']) closeProjectDb(name)
   delete process.env.BASE_DIR
   rmSync(tmp, { recursive: true, force: true })
-  vi.restoreAllMocks()
 })
 
 describe('GET /api/health', () => {

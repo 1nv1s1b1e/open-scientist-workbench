@@ -3,11 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { migrateDb } from '../src/migrations.js'
 
 // `migrateDb` is NOT re-exported from src/index.ts (which only re-exports db,
 // global-db, and the repo modules). Import it directly from its module.
-type MigrateDb = (db: ReturnType<typeof drizzle>, scope: 'global' | 'project') => void
 
 /**
  * Migration integration tests.
@@ -18,21 +18,9 @@ type MigrateDb = (db: ReturnType<typeof drizzle>, scope: 'global' | 'project') =
  * (resolved through the `@open-scientist/storage` package symlink) is used.
  *
  * Each test builds a fresh `Database` on a temp file path and closes it in
- * `afterEach`. `vi.resetModules()` is used so the `env` module reloads
- * `BASE_DIR` per test.
+ * `afterEach`. `env` is a Proxy that re-reads `process.env.BASE_DIR` on every
+ * access, so setting the env var per test is enough — no vi.resetModules().
  */
-
-interface StorageModule {
-  migrateDb: MigrateDb
-}
-
-async function loadStorage(baseDir: string): Promise<StorageModule> {
-  vi.resetModules()
-  process.env.BASE_DIR = baseDir
-  // Direct import from migrations.js — migrateDb is not in the barrel export.
-  const mod = (await import('../src/migrations.js')) as { migrateDb: MigrateDb }
-  return { migrateDb: mod.migrateDb }
-}
 
 function makeBaseDir(label: string): string {
   return mkdtempSync(join(tmpdir(), `os-storage-mig-${label}-`))
@@ -53,23 +41,22 @@ function migrationCount(db: Database.Database): number {
 describe('migrations: global scope', () => {
   let baseDir: string
   let sqlite: Database.Database
-  let storage: StorageModule
 
-  beforeEach(async () => {
+  beforeEach(() => {
     baseDir = makeBaseDir('global')
-    storage = await loadStorage(baseDir)
+    process.env.BASE_DIR = baseDir
     sqlite = new Database(join(baseDir, 'g.sqlite'))
   })
 
   afterEach(() => {
     sqlite.close()
     rmSync(baseDir, { recursive: true, force: true })
-    vi.resetModules()
+    delete process.env.BASE_DIR
   })
 
   it('creates all 4 business tables + __drizzle_migrations', () => {
     const db = drizzle(sqlite)
-    storage.migrateDb(db, 'global')
+    migrateDb(db, 'global')
 
     const tables = tableNames(sqlite)
     expect(tables).toContain('credentials')
@@ -81,8 +68,8 @@ describe('migrations: global scope', () => {
 
   it('is idempotent: running twice does not throw or duplicate migrations', () => {
     const db = drizzle(sqlite)
-    storage.migrateDb(db, 'global')
-    expect(() => storage.migrateDb(db, 'global')).not.toThrow()
+    migrateDb(db, 'global')
+    expect(() => migrateDb(db, 'global')).not.toThrow()
 
     // The `credentials` table must still appear exactly once.
     const creds = tableNames(sqlite).filter((n) => n === 'credentials')
@@ -96,23 +83,22 @@ describe('migrations: global scope', () => {
 describe('migrations: project scope', () => {
   let baseDir: string
   let sqlite: Database.Database
-  let storage: StorageModule
 
-  beforeEach(async () => {
+  beforeEach(() => {
     baseDir = makeBaseDir('project')
-    storage = await loadStorage(baseDir)
+    process.env.BASE_DIR = baseDir
     sqlite = new Database(join(baseDir, 'p.sqlite'))
   })
 
   afterEach(() => {
     sqlite.close()
     rmSync(baseDir, { recursive: true, force: true })
-    vi.resetModules()
+    delete process.env.BASE_DIR
   })
 
   it('creates all 10 business tables + __drizzle_migrations', () => {
     const db = drizzle(sqlite)
-    storage.migrateDb(db, 'project')
+    migrateDb(db, 'project')
 
     const tables = tableNames(sqlite)
     const expected = [
@@ -135,8 +121,8 @@ describe('migrations: project scope', () => {
 
   it('is idempotent: running twice does not throw', () => {
     const db = drizzle(sqlite)
-    storage.migrateDb(db, 'project')
-    expect(() => storage.migrateDb(db, 'project')).not.toThrow()
+    migrateDb(db, 'project')
+    expect(() => migrateDb(db, 'project')).not.toThrow()
     expect(migrationCount(sqlite)).toBe(1)
   })
 })
@@ -144,12 +130,11 @@ describe('migrations: project scope', () => {
 describe('migrations: error handling', () => {
   let baseDir: string
   let sqlite: Database.Database
-  let storage: StorageModule
   let saved: string | undefined
 
-  beforeEach(async () => {
+  beforeEach(() => {
     baseDir = makeBaseDir('err')
-    storage = await loadStorage(baseDir)
+    process.env.BASE_DIR = baseDir
     sqlite = new Database(join(baseDir, 'e.sqlite'))
     saved = process.env.STORAGE_MIGRATIONS_DIR
   })
@@ -159,12 +144,12 @@ describe('migrations: error handling', () => {
     rmSync(baseDir, { recursive: true, force: true })
     if (saved === undefined) delete process.env.STORAGE_MIGRATIONS_DIR
     else process.env.STORAGE_MIGRATIONS_DIR = saved
-    vi.resetModules()
+    delete process.env.BASE_DIR
   })
 
   it('throws a clear error when the migrations folder does not exist', () => {
     process.env.STORAGE_MIGRATIONS_DIR = '/nonexistent-migrations-dir-12345'
     const db = drizzle(sqlite)
-    expect(() => storage.migrateDb(db, 'global')).toThrow(/migrations folder not found/)
+    expect(() => migrateDb(db, 'global')).toThrow(/migrations folder not found/)
   })
 })

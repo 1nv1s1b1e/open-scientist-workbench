@@ -3,17 +3,17 @@ import { readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MhdConfigSchema } from '@open-scientist/schema'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { mhdConfigTool } from '../src/mhd-config.js'
 
 /**
  * mhdConfigTool.execute calls getMhdDir(runId) → resolve(getBaseDir(), 'projects', runId, 'mhd').
- * getBaseDir() reads the module-scope `env` constant (captured at import time), so each
- * test sets BASE_DIR + vi.resetModules() before dynamically importing the tool.
+ * `env` is a Proxy that re-reads `process.env.BASE_DIR` on every access, so
+ * each test just sets BASE_DIR at a fresh temp dir — no vi.resetModules().
  */
 let tmp: string
 
 beforeEach(() => {
-  vi.resetModules()
   tmp = mkdtempSync(join(tmpdir(), 'os-mhd-config-'))
   process.env.BASE_DIR = tmp
 })
@@ -21,24 +21,20 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.BASE_DIR
   rmSync(tmp, { recursive: true, force: true })
-  vi.restoreAllMocks()
 })
 
-async function loadTool() {
-  const mod = await import('../src/mhd-config.js')
-  return mod.mhdConfigTool as unknown as {
-    execute: (args: {
-      runId: string
-      winningHypoId: string
-      hypothesisStatement: string
-      physicalParams: Record<string, number>
-    }) => Promise<{
-      runId: string
-      cfgPath: string
-      observationProposal: string
-      summary: string
-    }>
-  }
+const tool = mhdConfigTool as unknown as {
+  execute: (args: {
+    runId: string
+    winningHypoId: string
+    hypothesisStatement: string
+    physicalParams: Record<string, number>
+  }) => Promise<{
+    runId: string
+    cfgPath: string
+    observationProposal: string
+    summary: string
+  }>
 }
 
 const INPUT = {
@@ -50,7 +46,6 @@ const INPUT = {
 
 describe('mhdConfigTool.execute', () => {
   it('writes a .cfg file under <BASE_DIR>/projects/<runId>/mhd/<runId>.cfg', async () => {
-    const tool = await loadTool()
     const result = await tool.execute(INPUT)
 
     expect(result.runId).toBe('run-xyz')
@@ -64,7 +59,6 @@ describe('mhdConfigTool.execute', () => {
   })
 
   it('writes all physicalParams as key = value lines', async () => {
-    const tool = await loadTool()
     const result = await tool.execute(INPUT)
     const cfg = await readFile(result.cfgPath, 'utf-8')
 
@@ -74,7 +68,6 @@ describe('mhdConfigTool.execute', () => {
   })
 
   it('returns a result that satisfies MhdConfigSchema', async () => {
-    const tool = await loadTool()
     const result = await tool.execute(INPUT)
     const parsed = MhdConfigSchema.parse(result)
     expect(parsed.runId).toBe('run-xyz')
@@ -84,7 +77,6 @@ describe('mhdConfigTool.execute', () => {
   })
 
   it('handles multiple physicalParams entries', async () => {
-    const tool = await loadTool()
     const result = await tool.execute({
       runId: 'run-multi',
       winningHypoId: 'h-multi',

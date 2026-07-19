@@ -18,4 +18,12 @@ export function loadEnv(): Env {
   })
 }
 
-export const env = loadEnv()
+// Dynamic env: every property access re-parses process.env, so tests can
+// simply set `process.env.BASE_DIR = tmpdir` without vi.resetModules().
+// The Proxy keeps `env.BASE_DIR` call-site syntax unchanged for all
+// consumers (paths.ts, health.ts, helix client.ts).
+export const env: Env = new Proxy({} as Env, {
+  get(_target, prop: string) {
+    return loadEnv()[prop as keyof Env]
+  },
+})

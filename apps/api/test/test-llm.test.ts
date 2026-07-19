@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { closeGlobalDb } from '@open-scientist/storage'
 import type { Hono } from 'hono'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -13,39 +14,37 @@ async function json(res: Response): Promise<any> {
   return await res.json()
 }
 
-beforeEach(async () => {
+beforeEach(() => {
   tmp = mkdtempSync(join(tmpdir(), 'os-api-testllm-'))
   process.env.BASE_DIR = tmp
-  vi.resetModules()
-  vi.resetAllMocks()
-  app = (await import('../src/index.js')).default
 })
 
 afterEach(() => {
+  closeGlobalDb()
   delete process.env.BASE_DIR
   rmSync(tmp, { recursive: true, force: true })
   vi.restoreAllMocks()
 })
 
-function mockGenerateText(impl: (args: unknown) => unknown) {
-  // Re-mock the 'ai' module on every fresh module graph (vi.resetModules ran
-  // in beforeEach), so the route handler picks up the mock.
+// `vi.doMock('ai', ...)` only takes effect after a module reset + re-import,
+// so tests that mock generateText reset the module graph and re-import the app.
+// BASE_DIR isolation no longer needs resetModules — `env` is a Proxy and the
+// db caches are keyed by BASE_DIR.
+async function loadAppWithMockedAi(impl: (args: unknown) => unknown): Promise<Hono> {
+  vi.resetModules()
   vi.doMock('ai', () => ({
     generateText: vi.fn(impl),
   }))
+  return (await import('../src/index.js')).default
 }
 
 describe('POST /api/test-llm', () => {
   it('returns ok:true with text/usage/model/durationMs on success', async () => {
-    mockGenerateText(async () => ({
+    app = await loadAppWithMockedAi(async () => ({
       text: 'hello there',
       usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
       response: { modelId: 'gpt-4o' },
     }))
-
-    // Re-import the app so the route picks up the mocked 'ai' module.
-    vi.resetModules()
-    app = (await import('../src/index.js')).default
 
     const res = await app.request('/api/test-llm', {
       method: 'POST',
@@ -69,12 +68,9 @@ describe('POST /api/test-llm', () => {
   })
 
   it('returns ok:false with error when generateText throws', async () => {
-    mockGenerateText(async () => {
+    app = await loadAppWithMockedAi(async () => {
       throw new Error('connection refused')
     })
-
-    vi.resetModules()
-    app = (await import('../src/index.js')).default
 
     const res = await app.request('/api/test-llm', {
       method: 'POST',
@@ -95,6 +91,10 @@ describe('POST /api/test-llm', () => {
 
   it('rejects a request missing apiKey → schema throw → 500', async () => {
     // No generateText mock needed — the route should throw before reaching it.
+    // Use a fresh static import (no mock) for the schema-validation path.
+    vi.resetModules()
+    app = (await import('../src/index.js')).default
+
     const res = await app.request('/api/test-llm', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

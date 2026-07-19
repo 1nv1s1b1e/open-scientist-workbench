@@ -2,8 +2,9 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { RoundSnapshot } from '../src/sisyphus/steps/index.js'
+import { snapshotStep } from '../src/sisyphus/steps/index.js'
 
 function makeSnapshot(overrides: Partial<RoundSnapshot> = {}): RoundSnapshot {
   return {
@@ -33,7 +34,6 @@ describe('snapshotStep', () => {
   let tmp: string
 
   beforeEach(() => {
-    vi.resetModules()
     tmp = mkdtempSync(join(tmpdir(), 'os-snapshot-'))
     process.env.BASE_DIR = tmp
   })
@@ -41,11 +41,9 @@ describe('snapshotStep', () => {
   afterEach(() => {
     delete process.env.BASE_DIR
     rmSync(tmp, { recursive: true, force: true })
-    vi.restoreAllMocks()
   })
 
   it('writes snapshot.json under <BASE_DIR>/projects/<project>/rounds/<round>/', async () => {
-    const { snapshotStep } = await import('../src/sisyphus/steps/index.js')
     const snap = makeSnapshot()
     const { path } = await snapshotStep(snap)
 
@@ -58,7 +56,6 @@ describe('snapshotStep', () => {
   })
 
   it('round-trips JSON.stringify → parse preserving all fields', async () => {
-    const { snapshotStep } = await import('../src/sisyphus/steps/index.js')
     const snap = makeSnapshot({
       round: 7,
       bestF1: 0.88,
@@ -84,7 +81,6 @@ describe('snapshotStep', () => {
   })
 
   it('overwrites on repeated write to the same round (no error)', async () => {
-    const { snapshotStep } = await import('../src/sisyphus/steps/index.js')
     const first = makeSnapshot({ bestF1: 0.3, capturedAt: '2026-01-01T00:00:00Z' })
     const { path: path1 } = await snapshotStep(first)
 

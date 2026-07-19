@@ -1,15 +1,15 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { closeGlobalDb, createCredentialStore, getGlobalDb } from '../src/index.js'
 
 /**
  * CredentialStore integration tests.
  *
- * `getGlobalDb()` is a singleton cached in a module-level variable, and
- * `@open-scientist/config`'s `env` parses `BASE_DIR` once at module load. So
- * each test calls `vi.resetModules()` + dynamic `import()` with a fresh
- * `process.env.BASE_DIR` pointing at a temp dir, guaranteeing isolation.
+ * `getGlobalDb()` now caches by db path (derived from BASE_DIR), and `env` is
+ * a Proxy that re-reads `process.env.BASE_DIR` on every access, so each test
+ * just sets `process.env.BASE_DIR` at a fresh temp dir — no vi.resetModules().
  *
  * Note: the `add` implementation uses an insert (no upsert), so calling `add`
  * twice for the same provider creates **two** rows. `get(provider)` returns the
@@ -17,58 +17,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * a hypothetical "overwrite" semantic.
  */
 
-interface StorageModule {
-  createCredentialStore: () => Promise<{
-    get: (provider: string) => Promise<{ key: string; type: string } | null>
-    list: () => Promise<
-      Array<{
-        id: string
-        provider: string
-        type: string
-        encryptedKey: string
-        metadata?: Record<string, unknown>
-      }>
-    >
-    add: (
-      provider: string,
-      type: 'api-key' | 'oauth-token',
-      key: string,
-      metadata?: Record<string, unknown>,
-    ) => Promise<void>
-    delete: (id: string) => Promise<void>
-  }>
-  getGlobalDb: () => Promise<{
-    sqlite: { close: () => void }
-  }>
-}
-
-async function loadStorage(baseDir: string): Promise<StorageModule> {
-  vi.resetModules()
-  process.env.BASE_DIR = baseDir
-  return (await import('../src/index.js')) as unknown as StorageModule
-}
-
 function makeBaseDir(label: string): string {
   return mkdtempSync(join(tmpdir(), `os-storage-cred-${label}-`))
 }
 
 describe('credential store', () => {
   let baseDir: string
-  let storage: StorageModule
-  let store: Awaited<ReturnType<StorageModule['createCredentialStore']>>
-  let globalSqlite: { close: () => void }
+  let store: Awaited<ReturnType<typeof createCredentialStore>>
 
   beforeEach(async () => {
     baseDir = makeBaseDir('store')
-    storage = await loadStorage(baseDir)
-    store = await storage.createCredentialStore()
-    globalSqlite = (await storage.getGlobalDb()).sqlite
+    process.env.BASE_DIR = baseDir
+    store = await createCredentialStore()
+    // Touch the global db so it gets initialized + cached for this BASE_DIR;
+    // afterEach closes it via closeGlobalDb().
+    await getGlobalDb()
   })
 
   afterEach(() => {
-    globalSqlite.close()
+    closeGlobalDb()
     rmSync(baseDir, { recursive: true, force: true })
-    vi.resetModules()
+    delete process.env.BASE_DIR
   })
 
   it('add → get round-trips the plaintext key', async () => {
