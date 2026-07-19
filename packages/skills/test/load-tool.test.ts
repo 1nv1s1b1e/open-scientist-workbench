@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { DiscoveredSkill } from '../src/discover.js'
-import { createLoadSkillTool } from '../src/load-tool.js'
+import type { DiscoveredSkill } from '../src/discover.ts'
+import { createLoadSkillTool } from '../src/load-tool.ts'
 
 let tmp: string
 

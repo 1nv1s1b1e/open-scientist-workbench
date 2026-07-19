@@ -17,11 +17,10 @@
 // `getRun()` is also safe to call from a 'use step' (it just constructs a Run
 // handle; the polling happens via `await run.returnValue`).
 
-import { getRoundsDir } from '@open-scientist/config'
 import type { EvalResult } from '@open-scientist/schema'
 import { type Run, start } from 'workflow/api'
-import type { ExploreWorkflowInput } from '../../explore/workflow.js'
-import { exploreWorkflow } from '../../explore/workflow.js'
+import type { ExploreWorkflowInput } from '../../explore/workflow.ts'
+import { exploreWorkflow } from '../../explore/workflow.ts'
 
 /** Args for spawning one parallel Explore evaluation (background spawn). */
 export interface SpawnExploreEvalArgs extends ExploreWorkflowInput {}
@@ -87,6 +86,7 @@ export interface RoundSnapshot {
 export async function snapshotStep(snapshot: RoundSnapshot): Promise<{ path: string }> {
   'use step'
   const { mkdir, writeFile } = await import('node:fs/promises')
+  const { getRoundsDir } = await import('@open-scientist/config')
   const dir = getRoundsDir(snapshot.projectId, snapshot.round)
   await mkdir(dir, { recursive: true })
   const path = `${dir}/snapshot.json`

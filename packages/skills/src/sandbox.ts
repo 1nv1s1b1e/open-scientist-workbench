@@ -1,3 +1,7 @@
+import { createLogger } from '@open-scientist/logger'
+
+const logger = createLogger('skills')
+
 export interface Sandbox {
   readFile(path: string): Promise<string>
   readdir(path: string): Promise<string[]>
@@ -5,6 +9,7 @@ export interface Sandbox {
 }
 
 export function createNodeSandbox(): Sandbox {
+  logger.info('createNodeSandbox: creating node sandbox')
   return {
     async readFile(path) {
       return (await import('node:fs/promises')).readFile(path, 'utf-8')

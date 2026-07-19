@@ -81,7 +81,7 @@ open-scientist/
 - `src/routes/` — REST handlers（见 §7 API 层）
 - `src/server.ts` — Hono app 装配
 - `src/index.ts` — 启动入口
-- `nitro.config.ts` — `modules: ['workflow/nitro']` + `routes: {'/**': './src/index.ts'}`
+- `nitro.config.ts` — `modules: ['workflow/nitro']` + `routes: {'/api/**': './src/index.ts'}` + `serverEntry: './src/index.ts'` + `workspaceDir: import.meta.dirname` + `noExternals` 列全 8 个 workspace 包（agents/logger/tools/skills/helix/config/schema/mcp）。文件顶部需 `import type {} from 'workflow/nitro'`（side-effect type import，让 TS 加载 module augmentation 认识 `workflow?` 字段）
 - `package.json` 依赖：`hono`, `@hono/node-server`, `workflow`, `nitro`, `rollup`, 以及内部 packages
 
 **不包含**：agent 实现、tool 实现、数据访问逻辑（全委派给 packages）
@@ -94,40 +94,44 @@ open-scientist/
 ```
 packages/agents/src/
 ├── sisyphus/
-│   ├── agent.ts          # WorkflowAgent 构造（model/instructions/tools/output）
-│   ├── workflow.ts       # 'use workflow' — Tournament Evolution 主循环
-│   └── steps/            # 'use step' — 可重试步骤（编排子 workflow、收敛检测）
+│   ├── agent.ts          # WorkflowAgent 构造工厂（module scope，拉 tools/skills/config）
+│   ├── workflow.ts       # 'use workflow' — 纯 VM-safe 薄壳，只 import runXxxStep
+│   └── steps/index.ts    # 'use step' — 主循环逻辑（编排子 workflow、收敛检测）
 ├── librarian/
 │   ├── agent.ts
-│   ├── workflow.ts       # 'use workflow' — 假设生成
-│   └── steps/            # 'use step' — HelixDB 检索、假设翻译为 Python
+│   ├── workflow.ts       # 'use workflow' — 纯 VM-safe 薄壳
+│   └── steps/index.ts    # 'use step' — HelixDB 检索、假设翻译为 Python
 ├── looker/
 │   ├── agent.ts
 │   ├── workflow.ts
-│   └── steps/            # 'use step' — FITS 对齐、视频切片
+│   └── steps/index.ts    # 'use step' — FITS 对齐、视频切片
 ├── explore/
 │   ├── agent.ts
 │   ├── workflow.ts
-│   └── steps/            # 'use step' — bash-tool 跑 Python、F1 计算
+│   └── steps/index.ts    # 'use step' — bash-tool 跑 Python、F1 计算
 ├── oracle/
 │   ├── agent.ts
 │   ├── workflow.ts
-│   └── steps/            # 'use step' — 批判、突变、反例 debug
+│   └── steps/index.ts    # 'use step' — 批判、突变、反例 debug
 ├── prometheus/
 │   ├── agent.ts
 │   ├── workflow.ts
-│   └── steps/            # 'use step' — 规划、MHD cfg 生成
+│   └── steps/index.ts    # 'use step' — 规划、MHD cfg 生成
 └── index.ts              # 导出所有 agent + workflow 入口函数
 ```
 
-**三文件边界**（Workflow DevKit 要求）：
-- `agent.ts` — WorkflowAgent 实例构造（module scope，非 `'use workflow'`）
-- `workflow.ts` — `'use workflow'`，调 `agent.stream({messages, writable: getWritable()})`
-- `steps/*.ts` — `'use step'`，tool execute 函数，自动重试 + persistence
+**三文件边界**（方案 A：解决 VM sandbox 无 dynamic import callback 的限制）：
+
+`@workflow/core` 的 VM sandbox 用裸 `runInContext`，无 `importModuleDynamically` callback —— workflow body（VM 内）任何 `await import()` 必抛 `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`。因此「拉 Node 模块链的代码」只能出现在 step 里（step 在 host Node runtime 跑，`import()` 走 host ESM loader）。
+
+- `agent.ts` — `createXxxAgent(...)` async 工厂（module scope），拉 tools/skills/config（Node 模块链）。**不能被 workflow.ts 静态 import**（会把 `node:*` 链拉进 VM bundle）
+- `workflow.ts` — `'use workflow'` 指令，**纯 VM-safe 薄壳**：只静态 import `./steps/index.ts` 的 `runXxxStep`，函数体只有 `return await runXxxStep(input)`。不调 `getWritable`，不构造 agent，不 `await import()`
+- `steps/index.ts` — `'use step'` 函数体内 `await import('../agent.ts')` + `createXxxAgent(...)` + `agent.stream({messages, writable: getWritable<ModelCallStreamPart>(), runtimeContext})` + `return result.output`。tool execute 也在此层
 
 **关键约束**：
+- workflow body（VM 内）**严禁 `await import()`**（抛 `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`）—— 一切 Node 模块拉取必须在 step 函数体内
 - workflow 模块图必须精简——重依赖（HelixDB client、SQLite、bash-tool）只在 step 函数内动态 import，不进 workflow bundle
-- runtimeContext / toolsContext 必须可序列化（plain data），传 identifiers 在 step 内重建资源
+- runtimeContext / toolsContext 必须可序列化（plain data），传 identifiers 在 step 内重建资源；`ModelArg`（plain object）是跨 workflow structured-clone 边界传 model 配置的载体，每个子 agent 在 step 内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel`
 - bash-tool 的 working dir = `data/projects/<project_name>/workspace/<hypo_id>/`
 
 **依赖**：`packages/{tools, schema, config, helix, skills}`
@@ -283,21 +287,24 @@ const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
   - `getPromptsDir(project)` → `.../prompts/`
   - `getGlobalDbPath()` → `BASE_DIR/global.sqlite`
 - `src/settings.ts` — **两层 settings**（借鉴 Pi）
-  - global settings：`BASE_DIR/settings.json`（全局默认 model、MAX_ROUNDS、TARGET_F1 等）
-  - project settings：`data/projects/<name>/settings.json`（override global）
+  - global settings：`data/settings.json`（全局默认 model、MAX_ROUNDS、TARGET_F1 等）
+  - project settings：`data/projects/<name>/settings.json`（override global，deep merge）
   - `getSettings(projectName?)` → merge global + project
   - `setGlobalSettings(partial)` / `setProjectSettings(name, partial)`
 - `src/models.ts` — **provider 抽象**（模型配置从 SQLite CredentialStore 读，不读 env）
   - `createProvider(config)` 接口，默认 OpenAI 实现，可扩展 Anthropic
-  - `getAgentModel(role, projectName?)` → 从 settings + CredentialStore 返回对应 model + credentials
+  - `resolveModelArg(projectName, credentials, {role?, modelAlias?})` 读 settings → ModelConfig（含 credentialId）→ `credentials.get(credentialId)` → 从 credential 拿 provider/apiKey/baseURL → 组装 `ModelArg = {provider, model, baseURL?, apiKey, thinkingLevel}` plain object（跨 workflow 边界传 model 配置的载体）
+  - `createModelFromConfig(modelConfig)` 在 step 内重建 `LanguageModel` 实例（step 在 host Node runtime 跑，可持有 SDK client）
   - **per-agent thinkingLevel**（借鉴 Pi）：`settings.models.oracle.thinkingLevel: 'high'`
   - **sessionId for provider caching**（借鉴 Pi）：runtimeContext 传 sessionId 复用 provider 端 prompt cache
 - `src/constants.ts` — 默认值（MAX_ROUNDS=10, TARGET_F1=0.9, MAX_CONCURRENT_RUNS=4, ...）
 
 **关键设计**：
 - **模型配置不走 env**：API key / model 选择 / thinkingLevel 全存 SQLite（`credentials` + `settings` 表），通过 Web API 管理
+- **Credential = endpoint bundle**：`{id, provider, apiKey, baseURL?}`，id 命名实体不按 provider 唯一，支持「同 provider 不同 endpoint」组合，upsert by id
+- **ModelConfig 用 credentialId 引用**：`{model, thinkingLevel, credentialId}`，provider/baseURL/apiKey 全由 credentialId 引用的 Credential 条目决定
 - **CredentialStore 串行 modify**（借鉴 Pi）：OAuth refresh 加锁防双刷，API key 加密存储
-- **两层 settings merge**：project override global，`getSettings()` 返回合并结果
+- **两层 settings merge**：global `data/settings.json` + per-project `data/projects/<name>/settings.json` override（deep merge），`getSettings(projectName?)` 返回合并结果
 - env 只留 4 个基础设施变量（BASE_DIR / PORT / HELIX_URL / LOG_LEVEL）
 
 **依赖**：`zod`, `@ai-sdk/openai`, `packages/storage`（读 credentials + settings）
@@ -319,11 +326,12 @@ const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
 
 ### 4.2 Sisyphus 编排（Workflow Composition）
 
-Sisyphus 是父 WorkflowAgent，通过两种方式调 5 个子 WorkflowAgent：
+Sisyphus 是父 WorkflowAgent，通过两种方式调 5 个子 WorkflowAgent。**所有 workflow.ts 都是 VM-safe 薄壳**（见 §3.2 方案 A），下面的伪代码描述的是设计意图 —— 实际逻辑在各自 `steps/index.ts` 的 `runXxxStep` 里执行，workflow.ts 只负责 `return await runXxxStep(input)`。
 
 **Direct await**（顺序，需结果）：
 ```ts
-// sisyphus/workflow.ts
+// sisyphus/workflow.ts （VM-safe 薄壳：return await runSisyphusStep(input)）
+// 以下逻辑实际在 sisyphus/steps/index.ts 的 runSisyphusStep 内执行
 'use workflow'
 export async function tournamentWorkflow(input: TournamentInput) {
   // Round 1: Librarian 生成假设
@@ -414,8 +422,9 @@ Tournament 长循环中用户中途插话/追加任务，不等到 needsApproval
 
 ```ts
 // storage/src/schema.ts (global)
-credentials: { id, provider, type, encryptedKey, metadata_json, createdAt, updatedAt }
-// type: 'api-key' | 'oauth-token'；encryptedKey 加密存储；CredentialStore 串行 modify
+credentials: { id, provider, type, encryptedKey, baseUrl, metadata_json, createdAt, updatedAt }
+// id 命名实体（用户指定或 auto `${provider}-${ts}`），不按 provider 唯一，支持「同 provider 不同 baseURL+apiKey」组合，upsert by id
+// type: 'api-key' | 'oauth-token'；encryptedKey 加密存储；baseUrl 可选（同 provider 不同 endpoint）；CredentialStore 串行 modify
 
 settings: { scope, name, value_json, updatedAt }
 // scope: 'global' | 'project:<name>'；name: 'models' | 'tournament' | 'steering' 等
@@ -594,13 +603,17 @@ Sisyphus.tournamentWorkflow
 ```json
 {
   "models": {
-    "default": {"provider": "openai", "model": "gpt-4o", "thinkingLevel": "medium"},
-    "sisyphus": {"provider": "openai", "model": "gpt-4o", "thinkingLevel": "medium"},
-    "oracle": {"provider": "openai", "model": "o3", "thinkingLevel": "high"},
-    "explore": {"provider": "openai", "model": "gpt-4o", "thinkingLevel": "low"},
-    "librarian": {"provider": "openai", "model": "gpt-4o", "thinkingLevel": "medium"},
-    "looker": {"provider": "openai", "model": "gpt-4o", "thinkingLevel": "medium"},
-    "prometheus": {"provider": "openai", "model": "o3", "thinkingLevel": "high"}
+    "default": {"model": "gpt-4o", "thinkingLevel": "medium", "credentialId": "openai-prod"},
+    "sisyphus": {"model": "gpt-4o", "thinkingLevel": "medium", "credentialId": "openai-prod"},
+    "oracle": {"model": "o3", "thinkingLevel": "high", "credentialId": "openai-prod"},
+    "explore": {"model": "gpt-4o", "thinkingLevel": "low", "credentialId": "openai-prod"},
+    "librarian": {"model": "gpt-4o", "thinkingLevel": "medium", "credentialId": "openai-prod"},
+    "looker": {"model": "gpt-4o", "thinkingLevel": "medium", "credentialId": "openai-prod"},
+    "prometheus": {"model": "o3", "thinkingLevel": "high", "credentialId": "openai-prod"}
+  },
+  "modelAliases": {
+    "fast": {"model": "gpt-4o-mini", "thinkingLevel": "low", "credentialId": "openai-prod"},
+    "smart": {"model": "o3", "thinkingLevel": "high", "credentialId": "openai-prod"}
   },
   "tournament": {"maxRounds": 10, "targetF1": 0.9, "convergenceWindow": 3},
   "concurrency": {"maxConcurrentRuns": 4},
@@ -608,13 +621,15 @@ Sisyphus.tournamentWorkflow
 }
 ```
 
+`ModelConfig = {model, thinkingLevel, credentialId}`：provider/baseURL/apiKey 全由 `credentialId` 引用的 Credential 条目决定（见 §8.4），不在 ModelConfig 里重复。`modelAliases` 用同形态，供 `resolveModelArg({modelAlias?})` 解析。
+
 ### 8.3 project settings（`data/projects/<name>/settings.json` + SQLite）
 
 通过 `PUT /projects/:name/settings` 管理，override global：
 ```json
 {
   "models": {
-    "oracle": {"provider": "anthropic", "model": "claude-sonnet-4-6", "thinkingLevel": "high"}
+    "oracle": {"model": "claude-sonnet-4-6", "thinkingLevel": "high", "credentialId": "anthropic-prod"}
   },
   "mcp": {
     "servers": [
@@ -633,26 +648,32 @@ Sisyphus.tournamentWorkflow
 
 ### 8.4 凭证管理（Web API + SQLite 加密）
 
+一个 Credential = 一个完整 endpoint bundle `{id, provider, apiKey, baseURL?}`：支持「同 provider 不同 baseURL+apiKey」组合，**id 命名实体（用户指定或 auto `${provider}-${ts}`），不再按 provider 唯一**，upsert by id（后加覆盖先加）。
+
 通过 `POST /credentials` 管理：
 ```json
 // 请求
-{"provider": "openai", "type": "api-key", "key": "sk-..."}
+{"id": "openai-prod", "provider": "openai", "apiKey": "sk-...", "baseURL": "https://api.openai.com/v1"}
 
-// 或 OAuth
-{"provider": "anthropic", "type": "oauth", "clientId": "...", "clientSecret": "...", "refreshToken": "..."}
+// 或同 provider 不同 endpoint
+{"id": "openai-proxy", "provider": "openai", "apiKey": "sk-...", "baseURL": "https://my-proxy.example.com/v1"}
 ```
-- 存 SQLite `credentials` 表，`encryptedKey` 加密存储
+- 存 SQLite `credentials` 表（存储列名 `encrypted_key` 加密存储），`base_url` 列存 endpoint
 - **CredentialStore 串行 modify**（借鉴 Pi）：OAuth refresh 在 `modify` 内加锁，防止并发请求触发双刷 token
-- `getAgentModel(role, projectName?)` 从 settings + CredentialStore 组装 provider 实例
+- `resolveModelArg(projectName, credentials, {role?, modelAlias?})` 从 settings + CredentialStore 组装 `ModelArg`（见 §8.5）
 
 ### 8.5 per-agent model 解析
 
-`packages/config/src/models.ts` 的 `getAgentModel(role, projectName?)` 流程：
-1. 读 project settings（merge global + project override）
-2. 取 `models[role]` 配置（provider + model + thinkingLevel）
-3. 从 CredentialStore 读对应 provider 的 credential
-4. 组装并返回 AI SDK model 实例
+**模型配置形态**：`ModelConfig = {model, thinkingLevel, credentialId}`（移除 provider+baseURL —— provider/baseURL/apiKey 全部由 credentialId 引用的 Credential 条目决定）。`settings.models.<role>` 和 `settings.modelAliases.<alias>` 都用此形态。
+
+`packages/config/src/models.ts` 的 `resolveModelArg(projectName, credentials, {role?, modelAlias?})` 流程：
+1. 读 settings（merge global + project override 两层）
+2. 取 `models[role]` 或 `modelAliases[alias]` 的 `ModelConfig`（含 `credentialId`）
+3. `credentials.get(credentialId)` 读 Credential 条目，从 credential 拿 provider/apiKey/baseURL
+4. 组装并返回 **`ModelArg`** = `{provider, model, baseURL?, apiKey, thinkingLevel}` —— **plain object**，可跨 workflow structured-clone 边界传递（不能放 SDK `LanguageModel` 实例）
 5. 附带 `sessionId`（runtimeContext 传入）用于 provider 端 prompt cache 复用
+
+**重建时机**：`ModelArg` 随 runtimeContext 传入 workflow，每个子 agent 在 step 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel` 实例（step 在 host Node runtime 跑，可持有 SDK client）。
 
 ---
 
@@ -709,11 +730,19 @@ packages/config → packages/storage (读 credentials + settings)
 ## 11. 约束与注意事项
 
 ### Workflow DevKit 约束
-- 三文件边界必须分离（agent.ts / workflow.ts / steps/）
+- 三文件边界必须分离（agent.ts / workflow.ts / steps/index.ts），见 §3.2 方案 A
+- **workflow body（VM 内）严禁 `await import()`**：`@workflow/core` VM sandbox 无 `importModuleDynamically` callback，必抛 `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`。一切 Node 模块拉取必须在 step 函数体内（step 在 host Node runtime 跑）
+- workflow.ts 必须是纯 VM-safe 薄壳：只 import `./steps/index.ts` 的 `runXxxStep` + `return await runXxxStep(input)`，不调 `getWritable`，不构造 agent
 - workflow 模块图必须精简，重依赖在 step 内动态 import
-- runtimeContext / toolsContext 必须可序列化
+- runtimeContext / toolsContext 必须可序列化（plain data），`ModelArg` 是跨边界传 model 配置的载体（step 内才 `createModelFromConfig` 重建）
 - Nitro 作为 build system（`nitro.config.ts` 配 `workflow/nitro` module）
 - tsconfig 加 workflow TS plugin
+
+### workflow/nitro + pnpm workspace + Node type stripping 约束
+- workflow/nitro 的 step bundle（esbuild via `@workflow/builders`）在 dev 模式把 workspace 包 externalize，runtime 用 bare specifier `@open-scientist/config` → `package.json exports ./src/index.ts` → Node 26 type stripping 加载（默认开启，无需 flag）
+- **源码内部相对 import 用 `.ts` 后缀**（不是 `.js`）：Node type stripping 不做 `.js`→`.ts` fallback，加 `.js` 会 `ERR_MODULE_NOT_FOUND`
+- `tsconfig.base.json` 开 `allowImportingTsExtensions: true` + `rewriteRelativeImportExtensions: true`
+- **`apps/api/nitro.config.ts` 的 `noExternals` 需列全 8 个 workspace 包**（agents/logger/tools/skills/helix/config/schema/mcp），否则 nitro dev bundle 无法 resolve
 
 ### bash-tool 使用
 - working dir = `data/projects/<name>/workspace/<hypo_id>/`，project + hypothesis 隔离

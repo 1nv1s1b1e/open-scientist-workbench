@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { createProjectDb } from '../db.js'
-import { critiques, mutations } from '../schema/project.js'
+import { createProjectDb } from '../db.ts'
+import { critiques, mutations } from '../schema/project.ts'
 
 export async function addCritique(
   projectName: string,

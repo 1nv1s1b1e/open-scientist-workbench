@@ -1,67 +1,21 @@
 'use workflow'
 
-import type { ModelCallStreamPart } from '@ai-sdk/workflow'
-import type { ModelArg } from '@open-scientist/config'
 import type { EvalResult, Hypothesis, OracleOutput, TournamentResult } from '@open-scientist/schema'
-import { getWritable } from 'workflow'
 import type { Run } from 'workflow/api'
-import type { ConvergenceEntry } from '../prometheus/workflow.js'
-import type { RoundSnapshot, SpawnExploreEvalArgs } from './steps/index.js'
-
-/** Local typed shape of `./steps/index.js` — avoids `typeof import()` (which bundles). */
-interface StepsModule {
-  spawnExploreEvalStep: (args: SpawnExploreEvalArgs) => Promise<Run<EvalResult>>
-  waitForRunStep: <T>(run: Run<T>) => Promise<T>
-  snapshotStep: (snapshot: RoundSnapshot) => Promise<{ path: string }>
-}
-
-/** Local typed shape of `./logic.js` — avoids `typeof import()` (which bundles). */
-interface LogicModule {
-  updateHypothesesWithEval: (hypotheses: Hypothesis[], evalResults: EvalResult[]) => Hypothesis[]
-  computeLeader: (hypotheses: Hypothesis[]) => { bestF1: number; leadingHypoId: string | null }
-  shouldStopByTarget: (bestF1: number) => boolean
-  applyOraclePruning: (hypotheses: Hypothesis[], oracleOutput: OracleOutput) => Hypothesis[]
-  buildConvergenceEntry: (round: number, bestF1: number, count: number) => ConvergenceEntry
-  shouldStopByPrometheus: (shouldContinue: boolean, round: number) => boolean
-}
-
-/** Local typed shape of the sub-workflow modules. */
-interface LibrarianWorkflowModule {
-  librarianWorkflow: (input: {
-    seed: string
-    projectId: string
-    runId: string
-    modelConfig: ModelArg
-  }) => Promise<{ hypotheses: Hypothesis[] }>
-}
-interface OracleWorkflowModule {
-  oracleWorkflow: (input: {
-    projectId: string
-    runId: string
-    round: number
-    hypotheses: Hypothesis[]
-    evalResults: EvalResult[]
-    modelConfig: ModelArg
-  }) => Promise<OracleOutput>
-}
-interface PrometheusWorkflowModule {
-  prometheusWorkflow: (input: {
-    projectId: string
-    runId: string
-    round: number
-    convergenceHistory: ConvergenceEntry[]
-    currentBestF1: number
-    isFinalRound: boolean
-    winningHypothesis?: { hypoId: string; statement: string }
-    modelConfig: ModelArg
-  }) => Promise<{
-    shouldContinue: boolean
-    mhdConfig?: { cfgPath: string; observationProposal: string } | null
-  }>
-}
-interface ConfigModule {
-  MAX_ROUNDS: number
-}
+import { librarianWorkflow } from '../librarian/workflow.ts'
+import { oracleWorkflow } from '../oracle/workflow.ts'
+import type { ConvergenceEntry } from '../prometheus/workflow.ts'
+import { prometheusWorkflow } from '../prometheus/workflow.ts'
+import {
+  applyOraclePruning,
+  buildConvergenceEntry,
+  computeLeader,
+  MAX_ROUNDS,
+  shouldStopByPrometheus,
+  shouldStopByTarget,
+  updateHypothesesWithEval,
+} from './logic.ts'
+import { snapshotStep, spawnExploreEvalStep, waitForRunStep } from './steps/index.ts'
 
 export type { TournamentInput, TournamentResult } from '@open-scientist/schema'
 
@@ -81,7 +35,7 @@ export interface TournamentWorkflowInput {
    * because workflow args are structured-clone serialized at every spawn
    * boundary and cannot carry bound methods / SDK clients.
    */
-  modelConfig: ModelArg
+  modelConfig: import('@open-scientist/config').ModelArg
 }
 
 /**
@@ -123,6 +77,23 @@ export interface TournamentWorkflowInput {
  * API layer to use when interpreting free-form user steering messages or
  * driving the approval tool. See `createSisyphusAgent`.
  *
+ * VM SAFETY: the workflow body runs inside a `@workflow/core` VM sandbox with
+ * no `importModuleDynamically` callback — so no `await import()` is allowed
+ * here. All sub-workflow + step modules are therefore imported STATICALLY at
+ * module top-level. This is safe because:
+ *   - `./logic.js` inlines MAX_ROUNDS / TARGET_F1 (no `@open-scientist/config`
+ *     import) — pure JS, no Node deps.
+ *   - `./steps/index.js` top-level imports only `workflow/api` (VM-safe, same
+ *     source as `getWritable`) + `../../explore/workflow.js` (a thin VM-safe
+ *     wrapper). All Node-touching work (`getRoundsDir` / `node:fs/promises`)
+ *     is done via dynamic import INSIDE the `'use step'` function bodies.
+ *   - `../librarian/workflow.js` / `../oracle/workflow.js` /
+ *     `../prometheus/workflow.js` are each thin VM-safe wrappers that delegate
+ *     to their own `runXxxStep` (`'use step'`) functions — the agent factories
+ *     (`createXxxAgent`, which pull node:fs/node:path via tools/skills/config)
+ *     are dynamically imported INSIDE those step bodies, never at module
+ *     top-level.
+ *
  * runtimeContext discipline: only serializable identifiers (projectId / runId /
  * round) cross the workflow + step boundaries. The model descriptor
  * (`ModelArg` — a plain object) is threaded through workflow args at every
@@ -135,40 +106,8 @@ export async function tournamentWorkflow(
 ): Promise<TournamentResult> {
   const { seed, projectId, runId, modelConfig } = input
 
-  // Dynamic imports keep heavy / Node-touching modules out of the esbuild
-  // workflow bundle:
-  //   - sub-workflow modules (librarian/oracle/prometheus/explore) each pull
-  //     their own agent.ts → tools/skills/config → node:fs/node:path chain;
-  //     workflow functions may not transitively import Node modules.
-  //   - ./steps/index.js pulls getRoundsDir from @open-scientist/config
-  //     (node:path) + workflow/api's start() (fine in steps, but the static
-  //     import would still drag the config chain into the workflow bundle).
-  //   - ./logic.js imports MAX_ROUNDS/TARGET_F1 from @open-scientist/config
-  //     (the config barrel re-exports paths.ts → node:path).
-  //   - @open-scientist/config itself re-exports paths.ts (node:path) +
-  //     settings.ts (node:fs/promises).
-  //
-  // The import specifiers are stored in variables so esbuild cannot statically
-  // resolve them and therefore leaves them as runtime import() calls instead
-  // of bundling the modules (and their node:* transitive deps) into the
-  // workflow bundle. The workflow VM executes these dynamic imports at runtime
-  // against the host Node runtime.
-  const librarianSpecifier = '../librarian/workflow.js'
-  const librarianModule = (await import(librarianSpecifier)) as LibrarianWorkflowModule
-  const oracleSpecifier = '../oracle/workflow.js'
-  const oracleModule = (await import(oracleSpecifier)) as OracleWorkflowModule
-  const prometheusSpecifier = '../prometheus/workflow.js'
-  const prometheusModule = (await import(prometheusSpecifier)) as PrometheusWorkflowModule
-  const stepsSpecifier = './steps/index.js'
-  const stepsModule = (await import(stepsSpecifier)) as StepsModule
-  const logicSpecifier = './logic.js'
-  const logicModule = (await import(logicSpecifier)) as LogicModule
-  const configSpecifier = '@open-scientist/config'
-  const configModule = (await import(configSpecifier)) as ConfigModule
-  const { MAX_ROUNDS } = configModule
-
   // ─── Round 1: Librarian generates the hypothesis pool (direct await) ───
-  const hypoPool = await librarianModule.librarianWorkflow({ seed, projectId, runId, modelConfig })
+  const hypoPool = await librarianWorkflow({ seed, projectId, runId, modelConfig })
   let hypotheses: Hypothesis[] = [...hypoPool.hypotheses]
 
   // Best-F1 + convergence tracking across rounds.
@@ -197,7 +136,7 @@ export async function tournamentWorkflow(
     // awaits.
     const exploreRuns = await Promise.all(
       hypotheses.map((h) =>
-        stepsModule.spawnExploreEvalStep({
+        spawnExploreEvalStep({
           hypoId: h.id,
           projectId,
           runId,
@@ -208,21 +147,20 @@ export async function tournamentWorkflow(
       ),
     )
     const evalResults: EvalResult[] = await Promise.all(
-      exploreRuns.map((run) => stepsModule.waitForRunStep<EvalResult>(run)),
+      exploreRuns.map((run) => waitForRunStep<EvalResult>(run)),
     )
 
     // ── Update hypotheses with F1 + status from this round's evaluations ──
-    hypotheses = logicModule.updateHypothesesWithEval(hypotheses, evalResults)
+    hypotheses = updateHypothesesWithEval(hypotheses, evalResults)
 
-    const { bestF1: roundBestF1, leadingHypoId: roundLeader } =
-      logicModule.computeLeader(hypotheses)
+    const { bestF1: roundBestF1, leadingHypoId: roundLeader } = computeLeader(hypotheses)
     bestF1 = roundBestF1
     leadingHypoId = roundLeader
 
-    convergenceHistory.push(logicModule.buildConvergenceEntry(round, bestF1, hypotheses.length))
+    convergenceHistory.push(buildConvergenceEntry(round, bestF1, hypotheses.length))
 
     // ── Persist round snapshot (durable, retriable) ──
-    await stepsModule.snapshotStep({
+    await snapshotStep({
       round,
       runId,
       projectId,
@@ -242,12 +180,12 @@ export async function tournamentWorkflow(
     })
 
     // ── Convergence check #1: F1 target hit → skip Oracle/Prometheus, go to final ──
-    if (logicModule.shouldStopByTarget(bestF1)) {
+    if (shouldStopByTarget(bestF1)) {
       break
     }
 
     // ── Oracle: critique + mutate + eliminate (direct await) ──
-    const oracleOutput = await oracleModule.oracleWorkflow({
+    const oracleOutput = await oracleWorkflow({
       projectId,
       runId,
       round,
@@ -257,7 +195,7 @@ export async function tournamentWorkflow(
     })
 
     // Apply Oracle's pruning + mutations to the pool.
-    hypotheses = logicModule.applyOraclePruning(hypotheses, oracleOutput)
+    hypotheses = applyOraclePruning(hypotheses, oracleOutput)
 
     // Oracle may declare a winner early (clear convergence this round).
     if (oracleOutput.winningHypoId) {
@@ -276,7 +214,7 @@ export async function tournamentWorkflow(
     // now the tournament runs fully automatic.
 
     // ── Prometheus: plan next round (direct await) ──
-    const prometheusOutput = await prometheusModule.prometheusWorkflow({
+    const prometheusOutput = await prometheusWorkflow({
       projectId,
       runId,
       round,
@@ -287,7 +225,7 @@ export async function tournamentWorkflow(
     })
 
     // ── Convergence check #2: Prometheus says stop OR round cap hit ──
-    if (logicModule.shouldStopByPrometheus(prometheusOutput.shouldContinue, round)) {
+    if (shouldStopByPrometheus(prometheusOutput.shouldContinue, round)) {
       break
     }
   }
@@ -296,7 +234,7 @@ export async function tournamentWorkflow(
   const winningStatement =
     leadingHypoId != null ? (hypotheses.find((h) => h.id === leadingHypoId)?.statement ?? '') : ''
 
-  const finalPrometheus = await prometheusModule.prometheusWorkflow({
+  const finalPrometheus = await prometheusWorkflow({
     projectId,
     runId,
     round: totalRounds,
@@ -322,8 +260,3 @@ export async function tournamentWorkflow(
     observationProposal,
   }
 }
-
-// Re-export getWritable + ModelCallStreamPart typing for callers that want to
-// stream the Sisyphus agent (used by the Phase 4 API layer when wiring the
-// human-in-the-loop approval node). Not used by tournamentWorkflow itself.
-export { getWritable, type ModelCallStreamPart }

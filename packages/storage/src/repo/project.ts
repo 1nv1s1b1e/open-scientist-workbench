@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { createProjectDb } from '../db.js'
-import { projects } from '../schema/project.js'
+import { createProjectDb } from '../db.ts'
+import { projects } from '../schema/project.ts'
 
 export async function createProject(name: string, config?: Record<string, unknown>) {
   const { db } = createProjectDb(name)

@@ -2,10 +2,22 @@
 // unit-tested without spinning up the Workflow DevKit runtime. These functions
 // are deterministic and side-effect free — they operate on plain Hypothesis /
 // EvalResult / OracleOutput / ConvergenceEntry data structures.
+//
+// The tournament constants (MAX_ROUNDS / TARGET_F1) are inlined here rather
+// than imported from `@open-scientist/config` because that package is a barrel
+// that re-exports paths.ts (node:path) + settings.ts (node:fs), which would
+// drag Node modules into the esbuild workflow bundle. The values mirror
+// `@open-scientist/config/constants.ts` exactly — if you change one, change
+// both. (A future cleanup could move these constants to the zero-dependency
+// `@open-scientist/schema` package so both sites can import them cleanly.)
 
-import { MAX_ROUNDS, TARGET_F1 } from '@open-scientist/config'
 import type { EvalResult, Hypothesis, OracleOutput } from '@open-scientist/schema'
-import type { ConvergenceEntry } from '../prometheus/workflow.js'
+import type { ConvergenceEntry } from '../prometheus/workflow.ts'
+
+/** Max tournament rounds — mirrors `@open-scientist/config` MAX_ROUNDS. */
+const MAX_ROUNDS = 10
+/** F1 convergence target — mirrors `@open-scientist/config` TARGET_F1. */
+const TARGET_F1 = 0.9
 
 /**
  * Fold this round's EvalResults into the hypothesis pool: each hypothesis whose

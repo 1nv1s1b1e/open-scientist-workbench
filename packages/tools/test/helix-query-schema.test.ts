@@ -14,7 +14,7 @@ import {
   getRelatedConceptsTool,
   searchHypothesesTool,
   searchPapersTool,
-} from '../src/helix-query.js'
+} from '../src/helix-query.ts'
 
 // The AI SDK `tool({...})` factory exposes the zod schema as `.inputSchema` /
 // `.outputSchema`. We cast to a minimal interface to drive `.parse()` without

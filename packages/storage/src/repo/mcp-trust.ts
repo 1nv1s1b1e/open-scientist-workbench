@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { getGlobalDb } from '../global-db.js'
-import { mcpToolBaselines, mcpTrust } from '../schema/global.js'
+import { getGlobalDb } from '../global-db.ts'
+import { mcpToolBaselines, mcpTrust } from '../schema/global.ts'
 
 export async function getTrust(projectName: string, serverName: string) {
   const { db } = await getGlobalDb()

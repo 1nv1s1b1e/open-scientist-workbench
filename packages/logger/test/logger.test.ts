@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { consola, createLogger, type LoggerTag, loggersByTag, setLogLevel } from '../src/index.js'
+import { consola, createLogger, type LoggerTag, loggersByTag, setLogLevel } from '../src/index.ts'
 
 beforeEach(() => {
   // Reset consola level to the default between tests.

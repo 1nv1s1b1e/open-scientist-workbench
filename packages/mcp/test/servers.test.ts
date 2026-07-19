@@ -3,7 +3,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolResultSchema, ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createFitsServer, createHelixServer, createSandboxServer } from '../src/index.js'
+import { createFitsServer, createHelixServer, createSandboxServer } from '../src/index.ts'
 
 // ------------------------------------------------------------
 // Helpers：用 in-memory transport 连 client ↔ server，避免 stdio

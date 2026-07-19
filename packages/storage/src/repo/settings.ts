@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
-import { getGlobalDb } from '../global-db.js'
-import { settings } from '../schema/global.js'
+import { getGlobalDb } from '../global-db.ts'
+import { settings } from '../schema/global.ts'
 
 export async function getSetting(scope: string, name: string): Promise<unknown | null> {
   const { db } = await getGlobalDb()

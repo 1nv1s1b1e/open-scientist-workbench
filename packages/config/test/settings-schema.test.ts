@@ -5,47 +5,40 @@ import {
   ModelConfigSchema,
   SteeringSettingsSchema,
   TournamentSettingsSchema,
-} from '../src/settings.js'
+} from '../src/settings.ts'
 
 describe('ModelConfigSchema', () => {
-  it('parses minimal config with defaults for provider + thinkingLevel', () => {
-    const m = ModelConfigSchema.parse({ model: 'gpt-4o' })
-    expect(m.provider).toBe('openai')
+  it('parses minimal config with default thinkingLevel', () => {
+    const m = ModelConfigSchema.parse({ model: 'gpt-4o', credentialId: 'openai-default' })
     expect(m.thinkingLevel).toBe('medium')
-  })
-
-  it('accepts anthropic provider', () => {
-    const m = ModelConfigSchema.parse({ provider: 'anthropic', model: 'claude-3' })
-    expect(m.provider).toBe('anthropic')
+    expect(m.credentialId).toBe('openai-default')
   })
 
   it('accepts all thinkingLevel enum values', () => {
     for (const level of ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const) {
-      expect(ModelConfigSchema.parse({ model: 'm', thinkingLevel: level }).thinkingLevel).toBe(
-        level,
-      )
+      expect(
+        ModelConfigSchema.parse({ model: 'm', thinkingLevel: level, credentialId: 'c' })
+          .thinkingLevel,
+      ).toBe(level)
     }
   })
 
-  it('accepts an optional baseURL', () => {
-    const m = ModelConfigSchema.parse({ model: 'm', baseURL: 'http://gw.example.com/v1' })
-    expect(m.baseURL).toBe('http://gw.example.com/v1')
-  })
-
   it('throws when model is missing', () => {
-    expect(() => ModelConfigSchema.parse({})).toThrow()
+    expect(() => ModelConfigSchema.parse({ credentialId: 'c' })).toThrow()
   })
 
-  it('throws when provider is an illegal enum', () => {
-    expect(() => ModelConfigSchema.parse({ provider: 'gemini', model: 'm' })).toThrow()
+  it('throws when credentialId is missing', () => {
+    expect(() => ModelConfigSchema.parse({ model: 'm' })).toThrow()
   })
 
   it('throws when thinkingLevel is an illegal enum', () => {
-    expect(() => ModelConfigSchema.parse({ model: 'm', thinkingLevel: 'verbose' })).toThrow()
+    expect(() =>
+      ModelConfigSchema.parse({ model: 'm', thinkingLevel: 'verbose', credentialId: 'c' }),
+    ).toThrow()
   })
 
-  it('throws when baseURL is not a valid URL', () => {
-    expect(() => ModelConfigSchema.parse({ model: 'm', baseURL: 'not-a-url' })).toThrow()
+  it('throws when credentialId is empty', () => {
+    expect(() => ModelConfigSchema.parse({ model: 'm', credentialId: '' })).toThrow()
   })
 })
 
@@ -126,7 +119,7 @@ describe('SteeringSettingsSchema', () => {
 describe('GlobalSettingsSchema', () => {
   it('parses a full global settings object', () => {
     const s = GlobalSettingsSchema.parse({
-      models: { default: { provider: 'openai', model: 'gpt-4o' } },
+      models: { default: { model: 'gpt-4o', credentialId: 'openai-default' } },
       tournament: {
         maxRounds: 10,
         targetF1: 0.9,
@@ -137,12 +130,12 @@ describe('GlobalSettingsSchema', () => {
       steering: { mode: 'one-at-a-time' },
     })
     expect(s.models.default?.model).toBe('gpt-4o')
+    expect(s.models.default?.credentialId).toBe('openai-default')
     expect(s.tournament.maxRounds).toBe(10)
   })
 
-  it('accepts an empty models record', () => {
+  it('accepts an empty models record (default)', () => {
     const s = GlobalSettingsSchema.parse({
-      models: {},
       tournament: {
         maxRounds: 10,
         targetF1: 0.9,
@@ -165,10 +158,10 @@ describe('GlobalSettingsSchema', () => {
     ).toThrow()
   })
 
-  it('throws when a model entry is invalid', () => {
+  it('throws when a model entry is missing credentialId', () => {
     expect(() =>
       GlobalSettingsSchema.parse({
-        models: { default: { provider: 'bogus', model: 'm' } },
+        models: { default: { model: 'm' } },
         tournament: {
           maxRounds: 10,
           targetF1: 0.9,

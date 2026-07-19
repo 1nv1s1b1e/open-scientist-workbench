@@ -12,6 +12,7 @@ function toResponse(rec: {
   id: string
   provider: string
   type: 'api-key' | 'oauth-token'
+  baseURL?: string
   metadata?: Record<string, unknown>
 }): CredentialResponse {
   return {
@@ -19,6 +20,7 @@ function toResponse(rec: {
     provider: rec.provider,
     type: rec.type,
     hasKey: true,
+    ...(rec.baseURL ? { baseURL: rec.baseURL } : {}),
     ...(rec.metadata ? { metadata: rec.metadata } : {}),
   }
 }
@@ -29,24 +31,25 @@ credentials.get('/api/credentials', async (c) => {
   return c.json(list.map(toResponse))
 })
 
+// Endpoint-bundle 形态：一个 credential = {id, provider, apiKey, baseURL?}。
+// id 可用户指定（如 "qwen-gateway"），不传则 auto `${provider}-${ts}`。
+// 同 provider 不同 url+key = 不同 credential 行（不再按 provider 去重）。
+// 相同 id = upsert（delete + insert）。
 credentials.post('/api/credentials', async (c) => {
   const body = await c.req.json()
   const req = AddCredentialRequestSchema.parse(body) as AddCredentialRequest
   const store = await createCredentialStore()
 
-  const existing = await store.list()
-  for (const rec of existing) {
-    if (rec.provider === req.provider) {
-      await store.delete(rec.id)
-    }
-  }
+  const id = await store.add({
+    ...(req.id ? { id: req.id } : {}),
+    provider: req.provider,
+    type: req.type,
+    key: req.key,
+    ...(req.baseURL ? { baseURL: req.baseURL } : {}),
+    ...(req.metadata ? { metadata: req.metadata } : {}),
+  })
 
-  // metadata 直接透传。credential 不再特指 baseURL（baseURL 唯一来源是 settings）。
-  // 现有 DB 记录里的 metadata.baseURL 兼容读取但不依赖。
-  await store.add(req.provider, req.type, req.key, req.metadata)
-
-  const updated = await store.list()
-  const added = updated.find((r) => r.provider === req.provider)
+  const added = await store.get(id)
   if (!added) {
     return c.json({ error: 'internal_error', message: 'credential add failed' }, 500)
   }
@@ -55,7 +58,8 @@ credentials.post('/api/credentials', async (c) => {
       id: added.id,
       provider: added.provider,
       type: added.type,
-      metadata: added.metadata,
+      ...(added.baseURL ? { baseURL: added.baseURL } : {}),
+      ...(added.metadata ? { metadata: added.metadata } : {}),
     }),
     201,
   )

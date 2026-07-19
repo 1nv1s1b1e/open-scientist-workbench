@@ -1,52 +1,41 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import {
+  ConcurrencySettingsSchema,
+  type GlobalSettings,
+  GlobalSettingsSchema,
+  type ModelConfig,
+  ModelConfigSchema,
+  SteeringSettingsSchema,
+  TournamentSettingsSchema,
+} from '@open-scientist/schema'
 import { z } from 'zod'
-import { getBaseDir, getProjectDir } from './paths.js'
+import { getBaseDir, getProjectDir } from './paths.ts'
 
-export const ModelConfigSchema = z.object({
-  provider: z.enum(['openai', 'anthropic']).default('openai'),
-  model: z.string(),
-  baseURL: z.string().url().optional(),
-  thinkingLevel: z
-    .enum(['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
-    .default('medium'),
-})
-export type ModelConfig = z.infer<typeof ModelConfigSchema>
-
-export const TournamentSettingsSchema = z.object({
-  maxRounds: z.number().default(10),
-  targetF1: z.number().default(0.9),
-  convergenceWindow: z.number().default(3),
-  convergenceThreshold: z.number().default(0.005),
-})
-
-export const ConcurrencySettingsSchema = z.object({
-  maxConcurrentRuns: z.number().default(4),
-})
-
-export const SteeringSettingsSchema = z.object({
-  mode: z.enum(['one-at-a-time', 'all']).default('one-at-a-time'),
-})
-
-export const GlobalSettingsSchema = z.object({
-  models: z.record(z.string(), ModelConfigSchema),
-  // 可选：用户自定义 alias→ModelConfig 映射。前端创建 run 时可传 modelAlias
-  // 引用某条，替代 settings.models.<role> 的查表逻辑。baseURL 唯一来源是
-  // settings（models 或 modelAliases），credential 不再存 baseURL。
-  modelAliases: z.record(z.string(), ModelConfigSchema).optional(),
-  tournament: TournamentSettingsSchema,
-  concurrency: ConcurrencySettingsSchema,
-  steering: SteeringSettingsSchema,
-})
-export type GlobalSettings = z.infer<typeof GlobalSettingsSchema>
-
-export type ProjectSettings = Partial<GlobalSettings> & {
-  mcp?: { servers: unknown[] }
-  skills?: { directories: string[] }
-  prompts?: { dir: string }
+// 模型配置 + 凭证 schema 单一来源是 @open-scientist/schema。config 包仅
+// re-export 给路由层使用，避免两处定义漂移。
+export {
+  ConcurrencySettingsSchema,
+  type GlobalSettings,
+  GlobalSettingsSchema,
+  type ModelConfig,
+  ModelConfigSchema,
+  SteeringSettingsSchema,
+  TournamentSettingsSchema,
 }
 
-// 默认配置不含任何模型名/网关地址，必须通过 REST API 设置
+// Per-project settings 是 GlobalSettings 的 partial overlay（deep merge in
+// getSettings），加上若干 project-only 字段（mcp/skills/prompts）。这里只
+// 做结构校验，不复用 schema 包的 GlobalSettingsSchema（否则会强制要求
+// tournament/concurrency/steering 等必填字段）。
+const ProjectSettingsSchema = GlobalSettingsSchema.partial().extend({
+  mcp: z.object({ servers: z.array(z.unknown()) }).optional(),
+  skills: z.object({ directories: z.array(z.string()) }).optional(),
+  prompts: z.object({ dir: z.string() }).optional(),
+})
+export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>
+
+// 默认配置不含任何模型名/credentialId，必须通过 REST API 设置。
 const DEFAULT_GLOBAL: GlobalSettings = {
   models: {},
   tournament: {
@@ -86,7 +75,7 @@ export async function setGlobalSettings(partial: Partial<GlobalSettings>): Promi
 
 export async function getProjectSettings(projectName: string): Promise<ProjectSettings> {
   const raw = await readJsonFile(`${getProjectDir(projectName)}/settings.json`, {})
-  return raw as ProjectSettings
+  return ProjectSettingsSchema.parse(raw) as ProjectSettings
 }
 
 export async function setProjectSettings(

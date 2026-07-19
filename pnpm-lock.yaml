@@ -88,6 +88,9 @@ importers:
       '@open-scientist/helix':
         specifier: workspace:*
         version: link:../helix
+      '@open-scientist/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@open-scientist/mcp':
         specifier: workspace:*
         version: link:../mcp
@@ -119,6 +122,9 @@ importers:
       '@ai-sdk/openai':
         specifier: ^4.0.16
         version: 4.0.16(zod@4.4.3)
+      '@open-scientist/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@open-scientist/schema':
         specifier: workspace:*
         version: link:../schema
@@ -144,6 +150,9 @@ importers:
       '@open-scientist/config':
         specifier: workspace:*
         version: link:../config
+      '@open-scientist/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@open-scientist/schema':
         specifier: workspace:*
         version: link:../schema
@@ -217,6 +226,9 @@ importers:
       '@open-scientist/config':
         specifier: workspace:*
         version: link:../config
+      '@open-scientist/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@open-scientist/schema':
         specifier: workspace:*
         version: link:../schema
@@ -276,6 +288,9 @@ importers:
       '@open-scientist/helix':
         specifier: workspace:*
         version: link:../helix
+      '@open-scientist/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@open-scientist/schema':
         specifier: workspace:*
         version: link:../schema

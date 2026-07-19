@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { type Env, EnvSchema, loadEnv } from '../src/env.js'
+import { type Env, EnvSchema, loadEnv } from '../src/env.ts'
 
 // Snapshot of process.env keys we mutate so we can restore them.
 const KEYS = ['BASE_DIR', 'PORT', 'HELIX_URL', 'LOG_LEVEL'] as const

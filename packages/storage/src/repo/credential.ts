@@ -1,25 +1,38 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { getGlobalDb } from '../global-db.js'
-import { credentials } from '../schema/global.js'
+import { getGlobalDb } from '../global-db.ts'
+import { credentials } from '../schema/global.ts'
 
 export interface CredentialRecord {
   id: string
   provider: string
   type: 'api-key' | 'oauth-token'
   encryptedKey: string
+  baseURL?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface Credential {
+  id: string
+  provider: string
+  type: 'api-key' | 'oauth-token'
+  apiKey: string
+  baseURL?: string
   metadata?: Record<string, unknown>
 }
 
 export interface CredentialStore {
-  get(provider: string): Promise<{ key: string; type: string } | null>
+  /** Resolve a credential by its id. Returns null if not found. */
+  get(id: string): Promise<Credential | null>
   list(): Promise<CredentialRecord[]>
-  add(
-    provider: string,
-    type: 'api-key' | 'oauth-token',
-    key: string,
-    metadata?: Record<string, unknown>,
-  ): Promise<void>
+  add(params: {
+    id?: string
+    provider: string
+    type: 'api-key' | 'oauth-token'
+    key: string
+    baseURL?: string
+    metadata?: Record<string, unknown>
+  }): Promise<string>
   delete(id: string): Promise<void>
 }
 
@@ -54,11 +67,20 @@ export async function createCredentialStore(): Promise<CredentialStore> {
   const { db } = await getGlobalDb()
 
   return {
-    async get(provider) {
-      const rows = db.select().from(credentials).where(eq(credentials.provider, provider)).all()
+    async get(id) {
+      const rows = db.select().from(credentials).where(eq(credentials.id, id)).all()
       if (rows.length === 0) return null
       const row = rows[0]!
-      return { key: decrypt(row.encryptedKey), type: row.type }
+      return {
+        id: row.id,
+        provider: row.provider,
+        type: row.type,
+        apiKey: decrypt(row.encryptedKey),
+        ...(row.baseURL ? { baseURL: row.baseURL } : {}),
+        ...(row.metadataJson
+          ? { metadata: JSON.parse(row.metadataJson) as Record<string, unknown> }
+          : {}),
+      }
     },
 
     async list() {
@@ -68,23 +90,28 @@ export async function createCredentialStore(): Promise<CredentialStore> {
         provider: r.provider,
         type: r.type,
         encryptedKey: r.encryptedKey,
-        metadata: r.metadataJson
-          ? (JSON.parse(r.metadataJson) as Record<string, unknown>)
-          : undefined,
+        ...(r.baseURL ? { baseURL: r.baseURL } : {}),
+        ...(r.metadataJson
+          ? { metadata: JSON.parse(r.metadataJson) as Record<string, unknown> }
+          : {}),
       }))
     },
 
-    async add(provider, type, key, metadata) {
+    async add({ id, provider, type, key, baseURL, metadata }) {
       // 串行 modify 防双刷（借鉴 Pi）
+      const resolvedId = id ?? `${provider}-${Date.now()}`
       modifyLock = modifyLock.then(async () => {
-        const id = `${provider}-${Date.now()}`
         const now = new Date().toISOString()
+        // Upsert by id: same id replaces (delete + insert) so the caller can
+        // re-PUT a named credential without leaving stale rows.
+        db.delete(credentials).where(eq(credentials.id, resolvedId)).run()
         db.insert(credentials)
           .values({
-            id,
+            id: resolvedId,
             provider,
             type,
             encryptedKey: encrypt(key),
+            baseURL: baseURL ?? null,
             metadataJson: metadata ? JSON.stringify(metadata) : null,
             createdAt: now,
             updatedAt: now,
@@ -92,6 +119,7 @@ export async function createCredentialStore(): Promise<CredentialStore> {
           .run()
       })
       await modifyLock
+      return resolvedId
     },
 
     async delete(id) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decrypt, encrypt } from '../src/repo/credential.js'
+import { decrypt, encrypt } from '../src/repo/credential.ts'
 
 describe('credential crypto (encrypt/decrypt)', () => {
   it('round-trips a plaintext string', () => {

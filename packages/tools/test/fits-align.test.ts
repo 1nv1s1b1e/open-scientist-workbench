@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fitsAlignTool } from '../src/fits-align.js'
+import { fitsAlignTool } from '../src/fits-align.ts'
 
 // Cast the AI SDK tool to a minimal shape so we can invoke `execute` directly.
 interface ExecutableTool {

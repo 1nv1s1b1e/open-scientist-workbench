@@ -1,6 +1,7 @@
 import { Client } from '@helix-db/helix-db'
 import { env } from '@open-scientist/config'
-import { queries } from './queries.js'
+import { createLogger } from '@open-scientist/logger'
+import { queries } from './queries.ts'
 import type {
   ConceptNode,
   CritiqueNode,
@@ -8,13 +9,17 @@ import type {
   HypothesisNode,
   PaperNode,
   SnapshotNode,
-} from './types.js'
+} from './types.ts'
+
+const logger = createLogger('helix')
 
 let client: Client | null = null
 
 export function getHelixClient(): Client {
   if (client) return client
+  logger.info({ helixUrl: env.HELIX_URL }, 'getHelixClient: creating new Client singleton')
   client = new Client(env.HELIX_URL)
+  logger.info('getHelixClient: Client singleton created')
   return client
 }
 
@@ -75,11 +80,14 @@ function first<T>(arr: T[] | undefined): T | null {
 // ------------------------------------------------------------
 
 export async function searchPapers(query: string, k = 10): Promise<PaperNode[]> {
+  logger.info({ query, k }, 'searchPapers: sending query')
   const res = await getHelixClient()
     .query<PapersResult>()
     .dynamic(queries.call.searchPapers({ queryText: query, k: BigInt(k) }))
     .send()
-  return unwrap(res.papers)
+  const papers = unwrap(res.papers)
+  logger.info({ query, k, count: papers.length }, 'searchPapers: query done')
+  return papers
 }
 
 export async function searchPapersVector(queryVector: number[], k = 10): Promise<PaperNode[]> {
@@ -91,11 +99,14 @@ export async function searchPapersVector(queryVector: number[], k = 10): Promise
 }
 
 export async function searchHypotheses(query: string, k = 10): Promise<HypothesisNode[]> {
+  logger.info({ query, k }, 'searchHypotheses: sending query')
   const res = await getHelixClient()
     .query<HypothesesResult>()
     .dynamic(queries.call.searchHypotheses({ queryText: query, k: BigInt(k) }))
     .send()
-  return unwrap(res.hypos)
+  const hypos = unwrap(res.hypos)
+  logger.info({ query, k, count: hypos.length }, 'searchHypotheses: query done')
+  return hypos
 }
 
 export async function searchHypothesesVector(
@@ -219,6 +230,10 @@ export interface AddPaperInput {
 }
 
 export async function addPaper(input: AddPaperInput): Promise<void> {
+  logger.info(
+    { title: input.title.slice(0, 60), year: input.year, hasEmbedding: !!input.embedding },
+    'addPaper: sending write',
+  )
   const base = {
     title: input.title,
     abstract: input.abstract,
@@ -231,6 +246,7 @@ export async function addPaper(input: AddPaperInput): Promise<void> {
       ? queries.call.addPaperWithEmbedding({ ...base, embedding: input.embedding })
       : queries.call.addPaper(base)
   await getHelixClient().query().dynamic(req).send()
+  logger.info({ title: input.title.slice(0, 60) }, 'addPaper: write done')
 }
 
 export interface AddHypothesisInput {
@@ -249,6 +265,16 @@ export interface AddHypothesisInput {
 }
 
 export async function addHypothesis(input: AddHypothesisInput): Promise<void> {
+  logger.info(
+    {
+      roundId: input.roundId,
+      runId: input.runId,
+      f1Score: input.f1Score,
+      statementLen: input.statement.length,
+      hasEmbedding: !!input.embedding,
+    },
+    'addHypothesis: sending write',
+  )
   const base = {
     statement: input.statement,
     roundId: BigInt(input.roundId),
@@ -261,6 +287,7 @@ export async function addHypothesis(input: AddHypothesisInput): Promise<void> {
       ? queries.call.addHypothesisWithEmbedding({ ...base, embedding: input.embedding })
       : queries.call.addHypothesis(base)
   await getHelixClient().query().dynamic(req).send()
+  logger.info({ roundId: input.roundId, runId: input.runId }, 'addHypothesis: write done')
 }
 
 export interface AddCitesEdgeInput {
@@ -291,6 +318,15 @@ export interface AddEvidenceInput {
 }
 
 export async function addEvidence(input: AddEvidenceInput): Promise<void> {
+  logger.info(
+    {
+      hypoId: input.hypoId,
+      type: input.type,
+      contentLen: input.content.length,
+      f1Score: input.f1Score,
+    },
+    'addEvidence: sending write',
+  )
   const params = {
     hypoId: BigInt(input.hypoId),
     content: input.content,
@@ -304,6 +340,7 @@ export async function addEvidence(input: AddEvidenceInput): Promise<void> {
       ? queries.call.addContradictingEvidence(params)
       : queries.call.addSupportingEvidence(params)
   await getHelixClient().query().dynamic(req).send()
+  logger.info({ hypoId: input.hypoId, type: input.type }, 'addEvidence: write done')
 }
 
 export interface AddCritiqueInput {
@@ -315,6 +352,14 @@ export interface AddCritiqueInput {
 }
 
 export async function addCritique(input: AddCritiqueInput): Promise<void> {
+  logger.info(
+    {
+      hypoId: input.hypoId,
+      severity: input.severity,
+      contentLen: input.content.length,
+    },
+    'addCritique: sending write',
+  )
   await getHelixClient()
     .query()
     .dynamic(
@@ -327,6 +372,7 @@ export async function addCritique(input: AddCritiqueInput): Promise<void> {
       }),
     )
     .send()
+  logger.info({ hypoId: input.hypoId, severity: input.severity }, 'addCritique: write done')
 }
 
 export interface AddMutationLinkInput {
@@ -440,6 +486,8 @@ let indexesEnsured = false
 
 export async function ensureIndexes(): Promise<void> {
   if (indexesEnsured) return
+  logger.info('ensureIndexes: creating text + vector indexes (one-time)')
   await getHelixClient().query().dynamic(queries.call.ensureIndexes({})).send()
   indexesEnsured = true
+  logger.info('ensureIndexes: indexes created')
 }

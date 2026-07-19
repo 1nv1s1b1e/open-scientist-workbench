@@ -1,5 +1,6 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
+import { createLogger } from '@open-scientist/logger'
 import { HypothesisPoolSchema } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
@@ -14,6 +15,8 @@ import {
   searchPapersTool,
 } from '@open-scientist/tools'
 import { isStepCount, Output, type ToolSet } from 'ai'
+
+const logger = createLogger('agents')
 
 export interface LibrarianAgentDeps {
   /**
@@ -45,8 +48,11 @@ const LIBRARIAN_WORKSPACE_HYPO = '__librarian__'
  * if called from within a workflow. The workflow below calls it before agent.stream().
  */
 export async function getDefaultLibrarianTools(projectId: string): Promise<ToolSet> {
+  logger.debug({ projectId }, 'getDefaultLibrarianTools: creating bash tool')
   const bashToolkit = await createBashToolForHypothesis(projectId, LIBRARIAN_WORKSPACE_HYPO)
+  logger.debug('getDefaultLibrarianTools: bash tool created, discovering skills')
   const skills = await discoverSkills(createNodeSandbox(), [DEFAULT_SKILLS_DIR])
+  logger.debug({ skillCount: skills.length }, 'getDefaultLibrarianTools: skills discovered')
   const loadSkillTool = createLoadSkillTool(skills)
 
   return {
@@ -61,8 +67,17 @@ export async function getDefaultLibrarianTools(projectId: string): Promise<ToolS
 }
 
 export async function createLibrarianAgent({ modelConfig, projectId, tools }: LibrarianAgentDeps) {
+  logger.debug(
+    { provider: modelConfig.provider, model: modelConfig.model },
+    'createLibrarianAgent: creating model',
+  )
   const model = createModelFromConfig(modelConfig)
+  logger.debug('createLibrarianAgent: model created, resolving tools')
   const resolvedTools = tools ?? (await getDefaultLibrarianTools(projectId))
+  logger.debug(
+    { toolNames: Object.keys(resolvedTools) },
+    'createLibrarianAgent: tools resolved, constructing WorkflowAgent',
+  )
 
   return new WorkflowAgent({
     id: 'librarian',

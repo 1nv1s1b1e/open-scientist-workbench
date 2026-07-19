@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import type { HypothesisStatus } from '@open-scientist/schema'
 import { eq } from 'drizzle-orm'
-import { createProjectDb } from '../db.js'
-import { hypotheses } from '../schema/project.js'
+import { createProjectDb } from '../db.ts'
+import { hypotheses } from '../schema/project.ts'
 
 export async function createHypothesis(
   projectName: string,

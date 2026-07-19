@@ -1,2 +1,2 @@
-export { createExploreAgent, type ExploreAgent, getDefaultExploreTools } from './agent.js'
-export { type ExploreWorkflowInput, exploreWorkflow } from './workflow.js'
+export { createExploreAgent, type ExploreAgent, getDefaultExploreTools } from './agent.ts'
+export { type ExploreWorkflowInput, exploreWorkflow } from './workflow.ts'

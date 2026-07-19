@@ -62,7 +62,7 @@ describe('GET /api/settings', () => {
 describe('PUT /api/settings', () => {
   it('overwrites the global settings', async () => {
     const payload = {
-      models: { default: { provider: 'openai', model: 'gpt-4o' } },
+      models: { default: { model: 'gpt-4o', credentialId: 'cred-1' } },
       tournament: {
         maxRounds: 5,
         targetF1: 0.95,
@@ -80,6 +80,7 @@ describe('PUT /api/settings', () => {
     expect(res.status).toBe(200)
     const body = await json(res)
     expect(body.models.default.model).toBe('gpt-4o')
+    expect(body.models.default.credentialId).toBe('cred-1')
     expect(body.tournament.maxRounds).toBe(5)
     expect(body.steering.mode).toBe('all')
   })
@@ -92,7 +93,7 @@ describe('PATCH /api/settings', () => {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        models: { default: { provider: 'openai', model: 'gpt-4o' } },
+        models: { default: { model: 'gpt-4o', credentialId: 'cred-1' } },
         tournament: {
           maxRounds: 10,
           targetF1: 0.9,
@@ -126,12 +127,13 @@ describe('GET / PUT / DELETE /api/settings/models/:role', () => {
     const res = await app.request('/api/settings/models/oracle', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'openai', model: 'gpt-4o', thinkingLevel: 'high' }),
+      body: JSON.stringify({ model: 'gpt-4o', thinkingLevel: 'high', credentialId: 'cred-1' }),
     })
     expect(res.status).toBe(200)
     const body = await json(res)
     expect(body.model).toBe('gpt-4o')
     expect(body.thinkingLevel).toBe('high')
+    expect(body.credentialId).toBe('cred-1')
   })
 
   it('GET returns 404 for an unknown role', async () => {
@@ -143,20 +145,20 @@ describe('GET / PUT / DELETE /api/settings/models/:role', () => {
     await app.request('/api/settings/models/librarian', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'anthropic', model: 'claude-3-5-sonnet' }),
+      body: JSON.stringify({ model: 'claude-3-5-sonnet', credentialId: 'cred-1' }),
     })
     const res = await app.request('/api/settings/models/librarian')
     expect(res.status).toBe(200)
     const body = await json(res)
-    expect(body.provider).toBe('anthropic')
     expect(body.model).toBe('claude-3-5-sonnet')
+    expect(body.credentialId).toBe('cred-1')
   })
 
   it('DELETE removes the model config for a role', async () => {
     await app.request('/api/settings/models/explore', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'openai', model: 'gpt-4o-mini' }),
+      body: JSON.stringify({ model: 'gpt-4o-mini', credentialId: 'cred-1' }),
     })
     const del = await app.request('/api/settings/models/explore', { method: 'DELETE' })
     expect(del.status).toBe(200)
@@ -180,16 +182,15 @@ describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        provider: 'openai',
         model: 'qwen-2.5-80b',
-        baseURL: 'http://gw.qwen/v1',
         thinkingLevel: 'high',
+        credentialId: 'cred-qwen',
       }),
     })
     expect(put.status).toBe(200)
     const putBody = await json(put)
     expect(putBody.model).toBe('qwen-2.5-80b')
-    expect(putBody.baseURL).toBe('http://gw.qwen/v1')
+    expect(putBody.credentialId).toBe('cred-qwen')
 
     const list = await app.request('/api/settings/model-aliases')
     expect(list.status).toBe(200)
@@ -201,12 +202,12 @@ describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
     await app.request('/api/settings/model-aliases/fast', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'openai', model: 'gpt-4o-mini' }),
+      body: JSON.stringify({ model: 'gpt-4o-mini', credentialId: 'cred-1' }),
     })
     const put = await app.request('/api/settings/model-aliases/fast', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'openai', model: 'gpt-4o' }),
+      body: JSON.stringify({ model: 'gpt-4o', credentialId: 'cred-1' }),
     })
     expect(put.status).toBe(200)
     const list = await app.request('/api/settings/model-aliases')
@@ -218,7 +219,7 @@ describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
     await app.request('/api/settings/model-aliases/smart', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'anthropic', model: 'claude-3' }),
+      body: JSON.stringify({ model: 'claude-3', credentialId: 'cred-1' }),
     })
     const del = await app.request('/api/settings/model-aliases/smart', { method: 'DELETE' })
     expect(del.status).toBe(200)
@@ -239,7 +240,7 @@ describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
     const res = await app.request('/api/settings/model-aliases/bad', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'openai' }),
+      body: JSON.stringify({ credentialId: 'cred-1' }),
     })
     expect(res.status).toBe(500)
   })
@@ -248,7 +249,7 @@ describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
     await app.request('/api/settings/model-aliases/x', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'openai', model: 'm' }),
+      body: JSON.stringify({ model: 'm', credentialId: 'cred-1' }),
     })
     const res = await app.request('/api/settings')
     expect(res.status).toBe(200)

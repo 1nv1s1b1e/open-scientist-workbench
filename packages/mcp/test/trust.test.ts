@@ -25,7 +25,7 @@ vi.mock('ai', () => ({
 }))
 
 // Static import — vi.mock is hoisted above this, so trust.js picks up the mocks.
-import { checkMcpTrust, trustServer } from '../src/trust.js'
+import { checkMcpTrust, trustServer } from '../src/trust.ts'
 
 const { getTrust, setTrust, fingerprintTools, detectToolDrift } = spies
 

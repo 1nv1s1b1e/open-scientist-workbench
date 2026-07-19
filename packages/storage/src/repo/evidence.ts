@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { createProjectDb } from '../db.js'
-import { evidence } from '../schema/project.js'
+import { createProjectDb } from '../db.ts'
+import { evidence } from '../schema/project.ts'
 
 export async function addEvidence(
   projectName: string,

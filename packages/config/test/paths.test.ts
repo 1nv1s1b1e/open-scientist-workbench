@@ -12,7 +12,7 @@ import {
   getRunsDir,
   getSkillsDir,
   getWorkspaceDir,
-} from '../src/index.js'
+} from '../src/index.ts'
 
 describe('config paths', () => {
   it('resolves project dir', () => {

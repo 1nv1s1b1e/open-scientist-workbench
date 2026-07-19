@@ -25,14 +25,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ─── Test-side mutable state (mutated per test, read by mock factories) ──────
 
-let credentialGet: (provider: string) => Promise<{ key: string; type: string } | null>
-let credentialList: () => Promise<
-  Array<{ id: string; provider: string; metadata?: Record<string, unknown> }>
->
-let settingsValue: {
-  models: Record<string, unknown>
-  modelAliases?: Record<string, unknown>
-} | null
+// resolveModelArg (config) is stubbed per-test; route wraps it as
+// resolveRunModelArg. Throwing ModelAliasNotFoundError simulates alias miss.
+let resolveModelArgResult: ModelArg
+let resolveModelArgThrows: Error | null
 let projectRow: { id: string; name: string } | null
 let storageGetRunRow: Record<string, unknown> | null
 let storageCreateRunResult: { id: string; status: string } | null
@@ -67,8 +63,8 @@ vi.mock('workflow/api', () => ({
 
 vi.mock('@open-scientist/storage', () => ({
   createCredentialStore: vi.fn(async () => ({
-    get: (provider: string) => credentialGet(provider),
-    list: () => credentialList(),
+    get: vi.fn(),
+    list: vi.fn(),
     add: vi.fn(),
     delete: vi.fn(),
   })),
@@ -85,13 +81,18 @@ vi.mock('@open-scientist/storage', () => ({
 }))
 
 vi.mock('@open-scientist/config', async () => {
-  // Import the real module to re-export everything EXCEPT getSettings, which
-  // we replace. This keeps DEFAULT_THINKING_LEVEL + constants available.
+  // Import the real module to re-export everything EXCEPT resolveModelArg,
+  // which we replace so the route's resolveRunModelArg uses our stub instead
+  // of reading real settings + credentials.
   const actual =
     await vi.importActual<typeof import('@open-scientist/config')>('@open-scientist/config')
   return {
     ...actual,
-    getSettings: vi.fn(async () => settingsValue ?? { models: {} }),
+    resolveModelArg: vi.fn(async () => {
+      if (resolveModelArgThrows) throw resolveModelArgThrows
+      return resolveModelArgResult
+    }),
+    ModelAliasNotFoundError: actual.ModelAliasNotFoundError,
   }
 })
 
@@ -134,16 +135,14 @@ beforeEach(() => {
   storageGetRunRow = null
   storageCreateRunResult = null
   startRun = makeFakeRun('wrun_test-123', 5)
-
-  // Default: an openai credential + a sisyphus model config.
-  // credential metadata is no longer read for baseURL (settings is the sole
-  // source); keeping an arbitrary metadata field verifies transparent passthrough.
-  credentialGet = async (_provider: string) => ({ key: 'sk-test-key', type: 'api-key' })
-  credentialList = async () => [{ id: 'cred-1', provider: 'openai', metadata: { org: 'acme' } }]
-  settingsValue = {
-    models: {
-      sisyphus: { provider: 'openai', model: 'gpt-4o', thinkingLevel: 'medium' },
-    },
+  resolveModelArgThrows = null
+  // Default: sisyphus model resolved to an openai-compatible ModelArg.
+  resolveModelArgResult = {
+    provider: 'openai',
+    model: 'gpt-4o',
+    baseURL: 'http://gw.test/v1',
+    apiKey: 'sk-test-key',
+    thinkingLevel: 'medium',
   }
   projectRow = { id: 'proj-uuid-1', name: 'my-proj' }
 })
@@ -214,8 +213,8 @@ describe('POST /api/projects/:name/runs', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns 500 when no openai credential is configured', async () => {
-    credentialGet = async () => null
+  it('returns 500 when no credential is configured for the referenced credentialId', async () => {
+    resolveModelArgThrows = new Error('No credential found for id "cred-x".')
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -228,7 +227,7 @@ describe('POST /api/projects/:name/runs', () => {
   })
 
   it('returns 500 when no model config is set for sisyphus or default', async () => {
-    settingsValue = { models: {} }
+    resolveModelArgThrows = new Error('No model config for role "sisyphus".')
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -239,16 +238,13 @@ describe('POST /api/projects/:name/runs', () => {
     expect(body.error).toBe('model_config_error')
   })
 
-  it('forwards settings baseURL when set (no credential fallback)', async () => {
-    settingsValue = {
-      models: {
-        sisyphus: {
-          provider: 'openai',
-          model: 'gpt-4o',
-          baseURL: 'http://gw.test/v1',
-          thinkingLevel: 'high',
-        },
-      },
+  it('forwards credential baseURL + thinkingLevel from settings', async () => {
+    resolveModelArgResult = {
+      provider: 'openai',
+      model: 'gpt-4o',
+      baseURL: 'http://gw.test/v1',
+      apiKey: 'sk-test-key',
+      thinkingLevel: 'high',
     }
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',
@@ -261,8 +257,13 @@ describe('POST /api/projects/:name/runs', () => {
     expect(input.modelConfig.thinkingLevel).toBe('high')
   })
 
-  it('omits baseURL when settings carry none (no credential fallback)', async () => {
-    // credential metadata.baseURL is no longer read — settings is the sole source.
+  it('omits baseURL when credential carries none', async () => {
+    resolveModelArgResult = {
+      provider: 'openai',
+      model: 'gpt-4o',
+      apiKey: 'sk-test-key',
+      thinkingLevel: 'medium',
+    }
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -274,18 +275,12 @@ describe('POST /api/projects/:name/runs', () => {
   })
 
   it('resolves modelAlias from settings.modelAliases when provided', async () => {
-    settingsValue = {
-      models: {
-        sisyphus: { provider: 'openai', model: 'gpt-4o', thinkingLevel: 'medium' },
-      },
-      modelAliases: {
-        'qwen-80b': {
-          provider: 'openai',
-          model: 'qwen-2.5-80b',
-          baseURL: 'http://gw.qwen/v1',
-          thinkingLevel: 'high',
-        },
-      },
+    resolveModelArgResult = {
+      provider: 'openai',
+      model: 'qwen-2.5-80b',
+      baseURL: 'http://gw.qwen/v1',
+      apiKey: 'sk-test-key',
+      thinkingLevel: 'high',
     }
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',
@@ -301,12 +296,8 @@ describe('POST /api/projects/:name/runs', () => {
   })
 
   it('returns 400 when modelAlias is not defined in settings', async () => {
-    settingsValue = {
-      models: {
-        sisyphus: { provider: 'openai', model: 'gpt-4o', thinkingLevel: 'medium' },
-      },
-      modelAliases: {},
-    }
+    const { ModelAliasNotFoundError } = await import('@open-scientist/config')
+    resolveModelArgThrows = new ModelAliasNotFoundError('no-such-alias')
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

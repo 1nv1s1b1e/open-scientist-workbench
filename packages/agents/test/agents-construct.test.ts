@@ -7,7 +7,7 @@ import {
   createOracleAgent,
   createPrometheusAgent,
   createSisyphusAgent,
-} from '../src/index.js'
+} from '../src/index.ts'
 
 /**
  * Serializable `ModelArg` fixture for agent-construction tests.

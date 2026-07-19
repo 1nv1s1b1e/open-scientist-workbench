@@ -1,2 +1,2 @@
-export { createLibrarianAgent, getDefaultLibrarianTools, type LibrarianAgent } from './agent.js'
-export { type LibrarianWorkflowInput, librarianWorkflow } from './workflow.js'
+export { createLibrarianAgent, getDefaultLibrarianTools, type LibrarianAgent } from './agent.ts'
+export { type LibrarianWorkflowInput, librarianWorkflow } from './workflow.ts'

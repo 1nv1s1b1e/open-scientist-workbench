@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { DiscoveredSkill } from '../src/index.js'
-import { buildSkillsPrompt } from '../src/index.js'
+import type { DiscoveredSkill } from '../src/index.ts'
+import { buildSkillsPrompt } from '../src/index.ts'
 
 describe('skills', () => {
   it('builds prompt from discovered skills', () => {

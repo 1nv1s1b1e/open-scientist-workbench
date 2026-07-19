@@ -22,7 +22,7 @@ import {
   TestLlmRequestSchema,
   TestLlmResponseSchema,
   TournamentResultSchema,
-} from '../src/index.js'
+} from '../src/index.ts'
 
 // Shared valid hypothesis fixture.
 function validHypothesis(overrides: Record<string, unknown> = {}) {
@@ -419,6 +419,19 @@ describe('schema', () => {
       key: 'sk-x',
     })
     expect(r.type).toBe('api-key')
+    expect(r.id).toBeUndefined()
+    expect(r.baseURL).toBeUndefined()
+  })
+
+  it('parses AddCredentialRequest with id + baseURL', () => {
+    const r = AddCredentialRequestSchema.parse({
+      id: 'qwen-gateway',
+      provider: 'openai',
+      key: 'sk-x',
+      baseURL: 'http://gw.test/v1',
+    })
+    expect(r.id).toBe('qwen-gateway')
+    expect(r.baseURL).toBe('http://gw.test/v1')
   })
 
   it('accepts oauth-token type', () => {
@@ -436,14 +449,16 @@ describe('schema', () => {
     ).toThrow()
   })
 
-  it('parses CredentialResponse', () => {
+  it('parses CredentialResponse with baseURL', () => {
     const r = CredentialResponseSchema.parse({
-      id: 'openai-1',
+      id: 'qwen-gateway',
       provider: 'openai',
       type: 'api-key',
       hasKey: true,
+      baseURL: 'http://gw.test/v1',
     })
     expect(r.hasKey).toBe(true)
+    expect(r.baseURL).toBe('http://gw.test/v1')
   })
 
   // ------------------------------------------------------------
@@ -491,7 +506,7 @@ describe('schema', () => {
   it('parses GlobalSettings with full structure', () => {
     const s = GlobalSettingsSchema.parse({
       models: {
-        default: { provider: 'openai', model: 'gpt-4o' },
+        default: { model: 'gpt-4o', credentialId: 'openai-prod' },
       },
       tournament: {
         maxRounds: 5,

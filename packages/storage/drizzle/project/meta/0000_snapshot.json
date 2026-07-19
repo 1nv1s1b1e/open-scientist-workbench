@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5a0f4d04-bd5d-47f6-a2ab-25db5c9ebf03",
+  "id": "e589d24b-c3fe-49c5-ac74-561f63c9ae26",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "critiques": {
@@ -424,7 +424,9 @@
       "indexes": {
         "projects_name_unique": {
           "name": "projects_name_unique",
-          "columns": ["name"],
+          "columns": [
+            "name"
+          ],
           "isUnique": true
         }
       },

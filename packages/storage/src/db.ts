@@ -4,9 +4,9 @@ import { getBaseDir, getProjectDbPath } from '@open-scientist/config'
 import { createLogger } from '@open-scientist/logger'
 import Database from 'better-sqlite3'
 import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3'
-import { migrateDb } from './migrations.js'
-import * as projectSchema from './schema/project.js'
-import { enableWal } from './wal.js'
+import { migrateDb } from './migrations.ts'
+import * as projectSchema from './schema/project.ts'
+import { enableWal } from './wal.ts'
 
 export type ProjectDb = {
   db: BetterSQLite3Database<typeof projectSchema>

@@ -1,6 +1,6 @@
 import type { EvalResult, Hypothesis, OracleOutput } from '@open-scientist/schema'
 import { describe, expect, it } from 'vitest'
-import type { ConvergenceEntry } from '../src/prometheus/workflow.js'
+import type { ConvergenceEntry } from '../src/prometheus/workflow.ts'
 import {
   applyOraclePruning,
   buildConvergenceEntry,
@@ -10,7 +10,7 @@ import {
   shouldStopByTarget,
   TARGET_F1,
   updateHypothesesWithEval,
-} from '../src/sisyphus/logic.js'
+} from '../src/sisyphus/logic.ts'
 
 // ------------------------------------------------------------
 // Fixtures

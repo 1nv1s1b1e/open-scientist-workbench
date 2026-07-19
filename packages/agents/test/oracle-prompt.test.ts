@@ -1,6 +1,6 @@
 import type { EvalResult, Hypothesis } from '@open-scientist/schema'
 import { describe, expect, it } from 'vitest'
-import { buildEvalSummaryBlock, buildHypothesesBlock } from '../src/oracle/logic.js'
+import { buildEvalSummaryBlock, buildHypothesesBlock } from '../src/oracle/logic.ts'
 
 function makeHypothesis(overrides: Partial<Hypothesis> = {}): Hypothesis {
   return {

@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createNodeSandbox, type DiscoveredSkill, discoverSkills } from '../src/index.js'
+import { createNodeSandbox, type DiscoveredSkill, discoverSkills } from '../src/index.ts'
 
 // Build a temporary skills-root tree under os.tmpdir() per test.
 function makeSkillDir(

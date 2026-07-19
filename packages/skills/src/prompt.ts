@@ -1,4 +1,4 @@
-import type { DiscoveredSkill } from './discover.js'
+import type { DiscoveredSkill } from './discover.ts'
 
 export function buildSkillsPrompt(skills: DiscoveredSkill[]): string {
   if (skills.length === 0) return ''

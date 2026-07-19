@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1a820e27-7cee-4b53-ae6e-6452bb8f51bd",
+  "id": "c169672c-fb20-431d-bed0-15e7eb211008",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "credentials": {
@@ -33,6 +33,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "base_url": {
+          "name": "base_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "metadata_json": {

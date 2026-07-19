@@ -1,11 +1,6 @@
 import { createModelCallToUIChunkTransform } from '@ai-sdk/workflow'
 import { tournamentWorkflow } from '@open-scientist/agents'
-import {
-  DEFAULT_THINKING_LEVEL,
-  getSettings,
-  type ModelArg,
-  type ModelConfig,
-} from '@open-scientist/config'
+import { ModelAliasNotFoundError, type ModelArg, resolveModelArg } from '@open-scientist/config'
 import {
   createCredentialStore,
   createRun,
@@ -22,63 +17,18 @@ export const runs = new Hono()
 /**
  * Resolve the serializable {@link ModelArg} for a tournament run.
  *
- * Two resolution paths:
- *   - **alias path** — when `modelAlias` is provided, look it up in
- *     `settings.modelAliases[alias]` (400 if not found).
- *   - **default path** — `settings.models.sisyphus ?? settings.models.default`.
+ * Delegates to {@link resolveModelArg} (config package), which reads settings
+ * → ModelConfig (carrying `credentialId`) → CredentialStore.get(credentialId)
+ * → full endpoint bundle `{provider, apiKey, baseURL?}`.
  *
- * **baseURL 唯一来源是 settings**（models 或 modelAliases）。credential 不再
- * 存 baseURL；现有 DB 记录里的 metadata.baseURL 兼容读取但不依赖。
- *
- * **CredentialStore** 只提供 `apiKey`（按 provider 解密）。
- *
- * `ModelArg` is a plain object so it can cross the workflow structured-clone
- * boundary; each sub-agent rebuilds a `LanguageModel` from it.
+ * "Same provider, different url+key" is two distinct credential rows.
  */
-async function resolveModelArg(projectName: string, modelAlias?: string): Promise<ModelArg> {
-  const settings = await getSettings(projectName)
-
-  let cfg: ModelConfig
-  if (modelAlias) {
-    const aliasCfg = settings.modelAliases?.[modelAlias]
-    if (!aliasCfg) {
-      throw new ModelAliasNotFoundError(modelAlias)
-    }
-    cfg = aliasCfg
-  } else {
-    const roleCfg = settings.models.sisyphus ?? settings.models.default
-    if (!roleCfg) {
-      throw new Error(
-        'No model config for role "sisyphus" or "default". Configure via PUT /api/settings/models/sisyphus.',
-      )
-    }
-    cfg = roleCfg
-  }
-
-  const store = await createCredentialStore()
-  const cred = await store.get(cfg.provider)
-  if (!cred) {
-    throw new Error(
-      `No credential found for provider "${cfg.provider}". Add via POST /api/credentials.`,
-    )
-  }
-
-  const modelConfig: ModelArg = {
-    provider: cfg.provider,
-    model: cfg.model,
-    ...(cfg.baseURL ? { baseURL: cfg.baseURL } : {}),
-    apiKey: cred.key,
-    thinkingLevel: cfg.thinkingLevel ?? DEFAULT_THINKING_LEVEL,
-  }
-  return modelConfig
-}
-
-/** Thrown when a requested `modelAlias` is not in settings.modelAliases. Maps to 400. */
-class ModelAliasNotFoundError extends Error {
-  constructor(alias: string) {
-    super(`Unknown modelAlias "${alias}". Define via PUT /api/settings/model-aliases/${alias}.`)
-    this.name = 'ModelAliasNotFoundError'
-  }
+async function resolveRunModelArg(projectName: string, modelAlias?: string): Promise<ModelArg> {
+  const credentials = await createCredentialStore()
+  return resolveModelArg(projectName, credentials, {
+    role: 'sisyphus',
+    ...(modelAlias ? { modelAlias } : {}),
+  })
 }
 
 /**
@@ -113,7 +63,7 @@ runs.post('/api/projects/:name/runs', async (c) => {
 
   let modelConfig: ModelArg
   try {
-    modelConfig = await resolveModelArg(projectName, modelAlias)
+    modelConfig = await resolveRunModelArg(projectName, modelAlias)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     // Unknown alias is a client error (400); missing model config / credential

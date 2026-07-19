@@ -11,7 +11,7 @@ import {
   getSnapshot,
   searchHypotheses,
   searchPapers,
-} from '../src/client.js'
+} from '../src/client.ts'
 
 const HELIX_URL = env.HELIX_URL
 

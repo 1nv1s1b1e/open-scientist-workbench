@@ -1,5 +1,11 @@
 // @ts-check
 import { defineNitroConfig } from 'nitro/config'
+// Load module augmentation for `workflow?: ModuleOptions` on NitroOptions.
+// `workflow/nitro` re-exports `@workflow/nitro`, whose types.d.ts uses
+// `declare module 'nitro/types'` to add the `workflow` field. Without this
+// side-effect type import, tsc doesn't see the augmentation and errors on
+// the `workflow` key below (TS2353).
+import type {} from 'workflow/nitro'
 
 export default defineNitroConfig({
   modules: ['workflow/nitro'],
@@ -21,7 +27,21 @@ export default defineNitroConfig({
   devServer: {
     port: Number(process.env.PORT ?? 3000),
   },
-  noExternals: ['@open-scientist/agents'],
+  // Bundle all workspace packages that agents transitively import — nitro/rolldown
+  // must resolve them at build time. Any workspace dep left out here surfaces as
+  // UNRESOLVED_IMPORT + "Dev worker failed after 3 retries", which silently stalls
+  // 'use step' execution (the step function never runs because its module graph
+  // fails to load).
+  noExternals: [
+    '@open-scientist/agents',
+    '@open-scientist/logger',
+    '@open-scientist/tools',
+    '@open-scientist/skills',
+    '@open-scientist/helix',
+    '@open-scientist/config',
+    '@open-scientist/schema',
+    '@open-scientist/mcp',
+  ],
   workflow: {
     dirs: ['.', '../../packages/agents/src'],
   },

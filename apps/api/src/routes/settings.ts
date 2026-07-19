@@ -70,8 +70,9 @@ settings.delete('/api/settings/models/:role', async (c) => {
 
 // ─── Model aliases ──────────────────────────────────────────────────────────
 //
-// 前端可定义 alias→{provider,model,baseURL,thinkingLevel} 映射，创建 run 时
-// 传 modelAlias 字段引用。baseURL 唯一来源是 settings（models 或 modelAliases）。
+// 前端可定义 alias→{model,thinkingLevel,credentialId} 映射，创建 run 时
+// 传 modelAlias 字段引用。provider/baseURL/apiKey 全部由 credentialId 引用
+// 的 Credential 条目决定（「同 provider 不同 url+key」= 不同 credential）。
 
 settings.get('/api/settings/model-aliases', async (c) => {
   const s = await getGlobalSettings()

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MhdConfigSchema } from '@open-scientist/schema'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mhdConfigTool } from '../src/mhd-config.js'
+import { mhdConfigTool } from '../src/mhd-config.ts'
 
 /**
  * mhdConfigTool.execute calls getMhdDir(runId) → resolve(getBaseDir(), 'projects', runId, 'mhd').

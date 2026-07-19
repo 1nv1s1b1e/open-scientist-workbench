@@ -1,6 +1,9 @@
+import { createLogger } from '@open-scientist/logger'
 import { EvidenceAlignmentSchema } from '@open-scientist/schema'
 import { tool } from 'ai'
 import { z } from 'zod'
+
+const logger = createLogger('tools')
 
 // Informativ stub: the Python scientific stack (astropy / sunpy / scipy / numpy)
 // is not installed in this environment, so real FITS/video alignment cannot run.
@@ -18,6 +21,15 @@ export const fitsAlignTool = tool({
   }),
   outputSchema: EvidenceAlignmentSchema,
   execute: async (input) => {
+    logger.info(
+      {
+        hypoId: input.hypoId,
+        activeRegion: input.activeRegion,
+        timestamp: input.timestamp,
+        wavelength: input.wavelength,
+      },
+      'fitsAlignTool: execute start (will throw — Python stack not installed)',
+    )
     throw new Error(
       `FITS alignment unavailable: Python scientific stack not installed. ` +
         `Install with: uv pip install astropy sunpy scipy numpy. ` +

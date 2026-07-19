@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { migrateDb } from '../src/migrations.js'
+import { migrateDb } from '../src/migrations.ts'
 
 // `migrateDb` is NOT re-exported from src/index.ts (which only re-exports db,
 // global-db, and the repo modules). Import it directly from its module.
@@ -75,7 +75,8 @@ describe('migrations: global scope', () => {
     const creds = tableNames(sqlite).filter((n) => n === 'credentials')
     expect(creds).toHaveLength(1)
 
-    // __drizzle_migrations should record exactly one applied migration.
+    // __drizzle_migrations should record exactly one applied migration
+    // (0000 initial schema, credentials table already includes base_url column).
     expect(migrationCount(sqlite)).toBe(1)
   })
 })

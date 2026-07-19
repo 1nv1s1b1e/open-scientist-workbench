@@ -3,6 +3,7 @@ CREATE TABLE `credentials` (
 	`provider` text NOT NULL,
 	`type` text NOT NULL,
 	`encrypted_key` text NOT NULL,
+	`base_url` text,
 	`metadata_json` text,
 	`created_at` text NOT NULL,
 	`updated_at` text NOT NULL

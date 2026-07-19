@@ -86,11 +86,15 @@
 - 232 行进度文档：Changelog（10 commits）+ 当前状态 + Phase 4-5 计划 + Web 层选型 + 关键约束 + 环境信息
 
 #### Phase 4 未 commit 改动（2026-07-20）
-- **modelConfig 重构**：`model: LanguageModel` → `modelConfig: ModelArg`（6 agent + workflow + 测试）。`ModelArg` 合并 `ResolvedModelConfig`，统一在 `packages/config/src/models.ts`。`createModelFromConfig(config: ModelArg)` 单参数。
-- **config 简化**：credential 不存 baseURL + settings 加 modelAliases（GET/PUT/DELETE `/api/settings/model-aliases/:alias`）+ `resolveModelArg(projectName, modelAlias?)` 支持 alias。
-- **workflow builder 修复**：6 个 workflow.ts 值 import 改变量 specifier 动态 import。nitro `routes: '/api/**'` + `serverEntry` + `workspaceDir` + `ajv` dep。
+- **modelConfig 重构**：`model: LanguageModel` → `modelConfig: ModelArg`（6 agent + workflow + 测试）。`ModelArg` 统一定义在 `packages/config/src/models.ts`，`createModelFromConfig(config: ModelArg)` 单参数。
+- **Credential endpoint bundle 改造**：credential = `{id, provider, apiKey, baseURL?}` 完整 endpoint（移除「按 provider 唯一」+「不存 baseURL」约束），upsert by id（支持同 provider 不同 baseURL+apiKey）。`ModelConfig = {model, thinkingLevel, credentialId}`（移除 provider+baseURL，用 credentialId 引用 credential）。`resolveModelArg(projectName, credentials, {role?, modelAlias?})` 从 credential 拿 provider/apiKey/baseURL 组装 ModelArg。settings 加 modelAliases（GET/PUT/DELETE `/api/settings/model-aliases/:alias`）。
+- **workflow VM 修复（方案 A）**：6 个 workflow.ts 改纯 VM-safe 薄壳（只 `import { runXxxStep } from './steps/index.ts'` + `return await runXxxStep(input)`），agent 构造 + `agent.stream` 全移进 `steps/index.ts` 的 `'use step'` 函数（host runtime 跑，`await import('../agent.ts')` 正常）。sisyphus/workflow.ts 的 6 个变量 specifier 动态 import 改静态 import（子 workflow.ts 已 VM-safe）+ MAX_ROUNDS/TARGET_F1 内联到 logic.ts。
+- **step bundle externalize 修复（type stripping）**：tsconfig.base.json 开 `allowImportingTsExtensions` + `rewriteRelativeImportExtensions`，源码内部相对 import 全改 `.ts` 后缀（153 处 from + 18 处 dynamic import）。`apps/api/nitro.config.ts` 的 `noExternals` 扩成 8 个 workspace 包。Node 26 type stripping 默认开启，`package.json exports` 指向 `./src/index.ts` 可直接加载。
+- **nitro 路由修复 + typecheck 修复**：`routes: { '/**': './src/index.ts' }` → `routes: { '/api/**': './src/index.ts' }` + `entry` → `serverEntry` + `workspaceDir: import.meta.dirname` + `ajv@^8.20.0` dep。`nitro.config.ts` 顶部加 `import type {} from 'workflow/nitro'`（side-effect type import 加载 module augmentation），修复 `workflow` 属性 TS2353 报错。
 - **P0 runs 路由**：`apps/api/src/routes/runs.ts`（4 端点 + 15 tests）+ `apps/api/src/routes/dev-probe.ts`（临时验证）。
-- **当前阻塞**：workflow VM 不支持 dynamic import（`ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`），详见「当前状态」。
+- **logger 接入**：tools/skills/helix/config 4 包加 `@open-scientist/logger` dep + 9 个源文件加 logger。
+- **librarian ensureIndexes**：`librarian/steps/index.ts` 在 `agent.stream` 前调 `ensureIndexes()`（idempotent 建 HelixDB text + vector index）。
+- **dev-probe 端到端验证**：POST `/api/dev-probe/stream-test` 全链路打通——SSE 流出 `start` → `start-step` → 多轮 `text-delta` + `tool-input-available` + `tool-output-available`（loadSkill/searchPapers/searchHypotheses/bash）→ `finish-step` → `finish`。未抛任何 VM / module 错误。
 
 ---
 
@@ -98,44 +102,39 @@
 
 ### 代码
 - **10 包**：apps/api + packages/{schema,config,storage,helix,logger,tools,skills,mcp,agents}
-- **366 tests pass**（29 files，~2.6s/run，无 flaky）
-- **typecheck** 10 包全 Done（apps/api 有 1 个 pre-existing nitro.config workflow 键类型 warning）
-- **lint** clean（1 pre-existing warning: test-llm.test.ts unused import）
+- **368 tests pass**（29 files，无 flaky）
+- **typecheck** 10 包全 Done（`apps/api/nitro.config.ts` 顶部加 `import type {} from 'workflow/nitro'` 修复 `workflow` 属性 TS2353 报错）
+- **lint** clean（3 pre-existing warnings: routes.test.ts useLiteralKeys / test-llm.test.ts unused import / sisyphus/workflow.ts unused import）
 - **12 commits**（见上 + Phase 4 未 commit 改动）
 
 ### Phase 4 进展（未 commit）
 
 #### 已完成
-- **modelConfig 重构**：6 个 agent 的 `model: LanguageModel` → `modelConfig: ModelArg`（plain object，可序列化）。`ModelArg` 统一定义在 `packages/config/src/models.ts`（`{provider, model, baseURL?, thinkingLevel, apiKey}`，合并了原 `ResolvedModelConfig`）。workflow args 走 structured clone，不能传 `LanguageModel`（有方法的对象）。workflow 内部调 `createModelFromConfig(modelConfig)` 重建。apiKey 只用于构造 HTTP 请求头，不进 LLM prompt context。
-- **config 简化**：credential 不存 baseURL（只存 apiKey + provider 关联键），settings 是唯一 baseURL 来源。新增 **model alias 功能**（`settings.modelAliases` record + GET/PUT/DELETE `/api/settings/model-aliases/:alias`）。`resolveModelArg(projectName, modelAlias?)` 支持 alias 解析。
-- **workflow builder 修复**：6 个 workflow.ts 的 `createXxxAgent` 值 import 改为**变量 specifier 动态 import**（`const spec = './agent.js'; await import(spec)`）。关键发现：esbuild 会静态解析字面量 `await import('./x.js')` 并 bundle 整条链，必须用变量 specifier 才能让 esbuild 放弃解析。sisyphus 的子 workflow + steps + logic import 全改动态。nitro 日志确认 `workflows build complete (12 steps, 6 workflows)`。
+- **modelConfig 重构**：6 个 agent 的 `model: LanguageModel` → `modelConfig: ModelArg`（plain object，可序列化）。`ModelArg = {provider, model, baseURL?, apiKey, thinkingLevel}` 统一定义在 `packages/config/src/models.ts`，workflow args 走 structured clone，不能传 `LanguageModel`（有方法的对象）。workflow 内部调 `createModelFromConfig(modelConfig)` 重建。apiKey 只用于构造 HTTP 请求头，不进 LLM prompt context。
+- **Credential endpoint bundle 改造**：credential = `{id, provider, apiKey, baseURL?}` 完整 endpoint（一个 credential = 一个完整 LLM endpoint），upsert by id（不再按 provider 唯一，支持同 provider 不同 baseURL+apiKey）。`ModelConfig = {model, thinkingLevel, credentialId}`（移除 provider+baseURL，用 credentialId 引用 credential）。`resolveModelArg(projectName, credentials, {role?, modelAlias?})` 从 credential 拿 provider/apiKey/baseURL 组装 ModelArg。settings 加 **model alias 功能**（`settings.modelAliases` record + GET/PUT/DELETE `/api/settings/model-aliases/:alias`）。
+- **workflow VM 修复（方案 A）**：`@workflow/core` VM sandbox 用裸 `runInContext`，无 `importModuleDynamically` callback → workflow body 内任何 `await import()` 必抛 `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`。解法：6 个 workflow.ts 改纯 VM-safe 薄壳（只静态 import `./steps/index.ts` 的 `runXxxStep` + `return await runXxxStep(input)`），agent 构造 + `agent.stream` 全移进 `steps/index.ts` 的 `'use step'` 函数（step 在 host Node runtime 跑，`import()` 走 host ESM loader 正常）。sisyphus/workflow.ts 的 6 个变量 specifier 动态 import 改静态 import（子 workflow.ts 已 VM-safe）+ MAX_ROUNDS/TARGET_F1 内联到 logic.ts（不 import config，避免 VM 污染）。
+- **step bundle externalize 修复（type stripping）**：workflow/nitro 的 step bundle（esbuild via `@workflow/builders`）在 dev 模式把 workspace 包 externalize（因 `isProjectLocalFile` 对 `isWorkspacePackage=true` 的包返回 false）→ runtime 用 bare specifier `@open-scientist/config` → package.json exports `./src/index.ts` → Node 加载 .ts。解法：tsconfig.base.json 开 `allowImportingTsExtensions: true` + `rewriteRelativeImportExtensions: true`，源码内部相对 import 全改 `.ts` 后缀（153 处 from + 18 处 dynamic import，9 个包）。Node 26 type stripping 默认开启（无需 flag），`package.json exports` 指向 `./src/index.ts` 可直接加载。`apps/api/nitro.config.ts` 的 `noExternals` 扩成 8 个 workspace 包（agents/logger/tools/skills/helix/config/schema/mcp），nitro dev bundle 才能 resolve。
 - **nitro 路由修复**：`routes: { '/**': './src/index.ts' }` → `routes: { '/api/**': './src/index.ts' }`（让 workflow 内部路由 `/.well-known/workflow/v1/*` 落到 nitro 原生 handler）。`entry` → `serverEntry`（Hono app 作 catch-all web handler，workflow handlers 优先匹配）。加 `workspaceDir: import.meta.dirname`（修 workflowId 不匹配）。加 `ajv@^8.20.0` dep（修 CJS/ESM bundle 兼容）。
 - **P0 runs 路由**（`apps/api/src/routes/runs.ts`，4 端点 + 15 tests）：POST 启动 + GET stream（SSE + 断线重连 + 负 startIndex + tail-index header）+ GET 状态 + POST stop。
 - **dev-probe route**：临时验证用，`POST /api/dev-probe/stream-test`。
+- **logger 接入**：tools/skills/helix/config 4 包加 `@open-scientist/logger` workspace dep + 9 个源文件加 logger（bash/helix-query/fits-align/mhd-config/discover/load-tool/sandbox/client/models）。
+- **librarian ensureIndexes**：`librarian/steps/index.ts` 在 `agent.stream` 前调 `ensureIndexes()`（idempotent 建 HelixDB text + vector index，之前只在 integration test 调）。
+- **dev-probe 端到端验证**：POST `/api/dev-probe/stream-test` 全链路打通——SSE 流出 `start` → `start-step` → 多轮 `text-delta` + `tool-input-available` + `tool-output-available`（loadSkill/searchPapers/searchHypotheses/bash）→ `finish-step` → `finish`。未抛任何 VM / module 错误。logger 输出正常。HelixDB index 已建，空库返回 `[]` 不报错。
 
-#### 当前阻塞：workflow VM 不支持 dynamic import
-tournamentWorkflow 在 `@workflow/core` 的 VM sandbox 里执行时，`await import(specifier)` 失败：
-```
-TypeError [ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING]: A dynamic import callback was not specified.
-    at tournamentWorkflow (../../packages/agents/src/sisyphus/workflow.ts:69:41)
-```
-**根因冲突**：
-- esbuild bundle workflow.ts 时，字面量 `import('./agent.js')` 会被静态解析并 bundle 整条 import 链 → `node:fs`/`node:path` 触发 `workflow-node-module-error`
-- 改用变量 specifier `await import(var)` 避免 bundle → 但 `@workflow/core` VM sandbox 没设 `importModuleDynamically` callback → runtime 失败
-
-**待解决方向**（需调研）：
-1. 查 `@workflow/core` 是否支持配置 `importModuleDynamically`（看 `createVM`/`runInContext` options）
-2. 把 dynamic import 目标（子 workflow、steps、config）改用 workflow `step` 边界包裹——step 在 host Node runtime 跑，不受 VM 限制
-3. 拆分 agent.ts：把拉 Node 模块链的部分（tools/skills/config）隔离，让 workflow.ts 只 import 纯 workflow 代码
-4. 查 workflow SDK 有无 `external` 配置让 esbuild 跳过特定 import 的 bundle
+#### 待验证
+- librarian 是否产出有效 HypothesisPool schema output（SSE finish 事件 payload 待查）
+- 完整 tournament 流程（librarian → explore → oracle → prometheus → MHD cfg）
+- skills discover 找不到 defaults 目录（nitro workflow bundle 相对路径问题，非阻塞，discoverSkills 容错返回空）
 
 ### 已验证
 - HelixDB 本地启动（Docker `ghcr.io/helixdb/enterprise-dev`，localhost:6969）+ 10 个集成测试通过
 - Python venv（`uv venv /tmp/solar-test`，astropy 8.0.1/sunpy 8.0.0/scipy 1.18.0/numpy 2.5.1）+ FITS 创建读回
 - API 端到端：health/settings/credentials/test-llm 全 200（LLM 用 `http://<internal-llm-host>:8084/v1` + `llab/Qwen3-Next-80B-A3B-Instruct`，500ms 响应）
 - `@ai-sdk/openai` 用 `openai.chat(model)` 而非 `openai(model)`（第三方网关只完整支持 Chat Completions API）
-- workflow builder 注册 6 个 workflow 成功（`workflows build complete (12 steps, 6 workflows)`）
+- workflow builder 注册 6 个 workflow 成功（`workflows build complete (17 steps, 6 workflows)`）
 - nitro workflow 内部路由可达（`/.well-known/workflow/v1/flow` 返 400 而非 404）
+- **Node 26 type stripping**：`node -e "import('@open-scientist/config')..."` 成功加载（bare specifier → package.json exports → `./src/index.ts` → type strip）
+- **dev-probe 端到端**：POST `/api/dev-probe/stream-test` 全链路打通（SSE 流 + 多轮 tool loop + finish），未抛 VM / module 错误
 
 ### 技术栈定型
 - Node.js + pnpm（不用 Bun）+ TypeScript 7 + Biome 2.5 + Zod 4
@@ -250,14 +249,15 @@ TypeError [ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING]: A dynamic import callback wa
 
 ## 关键约束（贯穿所有 Phase）
 
-- **WorkflowAgent 三文件边界**：agent.ts（构造）/ workflow.ts（`'use workflow'`）/ steps/（`'use step'` 可重试）
-- **context 必须可序列化**：runtimeContext / toolsContext 不能放 functions/class instances/symbols/SDK clients，只能 plain data
+- **WorkflowAgent 三文件边界**：agent.ts（构造，拉 Node 模块链）/ workflow.ts（`'use workflow'` 纯 VM-safe 薄壳，只调 step）/ steps/（`'use step'`，agent 构造 + stream 在此）。**workflow body 内不能 `await import()`**（VM 无 importModuleDynamically），**只能出现在 step 里**。
+- **源码内部 import 用 `.ts` 后缀**（不是 `.js`）：Node 26 type stripping 默认开启但不做 `.js`→`.ts` fallback。tsconfig 开 `allowImportingTsExtensions` + `rewriteRelativeImportExtensions`。
+- **`noExternals` 列全 8 个 workspace 包**：`apps/api/nitro.config.ts` 需配 agents/logger/tools/skills/helix/config/schema/mcp，否则 nitro dev bundle 无法 resolve。
+- **context 必须可序列化**：runtimeContext / toolsContext 不能放 functions/class instances/symbols/SDK clients，只能 plain data。`ModelArg` 是跨 workflow 边界传 model 配置的载体。
 - **Nitro build**：`apps/api/nitro.config.ts` 配 `modules: ['workflow/nitro']`，非 Hono 自带 build
 - **bash-tool 无沙箱**：host child_process，靠 project name 隔离 working dir（用户明确决定不加 Docker）
-- **模型配置全走 Web API + SQLite**：不用 .env 存模型配置
+- **模型配置全走 Web API + 文件**：不用 .env 存模型配置（settings.json + CredentialStore）
 - **MCP server 是远程代码执行**：per-project 加载需信任（`mcp_trust` 表 + `fingerprintTools` 漂移检测）
 - **不要用 ESLint/Prettier**（用 Biome）/ **不要用 Bun**（用 Node.js + pnpm）/ **不要给 Explore 的 Python 加 Docker 沙箱**
-- **Web/TUI 当前阶段先忽略**
 
 ---
 

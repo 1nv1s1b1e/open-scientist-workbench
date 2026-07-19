@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { McpServerConfig } from '../src/registry.js'
+import type { McpServerConfig } from '../src/registry.ts'
 
 // Mock StdioClientTransport so the stdio branch doesn't spawn a real process.
 // We capture the constructor args for assertion.
@@ -19,7 +19,7 @@ vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => {
 })
 
 // Import AFTER the mock is registered so registry.ts picks up the mock.
-const { resolveTransport } = await import('../src/registry.js')
+const { resolveTransport } = await import('../src/registry.ts')
 
 describe('resolveTransport', () => {
   it('returns an http transport descriptor for transport="http"', () => {

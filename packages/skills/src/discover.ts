@@ -1,6 +1,9 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Sandbox } from './sandbox.js'
+import { createLogger } from '@open-scientist/logger'
+import type { Sandbox } from './sandbox.ts'
+
+const logger = createLogger('skills')
 
 export interface DiscoveredSkill {
   name: string
@@ -12,6 +15,7 @@ export async function discoverSkills(
   _sandbox: Sandbox,
   directories: string[],
 ): Promise<DiscoveredSkill[]> {
+  logger.info({ dirCount: directories.length, directories }, 'discoverSkills: start')
   const skills: DiscoveredSkill[] = []
   const seen = new Set<string>()
 
@@ -19,10 +23,15 @@ export async function discoverSkills(
     let entries: string[]
     try {
       entries = await readdir(dir)
-    } catch {
+    } catch (err) {
+      logger.warn(
+        { dir, error: (err as Error).message },
+        'discoverSkills: readdir failed, skipping dir',
+      )
       continue
     }
 
+    logger.debug({ dir, entryCount: entries.length }, 'discoverSkills: scanning dir')
     for (const entry of entries) {
       const skillDir = join(dir, entry)
       const skillMdPath = join(skillDir, 'SKILL.md')
@@ -32,6 +41,7 @@ export async function discoverSkills(
         if (!seen.has(name)) {
           seen.add(name)
           skills.push({ name, description, directory: skillDir })
+          logger.debug({ dir, name }, 'discoverSkills: skill discovered')
         }
       } catch {
         // not a skill directory
@@ -39,6 +49,10 @@ export async function discoverSkills(
     }
   }
 
+  logger.info(
+    { foundCount: skills.length, names: skills.map((s) => s.name) },
+    'discoverSkills: done',
+  )
   return skills
 }
 

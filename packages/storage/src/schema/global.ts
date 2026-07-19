@@ -5,6 +5,7 @@ export const credentials = sqliteTable('credentials', {
   provider: text('provider').notNull(),
   type: text('type', { enum: ['api-key', 'oauth-token'] }).notNull(),
   encryptedKey: text('encrypted_key').notNull(),
+  baseURL: text('base_url'),
   metadataJson: text('metadata_json'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),

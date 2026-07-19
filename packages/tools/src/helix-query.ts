@@ -1,6 +1,9 @@
 import * as helix from '@open-scientist/helix'
+import { createLogger } from '@open-scientist/logger'
 import { tool } from 'ai'
 import { z } from 'zod'
+
+const logger = createLogger('tools')
 
 // Shared id input schema — helix accepts string | number | bigint and converts
 // via BigInt() internally. We expose string | number to avoid zod bigint
@@ -31,8 +34,18 @@ export const searchPapersTool = tool({
     ),
   }),
   execute: async ({ query, k }) => {
-    const papers = await helix.searchPapers(query, k)
-    return { papers }
+    logger.info({ query, k }, 'searchPapersTool: execute start')
+    try {
+      const papers = await helix.searchPapers(query, k)
+      logger.info(
+        { query, k, count: papers.length, firstTitle: papers[0]?.title?.slice(0, 60) },
+        'searchPapersTool: execute done',
+      )
+      return { papers }
+    } catch (err) {
+      logger.error({ query, k, error: (err as Error).message }, 'searchPapersTool: execute failed')
+      throw err
+    }
   },
 })
 
@@ -55,8 +68,18 @@ export const searchHypothesesTool = tool({
     ),
   }),
   execute: async ({ query, k }) => {
-    const hypotheses = await helix.searchHypotheses(query, k)
-    return { hypotheses }
+    logger.info({ query, k }, 'searchHypothesesTool: execute start')
+    try {
+      const hypotheses = await helix.searchHypotheses(query, k)
+      logger.info({ query, k, count: hypotheses.length }, 'searchHypothesesTool: execute done')
+      return { hypotheses }
+    } catch (err) {
+      logger.error(
+        { query, k, error: (err as Error).message },
+        'searchHypothesesTool: execute failed',
+      )
+      throw err
+    }
   },
 })
 
@@ -78,6 +101,7 @@ export const getHypothesisTool = tool({
       .nullable(),
   }),
   execute: async ({ id }) => {
+    logger.info({ id }, 'getHypothesisTool: execute start')
     const hypothesis = await helix.getHypothesis(id)
     return { hypothesis }
   },
@@ -103,6 +127,7 @@ export const getEvidenceByHypothesisTool = tool({
     ),
   }),
   execute: async ({ hypoId }) => {
+    logger.info({ hypoId }, 'getEvidenceByHypothesisTool: execute start')
     const evidence = await helix.getEvidenceByHypothesis(hypoId)
     return { evidence }
   },
@@ -126,6 +151,7 @@ export const getCritiquesByHypothesisTool = tool({
     ),
   }),
   execute: async ({ hypoId }) => {
+    logger.info({ hypoId }, 'getCritiquesByHypothesisTool: execute start')
     const critiques = await helix.getCritiquesByHypothesis(hypoId)
     return { critiques }
   },
@@ -146,6 +172,7 @@ export const getRelatedConceptsTool = tool({
     ),
   }),
   execute: async ({ hypoId }) => {
+    logger.info({ hypoId }, 'getRelatedConceptsTool: execute start')
     const concepts = await helix.getRelatedConcepts(hypoId)
     return { concepts }
   },
@@ -170,6 +197,7 @@ export const getLeaderboardTool = tool({
     ),
   }),
   execute: async ({ runId, k }) => {
+    logger.info({ runId, k }, 'getLeaderboardTool: execute start')
     const hypotheses = await helix.getLeaderboard(runId, k)
     return { hypotheses }
   },
@@ -193,6 +221,7 @@ export const getEvolutionChainTool = tool({
     ),
   }),
   execute: async ({ hypoId }) => {
+    logger.info({ hypoId }, 'getEvolutionChainTool: execute start')
     const hypotheses = await helix.getEvolutionChain(hypoId)
     return { hypotheses }
   },
@@ -216,6 +245,7 @@ export const getHypothesesByRoundTool = tool({
     ),
   }),
   execute: async ({ roundId }) => {
+    logger.info({ roundId }, 'getHypothesesByRoundTool: execute start')
     const hypotheses = await helix.getHypothesesByRound(roundId)
     return { hypotheses }
   },
@@ -238,8 +268,30 @@ export const addHypothesisTool = tool({
   }),
   outputSchema: successOutput,
   execute: async (input) => {
-    await helix.addHypothesis(input)
-    return { success: true }
+    logger.info(
+      {
+        roundId: input.roundId,
+        runId: input.runId,
+        f1Score: input.f1Score,
+        statementLen: input.statement.length,
+      },
+      'addHypothesisTool: execute start',
+    )
+    try {
+      await helix.addHypothesis(input)
+      logger.info({ roundId: input.roundId, runId: input.runId }, 'addHypothesisTool: execute done')
+      return { success: true }
+    } catch (err) {
+      logger.error(
+        {
+          roundId: input.roundId,
+          runId: input.runId,
+          error: (err as Error).message,
+        },
+        'addHypothesisTool: execute failed',
+      )
+      throw err
+    }
   },
 })
 
@@ -256,6 +308,10 @@ export const addEvidenceTool = tool({
   }),
   outputSchema: successOutput,
   execute: async (input) => {
+    logger.info(
+      { hypoId: input.hypoId, type: input.type, contentLen: input.content.length },
+      'addEvidenceTool: execute start',
+    )
     await helix.addEvidence(input)
     return { success: true }
   },
@@ -272,6 +328,14 @@ export const addCritiqueTool = tool({
   }),
   outputSchema: successOutput,
   execute: async (input) => {
+    logger.info(
+      {
+        hypoId: input.hypoId,
+        severity: input.severity,
+        contentLen: input.content.length,
+      },
+      'addCritiqueTool: execute start',
+    )
     await helix.addCritique(input)
     return { success: true }
   },
@@ -286,6 +350,14 @@ export const addMutationLinkTool = tool({
   }),
   outputSchema: successOutput,
   execute: async (input) => {
+    logger.info(
+      {
+        fromHypoId: input.fromHypoId,
+        toHypoId: input.toHypoId,
+        mutationType: input.mutationType,
+      },
+      'addMutationLinkTool: execute start',
+    )
     await helix.addMutationLink(input)
     return { success: true }
   },
@@ -301,6 +373,14 @@ export const addSnapshotTool = tool({
   }),
   outputSchema: successOutput,
   execute: async (input) => {
+    logger.info(
+      {
+        roundId: input.roundId,
+        runId: input.runId,
+        hypoCount: input.hypothesisIds.length,
+      },
+      'addSnapshotTool: execute start',
+    )
     await helix.addSnapshot(input)
     return { success: true }
   },

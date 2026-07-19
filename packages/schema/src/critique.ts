@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { HypothesisSchema } from './hypothesis.js'
+import { HypothesisSchema } from './hypothesis.ts'
 
 export const CritiqueSchema = z.object({
   hypoId: z.string(),

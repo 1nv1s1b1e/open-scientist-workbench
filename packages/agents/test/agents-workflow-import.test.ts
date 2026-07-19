@@ -9,37 +9,37 @@ import { describe, expect, it } from 'vitest'
  */
 describe('workflow module imports (smoke)', () => {
   it('sisyphus exports tournamentWorkflow as a function', async () => {
-    const mod = await import('../src/sisyphus/workflow.js')
+    const mod = await import('../src/sisyphus/workflow.ts')
     expect(typeof mod.tournamentWorkflow).toBe('function')
   })
 
   it('librarian exports librarianWorkflow as a function', async () => {
-    const mod = await import('../src/librarian/workflow.js')
+    const mod = await import('../src/librarian/workflow.ts')
     expect(typeof mod.librarianWorkflow).toBe('function')
   })
 
   it('looker exports lookerWorkflow as a function', async () => {
-    const mod = await import('../src/looker/workflow.js')
+    const mod = await import('../src/looker/workflow.ts')
     expect(typeof mod.lookerWorkflow).toBe('function')
   })
 
   it('explore exports exploreWorkflow as a function', async () => {
-    const mod = await import('../src/explore/workflow.js')
+    const mod = await import('../src/explore/workflow.ts')
     expect(typeof mod.exploreWorkflow).toBe('function')
   })
 
   it('oracle exports oracleWorkflow as a function', async () => {
-    const mod = await import('../src/oracle/workflow.js')
+    const mod = await import('../src/oracle/workflow.ts')
     expect(typeof mod.oracleWorkflow).toBe('function')
   })
 
   it('prometheus exports prometheusWorkflow as a function', async () => {
-    const mod = await import('../src/prometheus/workflow.js')
+    const mod = await import('../src/prometheus/workflow.ts')
     expect(typeof mod.prometheusWorkflow).toBe('function')
   })
 
   it('oracle workflow module re-exports the extracted logic helpers', async () => {
-    const mod = await import('../src/oracle/index.js')
+    const mod = await import('../src/oracle/index.ts')
     expect(typeof mod.buildHypothesesBlock).toBe('function')
     expect(typeof mod.buildEvalSummaryBlock).toBe('function')
   })

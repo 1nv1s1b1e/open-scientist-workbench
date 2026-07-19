@@ -28,7 +28,7 @@ import {
   updateHypothesisStatus,
   updateRound,
   updateRunStatus,
-} from '../src/index.js'
+} from '../src/index.ts'
 
 /**
  * Project-repo integration tests.

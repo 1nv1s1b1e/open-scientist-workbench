@@ -1,13 +1,15 @@
 import { z } from 'zod'
 
-// Re-export ModelConfigSchema from config via schema-level mirror (zero-dep)
+// 模型配置（settings per role / model alias）。
+// 一个 ModelConfig 只描述模型行为（model + thinkingLevel），endpoint 的
+// provider/baseURL/apiKey 全部由 credentialId 引用的 Credential 条目决定。
+// 这样「同 provider 不同 url+key」组合就是不同的 credential 条目。
 export const ModelConfigSchema = z.object({
-  provider: z.enum(['openai', 'anthropic']).default('openai'),
   model: z.string().min(1),
-  baseURL: z.string().url().optional(),
   thinkingLevel: z
     .enum(['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
     .default('medium'),
+  credentialId: z.string().min(1),
 })
 export type ModelConfig = z.infer<typeof ModelConfigSchema>
 
@@ -40,20 +42,22 @@ export const SetModelConfigRequestSchema = ModelConfigSchema
 export type SetModelConfigRequest = z.infer<typeof SetModelConfigRequestSchema>
 
 // Model alias —— 一个用户自定义的短名（如 "fast"/"smart"/"qwen-80b"）指向完整的 ModelConfig。
-// 创建 run 时传 modelAlias 字段引用某个 alias，settings 是唯一 baseURL 来源。
+// 创建 run 时传 modelAlias 字段引用某个 alias。
 export const ModelAliasSchema = ModelConfigSchema
 export type ModelAlias = z.infer<typeof ModelAliasSchema>
 
 export const SetModelAliasRequestSchema = ModelAliasSchema
 export type SetModelAliasRequest = z.infer<typeof SetModelAliasRequestSchema>
 
-// 凭证管理
-// 注意：credential 不再存 baseURL（baseURL 唯一来源是 settings.models / settings.modelAliases）。
-// metadata 字段保留，OAuth 后期可用，现有记录里的 baseURL 兼容读取但不依赖。
+// 凭证管理 —— endpoint bundle 形态：一个 credential = {id, provider, apiKey, baseURL?}。
+// id 是命名实体（可用户指定，如 "qwen-gateway"），不再按 provider 唯一。
+// 同 provider 不同 url+key = 不同 credential 条目。metadata 保留给 OAuth 后期用。
 export const AddCredentialRequestSchema = z.object({
+  id: z.string().min(1).optional(),
   provider: z.string().min(1),
   type: z.enum(['api-key', 'oauth-token']).default('api-key'),
   key: z.string().min(1),
+  baseURL: z.string().url().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 export type AddCredentialRequest = z.infer<typeof AddCredentialRequestSchema>
@@ -63,11 +67,12 @@ export const CredentialResponseSchema = z.object({
   provider: z.string(),
   type: z.enum(['api-key', 'oauth-token']),
   hasKey: z.boolean(),
+  baseURL: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 export type CredentialResponse = z.infer<typeof CredentialResponseSchema>
 
-// LLM 连通测试
+// LLM 连通测试（独立于 credential，前端直接传完整 endpoint 测试一次）
 export const TestLlmRequestSchema = z.object({
   provider: z.enum(['openai', 'anthropic']).default('openai'),
   model: z.string().min(1),

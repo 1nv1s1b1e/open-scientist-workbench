@@ -1,12 +1,12 @@
 export {
   createFitsServer,
   startFitsServer,
-} from './fits-server.js'
+} from './fits-server.ts'
 export {
   createHelixServer,
   startHelixServer,
-} from './helix-server.js'
+} from './helix-server.ts'
 export {
   createSandboxServer,
   startSandboxServer,
-} from './sandbox-server.js'
+} from './sandbox-server.ts'

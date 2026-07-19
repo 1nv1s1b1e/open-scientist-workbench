@@ -6,7 +6,7 @@ import {
   getDefaultOracleTools,
   getDefaultPrometheusTools,
   getDefaultSisyphusTools,
-} from '../src/index.js'
+} from '../src/index.ts'
 
 const PROJECT = 'tools-test-project'
 const HYPO = 'h1'

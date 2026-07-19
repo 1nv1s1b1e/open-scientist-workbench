@@ -12,20 +12,25 @@ import { start } from 'workflow/api'
 
 export const devProbe = new Hono()
 
+// dev-probe 假设 DB 里已有一条 provider=openai 的 credential（带 baseURL）。
+// 它从 credential 读 provider+apiKey+baseURL，model 名硬编码（便于快速验证）。
 devProbe.post('/api/dev-probe/stream-test', async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const seed =
     body.seed ?? 'Magnetic reconnection in nanoflares heats the corona via Alfvén wave dissipation'
 
   const store = await createCredentialStore()
-  const cred = await store.get('openai')
-  if (!cred) return c.json({ error: 'no openai credential' }, 500)
+  const list = await store.list()
+  const cred = list.find((r) => r.provider === 'openai')
+  if (!cred) return c.json({ error: 'no openai credential in store' }, 500)
+  const full = await store.get(cred.id)
+  if (!full) return c.json({ error: 'credential vanished' }, 500)
 
   const modelConfig: ModelArg = {
     provider: 'openai',
     model: 'llab/Qwen3-Next-80B-A3B-Instruct',
-    baseURL: 'http://<internal-llm-host>:8084/v1',
-    apiKey: cred.key,
+    ...(full.baseURL ? { baseURL: full.baseURL } : {}),
+    apiKey: full.apiKey,
     thinkingLevel: 'medium',
   }
 

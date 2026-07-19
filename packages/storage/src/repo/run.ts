@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { createProjectDb } from '../db.js'
-import { runs } from '../schema/project.js'
+import { createProjectDb } from '../db.ts'
+import { runs } from '../schema/project.ts'
 
 export type RunStatus =
   | 'pending'

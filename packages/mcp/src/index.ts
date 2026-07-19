@@ -1,3 +1,3 @@
-export * from './registry'
-export * from './servers'
-export * from './trust'
+export * from './registry.ts'
+export * from './servers/index.ts'
+export * from './trust.ts'

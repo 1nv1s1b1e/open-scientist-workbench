@@ -23,6 +23,7 @@
     "@open-scientist/skills": "workspace:*",
     "@open-scientist/helix": "workspace:*",
     "@open-scientist/mcp": "workspace:*",
+    "@open-scientist/logger": "workspace:*",
     "@ai-sdk/workflow": "^1.0.31",
     "@ai-sdk/provider-utils": "latest",
     "ai": "^7.0.31",
