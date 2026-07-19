@@ -9,7 +9,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "generate-queries": "helix queries compile src/queries.ts --output src/queries.json"
+    "generate-queries": "bun -e \"import('./src/queries.ts').then(() => console.log('queries.json generated')).catch(e => { console.error(e); process.exit(1) })\""
   },
   "dependencies": {
     "@helix-db/helix-db": "^2.0.5",

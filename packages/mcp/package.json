@@ -6,11 +6,17 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "bin": {
+    "open-scientist-helix-mcp": "./bin/helix-server.ts",
+    "open-scientist-fits-mcp": "./bin/fits-server.ts",
+    "open-scientist-sandbox-mcp": "./bin/sandbox-server.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc"
   },
   "dependencies": {
+    "@open-scientist/config": "workspace:*",
     "@open-scientist/helix": "workspace:*",
     "@open-scientist/schema": "workspace:*",
     "@open-scientist/storage": "workspace:*",

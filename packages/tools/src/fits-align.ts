@@ -2,9 +2,14 @@ import { EvidenceAlignmentSchema } from '@open-scientist/schema'
 import { tool } from 'ai'
 import { z } from 'zod'
 
+// Informativ stub: the Python scientific stack (astropy / sunpy / scipy / numpy)
+// is not installed in this environment, so real FITS/video alignment cannot run.
+// We throw a descriptive error so the agent learns the tool is unavailable and
+// can either surface the install instructions to the user or fall back to other
+// tools. The outputSchema is retained for when a real implementation lands.
 export const fitsAlignTool = tool({
   description:
-    'Align high-score candidate cases with raw FITS images and MP4 video clips by spatiotemporal index',
+    'Align high-score candidate cases with raw FITS images and MP4 video clips by spatiotemporal index. Requires Python with astropy + sunpy installed.',
   inputSchema: z.object({
     hypoId: z.string(),
     activeRegion: z.string().describe('Active region ID, e.g. AR1140'),
@@ -13,7 +18,11 @@ export const fitsAlignTool = tool({
   }),
   outputSchema: EvidenceAlignmentSchema,
   execute: async (input) => {
-    // 实际实现调 astropy/sunpy 查询本地 FITS 库或远程 SDO 数据中心
-    throw new Error(`fitsAlignTool.execute not implemented: ${JSON.stringify(input)}`)
+    throw new Error(
+      `FITS alignment unavailable: Python scientific stack not installed. ` +
+        `Install with: uv pip install astropy sunpy scipy numpy. ` +
+        `Requested alignment: hypoId=${input.hypoId} AR=${input.activeRegion} ` +
+        `t=${input.timestamp} λ=${input.wavelength}`,
+    )
   },
 })
