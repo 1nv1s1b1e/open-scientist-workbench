@@ -28,6 +28,7 @@ export const SteeringSettingsSchema = z.object({
 
 export const GlobalSettingsSchema = z.object({
   models: z.record(z.string(), ModelConfigSchema).default({}),
+  modelAliases: z.record(z.string(), ModelConfigSchema).optional(),
   tournament: TournamentSettingsSchema,
   concurrency: ConcurrencySettingsSchema,
   steering: SteeringSettingsSchema,
@@ -38,12 +39,21 @@ export type GlobalSettings = z.infer<typeof GlobalSettingsSchema>
 export const SetModelConfigRequestSchema = ModelConfigSchema
 export type SetModelConfigRequest = z.infer<typeof SetModelConfigRequestSchema>
 
+// Model alias —— 一个用户自定义的短名（如 "fast"/"smart"/"qwen-80b"）指向完整的 ModelConfig。
+// 创建 run 时传 modelAlias 字段引用某个 alias，settings 是唯一 baseURL 来源。
+export const ModelAliasSchema = ModelConfigSchema
+export type ModelAlias = z.infer<typeof ModelAliasSchema>
+
+export const SetModelAliasRequestSchema = ModelAliasSchema
+export type SetModelAliasRequest = z.infer<typeof SetModelAliasRequestSchema>
+
 // 凭证管理
+// 注意：credential 不再存 baseURL（baseURL 唯一来源是 settings.models / settings.modelAliases）。
+// metadata 字段保留，OAuth 后期可用，现有记录里的 baseURL 兼容读取但不依赖。
 export const AddCredentialRequestSchema = z.object({
   provider: z.string().min(1),
   type: z.enum(['api-key', 'oauth-token']).default('api-key'),
   key: z.string().min(1),
-  baseURL: z.string().url().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 export type AddCredentialRequest = z.infer<typeof AddCredentialRequestSchema>

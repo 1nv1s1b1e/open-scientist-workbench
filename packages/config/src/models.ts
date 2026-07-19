@@ -9,19 +9,33 @@ import { getSettings } from './settings.js'
 export type { ModelConfig, ModelConfigSchema }
 
 export interface ProviderFactory {
-  create(config: ResolvedModelConfig, apiKey: string): LanguageModel
+  create(config: ModelArg): LanguageModel
 }
 
-export interface ResolvedModelConfig {
+/**
+ * Serializable model descriptor passed across workflow + step boundaries.
+ *
+ * Workflow args are serialized via structured clone, so they cannot carry a
+ * `LanguageModel` (which has bound methods + SDK clients). Instead, callers
+ * pass a plain-object `ModelArg`; the workflow reconstructs a `LanguageModel`
+ * inside its body via `createModelFromConfig(modelConfig)`.
+ *
+ * `apiKey` is folded in here so the workflow has everything it needs in one
+ * serializable payload. The settings layer (which never persists apiKeys)
+ * builds a `ModelArg` at runtime by combining a credential-agnostic
+ * `ModelConfig` with a credential from `CredentialStore`.
+ */
+export interface ModelArg {
   provider: 'openai' | 'anthropic'
   model: string
   baseURL?: string
   thinkingLevel: string
+  apiKey: string
 }
 
 class OpenAIFactory implements ProviderFactory {
-  create(config: ResolvedModelConfig, apiKey: string): LanguageModel {
-    const openai = createOpenAI({ apiKey, baseURL: config.baseURL })
+  create(config: ModelArg): LanguageModel {
+    const openai = createOpenAI({ apiKey: config.apiKey, baseURL: config.baseURL })
     // 用 chat completions API（/v1/chat/completions）而非默认的 responses API（/v1/responses）。
     // 自建/第三方 OpenAI 兼容网关（vLLM、Qwen 等）普遍只完整支持 chat completions，
     // responses API 的 schema 校验（error.type、annotations 数组）常不匹配。
@@ -56,20 +70,18 @@ export async function getAgentModel(
   const factory = factories[config.provider]
   if (!factory) throw new Error(`Unsupported provider: ${config.provider}`)
 
-  return factory.create(
-    {
-      provider: config.provider,
-      model: config.model,
-      baseURL: config.baseURL,
-      thinkingLevel: config.thinkingLevel ?? DEFAULT_THINKING_LEVEL,
-    },
-    cred.key,
-  )
+  return factory.create({
+    provider: config.provider,
+    model: config.model,
+    baseURL: config.baseURL,
+    thinkingLevel: config.thinkingLevel ?? DEFAULT_THINKING_LEVEL,
+    apiKey: cred.key,
+  })
 }
 
-// 便利函数：给定 ModelConfig + apiKey 直接造 LanguageModel（不走 settings，给 /api/test-llm 用）
-export function createModelFromConfig(config: ResolvedModelConfig, apiKey: string): LanguageModel {
+// 便利函数：给定 ModelArg（含 apiKey）直接造 LanguageModel（不走 settings，给 /api/test-llm 用）
+export function createModelFromConfig(config: ModelArg): LanguageModel {
   const factory = factories[config.provider]
   if (!factory) throw new Error(`Unsupported provider: ${config.provider}`)
-  return factory.create(config, apiKey)
+  return factory.create(config)
 }

@@ -30,6 +30,10 @@ export const SteeringSettingsSchema = z.object({
 
 export const GlobalSettingsSchema = z.object({
   models: z.record(z.string(), ModelConfigSchema),
+  // 可选：用户自定义 alias→ModelConfig 映射。前端创建 run 时可传 modelAlias
+  // 引用某条，替代 settings.models.<role> 的查表逻辑。baseURL 唯一来源是
+  // settings（models 或 modelAliases），credential 不再存 baseURL。
+  modelAliases: z.record(z.string(), ModelConfigSchema).optional(),
   tournament: TournamentSettingsSchema,
   concurrency: ConcurrencySettingsSchema,
   steering: SteeringSettingsSchema,
@@ -102,6 +106,7 @@ export async function getSettings(projectName?: string): Promise<GlobalSettings 
     ...global,
     ...project,
     models: { ...global.models, ...project.models },
+    modelAliases: { ...(global.modelAliases ?? {}), ...(project.modelAliases ?? {}) },
     tournament: { ...global.tournament, ...project.tournament },
     concurrency: { ...global.concurrency, ...project.concurrency },
     steering: { ...global.steering, ...project.steering },

@@ -8,7 +8,7 @@ import {
 import {
   type GlobalSettings,
   GlobalSettingsSchema,
-  type ModelConfig,
+  type ModelAlias,
   ModelConfigSchema,
 } from '@open-scientist/schema'
 import { Hono } from 'hono'
@@ -52,7 +52,7 @@ settings.get('/api/settings/models/:role', async (c) => {
 settings.put('/api/settings/models/:role', async (c) => {
   const role = c.req.param('role')
   const body = await c.req.json()
-  const cfg = ModelConfigSchema.parse(body) as ModelConfig
+  const cfg = ModelConfigSchema.parse(body) as ModelAlias
   const current = await getGlobalSettings()
   const models = { ...current.models, [role]: cfg }
   await setGlobalSettings({ ...current, models })
@@ -65,6 +65,35 @@ settings.delete('/api/settings/models/:role', async (c) => {
   const models = { ...current.models }
   delete models[role]
   await setGlobalSettings({ ...current, models })
+  return c.json({ ok: true })
+})
+
+// ─── Model aliases ──────────────────────────────────────────────────────────
+//
+// 前端可定义 alias→{provider,model,baseURL,thinkingLevel} 映射，创建 run 时
+// 传 modelAlias 字段引用。baseURL 唯一来源是 settings（models 或 modelAliases）。
+
+settings.get('/api/settings/model-aliases', async (c) => {
+  const s = await getGlobalSettings()
+  return c.json(s.modelAliases ?? {})
+})
+
+settings.put('/api/settings/model-aliases/:alias', async (c) => {
+  const alias = c.req.param('alias')
+  const body = await c.req.json()
+  const cfg = ModelConfigSchema.parse(body) as ModelAlias
+  const current = await getGlobalSettings()
+  const modelAliases = { ...(current.modelAliases ?? {}), [alias]: cfg }
+  await setGlobalSettings({ ...current, modelAliases })
+  return c.json(cfg)
+})
+
+settings.delete('/api/settings/model-aliases/:alias', async (c) => {
+  const alias = c.req.param('alias')
+  const current = await getGlobalSettings()
+  const modelAliases = { ...(current.modelAliases ?? {}) }
+  delete modelAliases[alias]
+  await setGlobalSettings({ ...current, modelAliases })
   return c.json({ ok: true })
 })
 

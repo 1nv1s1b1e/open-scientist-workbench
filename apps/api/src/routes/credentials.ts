@@ -41,12 +41,9 @@ credentials.post('/api/credentials', async (c) => {
     }
   }
 
-  const metadata: Record<string, unknown> = { ...(req.metadata ?? {}) }
-  if (req.baseURL) {
-    metadata.baseURL = req.baseURL
-  }
-
-  await store.add(req.provider, req.type, req.key, metadata)
+  // metadata 直接透传。credential 不再特指 baseURL（baseURL 唯一来源是 settings）。
+  // 现有 DB 记录里的 metadata.baseURL 兼容读取但不依赖。
+  await store.add(req.provider, req.type, req.key, req.metadata)
 
   const updated = await store.list()
   const added = updated.find((r) => r.provider === req.provider)

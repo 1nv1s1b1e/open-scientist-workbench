@@ -3,14 +3,44 @@ import { eq } from 'drizzle-orm'
 import { createProjectDb } from '../db.js'
 import { runs } from '../schema/project.js'
 
-export async function createRun(projectName: string, projectId: string) {
+export type RunStatus =
+  | 'pending'
+  | 'running'
+  | 'awaiting_approval'
+  | 'completed'
+  | 'failed'
+  | 'stopped'
+
+/**
+ * Optional overrides for {@link createRun}.
+ *
+ * By default `createRun` mints a fresh UUID for the run id and seeds
+ * `status='pending'`. The API layer, however, drives the workflow via
+ * `start(tournamentWorkflow, ...)` which returns its own run id — that id must
+ * be persisted so subsequent `GET /stream` / `POST /stop` requests (which carry
+ * the SDK run id from the `x-workflow-run-id` response header) can look the run
+ * up. Callers therefore pass `{ id: run.runId, status: 'running' }`.
+ */
+export interface CreateRunOptions {
+  /** Explicit run id (e.g. the SDK `Run.runId`). Defaults to a fresh UUID. */
+  id?: string
+  /** Initial status. Defaults to `'pending'`. */
+  status?: RunStatus
+}
+
+export async function createRun(
+  projectName: string,
+  projectId: string,
+  options?: CreateRunOptions,
+) {
   const { db } = createProjectDb(projectName)
-  const id = randomUUID()
+  const id = options?.id ?? randomUUID()
+  const status: RunStatus = options?.status ?? 'pending'
   const now = new Date().toISOString()
   db.insert(runs)
-    .values({ id, projectId, status: 'pending', startedAt: now, currentRound: 0, bestF1: 0 })
+    .values({ id, projectId, status, startedAt: now, currentRound: 0, bestF1: 0 })
     .run()
-  return { id, projectId, status: 'pending' as const, startedAt: now }
+  return { id, projectId, status, startedAt: now }
 }
 
 export async function getRun(projectName: string, runId: string) {
@@ -23,11 +53,7 @@ export async function listRuns(projectName: string) {
   return db.select().from(runs).all()
 }
 
-export async function updateRunStatus(
-  projectName: string,
-  runId: string,
-  status: 'pending' | 'running' | 'awaiting_approval' | 'completed' | 'failed' | 'stopped',
-) {
+export async function updateRunStatus(projectName: string, runId: string, status: RunStatus) {
   const { db } = createProjectDb(projectName)
   db.update(runs)
     .set({

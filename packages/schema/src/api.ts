@@ -15,6 +15,9 @@ export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>
 export const StartRunRequestSchema = z.object({
   seed: z.string().min(1),
   context: z.string().optional(),
+  // 可选：引用 settings.modelAliases 中的某个 alias 名（如 "qwen-80b"）。
+  // 传了 alias 时忽略 settings.models.sisyphus/default，从 alias 解析完整 config。
+  modelAlias: z.string().min(1).optional(),
 })
 export type StartRunRequest = z.infer<typeof StartRunRequestSchema>
 

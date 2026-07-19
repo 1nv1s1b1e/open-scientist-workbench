@@ -168,6 +168,96 @@ describe('GET / PUT / DELETE /api/settings/models/:role', () => {
   })
 })
 
+describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
+  it('GET returns empty object when no aliases are defined', async () => {
+    const res = await app.request('/api/settings/model-aliases')
+    expect(res.status).toBe(200)
+    expect(await json(res)).toEqual({})
+  })
+
+  it('PUT sets a model alias → 200, then GET lists it', async () => {
+    const put = await app.request('/api/settings/model-aliases/qwen-80b', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'openai',
+        model: 'qwen-2.5-80b',
+        baseURL: 'http://gw.qwen/v1',
+        thinkingLevel: 'high',
+      }),
+    })
+    expect(put.status).toBe(200)
+    const putBody = await json(put)
+    expect(putBody.model).toBe('qwen-2.5-80b')
+    expect(putBody.baseURL).toBe('http://gw.qwen/v1')
+
+    const list = await app.request('/api/settings/model-aliases')
+    expect(list.status).toBe(200)
+    const aliases = await json(list)
+    expect(aliases['qwen-80b'].model).toBe('qwen-2.5-80b')
+  })
+
+  it('PUT overwrites an existing alias', async () => {
+    await app.request('/api/settings/model-aliases/fast', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'openai', model: 'gpt-4o-mini' }),
+    })
+    const put = await app.request('/api/settings/model-aliases/fast', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'openai', model: 'gpt-4o' }),
+    })
+    expect(put.status).toBe(200)
+    const list = await app.request('/api/settings/model-aliases')
+    const aliases = await json(list)
+    expect(aliases['fast'].model).toBe('gpt-4o')
+  })
+
+  it('DELETE removes an alias', async () => {
+    await app.request('/api/settings/model-aliases/smart', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'anthropic', model: 'claude-3' }),
+    })
+    const del = await app.request('/api/settings/model-aliases/smart', { method: 'DELETE' })
+    expect(del.status).toBe(200)
+    expect(await json(del)).toEqual({ ok: true })
+
+    const list = await app.request('/api/settings/model-aliases')
+    const aliases = await json(list)
+    expect(aliases['smart']).toBeUndefined()
+  })
+
+  it('DELETE on an unknown alias is a no-op → 200', async () => {
+    const del = await app.request('/api/settings/model-aliases/never-set', { method: 'DELETE' })
+    expect(del.status).toBe(200)
+    expect(await json(del)).toEqual({ ok: true })
+  })
+
+  it('PUT rejects an invalid ModelConfig (missing model) → 500 (zod throw → onError)', async () => {
+    const res = await app.request('/api/settings/model-aliases/bad', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'openai' }),
+    })
+    expect(res.status).toBe(500)
+  })
+
+  it('aliases surface on GET /api/settings', async () => {
+    await app.request('/api/settings/model-aliases/x', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'openai', model: 'm' }),
+    })
+    const res = await app.request('/api/settings')
+    expect(res.status).toBe(200)
+    const body = await json(res)
+    expect(body.modelAliases).toBeDefined()
+    expect(body.modelAliases.x.model).toBe('m')
+  })
+})
+
 describe('POST /api/projects', () => {
   it('creates a project with a valid name → 201', async () => {
     const res = await app.request('/api/projects', {
