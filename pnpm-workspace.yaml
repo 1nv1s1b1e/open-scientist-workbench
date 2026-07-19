@@ -2,9 +2,11 @@ packages:
   - 'apps/*'
   - 'packages/*'
 allowBuilds:
+  '@mongodb-js/zstd': false
   '@swc/core': false
   better-sqlite3: true
   cbor-extract: false
   esbuild: true
+  node-liblzma: false
 minimumReleaseAgeExclude:
   - hono@4.12.31

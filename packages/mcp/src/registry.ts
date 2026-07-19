@@ -17,7 +17,7 @@ export interface McpServerConfig {
 
 const clients = new Map<string, MCPClient>()
 
-function resolveTransport(server: McpServerConfig): MCPClientConfig['transport'] {
+export function resolveTransport(server: McpServerConfig): MCPClientConfig['transport'] {
   if (server.transport === 'http') {
     return { type: 'http', url: server.url!, headers: server.headers }
   }
