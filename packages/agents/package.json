@@ -1,0 +1,35 @@
+{
+  "name": "@open-scientist/agents",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./sisyphus": "./src/sisyphus/index.ts",
+    "./librarian": "./src/librarian/index.ts",
+    "./looker": "./src/looker/index.ts",
+    "./explore": "./src/explore/index.ts",
+    "./oracle": "./src/oracle/index.ts",
+    "./prometheus": "./src/prometheus/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@open-scientist/schema": "workspace:*",
+    "@open-scientist/config": "workspace:*",
+    "@open-scientist/tools": "workspace:*",
+    "@open-scientist/skills": "workspace:*",
+    "@open-scientist/helix": "workspace:*",
+    "@open-scientist/mcp": "workspace:*",
+    "@ai-sdk/workflow": "^1.0.31",
+    "@ai-sdk/provider-utils": "latest",
+    "ai": "^7.0.31",
+    "workflow": "^4.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

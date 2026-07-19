@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "plugins": [{ "name": "workflow" }]
+  },
+  "include": ["src/**/*.ts"]
+}
