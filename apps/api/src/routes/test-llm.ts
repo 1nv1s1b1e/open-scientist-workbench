@@ -9,6 +9,13 @@ import { Hono } from 'hono'
 
 export const testLlm = new Hono()
 
+// 依赖注入点：测试可替换 generateText 实现，避免 vi.doMock + resetModules。
+// 生产环境使用从 'ai' 导入的真实 generateText。
+let generateTextFn: typeof generateText = generateText
+export function setGenerateTextFn(fn: typeof generateText): void {
+  generateTextFn = fn
+}
+
 testLlm.post('/api/test-llm', async (c) => {
   const body = await c.req.json()
   const req = TestLlmRequestSchema.parse(body) as TestLlmRequest
@@ -24,7 +31,7 @@ testLlm.post('/api/test-llm', async (c) => {
       },
       req.apiKey,
     )
-    const result = await generateText({
+    const result = await generateTextFn({
       model,
       prompt: req.prompt,
       maxOutputTokens: req.maxTokens,
