@@ -12,29 +12,9 @@ import {
   ModelConfigSchema,
 } from '@open-scientist/schema'
 import { Hono } from 'hono'
+import { deepMerge } from '../lib/deep-merge.js'
 
 export const settings = new Hono()
-
-function deepMerge<T extends Record<string, unknown>>(base: T, patch: Partial<T>): T {
-  const out: Record<string, unknown> = { ...base }
-  for (const key of Object.keys(patch ?? {})) {
-    const bv = (base as Record<string, unknown>)[key]
-    const pv = (patch as Record<string, unknown>)[key]
-    if (
-      bv &&
-      pv &&
-      typeof bv === 'object' &&
-      !Array.isArray(bv) &&
-      typeof pv === 'object' &&
-      !Array.isArray(pv)
-    ) {
-      out[key] = deepMerge(bv as Record<string, unknown>, pv as Record<string, unknown>)
-    } else if (pv !== undefined) {
-      out[key] = pv
-    }
-  }
-  return out as T
-}
 
 settings.get('/api/settings', async (c) => {
   const s = await getGlobalSettings()
