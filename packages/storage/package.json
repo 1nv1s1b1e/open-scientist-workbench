@@ -1,0 +1,30 @@
+{
+  "name": "@open-scientist/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts && drizzle-kit generate --config drizzle.project.config.ts",
+    "db:generate:global": "drizzle-kit generate --config drizzle.config.ts",
+    "db:generate:project": "drizzle-kit generate --config drizzle.project.config.ts",
+    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts"
+  },
+  "dependencies": {
+    "@open-scientist/schema": "workspace:*",
+    "@open-scientist/config": "workspace:*",
+    "@open-scientist/logger": "workspace:*",
+    "better-sqlite3": "^12.11.1",
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "@libsql/client": "^0.14.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^7.0.2"
+  }
+}

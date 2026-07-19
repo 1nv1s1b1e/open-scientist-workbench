@@ -1,0 +1,23 @@
+{
+  "name": "@open-scientist/helix",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "generate-queries": "helix queries compile src/queries.ts --output src/queries.json"
+  },
+  "dependencies": {
+    "@helix-db/helix-db": "^2.0.5",
+    "@open-scientist/schema": "workspace:*",
+    "@open-scientist/config": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
