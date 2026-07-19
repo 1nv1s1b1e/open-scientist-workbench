@@ -21,7 +21,7 @@ export const searchPapersTool = tool({
   outputSchema: z.object({
     papers: z.array(
       z.object({
-        id: z.string(),
+        id: z.number(),
         title: z.string(),
         abstract: z.string().optional(),
         authors: z.array(z.string()),
@@ -45,7 +45,7 @@ export const searchHypothesesTool = tool({
   outputSchema: z.object({
     hypotheses: z.array(
       z.object({
-        id: z.string(),
+        id: z.number(),
         statement: z.string(),
         roundId: z.number(),
         runId: z.string(),
@@ -68,7 +68,7 @@ export const getHypothesisTool = tool({
   outputSchema: z.object({
     hypothesis: z
       .object({
-        id: z.string(),
+        id: z.number(),
         statement: z.string(),
         roundId: z.number(),
         runId: z.string(),
@@ -91,8 +91,8 @@ export const getEvidenceByHypothesisTool = tool({
   outputSchema: z.object({
     evidence: z.array(
       z.object({
-        id: z.string(),
-        hypothesisId: z.string(),
+        id: z.number(),
+        hypothesisId: z.number(),
         type: z.enum(['support', 'contradict']),
         content: z.string(),
         f1Score: z.number(),
@@ -116,8 +116,8 @@ export const getCritiquesByHypothesisTool = tool({
   outputSchema: z.object({
     critiques: z.array(
       z.object({
-        id: z.string(),
-        hypothesisId: z.string(),
+        id: z.number(),
+        hypothesisId: z.number(),
         content: z.string(),
         severity: z.enum(['low', 'medium', 'high']),
         mutationType: z.string().optional(),
@@ -139,7 +139,7 @@ export const getRelatedConceptsTool = tool({
   outputSchema: z.object({
     concepts: z.array(
       z.object({
-        id: z.string(),
+        id: z.number(),
         name: z.string(),
         description: z.string().optional(),
       }),
@@ -160,7 +160,7 @@ export const getLeaderboardTool = tool({
   outputSchema: z.object({
     hypotheses: z.array(
       z.object({
-        id: z.string(),
+        id: z.number(),
         statement: z.string(),
         roundId: z.number(),
         runId: z.string(),
@@ -183,7 +183,7 @@ export const getEvolutionChainTool = tool({
   outputSchema: z.object({
     hypotheses: z.array(
       z.object({
-        id: z.string(),
+        id: z.number(),
         statement: z.string(),
         roundId: z.number(),
         runId: z.string(),
@@ -206,7 +206,7 @@ export const getHypothesesByRoundTool = tool({
   outputSchema: z.object({
     hypotheses: z.array(
       z.object({
-        id: z.string(),
+        id: z.number(),
         statement: z.string(),
         roundId: z.number(),
         runId: z.string(),

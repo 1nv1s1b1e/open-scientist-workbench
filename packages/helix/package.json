@@ -9,6 +9,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
+    "test": "vitest run",
     "generate-queries": "bun -e \"import('./src/queries.ts').then(() => console.log('queries.json generated')).catch(e => { console.error(e); process.exit(1) })\""
   },
   "dependencies": {

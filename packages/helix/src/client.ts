@@ -19,41 +19,52 @@ export function getHelixClient(): Client {
 }
 
 // ------------------------------------------------------------
-// 批量查询返回的容器形状（readBatch().returning([...]) 产生的对象）
+// 批量查询返回的容器形状
+// HelixDB read 查询返回 { <var>:{ properties: T[], ids?: number[] } }，
+// 其中 properties 数组每项是投影后的属性对象（含 Expr.id() 投影出的 id 字段）。
 // ------------------------------------------------------------
 
+interface ReadContainer<T> {
+  properties?: T[]
+  ids?: number[]
+}
+
 interface PapersResult {
-  papers: PaperNode[]
+  papers: ReadContainer<PaperNode>
 }
 interface HypothesesResult {
-  hypos: HypothesisNode[]
+  hypos: ReadContainer<HypothesisNode>
 }
 interface HypoResult {
-  hypo: HypothesisNode[]
+  hypo: ReadContainer<HypothesisNode>
 }
 interface PaperResult {
-  paper: PaperNode[]
+  paper: ReadContainer<PaperNode>
 }
 interface ConceptsResult {
-  concepts: ConceptNode[]
+  concepts: ReadContainer<ConceptNode>
 }
 interface CritiquesResult {
-  critiques: CritiqueNode[]
+  critiques: ReadContainer<CritiqueNode>
 }
 interface SnapshotResult {
-  snapshot: SnapshotNode[]
+  snapshot: ReadContainer<SnapshotNode>
 }
 interface EvidenceByHypoResult {
-  support: EvidenceNode[]
-  contradict: EvidenceNode[]
+  support: ReadContainer<EvidenceNode>
+  contradict: ReadContainer<EvidenceNode>
 }
 interface ConceptResult {
-  concept: ConceptNode[]
+  concept: ReadContainer<ConceptNode>
 }
 
 // ------------------------------------------------------------
 // 帮助函数
 // ------------------------------------------------------------
+
+function unwrap<T>(container: ReadContainer<T> | undefined): T[] {
+  return container?.properties ?? []
+}
 
 function first<T>(arr: T[] | undefined): T | null {
   return arr && arr.length > 0 ? arr[0]! : null
@@ -68,7 +79,7 @@ export async function searchPapers(query: string, k = 10): Promise<PaperNode[]> 
     .query<PapersResult>()
     .dynamic(queries.call.searchPapers({ queryText: query, k: BigInt(k) }))
     .send()
-  return res.papers ?? []
+  return unwrap(res.papers)
 }
 
 export async function searchPapersVector(queryVector: number[], k = 10): Promise<PaperNode[]> {
@@ -76,7 +87,7 @@ export async function searchPapersVector(queryVector: number[], k = 10): Promise
     .query<PapersResult>()
     .dynamic(queries.call.searchPapersVector({ queryVector, k: BigInt(k) }))
     .send()
-  return res.papers ?? []
+  return unwrap(res.papers)
 }
 
 export async function searchHypotheses(query: string, k = 10): Promise<HypothesisNode[]> {
@@ -84,7 +95,7 @@ export async function searchHypotheses(query: string, k = 10): Promise<Hypothesi
     .query<HypothesesResult>()
     .dynamic(queries.call.searchHypotheses({ queryText: query, k: BigInt(k) }))
     .send()
-  return res.hypos ?? []
+  return unwrap(res.hypos)
 }
 
 export async function searchHypothesesVector(
@@ -95,7 +106,7 @@ export async function searchHypothesesVector(
     .query<HypothesesResult>()
     .dynamic(queries.call.searchHypothesesVector({ queryVector, k: BigInt(k) }))
     .send()
-  return res.hypos ?? []
+  return unwrap(res.hypos)
 }
 
 export async function getPaper(id: string | number | bigint): Promise<PaperNode | null> {
@@ -103,7 +114,7 @@ export async function getPaper(id: string | number | bigint): Promise<PaperNode 
     .query<PaperResult>()
     .dynamic(queries.call.getPaper({ id: BigInt(id) }))
     .send()
-  return first(res.paper)
+  return first(unwrap(res.paper))
 }
 
 export async function getHypothesis(id: string | number | bigint): Promise<HypothesisNode | null> {
@@ -111,7 +122,7 @@ export async function getHypothesis(id: string | number | bigint): Promise<Hypot
     .query<HypoResult>()
     .dynamic(queries.call.getHypothesis({ id: BigInt(id) }))
     .send()
-  return first(res.hypo)
+  return first(unwrap(res.hypo))
 }
 
 export async function getHypothesesByPaper(
@@ -121,7 +132,7 @@ export async function getHypothesesByPaper(
     .query<HypothesesResult>()
     .dynamic(queries.call.getHypothesesByPaper({ paperId: BigInt(paperId) }))
     .send()
-  return res.hypos ?? []
+  return unwrap(res.hypos)
 }
 
 export async function getEvidenceByHypothesis(
@@ -131,7 +142,7 @@ export async function getEvidenceByHypothesis(
     .query<EvidenceByHypoResult>()
     .dynamic(queries.call.getEvidenceByHypothesis({ hypoId: BigInt(hypoId) }))
     .send()
-  return [...(res.support ?? []), ...(res.contradict ?? [])]
+  return [...unwrap(res.support), ...unwrap(res.contradict)]
 }
 
 export async function getCritiquesByHypothesis(
@@ -141,7 +152,7 @@ export async function getCritiquesByHypothesis(
     .query<CritiquesResult>()
     .dynamic(queries.call.getCritiquesByHypothesis({ hypoId: BigInt(hypoId) }))
     .send()
-  return res.critiques ?? []
+  return unwrap(res.critiques)
 }
 
 export async function getRelatedConcepts(hypoId: string | number | bigint): Promise<ConceptNode[]> {
@@ -149,7 +160,7 @@ export async function getRelatedConcepts(hypoId: string | number | bigint): Prom
     .query<ConceptsResult>()
     .dynamic(queries.call.getRelatedConcepts({ hypoId: BigInt(hypoId) }))
     .send()
-  return res.concepts ?? []
+  return unwrap(res.concepts)
 }
 
 export async function getSnapshot(roundId: number): Promise<SnapshotNode | null> {
@@ -157,7 +168,7 @@ export async function getSnapshot(roundId: number): Promise<SnapshotNode | null>
     .query<SnapshotResult>()
     .dynamic(queries.call.getSnapshot({ roundId: BigInt(roundId) }))
     .send()
-  return first(res.snapshot)
+  return first(unwrap(res.snapshot))
 }
 
 export async function getHypothesesByRound(roundId: number): Promise<HypothesisNode[]> {
@@ -165,7 +176,7 @@ export async function getHypothesesByRound(roundId: number): Promise<HypothesisN
     .query<HypothesesResult>()
     .dynamic(queries.call.getHypothesesByRound({ roundId: BigInt(roundId) }))
     .send()
-  return res.hypos ?? []
+  return unwrap(res.hypos)
 }
 
 export async function getEvolutionChain(
@@ -175,7 +186,7 @@ export async function getEvolutionChain(
     .query<HypothesesResult>()
     .dynamic(queries.call.getEvolutionChain({ hypoId: BigInt(hypoId) }))
     .send()
-  return res.hypos ?? []
+  return unwrap(res.hypos)
 }
 
 export async function getLeaderboard(runId: string, k = 10): Promise<HypothesisNode[]> {
@@ -183,7 +194,7 @@ export async function getLeaderboard(runId: string, k = 10): Promise<HypothesisN
     .query<HypothesesResult>()
     .dynamic(queries.call.getLeaderboard({ runId, k: BigInt(k) }))
     .send()
-  return res.hypos ?? []
+  return unwrap(res.hypos)
 }
 
 export async function getConceptByName(name: string): Promise<ConceptNode | null> {
@@ -191,7 +202,7 @@ export async function getConceptByName(name: string): Promise<ConceptNode | null
     .query<ConceptResult>()
     .dynamic(queries.call.getConceptByName({ name }))
     .send()
-  return first(res.concept)
+  return first(unwrap(res.concept))
 }
 
 // ------------------------------------------------------------
@@ -208,19 +219,18 @@ export interface AddPaperInput {
 }
 
 export async function addPaper(input: AddPaperInput): Promise<void> {
-  await getHelixClient()
-    .query()
-    .dynamic(
-      queries.call.addPaper({
-        title: input.title,
-        abstract: input.abstract,
-        authors: input.authors,
-        year: BigInt(input.year),
-        doi: input.doi ?? null,
-        embedding: input.embedding ?? null,
-      }),
-    )
-    .send()
+  const base = {
+    title: input.title,
+    abstract: input.abstract,
+    authors: input.authors,
+    year: BigInt(input.year),
+    doi: input.doi ?? null,
+  }
+  const req =
+    input.embedding && input.embedding.length > 0
+      ? queries.call.addPaperWithEmbedding({ ...base, embedding: input.embedding })
+      : queries.call.addPaper(base)
+  await getHelixClient().query().dynamic(req).send()
 }
 
 export interface AddHypothesisInput {
@@ -239,21 +249,18 @@ export interface AddHypothesisInput {
 }
 
 export async function addHypothesis(input: AddHypothesisInput): Promise<void> {
-  await getHelixClient()
-    .query()
-    .dynamic(
-      queries.call.addHypothesis({
-        statement: input.statement,
-        roundId: BigInt(input.roundId),
-        runId: input.runId,
-        f1Score: input.f1Score,
-        embedding: input.embedding ?? null,
-        createdAt: input.createdAt,
-      }),
-    )
-    .send()
-  // 注意：CAPTURED_IN / CITES 等连边需要新建节点的 id，
-  // SDK write 查询不返回新 id，故连边须由调用方拿到 id 后另行调用 addCitesEdge。
+  const base = {
+    statement: input.statement,
+    roundId: BigInt(input.roundId),
+    runId: input.runId,
+    f1Score: input.f1Score,
+    createdAt: input.createdAt,
+  }
+  const req =
+    input.embedding && input.embedding.length > 0
+      ? queries.call.addHypothesisWithEmbedding({ ...base, embedding: input.embedding })
+      : queries.call.addHypothesis(base)
+  await getHelixClient().query().dynamic(req).send()
 }
 
 export interface AddCitesEdgeInput {
@@ -423,4 +430,16 @@ export async function upsertConcept(input: UpsertConceptInput): Promise<void> {
       }),
     )
     .send()
+}
+
+// ------------------------------------------------------------
+// Index 管理
+// ------------------------------------------------------------
+
+let indexesEnsured = false
+
+export async function ensureIndexes(): Promise<void> {
+  if (indexesEnsured) return
+  await getHelixClient().query().dynamic(queries.call.ensureIndexes({})).send()
+  indexesEnsured = true
 }

@@ -15,6 +15,7 @@
 import {
   defineParams,
   defineQueries,
+  Expr,
   g,
   NodeRef,
   Order,
@@ -35,7 +36,7 @@ import {
 // ------------------------------------------------------------
 
 const PAPER_PROJ = [
-  Projection.property('id', 'id'),
+  Projection.expr('id', Expr.id()),
   Projection.property('title', 'title'),
   Projection.property('abstract', 'abstract'),
   Projection.property('authors', 'authors'),
@@ -45,7 +46,7 @@ const PAPER_PROJ = [
 ]
 
 const HYPOTHESIS_PROJ = [
-  Projection.property('id', 'id'),
+  Projection.expr('id', Expr.id()),
   Projection.property('statement', 'statement'),
   Projection.property('roundId', 'roundId'),
   Projection.property('runId', 'runId'),
@@ -55,7 +56,7 @@ const HYPOTHESIS_PROJ = [
 ]
 
 const EVIDENCE_PROJ = [
-  Projection.property('id', 'id'),
+  Projection.expr('id', Expr.id()),
   Projection.property('hypothesisId', 'hypothesisId'),
   Projection.property('type', 'type'),
   Projection.property('content', 'content'),
@@ -66,7 +67,7 @@ const EVIDENCE_PROJ = [
 ]
 
 const CRITIQUE_PROJ = [
-  Projection.property('id', 'id'),
+  Projection.expr('id', Expr.id()),
   Projection.property('hypothesisId', 'hypothesisId'),
   Projection.property('content', 'content'),
   Projection.property('severity', 'severity'),
@@ -75,13 +76,13 @@ const CRITIQUE_PROJ = [
 ]
 
 const CONCEPT_PROJ = [
-  Projection.property('id', 'id'),
+  Projection.expr('id', Expr.id()),
   Projection.property('name', 'name'),
   Projection.property('description', 'description'),
 ]
 
 const SNAPSHOT_PROJ = [
-  Projection.property('id', 'id'),
+  Projection.expr('id', Expr.id()),
   Projection.property('roundId', 'roundId'),
   Projection.property('runId', 'runId'),
   Projection.property('hypothesisIds', 'hypothesisIds'),
@@ -294,6 +295,12 @@ const getRelatedConcepts = registerRead(
 )
 
 // 11. getSnapshot — 按 roundId 取 Snapshot
+// 注意：不要用 `g().nWhere(SourcePredicate.eq('roundId', p.roundId)).hasLabel('Snapshot')`。
+// 实测在 HelixDB v3.0.8 上，NWhere 步骤后接独立 HasLabel 步骤对 i64 属性参数不生效
+// （NWhere 的 EqExpr 源生成与 HasLabel 不组合，返回 0 节点；String 属性碰巧能命中）。
+// 必须用 nWithLabelWhere 把 label 和属性谓词合并进同一个 NWhere And，等价于
+//   NWhere{ And:[ Eq["$label",...], EqExpr[prop, Param] ] }
+// 该写法与 getLeaderboard 一致，curl 实验已验证可匹配 Snapshot 节点。
 const getSnapshotParams = defineParams({
   roundId: param.i64(),
 })
@@ -304,8 +311,7 @@ const getSnapshot = registerRead(
       .varAs(
         'snapshot',
         g()
-          .nWhere(SourcePredicate.eq('roundId', p.roundId))
-          .hasLabel('Snapshot')
+          .nWithLabelWhere('Snapshot', SourcePredicate.eq('roundId', p.roundId))
           .limit(1)
           .project(SNAPSHOT_PROJ),
       )
@@ -314,6 +320,8 @@ const getSnapshot = registerRead(
 )
 
 // 12. getHypothesesByRound — Snapshot → in('CAPTURED_IN') → Hypothesis
+// 同 getSnapshot：用 nWithLabelWhere 而非 nWhere+hasLabel，否则 NWhere 对 i64 属性
+// 不匹配，后续 in() 遍历起点为空。
 const getHypothesesByRoundParams = defineParams({
   roundId: param.i64(),
 })
@@ -324,8 +332,7 @@ const getHypothesesByRound = registerRead(
       .varAs(
         'hypos',
         g()
-          .nWhere(SourcePredicate.eq('roundId', p.roundId))
-          .hasLabel('Snapshot')
+          .nWithLabelWhere('Snapshot', SourcePredicate.eq('roundId', p.roundId))
           .in('CAPTURED_IN')
           .hasLabel('Hypothesis')
           .project(HYPOTHESIS_PROJ),
@@ -382,6 +389,8 @@ const getLeaderboard = registerRead(
 )
 
 // 21b. getConceptByName — 配合 upsert 查重（read，提前列出）
+// 同 getSnapshot：统一改用 nWithLabelWhere（虽然 String 属性下 nWhere+hasLabel 也能命中，
+// 但为与其它按属性查节点的查询保持一致，并避免 i64 场景踩同样的坑，统一写法）。
 const getConceptByNameParams = defineParams({
   name: param.string(),
 })
@@ -392,8 +401,7 @@ const getConceptByName = registerRead(
       .varAs(
         'concept',
         g()
-          .nWhere(SourcePredicate.eq('name', p.name))
-          .hasLabel('Concept')
+          .nWithLabelWhere('Concept', SourcePredicate.eq('name', p.name))
           .limit(1)
           .project(CONCEPT_PROJ),
       )
@@ -405,16 +413,17 @@ const getConceptByName = registerRead(
 // WRITE 查询
 // ------------------------------------------------------------
 
-// 15. addPaper
-// 可选字段 doi / embedding 用 param.value()（允许 null/undefined）；
-// client 封装需对缺失字段显式传 null。
+// 15. addPaper — addN('Paper')
+// embedding 拆为独立查询 addPaperWithEmbedding：建了 vector index 后，
+// embedding 属性必须是非空数组，传 null/[] 会报 "indexed vector property requires an array value"。
+// 因此无 embedding 时完全不写入该属性（addPaper），有 embedding 时写入（addPaperWithEmbedding）。
+// doi 同样可选，但无 index 约束，用 param.value() 允许 null 即可。
 const addPaperParams = defineParams({
   title: param.string(),
   abstract: param.string(),
   authors: param.array(param.string()),
   year: param.i64(),
   doi: param.value(),
-  embedding: param.value(),
 })
 
 const addPaper = registerWrite(
@@ -427,20 +436,44 @@ const addPaper = registerWrite(
         ['authors', p.authors],
         ['year', p.year],
         ['doi', p.doi],
-        ['embedding', p.embedding],
       ]),
     ),
   addPaperParams,
 )
 
+const addPaperWithEmbeddingParams = defineParams({
+  title: param.string(),
+  abstract: param.string(),
+  authors: param.array(param.string()),
+  year: param.i64(),
+  doi: param.value(),
+  embedding: param.array(param.f32()),
+})
+
+const addPaperWithEmbedding = registerWrite(
+  (p) =>
+    writeBatch().varAs(
+      'paper',
+      g().addN('Paper', [
+        ['title', p.title],
+        ['abstract', p.abstract],
+        ['authors', p.authors],
+        ['year', p.year],
+        ['doi', p.doi],
+        ['embedding', p.embedding],
+      ]),
+    ),
+  addPaperWithEmbeddingParams,
+)
+
 // 16. addHypothesis — addN('Hypothesis')
+// embedding 拆分原因同 addPaper（Hypothesis:embedding 也有 vector index）。
 // 可选 CITES 边由 addCitesEdge 独立建立（条件连边无法在静态 builder 里分支）。
 const addHypothesisParams = defineParams({
   statement: param.string(),
   roundId: param.i64(),
   runId: param.string(),
   f1Score: param.f64(),
-  embedding: param.value(),
   createdAt: param.string(),
 })
 
@@ -453,11 +486,35 @@ const addHypothesis = registerWrite(
         ['roundId', p.roundId],
         ['runId', p.runId],
         ['f1Score', p.f1Score],
-        ['embedding', p.embedding],
         ['createdAt', p.createdAt],
       ]),
     ),
   addHypothesisParams,
+)
+
+const addHypothesisWithEmbeddingParams = defineParams({
+  statement: param.string(),
+  roundId: param.i64(),
+  runId: param.string(),
+  f1Score: param.f64(),
+  embedding: param.array(param.f32()),
+  createdAt: param.string(),
+})
+
+const addHypothesisWithEmbedding = registerWrite(
+  (p) =>
+    writeBatch().varAs(
+      'hypo',
+      g().addN('Hypothesis', [
+        ['statement', p.statement],
+        ['roundId', p.roundId],
+        ['runId', p.runId],
+        ['f1Score', p.f1Score],
+        ['embedding', p.embedding],
+        ['createdAt', p.createdAt],
+      ]),
+    ),
+  addHypothesisWithEmbeddingParams,
 )
 
 // 16b. addCitesEdge — 从 Hypothesis 加 CITES 边到 Paper（配合 addHypothesis 可选调用）
@@ -638,6 +695,20 @@ const updateConceptDescription = registerWrite(
   updateConceptDescriptionParams,
 )
 
+// 22. ensureIndexes — 创建 text + vector index（idempotent, if_not_exists: true）
+//     HelixDB v3 的 TextSearchNodes / VectorSearchNodes 要求属性上预先存在对应 index，
+//     否则返回 "Vector index not found: text index not found for Node <Label>:<prop>"。
+//     此查询幂等（CreateIndex 带 if_not_exists），可在 client 初始化时调用。
+const ensureIndexes = registerWrite(
+  () =>
+    writeBatch()
+      .varAs('i1', g().createTextIndexNodes('Paper', 'title'))
+      .varAs('i2', g().createVectorIndexNodes('Paper', 'embedding'))
+      .varAs('i3', g().createTextIndexNodes('Hypothesis', 'statement'))
+      .varAs('i4', g().createVectorIndexNodes('Hypothesis', 'embedding')),
+  defineParams({}),
+)
+
 // ============================================================
 // 顶层 queries 对象
 // ============================================================
@@ -662,7 +733,9 @@ export const queries = defineQueries({
   },
   write: {
     addPaper,
+    addPaperWithEmbedding,
     addHypothesis,
+    addHypothesisWithEmbedding,
     addCitesEdge,
     addSupportingEvidence,
     addContradictingEvidence,
@@ -672,6 +745,7 @@ export const queries = defineQueries({
     addCaptureInEdge,
     upsertConcept,
     updateConceptDescription,
+    ensureIndexes,
   },
 })
 

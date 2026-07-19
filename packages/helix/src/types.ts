@@ -1,7 +1,8 @@
 // HelixDB 节点类型定义（与 queries.ts 投影一致）
+// id 由 Projection.expr('id', Expr.id()) 投影，HelixDB 返回 i64 → JS number。
 
 export interface PaperNode {
-  id: string
+  id: number
   title: string
   abstract?: string
   authors: string[]
@@ -11,7 +12,7 @@ export interface PaperNode {
 }
 
 export interface HypothesisNode {
-  id: string
+  id: number
   statement: string
   roundId: number
   runId: string
@@ -21,8 +22,8 @@ export interface HypothesisNode {
 }
 
 export interface EvidenceNode {
-  id: string
-  hypothesisId: string
+  id: number
+  hypothesisId: number
   type: 'support' | 'contradict'
   content: string
   f1Score: number
@@ -32,8 +33,8 @@ export interface EvidenceNode {
 }
 
 export interface CritiqueNode {
-  id: string
-  hypothesisId: string
+  id: number
+  hypothesisId: number
   content: string
   severity: 'low' | 'medium' | 'high'
   mutationType?: string
@@ -41,16 +42,16 @@ export interface CritiqueNode {
 }
 
 export interface ConceptNode {
-  id: string
+  id: number
   name: string
   description?: string
 }
 
 export interface SnapshotNode {
-  id: string
+  id: number
   roundId: number
   runId: string
-  hypothesisIds: string[]
+  hypothesisIds: number[]
   createdAt: string
 }
 
