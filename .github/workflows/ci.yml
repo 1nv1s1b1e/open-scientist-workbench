@@ -23,9 +23,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: biome format --check .
-
-      - run: pnpm lint
+      - run: pnpm ci:check
 
       - run: pnpm typecheck
 

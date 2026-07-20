@@ -1,12 +1,14 @@
 {
   "name": "open-scientist",
   "private": true,
+  "packageManager": "pnpm@11.15.1",
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @open-scientist/api dev",
     "build": "pnpm -r build",
     "lint": "biome check .",
     "format": "biome format --write .",
+    "ci:check": "biome ci .",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "db:generate": "pnpm --filter @open-scientist/storage db:generate",
