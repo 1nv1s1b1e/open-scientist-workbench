@@ -10,11 +10,14 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "db:generate": "pnpm --filter @open-scientist/storage db:generate",
-    "db:migrate": "pnpm --filter @open-scientist/storage db:migrate"
+    "db:migrate": "pnpm --filter @open-scientist/storage db:migrate",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
     "@types/node": "^26.1.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.1.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   },
