@@ -228,7 +228,7 @@
 ### 已验证
 - HelixDB 本地启动（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969，dev instance，in-memory storage）+ 10 个集成测试通过（Docker `ghcr.io/helixdb/enterprise-dev` 也可用）
 - Python venv（`uv venv /tmp/solar-test`，astropy 8.0.1/sunpy 8.0.0/scipy 1.18.0/numpy 2.5.1）+ FITS 创建读回
-- API 端到端：health/settings/credentials/test-llm 全 200（LLM 用 `http://<internal-llm-host>:8084/v1` + `llab/Qwen3-Next-80B-A3B-Instruct`，500ms 响应）
+- API 端到端：health/settings/credentials/test-llm 全 200（LLM 用内部端点 + `llab/Qwen3-Next-80B-A3B-Instruct`，500ms 响应）
 - `@ai-sdk/openai` 用 `openai.chat(model)` 而非 `openai(model)`（第三方网关只完整支持 Chat Completions API）
 - workflow builder 注册 6 个 workflow 成功（`workflows build complete (18 steps, 6 workflows)`）
 - nitro workflow 内部路由可达（`/.well-known/workflow/v1/flow` 返 400 而非 404）
@@ -368,5 +368,5 @@
 - **pnpm** 11.x（`node-linker=hoisted`，`allowBuilds` for better-sqlite3 + esbuild）
 - **HelixDB** v3.0.8 CLI（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969，dev instance in-memory；Docker `ghcr.io/helixdb/enterprise-dev` 也可用；`helix.toml` gitignored）
 - **Python** v3.9.6 系统 + `uv venv /tmp/solar-test`（astropy 8.0.1/sunpy 8.0.0/scipy 1.18.0/numpy 2.5.1）
-- **LLM 测试端点**：`http://<internal-llm-host>:8084/v1` + key `sk-<redacted>` + 模型 `llab/Qwen3-Next-80B-A3B-Instruct`
+- **LLM 测试端点**：内部端点 + key（已脱敏） + 模型 `llab/Qwen3-Next-80B-A3B-Instruct`
 - **服务重启**：`pkill -f 'nitro.*dev'; rm -rf apps/api/node_modules/.nitro apps/api/.output; nohup pnpm --filter @open-scientist/api dev > /tmp/nitro-X.log 2>&1 &`
