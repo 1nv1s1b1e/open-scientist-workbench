@@ -7,7 +7,7 @@ Open-scientist：太阳物理多智能体假设生成与证据推理系统（赛
 ```bash
 pnpm lint           # biome check .（lint + format）
 pnpm format         # biome format --write .
-pnpm typecheck      # 全 10 包 tsc --noEmit
+pnpm typecheck      # 全 11 包 tsc --noEmit
 pnpm test           # vitest run（测试文件 *.test.ts）
 pnpm lint -- --write     # biome auto-fix
 pnpm dev            # 启动 apps/api（nitro dev）
@@ -16,6 +16,8 @@ pnpm db:migrate     # drizzle-kit migrate（storage 包）
 ```
 
 - 单包操作：`pnpm --filter @open-scientist/agents typecheck`
+- web 单独验证：`cd apps/web && npx tsc --noEmit && npx biome check .`（web 用 TS 6.0.3，其余包 TS 7.0.2）
+- web dev server：`cd apps/web && npx next dev -p 5173`
 - 加依赖：在对应 package.json 加 + `pnpm install`（pnpm workspaces，node-linker=hoisted）
 - 测试框架：`vitest`，测试文件放 `*.test.ts`
 
@@ -29,10 +31,11 @@ Node.js + pnpm + TypeScript 7 + Biome 2.5 + Zod 4 + Hono + Nitro（workflow/nitr
 - **Agent**：全 6 角色用 `WorkflowAgent`（`@ai-sdk/workflow`，durable 版 ToolLoopAgent）。三文件边界：`agent.ts`（构造）/ `workflow.ts`（`'use workflow'`）/ `steps/`（`'use step'` 可重试）
 - **Build**：Nitro（`apps/api/nitro.config.ts` 配 `modules: ['workflow/nitro']`），非 Hono 自带 build
 
-## Monorepo 结构（10 包）
+## Monorepo 结构（11 包）
 
 ```
 apps/api        — Hono + Nitro REST 入口（8 routes：health/settings/credentials/projects/test-llm/runs/dev-probe，settings 下含 model-aliases 子路由）
+apps/web        — Next.js 16 + React 19 + assistant-ui 前端（Tailwind v4 + xAI 风格）
 packages/
   agents        — 6 WorkflowAgent（sisyphus/librarian/looker/explore/oracle/prometheus）
   tools         — bash/helix-query/fits-align/mhd-config/load-skill
@@ -40,12 +43,12 @@ packages/
   mcp           — MCP server registry + trust + 漂移检测
   storage       — 双 SQLite（global + per-project）+ Drizzle + 8 repo
   helix         — HelixDB client + queries DSL
-  schema        — Zod schemas（零业务依赖）
+  schema        — Zod schemas（零业务依赖）+ Credential/CredentialRecord/CredentialStore 接口（避免 config→storage 循环依赖）
   config        — paths + settings 两层 merge + models（ModelArg + createModelFromConfig）
   logger        — consola wrapper + 11 个预定义 tag
 ```
 
-依赖方向：`schema`（零依赖）← 所有包；`logger` ← 所有包；`config → storage`（单向读 credentials/settings）；`agents → {tools, skills, mcp, helix, config, schema, logger}`。
+依赖方向：`schema`（零依赖）← 所有包；`logger` ← 所有包；`config` 不再依赖 `storage`（Credential/CredentialRecord/CredentialStore 接口移到 schema，config 从 schema import）；`agents → {tools, skills, mcp, helix, config, schema, logger}`；`apps/web → {schema}`。
 
 ## WorkflowAgent 三文件边界（关键约束）
 

@@ -81,9 +81,10 @@ vi.mock('@open-scientist/storage', () => ({
 }))
 
 vi.mock('@open-scientist/config', async () => {
-  // Import the real module to re-export everything EXCEPT resolveModelArg,
-  // which we replace so the route's resolveRunModelArg uses our stub instead
-  // of reading real settings + credentials.
+  // Import the real module to re-export everything EXCEPT resolveModelArg +
+  // resolveAgentConfigs, which we replace so the route's resolveRunModelArg +
+  // resolveRunAgentConfigs use our stubs instead of reading real settings +
+  // credentials.
   const actual =
     await vi.importActual<typeof import('@open-scientist/config')>('@open-scientist/config')
   return {
@@ -91,6 +92,22 @@ vi.mock('@open-scientist/config', async () => {
     resolveModelArg: vi.fn(async () => {
       if (resolveModelArgThrows) throw resolveModelArgThrows
       return resolveModelArgResult
+    }),
+    resolveAgentConfigs: vi.fn(async () => {
+      if (resolveModelArgThrows) throw resolveModelArgThrows
+      // Build a config map where every tournament role gets the stubbed
+      // ModelArg. The route only reads .sisyphus.modelConfig for the legacy
+      // modelConfig field, and the per-role entries are forwarded into
+      // agentConfigs.
+      const roles = ['sisyphus', 'librarian', 'looker', 'explore', 'oracle', 'prometheus'] as const
+      const configs = {} as Record<
+        string,
+        typeof resolveModelArgResult & { modelConfig: typeof resolveModelArgResult }
+      >
+      for (const role of roles) {
+        configs[role] = { modelConfig: resolveModelArgResult }
+      }
+      return configs
     }),
     ModelAliasNotFoundError: actual.ModelAliasNotFoundError,
   }

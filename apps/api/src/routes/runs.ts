@@ -1,6 +1,12 @@
 import { createModelCallToUIChunkTransform } from '@ai-sdk/workflow'
 import { tournamentWorkflow } from '@open-scientist/agents'
-import { ModelAliasNotFoundError, type ModelArg, resolveModelArg } from '@open-scientist/config'
+import {
+  type AgentRuntimeConfig,
+  ModelAliasNotFoundError,
+  type ModelArg,
+  resolveAgentConfigs,
+  resolveModelArg,
+} from '@open-scientist/config'
 import {
   createCredentialStore,
   createRun,
@@ -29,6 +35,34 @@ async function resolveRunModelArg(projectName: string, modelAlias?: string): Pro
     role: 'sisyphus',
     ...(modelAlias ? { modelAlias } : {}),
   })
+}
+
+/**
+ * Resolve the per-agent runtime config map for every tournament agent role.
+ *
+ * Returns a `Record<AgentRole, AgentRuntimeConfig>` keyed by role name. Each
+ * entry carries its own resolved `modelConfig` (from `settings.models[role]`
+ * with fallback `default` → `sisyphus`) plus any non-model overrides
+ * (`instructions` / `skillDirectories` / `mcpServers`) configured under
+ * `settings.agents[role]`. The whole map is plain-serializable and crosses
+ * the workflow structured-clone boundary intact.
+ *
+ * If `modelAlias` is supplied it overrides the `sisyphus` role's modelConfig
+ * only (sub-agents still resolve via `settings.models[role]`); this mirrors
+ * the single-model `resolveRunModelArg` behaviour for backward compat.
+ */
+async function resolveRunAgentConfigs(
+  projectName: string,
+  modelAlias?: string,
+): Promise<Record<string, AgentRuntimeConfig>> {
+  const credentials = await createCredentialStore()
+  const configs = await resolveAgentConfigs(projectName, credentials)
+  if (modelAlias) {
+    // resolveModelArg with modelAlias throws ModelAliasNotFoundError if absent.
+    const sisyphusModel = await resolveModelArg(projectName, credentials, { modelAlias })
+    configs.sisyphus = { ...configs.sisyphus, modelConfig: sisyphusModel }
+  }
+  return configs
 }
 
 /**
@@ -62,8 +96,10 @@ runs.post('/api/projects/:name/runs', async (c) => {
   }
 
   let modelConfig: ModelArg
+  let agentConfigs: Record<string, AgentRuntimeConfig>
   try {
     modelConfig = await resolveRunModelArg(projectName, modelAlias)
+    agentConfigs = await resolveRunAgentConfigs(projectName, modelAlias)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     // Unknown alias is a client error (400); missing model config / credential
@@ -87,7 +123,14 @@ runs.post('/api/projects/:name/runs', async (c) => {
       // a chicken-and-egg: the SDK run id only exists *after* start(), but the
       // workflow body needs a runId at invocation time.
       runId: `run-${Date.now()}`,
+      // Default model — kept for backward compat (sub-agents without an
+      // explicit agentConfigs entry fall back to this).
       modelConfig,
+      // Per-agent runtime config map: each role gets its own resolved
+      // modelConfig + any non-model overrides (instructions / skillDirectories
+      // / mcpServers) configured under settings.agents[role]. See
+      // resolveRunAgentConfigs.
+      agentConfigs,
     },
   ])
 

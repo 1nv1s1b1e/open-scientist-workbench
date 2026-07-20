@@ -7,8 +7,10 @@ import { defineNitroConfig } from 'nitro/config'
 // the `workflow` key below (TS2353).
 import type {} from 'workflow/nitro'
 
+import workflowBundleFixup from './src/workflow-bundle-fixup'
+
 export default defineNitroConfig({
-  modules: ['workflow/nitro'],
+  modules: ['workflow/nitro', workflowBundleFixup],
   // Use serverEntry (not entry) so the Hono app acts as a catch-all web
   // handler for unmatched routes, while nitro's native router still
   // dispatches specific routes registered by modules (e.g. workflow's

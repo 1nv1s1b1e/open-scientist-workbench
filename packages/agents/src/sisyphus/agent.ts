@@ -1,6 +1,7 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
-import { TournamentResultSchema } from '@open-scientist/schema'
+import { getMcpTools } from '@open-scientist/mcp'
+import { type McpServerConfig, TournamentResultSchema } from '@open-scientist/schema'
 import { isStepCount, Output, type ToolSet, tool } from 'ai'
 import { z } from 'zod'
 
@@ -17,6 +18,17 @@ export interface SisyphusAgentDeps {
   modelConfig: ModelArg
   /** Optional override toolset. When omitted, default tools are assembled. */
   tools?: ToolSet
+  /**
+   * Optional system prompt override. When omitted, the hardcoded default
+   * (Sisyphus orchestrator role description) is used.
+   */
+  instructions?: string
+  /**
+   * Optional MCP server list. Tools from each server are fetched via
+   * `getMcpTools` and merged into the default toolset. Only consulted when
+   * `tools` is not provided (caller-provided toolsets take full precedence).
+   */
+  mcpServers?: McpServerConfig[]
 }
 
 /**
@@ -79,10 +91,17 @@ const reviewLeadingHypothesisTool = tool({
  * constructed synchronously; the async boundary leaves room for future
  * MCP / skill discovery without changing the call signature.
  */
-export async function getDefaultSisyphusTools(): Promise<ToolSet> {
-  return {
+export async function getDefaultSisyphusTools(mcpServers?: McpServerConfig[]): Promise<ToolSet> {
+  const baseTools: ToolSet = {
     review_leading_hypothesis: reviewLeadingHypothesisTool,
   }
+  if (mcpServers && mcpServers.length > 0) {
+    for (const server of mcpServers) {
+      const mcpTools = await getMcpTools(server)
+      Object.assign(baseTools, mcpTools)
+    }
+  }
+  return baseTools
 }
 
 /**
@@ -101,14 +120,21 @@ export async function getDefaultSisyphusTools(): Promise<ToolSet> {
  * Output schema (TournamentResult) + stopWhen (isStepCount(50)) are fixed by
  * the SPEC — do not change them.
  */
-export async function createSisyphusAgent({ modelConfig, tools }: SisyphusAgentDeps) {
+export async function createSisyphusAgent({
+  modelConfig,
+  tools,
+  instructions,
+  mcpServers,
+}: SisyphusAgentDeps) {
   const model = createModelFromConfig(modelConfig)
-  const resolvedTools = tools ?? (await getDefaultSisyphusTools())
+  const resolvedTools = tools ?? (await getDefaultSisyphusTools(mcpServers))
 
   return new WorkflowAgent({
     id: 'sisyphus',
     model,
-    instructions: `You are Sisyphus, the orchestrator agent of a solar physics multi-agent system investigating the coronal heating mystery.
+    instructions:
+      instructions ??
+      `You are Sisyphus, the orchestrator agent of a solar physics multi-agent system investigating the coronal heating mystery.
 
 Your role: Coordinate the Tournament Evolution workflow by invoking 5 specialist sub-agents:
 - Librarian: knowledge retrieval + hypothesis generation (translates hypotheses to Python physics filter functions)

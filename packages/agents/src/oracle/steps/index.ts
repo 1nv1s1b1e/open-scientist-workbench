@@ -19,7 +19,7 @@
 // drag any Node modules into the bundle.
 
 import type { ModelCallStreamPart } from '@ai-sdk/workflow'
-import type { ModelArg } from '@open-scientist/config'
+import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
 import type { EvalResult, Hypothesis, OracleOutput } from '@open-scientist/schema'
 import { getWritable } from 'workflow'
 import { buildEvalSummaryBlock, buildHypothesesBlock } from '../logic.ts'
@@ -42,6 +42,13 @@ export interface RunOracleStepInput {
    * the plain object; it never touches a `LanguageModel` instance.
    */
   modelConfig: ModelArg
+  /**
+   * Per-agent runtime config override (instructions / skillDirectories /
+   * mcpServers). When present, its `modelConfig` takes priority over the
+   * `modelConfig` field above and its non-model fields override the factory
+   * defaults. Undefined → fully default behaviour (backward compat).
+   */
+  agentConfig?: AgentRuntimeConfig
 }
 
 /**
@@ -66,8 +73,17 @@ export async function runOracleStep(input: RunOracleStepInput): Promise<OracleOu
   'use step'
   const { createOracleAgent } = await import('../agent.ts')
   const agent = await createOracleAgent({
-    modelConfig: input.modelConfig,
+    modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
     projectId: input.projectId,
+    ...(input.agentConfig?.instructions !== undefined
+      ? { instructions: input.agentConfig.instructions }
+      : {}),
+    ...(input.agentConfig?.skillDirectories !== undefined
+      ? { skillDirectories: input.agentConfig.skillDirectories }
+      : {}),
+    ...(input.agentConfig?.mcpServers !== undefined
+      ? { mcpServers: input.agentConfig.mcpServers }
+      : {}),
   })
 
   const hypothesesBlock = buildHypothesesBlock(input.hypotheses, input.evalResults)

@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import {
+  AgentConfigSchema,
   ConcurrencySettingsSchema,
   type GlobalSettings,
   GlobalSettingsSchema,
@@ -15,6 +16,7 @@ import { getBaseDir, getProjectDir } from './paths.ts'
 // 模型配置 + 凭证 schema 单一来源是 @open-scientist/schema。config 包仅
 // re-export 给路由层使用，避免两处定义漂移。
 export {
+  AgentConfigSchema,
   ConcurrencySettingsSchema,
   type GlobalSettings,
   GlobalSettingsSchema,
@@ -36,8 +38,31 @@ const ProjectSettingsSchema = GlobalSettingsSchema.partial().extend({
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>
 
 // 默认配置不含任何模型名/credentialId，必须通过 REST API 设置。
+// agents.librarian 预配两个 stdio MCP server（paper-search-mcp + duckduckgo-mcp），
+// 需本机装 uvx（`curl -LsSf https://astral.sh/uv/install.sh | sh`）。若 uvx 不存在，
+// agent factory 的 getMcpTools 会 throw（连接失败），非阻塞——Librarian 仍可用
+// 自有的 searchPapers/searchHypotheses/addHypothesis 工具跑。用户可通过
+// `DELETE /api/settings/agents/librarian` 或 PUT 空 mcpServers 清掉默认。
 const DEFAULT_GLOBAL: GlobalSettings = {
   models: {},
+  agents: {
+    librarian: {
+      mcpServers: [
+        {
+          name: 'paper-search-mcp',
+          transport: 'stdio',
+          command: 'uvx',
+          args: ['paper-search-mcp'],
+        },
+        {
+          name: 'duckduckgo-mcp',
+          transport: 'stdio',
+          command: 'uvx',
+          args: ['duckduckgo-mcp-server'],
+        },
+      ],
+    },
+  },
   tournament: {
     maxRounds: 10,
     targetF1: 0.9,
@@ -91,11 +116,18 @@ export async function getSettings(projectName?: string): Promise<GlobalSettings 
   const global = await getGlobalSettings()
   if (!projectName) return global
   const project = await getProjectSettings(projectName)
+  const globalAgents = global.agents ?? {}
+  const projectAgents = project.agents ?? {}
+  const mergedAgents: Record<string, (typeof globalAgents)[string] & {}> = {}
+  for (const role of new Set([...Object.keys(globalAgents), ...Object.keys(projectAgents)])) {
+    mergedAgents[role] = { ...globalAgents[role], ...projectAgents[role] }
+  }
   return {
     ...global,
     ...project,
     models: { ...global.models, ...project.models },
     modelAliases: { ...(global.modelAliases ?? {}), ...(project.modelAliases ?? {}) },
+    agents: mergedAgents,
     tournament: { ...global.tournament, ...project.tournament },
     concurrency: { ...global.concurrency, ...project.concurrency },
     steering: { ...global.steering, ...project.steering },

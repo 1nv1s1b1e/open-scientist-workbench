@@ -96,16 +96,112 @@
 - **librarian ensureIndexes**：`librarian/steps/index.ts` 在 `agent.stream` 前调 `ensureIndexes()`（idempotent 建 HelixDB text + vector index）。
 - **dev-probe 端到端验证**：POST `/api/dev-probe/stream-test` 全链路打通——SSE 流出 `start` → `start-step` → 多轮 `text-delta` + `tool-input-available` + `tool-output-available`（loadSkill/searchPapers/searchHypotheses/bash）→ `finish-step` → `finish`。未抛任何 VM / module 错误。
 
+#### Phase 4 续（2026-07-20，per-agent config + VM bundle fix + 真实模型 E2E）
+- **Per-agent config（模型/mcp/skills/sys prompt 全可配）**：
+  - **schema**：`McpServerConfigSchema`（{name, transport:'http'|'stdio'|'sse', url?, command?, args?, headers?}）+ `AgentConfigSchema`（{instructions?, skillDirectories?, mcpServers?}）+ `GlobalSettingsSchema.agents: Record<string, AgentConfigSchema>.default({})`。
+  - **config**：`DEFAULT_GLOBAL` 加 `agents: {}`；`getSettings` merge `agents: {...global.agents, ...project.agents}`（per-key）；新增 `AgentRuntimeConfig = {modelConfig: ModelArg, instructions?, skillDirectories?, mcpServers?}` + `resolveAgentConfigs(projectName, credentials): Promise<Record<AgentRole, AgentRuntimeConfig>>`（6 个 tournament role 各自 resolveModelArg + 非模型 override）。
+  - **mcp**：`McpServerConfig` type 从 schema 导入（结构兼容，re-export），runtime 函数不变。
+  - **6 agent factory**：每个 `XxxAgentDeps` 加 `instructions?/skillDirectories?/mcpServers?`；`getDefaultXxxTools` 签名加 `(skillDirectories?, mcpServers?)`（sisyphus 无 skills 故只 mcpServers?）；mcpServers 非空时 loop `getMcpTools(server)` + `Object.assign` 合并；`instructions: instructions ?? '<原硬编码默认>'`。全 backward compatible（新字段全 optional）。
+  - **5 step files + sisyphus/workflow.ts**：`RunXxxStepInput` 加 `agentConfig?: AgentRuntimeConfig`；`runXxxStep` 传 `modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig` + spread instructions/skillDirectories/mcpServers；`TournamentWorkflowInput` 加 `agentConfigs?: Record<string, AgentRuntimeConfig>`，加 `agentConfigFor(role)` helper，5 个子 workflow 调用各 forward `agentConfigs[role]`。sub workflow.ts 无需改（`extends RunXxxStepInput` 自动继承）。
+  - **API routes**：`GET/PUT/DELETE /api/settings/agents/:role`（PUT 全量替换 via AgentConfigSchema.parse，DELETE no-op if unset）+ `GET /api/settings/agents`（list）。项目级走已有 `PATCH /api/projects/:project/settings`（deepMerge 按 key 合并 agents）。
+  - **runs route**：新增 `resolveRunAgentConfigs(projectName, modelAlias?)`——调 `resolveAgentConfigs` + 若 modelAlias 则 override `configs.sisyphus.modelConfig`。POST handler 同时 resolve `modelConfig`（legacy）+ `agentConfigs` 传给 tournament。
+  - **dev-probe**：`agentConfigs?` optional，无需改。
+  - **tests**：10 个 agent-config route tests + 1 个 project-level agents merge test + runs.test.ts mock `resolveAgentConfigs`。368 tests pass。
+  - **curl E2E 验证**：14 个 agent CRUD checks 全过（GET empty/404、PUT instructions-only/skillDirectories+mcpServers/full-replace、DELETE/no-op、surfaces on GET /api/settings、rejects invalid mcpServer）。
+- **`ERR_IMPORT_ATTRIBUTE_MISSING` 修复（预存 bug，非 per-agent config 引入）**：
+  - **根因**：`@workflow/builders@4.1.1` 的 `fast-discovery.js:626` 把 `serde-checker.js` 误判为 "serde-only file"——`hasLikelySerdeClass(source)` regex 扫源码（`stripComments` 去注释但**不去字符串字面量**），`serde-checker.js:48-49` 的错误信息字符串 `static [WORKFLOW_SERIALIZE](...) { ... }` 命中 regex。esbuild plugin 路径（`discover-entries-esbuild-plugin.js:136`）有 `!isSdkFile` guard 正确跳过，但 `base-builder.js:376` 用的 `fastDiscoverEntries`（fast-discovery 路径）**无此 guard**。
+  - **链路**：`serde-checker.js` 进 `serdeOnlyFiles` → 虚拟 entry `import '@workflow/builders/dist/serde-checker.js'` → 静态 import `builtin-modules` → `import json with {type:'json'}` → esbuild CJS 输出**丢掉 import attribute** → `@workflow/core` VM sandbox 的 `defaultLoadSync` 拒绝无 attribute 的 JSON import → `ERR_IMPORT_ATTRIBUTE_MISSING`。proof：`.nitro/workflow/workflows.mjs.debug.json` 的 `serdeOnlyFiles` 含 `serde-checker.js`。
+  - **bundle 内的死代码**：`steps.mjs:6976-6982` 的 `builtin_modules_default` + `nodeBuiltins` + `nodeImportExtractRegex` 定义后**从不被引用**（esbuild CJS 保留 module-level var 赋值即使 unused）。
+  - **修复**：新建 `apps/api/src/workflow-bundle-fixup.ts` nitro module，注册在 `workflow/nitro` 之后（`modules: ['workflow/nitro', workflowBundleFixup]`），`build:before` hook 在 `@workflow/nitro` 写完 `steps.mjs`/`workflows.mjs` 后读取两文件，regex 替换 `import builtinModules from "...builtin-modules.json";` → `var builtinModules = [];`（零功能影响，imported values 是死代码）。**非 patch**——build-time 后处理 generated artifact，不动 node_modules，survive `pnpm install`，版本受控。
+  - **pnpm patch 尝试（全部被否决，已回退）**：`createRequire` 方案（VM 无 require + 路径解析到 bundled steps.mjs 而非原文件 → `Cannot find module './builtin-modules.json'`）；inline JSON array 方案（写到 patch edit dir 但用户否决）。`patches/` dir + `patchedDependencies` 全删，`pnpm install` 恢复原始 `builtin-modules@5.0.0`。
+- **真实模型 E2E 验证（tournament run）**：
+  - 启动 HelixDB（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969，dev instance，`helix.toml` gitignored）+ nitro dev（`workflow-bundle-fixup` 日志 `patched steps.mjs`）。
+  - `POST /api/projects/e2e-final/runs` seed `"Nanoflare heating in coronal loops: Alfvén wave dissipation via phase mixing may explain the million-degree corona."`。
+  - SSE 流跑通：`start` → `start-step` → `text-delta` + `tool-input-available` + `tool-output-available` → `finish-step` → next step。
+  - **Librarian（带 `[TEST-OVERRIDE] You are Librarian. Generate exactly 2 hypotheses...` 自定义指令）实际执行**：loadSkill（skill not found，dev 模式 `.nitro/workflow/defaults` 不存在，非阻塞）→ 3 次 searchPapers（HelixDB 空 → `[]`）→ 2 次 searchHypotheses（返回 5 results each）→ **addHypothesis 精确 2 次**（遵循 "exactly 2 hypotheses" 指令）→ **per-agent config 验证生效**。
+  - **遗留**：Librarian 建完 2 假设后 `AI_NoObjectGeneratedError: No object generated: could not parse the response`——Qwen3-Next-80B 未产 `Output.object({schema: HypothesisPoolSchema})` 期望的结构化 JSON。属模型/Schema 兼容问题，与 per-agent config + VM bundle fix 无关。
+
+#### Phase 6: Web 层（2026-07-20，apps/web Next.js 前端完整搭建）
+
+基于 `docs/web/` 5 spec 文件 + 后端 routes 实际实现（subagent 彻底读了 `apps/api/src/routes/` 全部文件，提取 8 端点组精确签名）。**不 mock，全部真实 fetch**。
+
+**基础配置**（`apps/web/`）：
+- Next.js 16.2.10 (Turbopack) + React 19.2.7 + TypeScript 6.0.3（devDep，为兼容 Next 15/16 的 `verify-typescript-setup` 检查 `typescript/lib/typescript.js`——TS 7 重构了包结构无此文件）
+- Tailwind v4.3.3 stable + Biome（与 monorepo 一致）
+- `next.config.ts`：`images: { unoptimized: true }`（适配 Electron + 避免 sharp native build）+ rewrites 代理 `/api/*` → `${API_BASE_URL}/api/*`（同源避免 CORS，后端无 CORS middleware）
+- `tsconfig.json`：extends base，移除 `baseUrl`（TS 6 弃用 TS5101），`rewriteRelativeImportExtensions: false`（noEmit 时开此项报 TS2877），保留 `allowImportingTsExtensions: true`
+- `pnpm-workspace.yaml`：`sharp: true`（pnpm 把 build approval 从 .npmrc 移到此处）
+- workspace 依赖 `@open-scientist/schema`（复用 Zod schemas + 类型）
+
+**lib 层**（`apps/web/src/lib/`）：
+- `api/client.ts`：完整 REST 客户端覆盖全部 8 端点组。`ApiError` class。`startRun` 返回 `{response, runId}`（从 `x-workflow-run-id` header 提取 SDK run id）。`reconnectRunStream` 返回 `{response, tailIndex}`（`x-workflow-stream-tail-index` header 仅 startIndex<0 时存在）。聚合导出 `api` 对象。
+- `types/sse-events.ts`：UIMessageChunk 完整类型（生命周期/文本/reasoning/tool/审批/其他）+ CustomEventKind 常量
+- `types/visualizers.ts`：ConceptNode/Link/NetData, AgentNodeData/MessageEdgeData/OrchestratorData, HypothesisTreeNode/EvolutionTreeData
+- `visualizers/`：colorTheme（6 agent 色 + 概念色常量）、concept-net-data（POC 从假设列表构建概念图）、evolution-tree-data（d3-hierarchy 树构建）、orchestrator-data（TOOL_TO_AGENT 映射 + 环形坐标 + edge 推导）
+- `store/`：run-store（Zustand：runId/status/currentRound/bestF1/selectedHypothesisId/activeView/chatCollapsed）、ui-store（sidebarCollapsed）
+- `hooks/useRunStream.ts`：核心 SSE 流 hook。state: idle/connecting/streaming/reconnecting/done/error/stopped。start(seed, modelAlias?) → POST + 消费 SSE body 解析 `data: JSON\n\n`。累积 MessagePart（text/reasoning/tool/custom）。流中断自动 reconnect（-50 tail-relative, maxConsecutiveErrors=5）。stop() + reset()。
+- `hooks/useApi.ts`：TanStack Query hooks（projects/project/createProject/deleteProject/globalSettings/updateGlobalSettings/projectSettings/credentials/addCredential/deleteCredential/testLlm/runStatus 轮询/modelAliases）。queryFn 包装成箭头函数避免 TanStack context 传入类型不匹配。
+- `transport/workflow-transport.ts`：TRANSPORT_CONFIG 常量（initialStartIndex:-50, maxConsecutiveErrors:5, throttle:50）
+
+**components 层**（`apps/web/src/components/`）：
+- `ui/`：13 个 shadcn/ui 原语（button/card/input/textarea/label/badge/dialog/tabs/scroll-area/select/tooltip/popover/spinner），全部 xAI 风格化（胶囊按钮、hairline 边、无阴影、mono uppercase label）
+- `site/`：banner（eyebrow + display 标题 + radial glow + accent-line-top）、eyebrow（Geist Mono uppercase tracked）、header（sticky 顶栏 + 旋转 corona logo）、footer
+- `visualizers/`：concept-net-3d（react-force-graph-3d + three Sprite 标签 + ResizeObserver）、orchestrator-hall（@xyflow/react v12 6 agent 环形 + AgentNodeCard）、evolution-tree（d3-hierarchy + SVG + Motion 动画）、debate-theater（Motion 重写 + 中心脉冲 + SVG 连线粒子）
+- `projects/project-list.tsx`：3 列卡片网格 + deterministic accent 色 + Motion stagger
+- `credentials/credential-list.tsx`：3 列卡片 + provider 色点 + detail 行
+- `settings/settings-panel.tsx`：4 Tabs（模型配置/锦标赛/并发/引导）+ SectionShell + per-role 配置卡片
+- `settings/test-llm-panel.tsx`：两栏布局 + 结果面板 + usage 3 列
+- `chat/chat-panel.tsx`：assistant-ui Thread + WorkflowRuntimeProvider + ChatToolbar
+
+**assistant-ui 集成**（`apps/web/src/lib/chat/` + `apps/web/src/components/assistant-ui/`）：
+- 选 **ExternalStoreRuntime** 模式（非 useChatRuntime + 自定义 transport），原因：请求形状不匹配（useChat 发 {messages}，我们发 {seed, modelAlias}）、重连协议不匹配（assistant-ui 用 GET /resume/:streamId，我们用 GET /runs/:id/stream?startIndex=N）、单轮约束、useRunStream 已实现重连
+- `to-thread-messages.ts`：RunMessage[] → ThreadMessageLike[] 转换（text→text, reasoning→reasoning, tool→tool-call, custom→data-{kind}）。用 `Extract<NonNullable<ThreadMessageLike['content']>, { type: string }>` 提取 part 类型，无 any
+- `workflow-runtime.tsx`：`useExternalStoreRuntime<ThreadMessageLike>` + `convertMessage: (msg) => msg` 恒等函数（ThreadMessageLike 不 extends ThreadMessage 需提供 convertMessage）。onNew 从 AppendMessage.content 找 textPart → setSeed + start。onCancel → stop。isSendDisabled: hasStarted && !isRunning（单轮）。不提供 onEdit/onReload → 编辑/重生成按钮不渲染。ResetContext 暴露 reset
+- `toolkit.tsx`：6 个 makeAssistantToolUI 注册（bash-tool/helix-query/fits-align/mhd-config/load-skill + GenericToolUI fallback `toolName:'*'`），每个用 ToolShell 外壳 + JsonPreview 折叠 JSON
+- `data-ui.tsx`：3 个 makeAssistantDataUI 注册（steering-injected/round-transition/convergence）
+- `components/assistant-ui/thread.tsx`：基于 ThreadPrimitive 自建（方案 B）。ThreadPrimitive.Root → Viewport(Empty + Messages) + ViewportFooter(Composer)。Messages components={{ UserMessage, AssistantMessage }}。AssistantMessage 的 MessagePrimitive.Parts components={{ Text, Reasoning, tools: { Fallback } }}。Composer 用 AuiIf 切换 Send/Cancel
+- `components/assistant-ui/markdown-text.tsx`：轻量 markdown（code fence + inline code + bold + 段落），无 react-markdown 依赖
+- `components/assistant-ui/reasoning.tsx`：可折叠推理过程，running 时自动展开
+- `components/assistant-ui/tool-fallback.tsx`：未注册工具兜底
+
+**app 路由**（`apps/web/src/app/`）：
+- `layout.tsx`：next/font 加载 Inter + Geist + Geist Mono（变量注入 globals.css）+ 全局 fixed grain overlay + Providers（QueryClientProvider + TooltipProvider）
+- `page.tsx`（首页）：Banner hero「日冕加热之谜」+ 6 agent 卡片网格 + ProjectList + Mystery band（旋转 corona disk conic-gradient）
+- `settings/page.tsx`：dusk Banner + 3 Tabs（全局设置/凭证/LLM 测试）
+- `projects/[project]/page.tsx`：核心工作区。slim banner + 居中 pill 视图切换（协作大厅/知识图谱/演化树/辩论剧场）+ aside 侧边栏（AnimatePresence 滑入滑出）+ ChatPanel
+
+**xAI 风格美化**（参考 DESIGN.md）：
+- `globals.css`：xAI 色板（canvas #0a0a0a / surface #191919 / hairline #212327 / sunset #ff7a17 / dusk #7c3aed）、display 字号阶梯 token、pill-outline/pill-primary/eyebrow-mono/card-xai utilities、radial-sunset/dusk 径向辉光、bg-grid blueprint 网格、SVG fractal-noise 颗粒、shimmer/scanline/spin-slow/pulse-glow 动画、Radix 组件深色覆盖、React Flow 深色覆盖（`.react-flow__controls` / `.react-flow__minimap` / `.react-flow__attribution`）
+- UI 原语全部 xAI 化：button rounded-full 胶囊 + outline 默认、card 8px 直角 + hairline 边 + 无阴影、input h-11 surface-soft 底、badge mono uppercase 11px、tabs pill 容器
+- 所有表单/列表/卡片重写：FieldGroup helper、SectionShell（eyebrow+title+desc+action header）、3 列卡片网格、deterministic accent 色、Motion 入场动画
+- 后续用户反馈：移除卡片彩色 header 条（project-list 顶部色条、credential-list 顶部色条、首页 agent 卡片 hover 底部彩色 hairline）、移除 OrchestratorHall 的 Controls + MiniMap
+
+**依赖升级 + 循环依赖修复**（commit 277d256）：
+- web package.json 全量重写到最新版（除 TS 6.0.3）
+- monorepo 10 包版本统一到最新稳定版
+- 循环依赖根因：`config → storage`（纯类型 import CredentialStore）+ `storage → config`（运行时 import getBaseDir 等）。解法：Credential/CredentialRecord/CredentialStore 三接口移到 schema 包（零依赖），config 改 import 源 + 去掉 storage 依赖，storage/credential.ts 改为 re-export（向后兼容）
+- 删除未用的 gsap + @gsap/react（0 引用）
+
+**Electron 适配文档**（`docs/web/06-electron-adaptation.md`）：
+- 结论：可行，改动量小（~3.5 天）。方案 A（Next standalone + 本地 Nitro）推荐
+- 需改：next.config（API_BASE_URL env）、apps/api（PORT+BASE_DIR）、新增 apps/electron/（main process spawn api + BrowserWindow）。关 `images.unoptimized`（已关）。better-sqlite3 需 electron-rebuild。SSE 在 Electron Chromium 正常。无需改 lib/api/client、hooks/useRunStream、packages/**
+
+**验证状态**：
+- typecheck: 0 error（`npx tsc --noEmit`）
+- lint: 0 error/warning（`npx biome check .`，62 files）
+- dev server: `next dev -p 5173` Next 16.2.10 Turbopack Ready in 258ms，/、/settings、/projects/test 全 200
+- 无 any（用户明确要求）
+
 ---
 
 ## 当前状态（2026-07-20）
 
 ### 代码
-- **10 包**：apps/api + packages/{schema,config,storage,helix,logger,tools,skills,mcp,agents}
+- **11 包**：apps/api + apps/web + packages/{schema,config,storage,helix,logger,tools,skills,mcp,agents}
 - **368 tests pass**（29 files，无 flaky）
-- **typecheck** 10 包全 Done（`apps/api/nitro.config.ts` 顶部加 `import type {} from 'workflow/nitro'` 修复 `workflow` 属性 TS2353 报错）
-- **lint** clean（3 pre-existing warnings: routes.test.ts useLiteralKeys / test-llm.test.ts unused import / sisyphus/workflow.ts unused import）
-- **12 commits**（见上 + Phase 4 未 commit 改动）
+- **typecheck** 11 包全 Done（apps/web 用 TS 6.0.3，其余包 TS 7.0.2）
+- **lint** clean
+- **12 commits + Phase 4/6 未 commit 改动**（见上）
 
 ### Phase 4 进展（未 commit）
 
@@ -120,21 +216,27 @@
 - **logger 接入**：tools/skills/helix/config 4 包加 `@open-scientist/logger` workspace dep + 9 个源文件加 logger（bash/helix-query/fits-align/mhd-config/discover/load-tool/sandbox/client/models）。
 - **librarian ensureIndexes**：`librarian/steps/index.ts` 在 `agent.stream` 前调 `ensureIndexes()`（idempotent 建 HelixDB text + vector index，之前只在 integration test 调）。
 - **dev-probe 端到端验证**：POST `/api/dev-probe/stream-test` 全链路打通——SSE 流出 `start` → `start-step` → 多轮 `text-delta` + `tool-input-available` + `tool-output-available`（loadSkill/searchPapers/searchHypotheses/bash）→ `finish-step` → `finish`。未抛任何 VM / module 错误。logger 输出正常。HelixDB index 已建，空库返回 `[]` 不报错。
+- **Per-agent config（模型/mcp/skills/sys prompt 全可配）**：见上「Phase 4 续」changelog。6 agent 各自独立配 model（`settings.models[role]`，fallback `default`→`sisyphus`）、mcpServers、skillDirectories、instructions。API `GET/PUT/DELETE /api/settings/agents/:role` + 项目级 `PATCH /api/projects/:project/settings`。`resolveAgentConfigs` 在 POST /runs 时 resolve 全 6 role 的 `AgentRuntimeConfig` 传给 tournament。curl 14 checks 全过。
+- **`ERR_IMPORT_ATTRIBUTE_MISSING` 修复**：`@workflow/builders` fast-discovery 误判 `serde-checker.js` 为 serde file（字符串字面量命中 regex）→ 拉入 `builtin-modules` JSON import → esbuild CJS 丢 import attribute → VM `defaultLoadSync` 拒绝。修复：`apps/api/src/workflow-bundle-fixup.ts` nitro 模块，build 时后处理 `.nitro/workflow/steps.mjs`+`workflows.mjs`，regex 替换死代码 JSON import 为空数组。非 patch，版本受控。
+- **真实模型 E2E**：tournament run SSE 流跑通，Librarian 带 `[TEST-OVERRIDE]` 自定义指令实际生效（精确调 addHypothesis 2 次遵循 "exactly 2 hypotheses" 指令）。遗留 `AI_NoObjectGeneratedError`（Qwen3-Next-80B 结构化 JSON 输出兼容问题，非本次改动引入）。
 
 #### 待验证
-- librarian 是否产出有效 HypothesisPool schema output（SSE finish 事件 payload 待查）
+- librarian 是否产出有效 HypothesisPool schema output（Qwen3-Next-80B `AI_NoObjectGeneratedError`——模型未产结构化 JSON，需换模型或调 prompt/schema）
 - 完整 tournament 流程（librarian → explore → oracle → prometheus → MHD cfg）
 - skills discover 找不到 defaults 目录（nitro workflow bundle 相对路径问题，非阻塞，discoverSkills 容错返回空）
 
 ### 已验证
-- HelixDB 本地启动（Docker `ghcr.io/helixdb/enterprise-dev`，localhost:6969）+ 10 个集成测试通过
+- HelixDB 本地启动（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969，dev instance，in-memory storage）+ 10 个集成测试通过（Docker `ghcr.io/helixdb/enterprise-dev` 也可用）
 - Python venv（`uv venv /tmp/solar-test`，astropy 8.0.1/sunpy 8.0.0/scipy 1.18.0/numpy 2.5.1）+ FITS 创建读回
 - API 端到端：health/settings/credentials/test-llm 全 200（LLM 用 `http://<internal-llm-host>:8084/v1` + `llab/Qwen3-Next-80B-A3B-Instruct`，500ms 响应）
 - `@ai-sdk/openai` 用 `openai.chat(model)` 而非 `openai(model)`（第三方网关只完整支持 Chat Completions API）
-- workflow builder 注册 6 个 workflow 成功（`workflows build complete (17 steps, 6 workflows)`）
+- workflow builder 注册 6 个 workflow 成功（`workflows build complete (18 steps, 6 workflows)`）
 - nitro workflow 内部路由可达（`/.well-known/workflow/v1/flow` 返 400 而非 404）
 - **Node 26 type stripping**：`node -e "import('@open-scientist/config')..."` 成功加载（bare specifier → package.json exports → `./src/index.ts` → type strip）
 - **dev-probe 端到端**：POST `/api/dev-probe/stream-test` 全链路打通（SSE 流 + 多轮 tool loop + finish），未抛 VM / module 错误
+- **per-agent config curl E2E**：14 个 agent CRUD checks 全过（GET/PUT/DELETE /api/settings/agents/:role + 项目级 PATCH）
+- **tournament 真实模型 E2E**：`POST /api/projects/e2e-final/runs` SSE 流跑通，Librarian 带 `[TEST-OVERRIDE]` 自定义指令实际生效（loadSkill/searchPapers×3/searchHypotheses×2/addHypothesis 精确 2 次遵循 "exactly 2 hypotheses" 指令）。`ERR_IMPORT_ATTRIBUTE_MISSING` 已修复（`workflow-bundle-fixup` nitro 模块）
+- **遗留**：Librarian 建完假设后 `AI_NoObjectGeneratedError`（Qwen3-Next-80B 未产 `Output.object({schema: HypothesisPoolSchema})` 期望的结构化 JSON——模型/Schema 兼容问题，非本次改动引入）
 
 ### 技术栈定型
 - Node.js + pnpm（不用 Bun）+ TypeScript 7 + Biome 2.5 + Zod 4
@@ -232,18 +334,17 @@
 
 ---
 
-### Web 层（后期，SPEC 见 `docs/web/`）
+### Web 层（已完成，见上 Phase 6）
 
-**目标**：三个 WOW 效果（3D 概念图谱 / 辩论剧场 / 演化树）+ assistant-ui chat + WorkflowChatTransport 断线重连。
+**选型已定并落地**（`docs/web/` 6 文件 + `apps/web/`）：
+- Next.js 16 (Turbopack) + React 19 + TypeScript 6 + Tailwind v4
+- assistant-ui 0.14.27（ExternalStoreRuntime 模式）+ ThreadPrimitive 自建 Thread
+- Radix Primitives + shadcn/ui + Motion 12（主力动画）
+- react-force-graph-3d（3D 图谱）+ d3-hierarchy（演化树）+ React Flow v12（协作大厅）
+- Zustand 5 + TanStack Query 5
+- xAI 设计语言（DESIGN.md）：近黑画布 + 胶囊按钮 + Geist Mono + 无阴影 + display 字号阶梯
 
-**选型已定**（`docs/web/` 6 文件 1418 行）：
-- Next.js 15 + React 19 + assistant-ui + WorkflowChatTransport
-- Radix Primitives + shadcn/ui + React Bits（三层互补）
-- Motion（主力动画）+ GSAP（辅助剧本式动画）
-- react-force-graph-3d（3D 图谱）+ d3-hierarchy（演化树）+ React Flow（协作大厅）
-- Zustand + TanStack Query + Tailwind v4
-
-**当前阶段先忽略**，Phase 4 + 5 完成后再启动。
+**已实现**：8 端点组 REST 客户端（无 mock）+ useRunStream SSE hook（tail-relative 重连）+ assistant-ui Thread + 4 可视化组件（3D 概念图谱/协作大厅/演化树/辩论剧场）+ 项目/凭证/设置/LLM 测试管理页 + xAI 风格美化。Electron 适配文档完成。
 
 ---
 
@@ -263,8 +364,9 @@
 
 ## 环境信息
 
-- **Node.js** v26.5.0
+- **Node.js** v26.5.0（`.node-version` 文件，fnm 自动切换；`eval "$(fnm env --shell zsh)" && fnm use`）
 - **pnpm** 11.x（`node-linker=hoisted`，`allowBuilds` for better-sqlite3 + esbuild）
-- **HelixDB** v3.0.8 CLI（Docker `ghcr.io/helixdb/enterprise-dev`，localhost:6969，项目目录 `/tmp/helix-test`）
+- **HelixDB** v3.0.8 CLI（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969，dev instance in-memory；Docker `ghcr.io/helixdb/enterprise-dev` 也可用；`helix.toml` gitignored）
 - **Python** v3.9.6 系统 + `uv venv /tmp/solar-test`（astropy 8.0.1/sunpy 8.0.0/scipy 1.18.0/numpy 2.5.1）
 - **LLM 测试端点**：`http://<internal-llm-host>:8084/v1` + key `sk-<redacted>` + 模型 `llab/Qwen3-Next-80B-A3B-Instruct`
+- **服务重启**：`pkill -f 'nitro.*dev'; rm -rf apps/api/node_modules/.nitro apps/api/.output; nohup pnpm --filter @open-scientist/api dev > /tmp/nitro-X.log 2>&1 &`

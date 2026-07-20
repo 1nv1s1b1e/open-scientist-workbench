@@ -28,9 +28,31 @@ export const SteeringSettingsSchema = z.object({
   mode: z.enum(['one-at-a-time', 'all']).default('one-at-a-time'),
 })
 
+// MCP server 配置（per-agent 可挂载远程工具服务）。
+// transport http/sse 走 url，stdio 走 command+args。
+export const McpServerConfigSchema = z.object({
+  name: z.string().min(1),
+  transport: z.enum(['http', 'stdio', 'sse']),
+  url: z.string().url().optional(),
+  command: z.string().optional(),
+  args: z.array(z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+})
+export type McpServerConfig = z.infer<typeof McpServerConfigSchema>
+
+// Per-agent 配置：非模型维度（模型仍走 settings.models[role]）。
+// 所有字段可选 —— 未设置时 agent 工厂使用各自的硬编码默认值。
+export const AgentConfigSchema = z.object({
+  instructions: z.string().optional(),
+  skillDirectories: z.array(z.string()).optional(),
+  mcpServers: z.array(McpServerConfigSchema).optional(),
+})
+export type AgentConfig = z.infer<typeof AgentConfigSchema>
+
 export const GlobalSettingsSchema = z.object({
   models: z.record(z.string(), ModelConfigSchema).default({}),
   modelAliases: z.record(z.string(), ModelConfigSchema).optional(),
+  agents: z.record(z.string(), AgentConfigSchema).default({}),
   tournament: TournamentSettingsSchema,
   concurrency: ConcurrencySettingsSchema,
   steering: SteeringSettingsSchema,
@@ -48,6 +70,10 @@ export type ModelAlias = z.infer<typeof ModelAliasSchema>
 
 export const SetModelAliasRequestSchema = ModelAliasSchema
 export type SetModelAliasRequest = z.infer<typeof SetModelAliasRequestSchema>
+
+// 设置某个 role 的 agent 配置（非模型维度）
+export const SetAgentConfigRequestSchema = AgentConfigSchema
+export type SetAgentConfigRequest = z.infer<typeof SetAgentConfigRequestSchema>
 
 // 凭证管理 —— endpoint bundle 形态：一个 credential = {id, provider, apiKey, baseURL?}。
 // id 是命名实体（可用户指定，如 "qwen-gateway"），不再按 provider 唯一。

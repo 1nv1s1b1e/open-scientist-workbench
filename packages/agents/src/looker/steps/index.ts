@@ -15,7 +15,7 @@
 // that writes to the workflow run server stream via `contextStorage`).
 
 import type { ModelCallStreamPart } from '@ai-sdk/workflow'
-import type { ModelArg } from '@open-scientist/config'
+import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
 import type { EvidenceAlignment } from '@open-scientist/schema'
 import { getWritable } from 'workflow'
 
@@ -39,6 +39,13 @@ export interface RunLookerStepInput {
    * the plain object; it never touches a `LanguageModel` instance.
    */
   modelConfig: ModelArg
+  /**
+   * Per-agent runtime config override (instructions / skillDirectories /
+   * mcpServers). When present, its `modelConfig` takes priority over the
+   * `modelConfig` field above and its non-model fields override the factory
+   * defaults. Undefined → fully default behaviour (backward compat).
+   */
+  agentConfig?: AgentRuntimeConfig
 }
 
 /**
@@ -63,9 +70,18 @@ export async function runLookerStep(input: RunLookerStepInput): Promise<Evidence
   'use step'
   const { createLookerAgent } = await import('../agent.ts')
   const agent = await createLookerAgent({
-    modelConfig: input.modelConfig,
+    modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
     project: input.projectId,
     hypoId: input.hypoId,
+    ...(input.agentConfig?.instructions !== undefined
+      ? { instructions: input.agentConfig.instructions }
+      : {}),
+    ...(input.agentConfig?.skillDirectories !== undefined
+      ? { skillDirectories: input.agentConfig.skillDirectories }
+      : {}),
+    ...(input.agentConfig?.mcpServers !== undefined
+      ? { mcpServers: input.agentConfig.mcpServers }
+      : {}),
   })
 
   const result = await agent.stream({

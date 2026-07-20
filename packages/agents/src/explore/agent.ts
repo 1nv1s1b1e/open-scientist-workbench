@@ -1,6 +1,7 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
-import { EvalResultSchema } from '@open-scientist/schema'
+import { getMcpTools } from '@open-scientist/mcp'
+import { EvalResultSchema, type McpServerConfig } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
   createNodeSandbox,
@@ -24,6 +25,20 @@ export interface ExploreAgentDeps {
   hypoId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
   tools?: ToolSet
+  /** Optional system prompt override. When omitted, the hardcoded default is used. */
+  instructions?: string
+  /**
+   * Optional skill discovery directories. When omitted, `DEFAULT_SKILLS_DIR`
+   * from `@open-scientist/skills` is used. Only consulted when `tools` is
+   * not provided.
+   */
+  skillDirectories?: string[]
+  /**
+   * Optional MCP server list. Tools from each server are fetched via
+   * `getMcpTools` and merged into the default toolset. Only consulted when
+   * `tools` is not provided.
+   */
+  mcpServers?: McpServerConfig[]
 }
 
 /**
@@ -42,17 +57,30 @@ export interface ExploreAgentDeps {
  * Each hypothesis evaluation gets a FRESH agent instance + FRESH bash workspace, so
  * parallel evaluations (Sisyphus spawns N explore workflows) don't share working dirs.
  */
-export async function getDefaultExploreTools(project: string, hypoId: string): Promise<ToolSet> {
+export async function getDefaultExploreTools(
+  project: string,
+  hypoId: string,
+  skillDirectories?: string[],
+  mcpServers?: McpServerConfig[],
+): Promise<ToolSet> {
+  const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
   const bashToolkit = await createBashToolForHypothesis(project, hypoId)
-  const skills = await discoverSkills(createNodeSandbox(), [DEFAULT_SKILLS_DIR])
+  const skills = await discoverSkills(createNodeSandbox(), dirs)
   const loadSkillTool = createLoadSkillTool(skills)
 
-  return {
+  const baseTools: ToolSet = {
     bash: bashToolkit.tools.bash,
     readFile: bashToolkit.tools.readFile,
     writeFile: bashToolkit.tools.writeFile,
     loadSkill: loadSkillTool,
   }
+  if (mcpServers && mcpServers.length > 0) {
+    for (const server of mcpServers) {
+      const mcpTools = await getMcpTools(server)
+      Object.assign(baseTools, mcpTools)
+    }
+  }
+  return baseTools
 }
 
 export async function createExploreAgent({
@@ -60,14 +88,20 @@ export async function createExploreAgent({
   project,
   hypoId,
   tools,
+  instructions,
+  skillDirectories,
+  mcpServers,
 }: ExploreAgentDeps) {
   const model = createModelFromConfig(modelConfig)
-  const resolvedTools = tools ?? (await getDefaultExploreTools(project, hypoId))
+  const resolvedTools =
+    tools ?? (await getDefaultExploreTools(project, hypoId, skillDirectories, mcpServers))
 
   return new WorkflowAgent({
     id: 'explore',
     model,
-    instructions: `You are Explore, the AlphaEvolve-style deterministic evaluator agent for the solar physics coronal heating investigation.
+    instructions:
+      instructions ??
+      `You are Explore, the AlphaEvolve-style deterministic evaluator agent for the solar physics coronal heating investigation.
 
 Your role:
 1. Take a candidate hypothesis Python filter function (def filter(snapshot: dict) -> bool).

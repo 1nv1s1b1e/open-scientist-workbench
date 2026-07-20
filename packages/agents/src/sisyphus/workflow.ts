@@ -1,5 +1,6 @@
 'use workflow'
 
+import type { AgentRuntimeConfig } from '@open-scientist/config'
 import type { EvalResult, Hypothesis, TournamentResult } from '@open-scientist/schema'
 import { librarianWorkflow } from '../librarian/workflow.ts'
 import { oracleWorkflow } from '../oracle/workflow.ts'
@@ -27,14 +28,26 @@ export interface TournamentWorkflowInput {
   /** Run identifier — passed through runtimeContext for persistence + lineage. */
   runId: string
   /**
-   * Serializable model descriptor — forwarded verbatim to every sub-agent
-   * workflow. Each sub-agent's `createXxxAgent` factory reconstructs a
-   * `LanguageModel` via `createModelFromConfig(modelConfig)`.
-   * The tournament workflow never holds a `LanguageModel` instance itself,
-   * because workflow args are structured-clone serialized at every spawn
-   * boundary and cannot carry bound methods / SDK clients.
+   * Serializable model descriptor — the default model applied to every
+   * sub-agent that has no explicit entry in `agentConfigs`. Kept for backward
+   * compatibility with the single-model tournament; when `agentConfigs` is
+   * supplied it takes priority per-role.
    */
   modelConfig: import('@open-scientist/config').ModelArg
+  /**
+   * Per-agent runtime config map keyed by role name
+   * (`sisyphus` / `librarian` / `looker` / `explore` / `oracle` /
+   * `prometheus`). Each entry is a plain serializable
+   * {@link AgentRuntimeConfig} carrying its own `modelConfig` plus optional
+   * `instructions` / `skillDirectories` / `mcpServers` overrides.
+   *
+   * When `agentConfigs[role]` is present the sub-workflow receives it as
+   * `agentConfig` and the factory applies the overrides; when absent the
+   * sub-workflow falls back to `modelConfig` + factory defaults. The whole
+   * map crosses the structured-clone boundary at every spawn — no functions
+   * or SDK clients allowed.
+   */
+  agentConfigs?: Record<string, AgentRuntimeConfig>
 }
 
 /**
@@ -103,10 +116,19 @@ export interface TournamentWorkflowInput {
 export async function tournamentWorkflow(
   input: TournamentWorkflowInput,
 ): Promise<TournamentResult> {
-  const { seed, projectId, runId, modelConfig } = input
+  const { seed, projectId, runId, modelConfig, agentConfigs } = input
+
+  // Helper: pull this role's override (if any) from agentConfigs.
+  const agentConfigFor = (role: string) => agentConfigs?.[role]
 
   // ─── Round 1: Librarian generates the hypothesis pool (direct await) ───
-  const hypoPool = await librarianWorkflow({ seed, projectId, runId, modelConfig })
+  const hypoPool = await librarianWorkflow({
+    seed,
+    projectId,
+    runId,
+    modelConfig,
+    ...(agentConfigFor('librarian') ? { agentConfig: agentConfigFor('librarian') } : {}),
+  })
   let hypotheses: Hypothesis[] = [...hypoPool.hypotheses]
 
   // Best-F1 + convergence tracking across rounds.
@@ -142,6 +164,7 @@ export async function tournamentWorkflow(
           round,
           hypothesis: { statement: h.statement, pythonCode: h.pythonCode },
           modelConfig,
+          ...(agentConfigFor('explore') ? { agentConfig: agentConfigFor('explore') } : {}),
         }),
       ),
     )
@@ -191,6 +214,7 @@ export async function tournamentWorkflow(
       hypotheses,
       evalResults,
       modelConfig,
+      ...(agentConfigFor('oracle') ? { agentConfig: agentConfigFor('oracle') } : {}),
     })
 
     // Apply Oracle's pruning + mutations to the pool.
@@ -221,6 +245,7 @@ export async function tournamentWorkflow(
       currentBestF1: bestF1,
       isFinalRound: false,
       modelConfig,
+      ...(agentConfigFor('prometheus') ? { agentConfig: agentConfigFor('prometheus') } : {}),
     })
 
     // ── Convergence check #2: Prometheus says stop OR round cap hit ──
@@ -243,6 +268,7 @@ export async function tournamentWorkflow(
     winningHypothesis:
       leadingHypoId != null ? { hypoId: leadingHypoId, statement: winningStatement } : undefined,
     modelConfig,
+    ...(agentConfigFor('prometheus') ? { agentConfig: agentConfigFor('prometheus') } : {}),
   })
 
   if (finalPrometheus.mhdConfig) {

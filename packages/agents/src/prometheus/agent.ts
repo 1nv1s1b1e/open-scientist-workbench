@@ -1,6 +1,7 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
-import { PrometheusOutputSchema } from '@open-scientist/schema'
+import { getMcpTools } from '@open-scientist/mcp'
+import { type McpServerConfig, PrometheusOutputSchema } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
   createNodeSandbox,
@@ -22,6 +23,20 @@ export interface PrometheusAgentDeps {
   projectId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
   tools?: ToolSet
+  /** Optional system prompt override. When omitted, the hardcoded default is used. */
+  instructions?: string
+  /**
+   * Optional skill discovery directories. When omitted, `DEFAULT_SKILLS_DIR`
+   * from `@open-scientist/skills` is used. Only consulted when `tools` is
+   * not provided.
+   */
+  skillDirectories?: string[]
+  /**
+   * Optional MCP server list. Tools from each server are fetched via
+   * `getMcpTools` and merged into the default toolset. Only consulted when
+   * `tools` is not provided.
+   */
+  mcpServers?: McpServerConfig[]
 }
 
 /**
@@ -53,32 +68,50 @@ const PROMETHEUS_WORKSPACE = 'prometheus'
  * identical to the SPEC's literal form, but kept here via the tools package to avoid
  * a direct bash-tool dependency in the agents package.
  */
-export async function getDefaultPrometheusTools(projectId: string): Promise<ToolSet> {
+export async function getDefaultPrometheusTools(
+  projectId: string,
+  skillDirectories?: string[],
+  mcpServers?: McpServerConfig[],
+): Promise<ToolSet> {
+  const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
   const bashToolkit = await createBashToolForHypothesis(projectId, PROMETHEUS_WORKSPACE)
-  const skills = await discoverSkills(createNodeSandbox(), [DEFAULT_SKILLS_DIR])
+  const skills = await discoverSkills(createNodeSandbox(), dirs)
   const loadSkillTool = createLoadSkillTool(skills)
 
-  return {
+  const baseTools: ToolSet = {
     mhdConfig: mhdConfigTool,
     bash: bashToolkit.tools.bash,
     readFile: bashToolkit.tools.readFile,
     writeFile: bashToolkit.tools.writeFile,
     loadSkill: loadSkillTool,
   }
+  if (mcpServers && mcpServers.length > 0) {
+    for (const server of mcpServers) {
+      const mcpTools = await getMcpTools(server)
+      Object.assign(baseTools, mcpTools)
+    }
+  }
+  return baseTools
 }
 
 export async function createPrometheusAgent({
   modelConfig,
   projectId,
   tools,
+  instructions,
+  skillDirectories,
+  mcpServers,
 }: PrometheusAgentDeps) {
   const model = createModelFromConfig(modelConfig)
-  const resolvedTools = tools ?? (await getDefaultPrometheusTools(projectId))
+  const resolvedTools =
+    tools ?? (await getDefaultPrometheusTools(projectId, skillDirectories, mcpServers))
 
   return new WorkflowAgent({
     id: 'prometheus',
     model,
-    instructions: `You are Prometheus, the multi-round planning agent (Scaling Test-time Compute) for the solar physics coronal heating investigation.
+    instructions:
+      instructions ??
+      `You are Prometheus, the multi-round planning agent (Scaling Test-time Compute) for the solar physics coronal heating investigation.
 
 Your role:
 1. Based on current hypothesis score distribution and user (human-in-the-loop) physical intuition, dynamically adjust next round's mutation search physical parameter ranges.

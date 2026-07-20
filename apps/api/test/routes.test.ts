@@ -259,6 +259,172 @@ describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
   })
 })
 
+describe('GET / PUT / DELETE /api/settings/agents/:role', () => {
+  it('GET returns DEFAULT_GLOBAL agents (librarian has preset mcpServers)', async () => {
+    const res = await app.request('/api/settings/agents')
+    expect(res.status).toBe(200)
+    const body = await json(res)
+    expect(body).toEqual({
+      librarian: {
+        mcpServers: [
+          {
+            name: 'paper-search-mcp',
+            transport: 'stdio',
+            command: 'uvx',
+            args: ['paper-search-mcp'],
+          },
+          {
+            name: 'duckduckgo-mcp',
+            transport: 'stdio',
+            command: 'uvx',
+            args: ['duckduckgo-mcp-server'],
+          },
+        ],
+      },
+    })
+  })
+
+  it('GET returns 404 for an unknown role', async () => {
+    const res = await app.request('/api/settings/agents/nonexistent')
+    expect(res.status).toBe(404)
+  })
+
+  it('PUT sets agent config with instructions only → 200, then GET returns it', async () => {
+    const put = await app.request('/api/settings/agents/oracle', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ instructions: 'You are a stricter Oracle.' }),
+    })
+    expect(put.status).toBe(200)
+    const putBody = await json(put)
+    expect(putBody.instructions).toBe('You are a stricter Oracle.')
+    expect(putBody.skillDirectories).toBeUndefined()
+    expect(putBody.mcpServers).toBeUndefined()
+
+    const get = await app.request('/api/settings/agents/oracle')
+    expect(get.status).toBe(200)
+    const body = await json(get)
+    expect(body.instructions).toBe('You are a stricter Oracle.')
+  })
+
+  it('PUT sets agent config with skillDirectories + mcpServers', async () => {
+    const payload = {
+      skillDirectories: ['/custom/skills', '/shared/skills'],
+      mcpServers: [
+        { name: 'weather', transport: 'http', url: 'https://mcp.example.com/sse' },
+        { name: 'local-fs', transport: 'stdio', command: 'node', args: ['server.js'] },
+      ],
+    }
+    const put = await app.request('/api/settings/agents/explore', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    expect(put.status).toBe(200)
+    const body = await json(put)
+    expect(body.skillDirectories).toEqual(['/custom/skills', '/shared/skills'])
+    expect(body.mcpServers).toHaveLength(2)
+    expect(body.mcpServers[0].name).toBe('weather')
+    expect(body.mcpServers[1].transport).toBe('stdio')
+    expect(body.mcpServers[1].args).toEqual(['server.js'])
+  })
+
+  it('PUT overwrites an existing agent config (full replace, not merge)', async () => {
+    await app.request('/api/settings/agents/librarian', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        instructions: 'first',
+        skillDirectories: ['/a'],
+      }),
+    })
+    const put = await app.request('/api/settings/agents/librarian', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ instructions: 'second' }),
+    })
+    expect(put.status).toBe(200)
+    const body = await json(put)
+    expect(body.instructions).toBe('second')
+    // Full replace — skillDirectories from the prior PUT is gone.
+    expect(body.skillDirectories).toBeUndefined()
+  })
+
+  it('DELETE removes the agent config for a role', async () => {
+    await app.request('/api/settings/agents/prometheus', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ instructions: 'temp' }),
+    })
+    const del = await app.request('/api/settings/agents/prometheus', { method: 'DELETE' })
+    expect(del.status).toBe(200)
+    expect(await json(del)).toEqual({ ok: true })
+
+    const get = await app.request('/api/settings/agents/prometheus')
+    expect(get.status).toBe(404)
+  })
+
+  it('DELETE on an unknown role is a no-op → 200', async () => {
+    const del = await app.request('/api/settings/agents/never-set', { method: 'DELETE' })
+    expect(del.status).toBe(200)
+    expect(await json(del)).toEqual({ ok: true })
+  })
+
+  it('agent configs surface on GET /api/settings', async () => {
+    await app.request('/api/settings/agents/looker', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ instructions: 'custom looker prompt' }),
+    })
+    const res = await app.request('/api/settings')
+    expect(res.status).toBe(200)
+    const body = await json(res)
+    expect(body.agents).toBeDefined()
+    expect(body.agents.looker.instructions).toBe('custom looker prompt')
+  })
+
+  it('PUT rejects an invalid mcpServer (missing name) → 500 (zod throw → onError)', async () => {
+    const res = await app.request('/api/settings/agents/oracle', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        mcpServers: [{ transport: 'http', url: 'https://x.com' }],
+      }),
+    })
+    expect(res.status).toBe(500)
+  })
+})
+
+describe('PATCH /api/projects/:project/settings with agents', () => {
+  it('deep-merges agent configs at the project level', async () => {
+    await app.request('/api/projects', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'my-proj' }),
+    })
+    // Seed project settings with one agent config.
+    await app.request('/api/projects/my-proj/settings', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        agents: { oracle: { instructions: 'project-level oracle' } },
+      }),
+    })
+    // Patch a second agent — existing oracle should be retained.
+    const res = await app.request('/api/projects/my-proj/settings', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        agents: { librarian: { instructions: 'project-level librarian' } },
+      }),
+    })
+    expect(res.status).toBe(200)
+    const body = await json(res)
+    expect(body.agents.oracle.instructions).toBe('project-level oracle')
+    expect(body.agents.librarian.instructions).toBe('project-level librarian')
+  })
+})
+
 describe('POST /api/projects', () => {
   it('creates a project with a valid name → 201', async () => {
     const res = await app.request('/api/projects', {

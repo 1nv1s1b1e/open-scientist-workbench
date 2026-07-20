@@ -1,6 +1,7 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
-import { OracleOutputSchema } from '@open-scientist/schema'
+import { getMcpTools } from '@open-scientist/mcp'
+import { type McpServerConfig, OracleOutputSchema } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
   createNodeSandbox,
@@ -27,6 +28,20 @@ export interface OracleAgentDeps {
   projectId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
   tools?: ToolSet
+  /** Optional system prompt override. When omitted, the hardcoded default is used. */
+  instructions?: string
+  /**
+   * Optional skill discovery directories. When omitted, `DEFAULT_SKILLS_DIR`
+   * from `@open-scientist/skills` is used. Only consulted when `tools` is
+   * not provided.
+   */
+  skillDirectories?: string[]
+  /**
+   * Optional MCP server list. Tools from each server are fetched via
+   * `getMcpTools` and merged into the default toolset. Only consulted when
+   * `tools` is not provided.
+   */
+  mcpServers?: McpServerConfig[]
 }
 
 /** Shared workspace subdir for Oracle (not per-hypothesis). */
@@ -47,12 +62,17 @@ const ORACLE_WORKSPACE_HYPO = '__oracle__'
  * It must be called outside the workflow body OR inside a `'use step'` function if
  * called from within a workflow. The workflow below calls it before agent.stream().
  */
-export async function getDefaultOracleTools(projectId: string): Promise<ToolSet> {
+export async function getDefaultOracleTools(
+  projectId: string,
+  skillDirectories?: string[],
+  mcpServers?: McpServerConfig[],
+): Promise<ToolSet> {
+  const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
   const bashToolkit = await createBashToolForHypothesis(projectId, ORACLE_WORKSPACE_HYPO)
-  const skills = await discoverSkills(createNodeSandbox(), [DEFAULT_SKILLS_DIR])
+  const skills = await discoverSkills(createNodeSandbox(), dirs)
   const loadSkillTool = createLoadSkillTool(skills)
 
-  return {
+  const baseTools: ToolSet = {
     addCritique: addCritiqueTool,
     addMutationLink: addMutationLinkTool,
     getCritiquesByHypothesis: getCritiquesByHypothesisTool,
@@ -61,16 +81,33 @@ export async function getDefaultOracleTools(projectId: string): Promise<ToolSet>
     writeFile: bashToolkit.tools.writeFile,
     loadSkill: loadSkillTool,
   }
+  if (mcpServers && mcpServers.length > 0) {
+    for (const server of mcpServers) {
+      const mcpTools = await getMcpTools(server)
+      Object.assign(baseTools, mcpTools)
+    }
+  }
+  return baseTools
 }
 
-export async function createOracleAgent({ modelConfig, projectId, tools }: OracleAgentDeps) {
+export async function createOracleAgent({
+  modelConfig,
+  projectId,
+  tools,
+  instructions,
+  skillDirectories,
+  mcpServers,
+}: OracleAgentDeps) {
   const model = createModelFromConfig(modelConfig)
-  const resolvedTools = tools ?? (await getDefaultOracleTools(projectId))
+  const resolvedTools =
+    tools ?? (await getDefaultOracleTools(projectId, skillDirectories, mcpServers))
 
   return new WorkflowAgent({
     id: 'oracle',
     model,
-    instructions: `You are Oracle, the Co-Scientist evaluator and tournament debater agent for the solar physics coronal heating investigation.
+    instructions:
+      instructions ??
+      `You are Oracle, the Co-Scientist evaluator and tournament debater agent for the solar physics coronal heating investigation.
 
 Your role:
 1. Critique each evaluated hypothesis (Co-Scientist 5-dimension scoring: physical plausibility, observational consistency, falsifiability, theoretical completeness, novelty).

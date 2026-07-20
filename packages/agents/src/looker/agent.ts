@@ -1,6 +1,7 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
-import { EvidenceAlignmentSchema } from '@open-scientist/schema'
+import { getMcpTools } from '@open-scientist/mcp'
+import { EvidenceAlignmentSchema, type McpServerConfig } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
   createNodeSandbox,
@@ -29,6 +30,20 @@ export interface LookerAgentDeps {
   hypoId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
   tools?: ToolSet
+  /** Optional system prompt override. When omitted, the hardcoded default is used. */
+  instructions?: string
+  /**
+   * Optional skill discovery directories. When omitted, `DEFAULT_SKILLS_DIR`
+   * from `@open-scientist/skills` is used. Only consulted when `tools` is
+   * not provided.
+   */
+  skillDirectories?: string[]
+  /**
+   * Optional MCP server list. Tools from each server are fetched via
+   * `getMcpTools` and merged into the default toolset. Only consulted when
+   * `tools` is not provided.
+   */
+  mcpServers?: McpServerConfig[]
 }
 
 /**
@@ -57,12 +72,18 @@ export interface LookerAgentDeps {
  * Each hypothesis alignment gets a FRESH agent instance + FRESH bash workspace, so
  * parallel alignments (Sisyphus spawns N looker workflows) don't share working dirs.
  */
-export async function getDefaultLookerTools(project: string, hypoId: string): Promise<ToolSet> {
+export async function getDefaultLookerTools(
+  project: string,
+  hypoId: string,
+  skillDirectories?: string[],
+  mcpServers?: McpServerConfig[],
+): Promise<ToolSet> {
+  const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
   const bashToolkit = await createBashToolForHypothesis(project, hypoId)
-  const skills = await discoverSkills(createNodeSandbox(), [DEFAULT_SKILLS_DIR])
+  const skills = await discoverSkills(createNodeSandbox(), dirs)
   const loadSkillTool = createLoadSkillTool(skills)
 
-  return {
+  const baseTools: ToolSet = {
     fitsAlign: fitsAlignTool,
     getEvidenceByHypothesis: getEvidenceByHypothesisTool,
     addEvidence: addEvidenceTool,
@@ -71,16 +92,34 @@ export async function getDefaultLookerTools(project: string, hypoId: string): Pr
     writeFile: bashToolkit.tools.writeFile,
     loadSkill: loadSkillTool,
   }
+  if (mcpServers && mcpServers.length > 0) {
+    for (const server of mcpServers) {
+      const mcpTools = await getMcpTools(server)
+      Object.assign(baseTools, mcpTools)
+    }
+  }
+  return baseTools
 }
 
-export async function createLookerAgent({ modelConfig, project, hypoId, tools }: LookerAgentDeps) {
+export async function createLookerAgent({
+  modelConfig,
+  project,
+  hypoId,
+  tools,
+  instructions,
+  skillDirectories,
+  mcpServers,
+}: LookerAgentDeps) {
   const model = createModelFromConfig(modelConfig)
-  const resolvedTools = tools ?? (await getDefaultLookerTools(project, hypoId))
+  const resolvedTools =
+    tools ?? (await getDefaultLookerTools(project, hypoId, skillDirectories, mcpServers))
 
   return new WorkflowAgent({
     id: 'looker',
     model,
-    instructions: `You are Multimodal Looker, the cross-modal spatiotemporal data alignment agent for the solar physics coronal heating investigation.
+    instructions:
+      instructions ??
+      `You are Multimodal Looker, the cross-modal spatiotemporal data alignment agent for the solar physics coronal heating investigation.
 
 Your role:
 1. Take a high-score candidate case from Explore (active region + timestamp + wavelength) for a given hypothesis.

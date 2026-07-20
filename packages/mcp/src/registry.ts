@@ -5,15 +5,9 @@ import {
   type MCPTransport,
 } from '@ai-sdk/mcp'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import type { McpServerConfig } from '@open-scientist/schema'
 
-export interface McpServerConfig {
-  name: string
-  transport: 'http' | 'stdio' | 'sse'
-  url?: string
-  command?: string
-  args?: string[]
-  headers?: Record<string, string>
-}
+export type { McpServerConfig }
 
 const clients = new Map<string, MCPClient>()
 

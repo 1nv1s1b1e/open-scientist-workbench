@@ -1,7 +1,8 @@
 import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { createLogger } from '@open-scientist/logger'
-import { HypothesisPoolSchema } from '@open-scientist/schema'
+import { getMcpTools } from '@open-scientist/mcp'
+import { HypothesisPoolSchema, type McpServerConfig } from '@open-scientist/schema'
 import {
   createLoadSkillTool,
   createNodeSandbox,
@@ -30,6 +31,20 @@ export interface LibrarianAgentDeps {
   projectId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
   tools?: ToolSet
+  /** Optional system prompt override. When omitted, the hardcoded default is used. */
+  instructions?: string
+  /**
+   * Optional skill discovery directories. When omitted, `DEFAULT_SKILLS_DIR`
+   * from `@open-scientist/skills` is used. Only consulted when `tools` is
+   * not provided.
+   */
+  skillDirectories?: string[]
+  /**
+   * Optional MCP server list. Tools from each server are fetched via
+   * `getMcpTools` and merged into the default toolset. Only consulted when
+   * `tools` is not provided.
+   */
+  mcpServers?: McpServerConfig[]
 }
 
 const LIBRARIAN_WORKSPACE_HYPO = '__librarian__'
@@ -47,15 +62,20 @@ const LIBRARIAN_WORKSPACE_HYPO = '__librarian__'
  * init). It must be called outside the workflow body OR inside a `'use step'` function
  * if called from within a workflow. The workflow below calls it before agent.stream().
  */
-export async function getDefaultLibrarianTools(projectId: string): Promise<ToolSet> {
-  logger.debug({ projectId }, 'getDefaultLibrarianTools: creating bash tool')
+export async function getDefaultLibrarianTools(
+  projectId: string,
+  skillDirectories?: string[],
+  mcpServers?: McpServerConfig[],
+): Promise<ToolSet> {
+  const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
+  logger.debug({ projectId, dirs }, 'getDefaultLibrarianTools: creating bash tool')
   const bashToolkit = await createBashToolForHypothesis(projectId, LIBRARIAN_WORKSPACE_HYPO)
   logger.debug('getDefaultLibrarianTools: bash tool created, discovering skills')
-  const skills = await discoverSkills(createNodeSandbox(), [DEFAULT_SKILLS_DIR])
+  const skills = await discoverSkills(createNodeSandbox(), dirs)
   logger.debug({ skillCount: skills.length }, 'getDefaultLibrarianTools: skills discovered')
   const loadSkillTool = createLoadSkillTool(skills)
 
-  return {
+  const baseTools: ToolSet = {
     searchPapers: searchPapersTool,
     searchHypotheses: searchHypothesesTool,
     addHypothesis: addHypothesisTool,
@@ -64,16 +84,31 @@ export async function getDefaultLibrarianTools(projectId: string): Promise<ToolS
     writeFile: bashToolkit.tools.writeFile,
     loadSkill: loadSkillTool,
   }
+  if (mcpServers && mcpServers.length > 0) {
+    for (const server of mcpServers) {
+      const mcpTools = await getMcpTools(server)
+      Object.assign(baseTools, mcpTools)
+    }
+  }
+  return baseTools
 }
 
-export async function createLibrarianAgent({ modelConfig, projectId, tools }: LibrarianAgentDeps) {
+export async function createLibrarianAgent({
+  modelConfig,
+  projectId,
+  tools,
+  instructions,
+  skillDirectories,
+  mcpServers,
+}: LibrarianAgentDeps) {
   logger.debug(
     { provider: modelConfig.provider, model: modelConfig.model },
     'createLibrarianAgent: creating model',
   )
   const model = createModelFromConfig(modelConfig)
   logger.debug('createLibrarianAgent: model created, resolving tools')
-  const resolvedTools = tools ?? (await getDefaultLibrarianTools(projectId))
+  const resolvedTools =
+    tools ?? (await getDefaultLibrarianTools(projectId, skillDirectories, mcpServers))
   logger.debug(
     { toolNames: Object.keys(resolvedTools) },
     'createLibrarianAgent: tools resolved, constructing WorkflowAgent',
@@ -82,7 +117,9 @@ export async function createLibrarianAgent({ modelConfig, projectId, tools }: Li
   return new WorkflowAgent({
     id: 'librarian',
     model,
-    instructions: `You are Librarian, the knowledge retrieval and hypothesis generation agent for the solar physics coronal heating investigation.
+    instructions:
+      instructions ??
+      `You are Librarian, the knowledge retrieval and hypothesis generation agent for the solar physics coronal heating investigation.
 
 Your role:
 1. Use RAG (HelixDB) to retrieve solar physics literature and prior hypotheses relevant to the user's seed hypothesis.

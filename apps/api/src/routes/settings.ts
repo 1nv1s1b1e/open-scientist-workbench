@@ -5,7 +5,10 @@ import {
   setGlobalSettings,
   setProjectSettings,
 } from '@open-scientist/config'
+import { MCP_PRESETS } from '@open-scientist/mcp'
 import {
+  type AgentConfig,
+  AgentConfigSchema,
   type GlobalSettings,
   GlobalSettingsSchema,
   type ModelAlias,
@@ -98,10 +101,68 @@ settings.delete('/api/settings/model-aliases/:alias', async (c) => {
   return c.json({ ok: true })
 })
 
+// ─── Per-agent config (non-model overrides) ─────────────────────────────────
+//
+// Each agent role (sisyphus/librarian/looker/explore/oracle/prometheus) can
+// override three NON-model dimensions:
+//   - instructions    system-prompt string (factory default when undefined)
+//   - skillDirectories extra dirs to scan for skills (DEFAULT_SKILLS_DIR
+//                     always included as a fallback)
+//   - mcpServers      remote tool servers to mount (merged into the toolset)
+//
+// Model config stays keyed by role under `settings.models[role]` (use
+// /api/settings/models/:role for that). `settings.agents[role]` holds only
+// these three non-model fields, all optional — undefined fields fall back to
+// the agent factory's hardcoded defaults.
+
+settings.get('/api/settings/agents', async (c) => {
+  const s = await getGlobalSettings()
+  return c.json(s.agents ?? {})
+})
+
+settings.get('/api/settings/agents/:role', async (c) => {
+  const role = c.req.param('role')
+  const s = await getGlobalSettings()
+  const cfg = s.agents?.[role]
+  if (!cfg) {
+    return c.json({ error: 'not_found', message: `No agent config for role "${role}"` }, 404)
+  }
+  return c.json(cfg)
+})
+
+settings.put('/api/settings/agents/:role', async (c) => {
+  const role = c.req.param('role')
+  const body = await c.req.json()
+  const cfg = AgentConfigSchema.parse(body) as AgentConfig
+  const current = await getGlobalSettings()
+  const agents = { ...(current.agents ?? {}), [role]: cfg }
+  await setGlobalSettings({ ...current, agents })
+  return c.json(cfg)
+})
+
+settings.delete('/api/settings/agents/:role', async (c) => {
+  const role = c.req.param('role')
+  const current = await getGlobalSettings()
+  const agents = { ...(current.agents ?? {}) }
+  delete agents[role]
+  await setGlobalSettings({ ...current, agents })
+  return c.json({ ok: true })
+})
+
 settings.get('/api/projects/:project/settings', async (c) => {
   const project = c.req.param('project')
   const s = await getProjectSettings(project)
   return c.json(s)
+})
+
+// ─── MCP presets ────────────────────────────────────────────────────────────
+//
+// 列出预配的第三方 MCP server 配置（paper-search-mcp / duckduckgo-mcp /
+// arxiv-mcp）。前端可展示清单，用户选择后 PUT /api/settings/agents/:role
+// 的 mcpServers 字段引用对应 preset。presets 是静态数据，不从文件读。
+
+settings.get('/api/settings/mcp-presets', (c) => {
+  return c.json(MCP_PRESETS)
 })
 
 settings.patch('/api/projects/:project/settings', async (c) => {
