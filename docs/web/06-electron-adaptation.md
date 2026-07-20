@@ -54,7 +54,7 @@ Electron Main Process
 
 ### 3. Electron main process
 
-新增 `apps/electron/`（不在当前 10 包内，可选新增）：
+新增 `apps/electron/`（不在当前 11 包内，可选新增）：
 
 ```ts
 // apps/electron/src/main.ts

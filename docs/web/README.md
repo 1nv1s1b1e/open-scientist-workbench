@@ -13,7 +13,7 @@
 ## 核心定位
 
 - **后端**：Node.js + Hono + Nitro + WorkflowAgent（见根目录 [SPEC.md](../../SPEC.md)）
-- **前端**：Next.js 15 + React 19 + assistant-ui，独立部署在 `apps/web/`
+- **前端**：Next.js 16 + React 19 + assistant-ui，独立部署在 `apps/web/`
 - **通信**：REST + SSE（`WorkflowChatTransport` 自带断线重连，不需要 Redis）
 - **前后端分离**：前端通过 HTTP transport 调后端 Hono API，不做进程内直连（`DirectChatTransport` 不适用）
 
@@ -29,7 +29,7 @@
 
 | 层 | 选型 |
 |---|---|
-| 框架 | Next.js 15（App Router） |
+| 框架 | Next.js 16（App Router） |
 | React | 19 |
 | Chat UI 框架 | assistant-ui |
 | Transport | WorkflowChatTransport |

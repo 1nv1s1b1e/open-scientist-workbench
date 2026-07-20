@@ -16,14 +16,14 @@ pnpm db:migrate     # drizzle-kit migrate（storage 包）
 ```
 
 - 单包操作：`pnpm --filter @open-scientist/agents typecheck`
-- web 单独验证：`cd apps/web && npx tsc --noEmit && npx biome check .`（web 用 TS 6.0.3，其余包 TS 7.0.2）
+- web 单独验证：`cd apps/web && npx tsc --noEmit && npx biome check .`
 - web dev server：`cd apps/web && npx next dev -p 5173`
 - 加依赖：在对应 package.json 加 + `pnpm install`（pnpm workspaces，node-linker=hoisted）
 - 测试框架：`vitest`，测试文件放 `*.test.ts`
 
 ## 技术栈
 
-Node.js + pnpm + TypeScript 7 + Biome 2.5 + Zod 4 + Hono + Nitro（workflow/nitro module）+ AI SDK 7（`ai` + `@ai-sdk/workflow` + `workflow` DevKit）+ Drizzle ORM（双 SQLite）+ HelixDB（本地 graph+vector）+ `bash-tool` + `@ai-sdk/mcp`。
+Node.js + pnpm + TypeScript 6 + Biome 2.5 + Zod 4 + Hono + Nitro（workflow/nitro module）+ AI SDK 7（`ai` + `@ai-sdk/workflow` + `workflow` DevKit）+ Drizzle ORM（双 SQLite）+ HelixDB（本地 graph+vector）+ `bash-tool` + `@ai-sdk/mcp`。
 
 - **Runtime**：Node.js（包管理用 pnpm，不用 Bun）
 - **Lint/Format**：Biome（单工具，无 ESLint/Prettier）。`biome.json` 已配 2.5.4 preset

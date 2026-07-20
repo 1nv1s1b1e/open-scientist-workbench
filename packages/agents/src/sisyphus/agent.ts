@@ -107,7 +107,7 @@ export async function getDefaultSisyphusTools(mcpServers?: McpServerConfig[]): P
 /**
  * Create the Sisyphus orchestrator agent.
  *
- * Sisyphus is the Tournament Evolution conductor. In the current Phase 3
+ * Sisyphus is the Tournament Evolution conductor. In the current Phase 4
  * implementation, `tournamentWorkflow` (workflow.ts) drives the tournament via
  * deterministic Workflow Composition — it direct-awaits the 5 sub-agent
  * workflows (librarian → looker → explore ×N parallel → oracle → prometheus)

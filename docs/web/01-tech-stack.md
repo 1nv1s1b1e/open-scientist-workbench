@@ -4,8 +4,8 @@
 
 | 层 | 选型 | 版本 | 理由 |
 |---|---|---|---|
-| 框架 | **Next.js** | 15（App Router） | AI SDK 官方推荐，与 Workflow DevKit 集成最完善 |
-| React | 19 | — | Next 15 要求 |
+| 框架 | **Next.js** | 16（App Router） | AI SDK 官方推荐，与 Workflow DevKit 集成最完善 |
+| React | 19 | — | Next 16 要求 |
 | Chat UI 框架 | **assistant-ui** | `@assistant-ui/react@14` + `@assistant-ui/react-ai-sdk` | 生产级 AI chat React 库，与 AI SDK v7 深度集成；approval 三状态一等公民；per-tool 自定义渲染器 |
 | Transport | **WorkflowChatTransport** | `@ai-sdk/workflow` | 为 WorkflowAgent 设计，自带断线重连（chunk index resume），不需要 Redis + resumable-stream |
 | 行为层 | **Radix Primitives** | `@radix-ui/react-*` 按需 | 无样式可访问性 primitives，WAI-ARIA 合规；assistant-ui 和 AI Elements 底层都用 Radix |
@@ -19,7 +19,7 @@
 | 状态管理 | **Zustand** | `zustand@5` | 轻量，Tournament 长循环的 UI 状态（当前轮/F1/选中假设） |
 | 数据获取 | **TanStack Query** | `@tanstack/react-query@5` | REST 端点（projects/hypotheses/evidence/rounds/mhd）的数据获取 + 缓存 |
 | 样式 | **Tailwind CSS** | v4 | shadcn/ui + React Bits 基础 |
-| Schema | **Zod** | `zod@3` | 与后端共享类型（`packages/schema`） |
+| Schema | **Zod** | `zod@4` | 与后端共享类型（`packages/schema`） |
 
 ## 依赖清单
 
@@ -28,7 +28,7 @@
 ```json
 {
   "dependencies": {
-    "next": "^15",
+    "next": "^16.2.10",
     "react": "^19",
     "react-dom": "^19",
     "@assistant-ui/react": "^14",
@@ -40,7 +40,7 @@
     "react-force-graph-3d": "latest",
     "d3-hierarchy": "latest",
     "three": "latest",
-    "motion": "^11",
+    "motion": "^12.42.2",
     "gsap": "^3",
     "@gsap/react": "^2",
     "zustand": "^5",
@@ -49,7 +49,7 @@
     "lucide-react": "latest"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "typescript": "^6.0.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "latest",

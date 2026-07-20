@@ -18,7 +18,7 @@
 
 | 层 | 选型 | 理由 |
 |---|---|---|
-| Runtime | **Node.js** | AI SDK 7 纯 TS 兼容；better-sqlite3 + vitest + tsx |
+| Runtime | **Node.js** | AI SDK 7 纯 TS 兼容；better-sqlite3 + vitest |
 | Lint/Format | **Biome** | 单工具替代 ESLint+Prettier，零配置 |
 | Schema 校验 | **Zod** | AI SDK `tool.inputSchema` / `Output.object(zodSchema)` 必选 |
 | HTTP 框架 | **Hono** | 轻量、Node 原生适配；返回标准 Response 可直返 |
@@ -82,7 +82,7 @@ open-scientist/
 - `src/server.ts` — Hono app 装配
 - `src/index.ts` — 启动入口
 - `nitro.config.ts` — `modules: ['workflow/nitro']` + `routes: {'/api/**': './src/index.ts'}` + `serverEntry: './src/index.ts'` + `workspaceDir: import.meta.dirname` + `noExternals` 列全 8 个 workspace 包（agents/logger/tools/skills/helix/config/schema/mcp）。文件顶部需 `import type {} from 'workflow/nitro'`（side-effect type import，让 TS 加载 module augmentation 认识 `workflow?` 字段）
-- `package.json` 依赖：`hono`, `@hono/node-server`, `workflow`, `nitro`, `rollup`, 以及内部 packages
+- `package.json` 依赖：`hono`, `@hono/node-server`, `workflow`, `nitro`, 以及内部 packages
 
 **不包含**：agent 实现、tool 实现、数据访问逻辑（全委派给 packages）
 
