@@ -45,6 +45,7 @@ Settings 是两层结构：
 {
   models: Record<string, ModelConfig>,          // 按 role 索引，如 "default" / "sisyphus" / "librarian" ...
   modelAliases?: Record<string, ModelConfig>,   // 可选，用户自定义 alias→config
+  agents: Record<string, AgentConfig>,          // 按 role 索引，per-agent 非模型配置（instructions/skillDirectories/mcpServers）
   tournament: {
     maxRounds: number,            // 默认 10
     targetF1: number,             // 默认 0.9
@@ -67,6 +68,33 @@ Settings 是两层结构：
 ```
 
 > **Credential = Endpoint bundle**：一个 credential = 一个完整 endpoint `{id, provider, apiKey, baseURL?}`。`ModelConfig` 不存 provider/baseURL，全部从 `credentialId` 引用的 Credential 继承。支持「同 provider 不同 baseURL+apiKey」组合（如 `openai-main` 用官方 API，`openai-gateway` 用第三方网关）。
+
+### AgentConfig 结构
+
+Per-agent 非模型配置。模型仍走 `settings.models[role]`（fallback `default` → `sisyphus`）。所有字段可选 —— 未设置时 agent 工厂使用各自的硬编码默认值。
+
+```ts
+{
+  instructions?: string,           // 覆盖 agent 的 system prompt（硬编码默认值的 override）
+  skillDirectories?: string[],     // 自定义 skill 发现目录（默认 packages/skills/src/defaults/）
+  mcpServers?: McpServerConfig[],  // 挂载的 MCP server 列表（默认 []，librarian 预配 2 个）
+}
+```
+
+### McpServerConfig 结构
+
+```ts
+{
+  name: string,                                   // 必填，MCP server 标识（也作缓存 key）
+  transport: 'http' | 'stdio' | 'sse',           // 必填
+  url?: string,                                   // http/sse 必填
+  command?: string,                               // stdio 必填，如 'uvx' / 'npx'
+  args?: string[],                                // stdio 可选，如 ['paper-search-mcp']
+  headers?: Record<string, string>,               // http/sse 可选
+}
+```
+
+> **MCP presets**：`GET /api/settings/mcp-presets` 列出预配的第三方 MCP server 清单（paper-search-mcp / duckduckgo-mcp / arxiv-mcp）。前端可展示清单，用户选择后 `PUT /api/settings/agents/:role` 的 `mcpServers` 字段引用对应 preset。
 
 ### `GET /api/settings`
 
@@ -129,6 +157,65 @@ Deep merge patch 到当前 settings（嵌套对象递归合并，数组替换，
 
 **Response 200**：`{ "ok": true }`
 
+### `GET /api/settings/agents`
+
+列出所有 agent 配置（非模型维度）。返回 `DEFAULT_GLOBAL.agents` 与磁盘 `settings.json` 合并后的结果（含 librarian 预配的 2 个 MCP server）。
+
+**Response 200**：`Record<string, AgentConfig>`（如 `{ "librarian": { mcpServers: [...] } }`）
+
+### `GET /api/settings/agents/:role`
+
+获取某个 role 的 agent 配置。
+
+**Response 200**：`AgentConfig`
+**Response 404**：`{ "error": "not_found", "message": "No agent config for role \"<role>\"" }`
+
+### `PUT /api/settings/agents/:role`
+
+设置某个 role 的 agent 配置（**整体替换**该 role 的 AgentConfig，body 经 `AgentConfigSchema.parse` 校验）。传空对象 `{}` 清除所有 override（agent 回退到硬编码默认）。
+
+**Request body**：`AgentConfig`（所有字段可选）
+```ts
+{
+  instructions?: string,
+  skillDirectories?: string[],
+  mcpServers?: McpServerConfig[],
+}
+```
+
+**Response 200**：写入的 `AgentConfig`
+
+**Response 500**：Zod 校验失败（如 mcpServer 缺 `name` 字段）→ `{ "error": "...", "message": "<zod error>" }`
+
+### `DELETE /api/settings/agents/:role`
+
+删除某个 role 的 agent 配置（no-op if unset，返回 200）。
+
+**Response 200**：`{ "ok": true }`
+
+### `GET /api/settings/mcp-presets`
+
+列出预配的第三方 MCP server 清单（静态数据，不从文件读）。前端可展示清单，用户选择后 `PUT /api/settings/agents/:role` 的 `mcpServers` 字段引用对应 preset。
+
+**Response 200**：`Record<string, McpServerConfig & { description: string; recommendedFor: string[] }>`
+
+```ts
+{
+  "paper-search-mcp": {
+    name: "paper-search-mcp",
+    transport: "stdio",
+    command: "uvx",
+    args: ["paper-search-mcp"],
+    description: "多源学术检索（arXiv/PubMed/bioRxiv/Semantic Scholar/Crossref/OpenAlex/Zenodo 等 20+ 源）...",
+    recommendedFor: ["librarian"],
+  },
+  "duckduckgo-mcp": { /* ... */ recommendedFor: ["librarian", "prometheus"] },
+  "arxiv-mcp": { /* ... */ recommendedFor: ["librarian"] },
+}
+```
+
+> **安装前置**：stdio 类 preset 需本机装 `uvx`（`curl -LsSf https://astral.sh/uv/install.sh | sh`）。若 uvx 缺失，agent factory 的 `getMcpTools` 会 throw（连接失败），非阻塞——agent 仍可用自有工具跑。
+
 ### `GET /api/projects/:project/settings`
 
 获取 project settings（仅 project 层 override 部分，不含 global）。
@@ -139,6 +226,7 @@ Deep merge patch 到当前 settings（嵌套对象递归合并，数组替换，
 {
   models?: Record<string, ModelConfig>,
   modelAliases?: Record<string, ModelConfig>,
+  agents?: Record<string, AgentConfig>,   // per-role 非模型配置（与 global agents per-role per-field deep merge）
   tournament?: { ... },         // 同 GlobalSettings.tournament 的 Partial
   concurrency?: { ... },
   steering?: { ... },
@@ -334,6 +422,13 @@ Project 是逻辑隔离单位，每个 project 有独立 SQLite + FS 产物目�
 - 否则：`settings.models.sisyphus ?? settings.models.default`（都无则 500）
 - 拿到 `ModelConfig = {model, thinkingLevel, credentialId}` 后，按 `cfg.credentialId` 查 credential（`credentialStore.get(credentialId)`，找不到 500）
 - 从 credential 拿 `provider` / `apiKey` / `baseURL?`，组装 `ModelArg = { provider, model, baseURL?, apiKey, thinkingLevel }`
+
+**per-agent config 解析逻辑**（`resolveAgentConfigs`）：
+- 启动 run 时，server 调 `resolveAgentConfigs(projectName, credentials)` 为全 6 个 tournament role（sisyphus/librarian/looker/explore/oracle/prometheus）各 resolve 一个 `AgentRuntimeConfig = { modelConfig: ModelArg, instructions?, skillDirectories?, mcpServers? }`
+- 每个 role 的 `modelConfig` = `resolveModelArg(role)`（fallback `default` → `sisyphus`）
+- `instructions` / `skillDirectories` / `mcpServers` 从 `settings.agents[role]` 读取（undefined → agent 工厂用硬编码默认）
+- 若传 `modelAlias`，override `configs.sisyphus.modelConfig`（其余 5 role 仍走各自 role 解析）
+- 组装的 `agentConfigs: Record<string, AgentRuntimeConfig>` 传给 `tournamentWorkflow`，各子 workflow 按 role 取 `agentConfigs[role]` 作为 `agentConfig` 传入
 
 **Response 200**（SSE 流）：
 ```
