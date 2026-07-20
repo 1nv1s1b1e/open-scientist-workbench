@@ -21,13 +21,13 @@
     "@open-scientist/schema": "workspace:*",
     "@open-scientist/storage": "workspace:*",
     "@ai-sdk/mcp": "^2.0.15",
-    "@ai-sdk/provider": "latest",
-    "@ai-sdk/provider-utils": "latest",
+    "@ai-sdk/provider": "^4.0.3",
+    "@ai-sdk/provider-utils": "^5.0.11",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "ai": "latest",
+    "ai": "^7.0.31",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   }
 }

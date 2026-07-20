@@ -1,6 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { createLogger } from '@open-scientist/logger'
-import type { CredentialStore } from '@open-scientist/storage'
+import type { CredentialStore } from '@open-scientist/schema'
 import type { LanguageModel } from 'ai'
 import type { AgentRole } from './constants.ts'
 import { DEFAULT_THINKING_LEVEL } from './constants.ts'

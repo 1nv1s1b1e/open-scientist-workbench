@@ -98,3 +98,48 @@ export const TestLlmResponseSchema = z.object({
   durationMs: z.number(),
 })
 export type TestLlmResponse = z.infer<typeof TestLlmResponseSchema>
+
+// ── Credential 存储接口 ──────────────────────────────────────────────
+// 这三个接口定义 credential 存储层契约，由 storage 包实现，config 包消费。
+// 放在 schema（零依赖）避免 config → storage 的循环依赖
+// （storage → config 是运行时依赖，方向不可逆）。
+
+/** 存储层内部记录（含加密的 key）。 */
+export interface CredentialRecord {
+  id: string
+  provider: string
+  type: 'api-key' | 'oauth-token'
+  encryptedKey: string
+  baseURL?: string
+  metadata?: Record<string, unknown>
+}
+
+/** 解密后的 credential，供 config 层构造 ModelArg 用。 */
+export interface Credential {
+  id: string
+  provider: string
+  type: 'api-key' | 'oauth-token'
+  apiKey: string
+  baseURL?: string
+  metadata?: Record<string, unknown>
+}
+
+/**
+ * Credential 存储契约。
+ * storage 包（`createCredentialStore`）实现此接口；
+ * config 包（`resolveModelArg`）只依赖此类型，避免循环依赖。
+ */
+export interface CredentialStore {
+  /** Resolve a credential by its id. Returns null if not found. */
+  get(id: string): Promise<Credential | null>
+  list(): Promise<CredentialRecord[]>
+  add(params: {
+    id?: string
+    provider: string
+    type: 'api-key' | 'oauth-token'
+    key: string
+    baseURL?: string
+    metadata?: Record<string, unknown>
+  }): Promise<string>
+  delete(id: string): Promise<void>
+}

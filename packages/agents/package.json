@@ -25,12 +25,13 @@
     "@open-scientist/mcp": "workspace:*",
     "@open-scientist/logger": "workspace:*",
     "@ai-sdk/workflow": "^1.0.31",
-    "@ai-sdk/provider-utils": "latest",
+    "@ai-sdk/provider": "^4.0.3",
+    "@ai-sdk/provider-utils": "^5.0.11",
     "ai": "^7.0.31",
     "workflow": "^4.6.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   }
 }

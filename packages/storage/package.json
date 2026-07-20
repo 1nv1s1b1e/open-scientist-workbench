@@ -22,9 +22,9 @@
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
-    "@libsql/client": "^0.14.0",
-    "@types/better-sqlite3": "^7.6.0",
+    "@libsql/client": "^0.17.4",
+    "@types/better-sqlite3": "^7.6.13",
     "drizzle-kit": "^0.31.10",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   }
 }

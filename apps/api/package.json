@@ -21,11 +21,11 @@
     "ajv": "^8.20.0",
     "hono": "^4.12.31",
     "nitro": "^3.0.260610-beta",
-    "rollup": "^4.0.0",
+    "rollup": "^4.62.2",
     "workflow": "^4.6.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   }
 }

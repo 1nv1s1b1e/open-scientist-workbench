@@ -212,7 +212,7 @@ describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
     expect(put.status).toBe(200)
     const list = await app.request('/api/settings/model-aliases')
     const aliases = await json(list)
-    expect(aliases['fast'].model).toBe('gpt-4o')
+    expect(aliases.fast.model).toBe('gpt-4o')
   })
 
   it('DELETE removes an alias', async () => {
@@ -227,7 +227,7 @@ describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
 
     const list = await app.request('/api/settings/model-aliases')
     const aliases = await json(list)
-    expect(aliases['smart']).toBeUndefined()
+    expect(aliases.smart).toBeUndefined()
   })
 
   it('DELETE on an unknown alias is a no-op → 200', async () => {

@@ -13,12 +13,11 @@
   "dependencies": {
     "@open-scientist/logger": "workspace:*",
     "@open-scientist/schema": "workspace:*",
-    "@open-scientist/storage": "workspace:*",
     "@ai-sdk/openai": "^4.0.16",
-    "ai": "latest",
+    "ai": "^7.0.31",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   }
 }

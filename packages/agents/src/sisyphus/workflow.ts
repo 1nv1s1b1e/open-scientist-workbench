@@ -1,7 +1,6 @@
 'use workflow'
 
-import type { EvalResult, Hypothesis, OracleOutput, TournamentResult } from '@open-scientist/schema'
-import type { Run } from 'workflow/api'
+import type { EvalResult, Hypothesis, TournamentResult } from '@open-scientist/schema'
 import { librarianWorkflow } from '../librarian/workflow.ts'
 import { oracleWorkflow } from '../oracle/workflow.ts'
 import type { ConvergenceEntry } from '../prometheus/workflow.ts'
