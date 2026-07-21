@@ -1,4 +1,3 @@
-import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { createLogger } from '@open-scientist/logger'
 import { getMcpTools } from '@open-scientist/mcp'
@@ -15,7 +14,7 @@ import {
   searchHypothesesTool,
   searchPapersTool,
 } from '@open-scientist/tools'
-import { isStepCount, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, ToolLoopAgent, type ToolSet } from 'ai'
 
 const logger = createLogger('agents')
 
@@ -45,6 +44,12 @@ export interface LibrarianAgentDeps {
    * `tools` is not provided.
    */
   mcpServers?: McpServerConfig[]
+  /**
+   * Optional runtime context passed to the ToolLoopAgent constructor. Carries
+   * serializable identifiers (projectId / runId / round) for telemetry and
+   * lineage. Must be plain data (no functions / class instances).
+   */
+  runtimeContext?: Record<string, unknown>
 }
 
 const LIBRARIAN_WORKSPACE_HYPO = '__librarian__'
@@ -59,8 +64,7 @@ const LIBRARIAN_WORKSPACE_HYPO = '__librarian__'
  * - `loadSkill` — progressive disclosure (loads `solar-physics-rag` SKILL.md)
  *
  * NOTE: This function performs async I/O (HelixDB-agnostic fs scan + bash-tool sandbox
- * init). It must be called outside the workflow body OR inside a `'use step'` function
- * if called from within a workflow. The workflow below calls it before agent.stream().
+ * init). Call it from an async context before `agent.stream()`.
  */
 export async function getDefaultLibrarianTools(
   projectId: string,
@@ -100,6 +104,7 @@ export async function createLibrarianAgent({
   instructions,
   skillDirectories,
   mcpServers,
+  runtimeContext,
 }: LibrarianAgentDeps) {
   logger.debug(
     { provider: modelConfig.provider, model: modelConfig.model },
@@ -111,10 +116,10 @@ export async function createLibrarianAgent({
     tools ?? (await getDefaultLibrarianTools(projectId, skillDirectories, mcpServers))
   logger.debug(
     { toolNames: Object.keys(resolvedTools) },
-    'createLibrarianAgent: tools resolved, constructing WorkflowAgent',
+    'createLibrarianAgent: tools resolved, constructing ToolLoopAgent',
   )
 
-  return new WorkflowAgent({
+  return new ToolLoopAgent({
     id: 'librarian',
     model,
     instructions:
@@ -138,6 +143,7 @@ Output: HypothesisPool (array of Hypothesis with statement + pythonCode + parent
     tools: resolvedTools,
     output: Output.object({ schema: HypothesisPoolSchema }),
     stopWhen: isStepCount(20),
+    ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }
 

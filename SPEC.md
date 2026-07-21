@@ -22,9 +22,9 @@
 | Lint/Format | **Biome** | 单工具替代 ESLint+Prettier，零配置 |
 | Schema 校验 | **Zod** | AI SDK `tool.inputSchema` / `Output.object(zodSchema)` 必选 |
 | HTTP 框架 | **Hono** | 轻量、Node 原生适配；返回标准 Response 可直返 |
-| Build system | **Nitro**（`workflow/nitro` module） | WorkflowAgent 编译 `'use workflow'` / `'use step'` 指令需要 |
-| Agent 抽象 | **WorkflowAgent**（`@ai-sdk/workflow` + `workflow`） | 全 6 个 agent 都用；durable + `needsApproval` 一等属性做跨 session 人机协同；step 自动重试 |
-| Agent 编排 | **Workflow Composition**（direct await + background spawn） | Sisyphus 父 workflow 调 5 个子 workflow，顺序用 await，并行用 `start()` |
+| Server | **@hono/node-server** | hono 官方推荐生产 server；无 build-time bundle，dev 用 `tsx watch` 热重载 |
+| Agent 抽象 | **ToolLoopAgent**（`ai` 包直接导出） | 全 6 个 agent 都用；`toolApproval`（via `prepareCall`）做跨 session 人机协同；LLM + tool calls 核心循环 |
+| Agent 编排 | **plain async 函数**（direct await + `Promise.all`） | Sisyphus `tournamentWorkflow` 调 5 个子 workflow，顺序用 `await`，并行 Explore 用 `Promise.all`；SSE 流通过 `emitChunk` 回调从子 workflow 逐层冒泡到 `RunRegistry` |
 | 结构化输出 | **`Output.object(zod)`** | 假设池/批判报告/规划参数全 schema 化 |
 | 文件/代码操作 | **`bash-tool`**（vercel-labs） | agent 自主 mkdir/write/bash 调试；host child_process，无沙箱限制 |
 | 向量/图数据库 | **HelixDB**（`@helix-db/helix-db`，本地部署） | graph+vector 一体 Rust 引擎，知识图谱 + 语义检索 |
@@ -40,11 +40,12 @@
 
 ### 关键决策说明
 
-**为什么全用 WorkflowAgent 而非 ToolLoopAgent**
-- Tournament Evolution 是长流程（多轮循环 + 人机协同），需要 durable
-- `needsApproval` 作为 tool 一等属性，审批时可暂停整个 workflow + persist resume state，用户几小时后回来也能续
-- step 自动重试（默认 3 次）天然容错
-- Workflow 可嵌套（direct await / background spawn），Sisyphus 编排 5 子 workflow 架构成立
+**为什么用 ToolLoopAgent 而非 WorkflowAgent**
+- `WorkflowAgent` 本质就是 durable 版 `ToolLoopAgent`，agent 核心循环（LLM + tool calls + `stopWhen: isStepCount(N)` + `Output.object({schema})`）完全一样，从 `ai` 包直接 `import { ToolLoopAgent }` 即可
+- WorkflowAgent 的三文件边界（agent.ts / workflow.ts 薄壳 / steps/）是为绕开 `@workflow/core` VM sandbox 无 `importModuleDynamically` 的限制，纯样板代码；ToolLoopAgent 在 host Node runtime 直接跑，`await import()` 随便用
+- `toolApproval` 在 `streamText` / ToolLoopAgent 上是一等 option（构造时或 `prepareCall` 返回值），人机协同审批可真正接上（WorkflowAgent 不暴露 `toolApproval`）
+- 并行 Explore 用 `Promise.all(hypotheses.map(h => exploreWorkflow(input)))`，事件共享父流——UI 可视化无影响
+- 失去的是 crash 后 durable resume（补法：每轮已写 `snapshot.json`，加 resume-from-snapshot 入口点）和 SSE 断线重连（补法：自实现 `RunRegistry` chunk ring buffer，~150 行）
 
 **为什么 Explore 不用 Docker**
 - bash-tool 给 agent 自主调试能力（mkdir / write / python run.py / 读 stdout / 改代码 / 再跑），这就是"不停调试"循环
@@ -57,9 +58,9 @@
 ```
 open-scientist/
 ├── apps/
-│   └── api/                          # REST 入口（Hono + Nitro）
+│   └── api/                          # REST 入口（Hono + @hono/node-server）
 ├── packages/
-│   ├── agents/                       # 6 个 WorkflowAgent + workflow + steps
+│   ├── agents/                       # 6 个 ToolLoopAgent + workflow（plain async）+ shared
 │   ├── tools/                        # 共享 tool 实现（bash-tool 封装、HelixDB 查询、FITS、MHD）
 │   ├── skills/                       # Skills 基础设施 + 默认 skills
 │   ├── mcp/                          # 自定义 MCP server
@@ -79,60 +80,57 @@ open-scientist/
 
 **内容**：
 - `src/routes/` — REST handlers（见 §7 API 层）
-- `src/server.ts` — Hono app 装配
-- `src/index.ts` — 启动入口
-- `nitro.config.ts` — `modules: ['workflow/nitro']` + `routes: {'/api/**': './src/index.ts'}` + `serverEntry: './src/index.ts'` + `workspaceDir: import.meta.dirname` + `noExternals` 列全 8 个 workspace 包（agents/logger/tools/skills/helix/config/schema/mcp）。文件顶部需 `import type {} from 'workflow/nitro'`（side-effect type import，让 TS 加载 module augmentation 认识 `workflow?` 字段）
-- `package.json` 依赖：`hono`, `@hono/node-server`, `workflow`, `nitro`, 以及内部 packages
+- `src/index.ts` — Hono app 装配（`new Hono()` + `registerRoutes(app)` + notFound + onError + `export default app`）
+- `src/server.ts` — 启动入口（`import { serve } from '@hono/node-server'; serve({fetch: app.fetch, port})`）
+- `src/lib/run-stream.ts` — `RunRegistry`（in-memory chunk ring buffer，见 §7.2 SSE 流）
+- `package.json` 依赖：`hono`, `@hono/node-server`, `ai`, `tsx`(devDep), 以及内部 packages
 
 **不包含**：agent 实现、tool 实现、数据访问逻辑（全委派给 packages）
 
-### 3.2 `packages/agents` — 6 个 WorkflowAgent
+### 3.2 `packages/agents` — 6 个 ToolLoopAgent
 
-**职责**：6 个角色的 agent 定义、workflow 编排、可重试 step。
+**职责**：6 个角色的 agent 定义、workflow 编排。
 
 **目录结构**：
 ```
 packages/agents/src/
+├── shared/
+│   ├── stream.ts            # streamAgentOutput + EmitChunk（toUIMessageStream 封装）
+│   └── convergence.ts       # ConvergenceEntry 接口（sisyphus + prometheus 共享）
 ├── sisyphus/
-│   ├── agent.ts          # WorkflowAgent 构造工厂（module scope，拉 tools/skills/config）
-│   ├── workflow.ts       # 'use workflow' — 纯 VM-safe 薄壳，只 import runXxxStep
-│   └── steps/index.ts    # 'use step' — 主循环逻辑（编排子 workflow、收敛检测）
+│   ├── agent.ts             # ToolLoopAgent 构造工厂（拉 tools/skills/config）
+│   ├── workflow.ts          # plain async — tournamentWorkflow 主循环（编排子 workflow、收敛检测）
+│   ├── logic.ts             # 纯函数（updateHypothesesWithEval / computeLeader / shouldStop* / applyOraclePruning）
+│   └── snapshot.ts          # snapshotStep + RoundSnapshot（写 FS snapshot.json）
 ├── librarian/
 │   ├── agent.ts
-│   ├── workflow.ts       # 'use workflow' — 纯 VM-safe 薄壳
-│   └── steps/index.ts    # 'use step' — HelixDB 检索、假设翻译为 Python
+│   └── workflow.ts          # plain async — HelixDB 检索、假设翻译为 Python
 ├── looker/
 │   ├── agent.ts
-│   ├── workflow.ts
-│   └── steps/index.ts    # 'use step' — FITS 对齐、视频切片
+│   └── workflow.ts          # plain async — FITS 对齐、视频切片
 ├── explore/
 │   ├── agent.ts
-│   ├── workflow.ts
-│   └── steps/index.ts    # 'use step' — bash-tool 跑 Python、F1 计算
+│   └── workflow.ts          # plain async — bash-tool 跑 Python、F1 计算
 ├── oracle/
 │   ├── agent.ts
-│   ├── workflow.ts
-│   └── steps/index.ts    # 'use step' — 批判、突变、反例 debug
+│   ├── workflow.ts          # plain async — 批判、突变、反例 debug
+│   └── logic.ts             # 纯函数（buildHypothesesBlock / buildEvalSummaryBlock）
 ├── prometheus/
 │   ├── agent.ts
-│   ├── workflow.ts
-│   └── steps/index.ts    # 'use step' — 规划、MHD cfg 生成
-└── index.ts              # 导出所有 agent + workflow 入口函数
+│   └── workflow.ts          # plain async — 规划、MHD cfg 生成
+└── index.ts                 # 导出所有 agent + workflow 入口函数
 ```
 
-**三文件边界**（方案 A：解决 VM sandbox 无 dynamic import callback 的限制）：
+**两文件边界**（ToolLoopAgent 在 host Node runtime 跑，无 VM sandbox 限制）：
 
-`@workflow/core` 的 VM sandbox 用裸 `runInContext`，无 `importModuleDynamically` callback —— workflow body（VM 内）任何 `await import()` 必抛 `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`。因此「拉 Node 模块链的代码」只能出现在 step 里（step 在 host Node runtime 跑，`import()` 走 host ESM loader）。
-
-- `agent.ts` — `createXxxAgent(...)` async 工厂（module scope），拉 tools/skills/config（Node 模块链）。**不能被 workflow.ts 静态 import**（会把 `node:*` 链拉进 VM bundle）
-- `workflow.ts` — `'use workflow'` 指令，**纯 VM-safe 薄壳**：只静态 import `./steps/index.ts` 的 `runXxxStep`，函数体只有 `return await runXxxStep(input)`。不调 `getWritable`，不构造 agent，不 `await import()`
-- `steps/index.ts` — `'use step'` 函数体内 `await import('../agent.ts')` + `createXxxAgent(...)` + `agent.stream({messages, writable: getWritable<ModelCallStreamPart>(), runtimeContext})` + `return result.output`。tool execute 也在此层
+- `agent.ts` — `createXxxAgent(...)` async 工厂：拉 tools/skills/config（Node 模块链），`new ToolLoopAgent({id, model, instructions, tools, output: Output.object({schema}), stopWhen: isStepCount(N), runtimeContext?})`。deps 接口含 `modelConfig: ModelArg` + `runtimeContext?: Record<string, unknown>`。
+- `workflow.ts` — **plain async 函数**（无 `'use workflow'`）：静态 import `./agent.ts`，`const result = await agent.stream({messages})`（ToolLoopAgent.stream 返回 Promise，必须 await），调 `streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)` 把 fullStream 转 UIMessageChunk 推给 SSE，`return result.output`。input 接口含 `emitChunk?: EmitChunk`。
 
 **关键约束**：
-- workflow body（VM 内）**严禁 `await import()`**（抛 `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`）—— 一切 Node 模块拉取必须在 step 函数体内
-- workflow 模块图必须精简——重依赖（HelixDB client、SQLite、bash-tool）只在 step 函数内动态 import，不进 workflow bundle
-- runtimeContext / toolsContext 必须可序列化（plain data），传 identifiers 在 step 内重建资源；`ModelArg`（plain object）是跨 workflow structured-clone 边界传 model 配置的载体，每个子 agent 在 step 内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel`
+- `runtimeContext` 是 ToolLoopAgent **构造参数**（不是 `agent.stream()` 调用选项），在 `createXxxAgent` 时传入
+- `ModelArg`（plain object `{provider, model, baseURL?, apiKey, thinkingLevel}`）是跨调用边界的 model 配置载体，workflow 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel`
 - bash-tool 的 working dir = `data/projects/<project_name>/workspace/<hypo_id>/`
+- SSE 流通过 `emitChunk` 回调从子 workflow 逐层冒泡到 `RunRegistry`（见 §7.2）
 
 **依赖**：`packages/{tools, schema, config, helix, skills}`
 
@@ -152,7 +150,7 @@ packages/agents/src/
 - `outputSchema?: z.object(...)` — 输出校验（结构化结果）
 - `contextSchema?: z.object(...)` — per-call context（project name、working dir、credentials）
 - `execute: async ({...input}, {context, ...}) => result`
-- `needsApproval?: true | async fn` — 人机协同节点（仅 WorkflowAgent）
+- `needsApproval?: true | async fn` — **deprecated**（AI SDK 7），推荐用 `ToolLoopAgent` 构造时的 `toolApproval`（per-tool map 或 `GenericToolApprovalFunction`，返回 `'user-approval'` 暂停流 emit `tool-approval-request` chunk）；或 `prepareCall` 返回值里的 `toolApproval`（per-call 动态注入）
 
 **依赖**：`packages/{schema, config, helix}`，`bash-tool`
 
@@ -293,8 +291,8 @@ const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
   - `setGlobalSettings(partial)` / `setProjectSettings(name, partial)`
 - `src/models.ts` — **provider 抽象**（模型配置从 SQLite CredentialStore 读，不读 env）
   - `createProvider(config)` 接口，默认 OpenAI 实现，可扩展 Anthropic
-  - `resolveModelArg(projectName, credentials, {role?, modelAlias?})` 读 settings → ModelConfig（含 credentialId）→ `credentials.get(credentialId)` → 从 credential 拿 provider/apiKey/baseURL → 组装 `ModelArg = {provider, model, baseURL?, apiKey, thinkingLevel}` plain object（跨 workflow 边界传 model 配置的载体）
-  - `createModelFromConfig(modelConfig)` 在 step 内重建 `LanguageModel` 实例（step 在 host Node runtime 跑，可持有 SDK client）
+   - `resolveModelArg(projectName, credentials, {role?, modelAlias?})` 读 settings → ModelConfig（含 credentialId）→ `credentials.get(credentialId)` → 从 credential 拿 provider/apiKey/baseURL → 组装 `ModelArg = {provider, model, baseURL?, apiKey, thinkingLevel}` plain object（跨调用边界传 model 配置的载体）
+   - `createModelFromConfig(modelConfig)` 在 workflow 函数内重建 `LanguageModel` 实例
   - **per-agent thinkingLevel**（借鉴 Pi）：`settings.models.oracle.thinkingLevel: 'high'`
   - **sessionId for provider caching**（借鉴 Pi）：runtimeContext 传 sessionId 复用 provider 端 prompt cache
 - `src/constants.ts` — 默认值（MAX_ROUNDS=10, TARGET_F1=0.9, MAX_CONCURRENT_RUNS=4, ...）
@@ -317,43 +315,37 @@ const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
 
 | Agent | 职责 | Output Schema | 主要 Tools | Skills |
 |---|---|---|---|---|
-| **Sisyphus** | 编排器，Tournament Evolution 主循环 | `TournamentResultSchema` | `call_librarian`, `call_looker`, `call_explore`, `call_oracle`, `call_prometheus`, `review_leading_hypothesis`（needsApproval） | `tournament-protocol` |
+| **Sisyphus** | 编排器，Tournament Evolution 主循环 | `TournamentResultSchema` | `call_librarian`, `call_looker`, `call_explore`, `call_oracle`, `call_prometheus`, `review_leading_hypothesis`（toolApproval） | `tournament-protocol` |
 | **Librarian** | RAG 知识检索 + 假设生成（翻译为 Python 物理过滤函数） | `HypothesisPoolSchema`（HypothesisSchema[]） | `helix-query`, `bash`（写 Python 文件） | `solar-physics-rag`, `hypothesis-to-python` |
 | **Multimodal Looker** | 多模态数据对齐（FITS + MP4 时空索引） | `EvidenceAlignmentSchema` | `fits-align`, `helix-query` | `multimodal-align` |
 | **Explore** | AlphaEvolve 确定性评估（跑 Python 在 1.75M 快照搜索，算 F1） | `EvalResultSchema`（F1 + 反例日志） | `bash`（python run.py / 读 stdout / 改代码 / 再跑） | `fits-snapshot-search` |
 | **Oracle** | Co-Scientist 评估 + 锦标赛辩论（批判 + 突变 + 反例 debug） | `CritiqueSchema` + `MutationSchema` | `bash`（跑测试脚本）, `helix-query` | `critique-protocol` |
 | **Prometheus** | 多轮规划（Scaling Test-time Compute）+ MHD cfg 生成 | `PlanSchema` + `MhdConfigSchema` | `mhd-config`, `bash`（写 .cfg） | `mhd-planning` |
 
-### 4.2 Sisyphus 编排（Workflow Composition）
+### 4.2 Sisyphus 编排（plain async 函数）
 
-Sisyphus 是父 WorkflowAgent，通过两种方式调 5 个子 WorkflowAgent。**所有 workflow.ts 都是 VM-safe 薄壳**（见 §3.2 方案 A），下面的伪代码描述的是设计意图 —— 实际逻辑在各自 `steps/index.ts` 的 `runXxxStep` 里执行，workflow.ts 只负责 `return await runXxxStep(input)`。
+Sisyphus 的 `tournamentWorkflow` 是 plain async 函数，直接 await 5 个子 workflow。**Sisyphus agent（ToolLoopAgent）目前未被 tournamentWorkflow 调用**——tournamentWorkflow 是纯确定性控制流，Sisyphus agent 留给 Phase 4 API 层用于 free-form steering + approval。
 
 **Direct await**（顺序，需结果）：
 ```ts
-// sisyphus/workflow.ts （VM-safe 薄壳：return await runSisyphusStep(input)）
-// 以下逻辑实际在 sisyphus/steps/index.ts 的 runSisyphusStep 内执行
-'use workflow'
-export async function tournamentWorkflow(input: TournamentInput) {
+// sisyphus/workflow.ts （plain async，无 'use workflow'）
+export async function tournamentWorkflow(input: TournamentWorkflowInput) {
   // Round 1: Librarian 生成假设
-  const hypotheses = await librarianWorkflow({seed: input.seed, projectId: input.projectId})
-
-  // Round 2: Looker 加载对齐数据
-  const alignment = await lookerWorkflow({projectId: input.projectId})
+  const hypotheses = await librarianWorkflow({seed: input.seed, projectId: input.projectId, emitChunk: input.emitChunk})
 
   while (round < MAX_ROUNDS && !converged) {
-    // 并行评估多个假设
+    // 并行评估多个假设（Promise.all，事件共享父流）
     const evals = await Promise.all(
-      hypotheses.map(h => runExploreStep({hypoId: h.id, projectId: input.projectId}))
+      hypotheses.map(h => exploreWorkflow({hypoId: h.id, projectId: input.projectId, emitChunk: input.emitChunk}))
     )
     // Oracle 批判 + 突变
-    const {critiques, mutations} = await oracleWorkflow({evals, hypotheses, projectId: input.projectId})
+    const {critiques, mutations} = await oracleWorkflow({evals, hypotheses, projectId: input.projectId, emitChunk: input.emitChunk})
 
-    // 人机协同节点（needsApproval 暂停 workflow）
-    const review = await reviewLeadingHypoStep({leadingHypoId, critiques, projectId: input.projectId})
-    // ↑ tool 带 needsApproval: true，用户审批后 resume
+    // 人机协同节点（TODO Phase 4：通过 Sisyphus agent + toolApproval 接入）
+    // const review = await reviewLeadingHypothesis({leadingHypoId, critiques, projectId})
 
     // Prometheus 规划下一轮
-    const plan = await prometheusWorkflow({evals, review, round, projectId: input.projectId})
+    const plan = await prometheusWorkflow({evals, review, round, projectId, emitChunk: input.emitChunk})
     hypotheses = applyMutations(hypotheses, mutations, plan)
     round++
     if (bestF1 >= TARGET_F1) converged = true
@@ -363,19 +355,17 @@ export async function tournamentWorkflow(input: TournamentInput) {
 }
 ```
 
-**Background spawn**（并行 fan-out，独立 run ID）：
+**并行 fan-out**（`Promise.all`，事件共享父流）：
 ```ts
-// 用于并行评估多个假设
-'step'
-async function runExploreStep({hypoId, projectId}) {
-  const run = await start(exploreWorkflow, [{hypoId, projectId}])
-  return await getRun(run.runId)  // 等完成
-}
+// 用于并行评估多个假设——SSE 流通过 emitChunk 回调从子 workflow 逐层冒泡到 RunRegistry
+const evals = await Promise.all(
+  hypotheses.map(h => exploreWorkflow({hypoId: h.id, projectId, emitChunk: input.emitChunk}))
+)
 ```
 
 ### 4.3 runtimeContext 流转
 
-workflow 间通过 `runtimeContext` 传递数据（**必须可序列化**）：
+workflow 间通过 `runtimeContext` 传递数据（plain object，在 ToolLoopAgent 构造时传入）：
 
 ```ts
 RuntimeContextSchema = z.object({
@@ -390,24 +380,23 @@ RuntimeContextSchema = z.object({
 })
 ```
 
-**禁止放入 runtimeContext**：functions / class instances / symbols / WeakMap / SDK clients / DB handles。传 identifiers（projectId, runId, hypoId），在 step 函数内重建资源。
+**禁止放入 runtimeContext**：functions / class instances / symbols / WeakMap / SDK clients / DB handles（虽然不再跨 VM 边界，但保持 plain data 习惯）。传 identifiers（projectId, runId, hypoId），在 workflow 函数内重建资源。
 
 ### 4.4 人机协同节点
 
-**needsApproval（durable 审批）**
-`review_leading_hypothesis` tool 带 `needsApproval: true`：
-- WorkflowAgent 执行到此 tool 时暂停整个 workflow
-- persist opaque resume state 到 SQLite
-- API 返回 `tool-approval-request` 事件给前端
+**toolApproval（审批暂停）**
+`review_leading_hypothesis` tool 在 Sisyphus agent 上配置 `toolApproval: {review_leading_hypothesis: 'user-approval'}`（或通过 `prepareCall` 动态注入）：
+- ToolLoopAgent 执行到此 tool 时，`toolApproval` 返回 `'user-approval'` → stream 暂停
+- emit `tool-approval-request` chunk（type='tool-approval-request', approvalId, toolCall, signature?）
+- `toUIMessageStream` 转 UIMessageChunk → SSE 推前端
 - 用户审查领先假设 + 反例，输入专家直觉
-- API 收到 approval response → `createSession({sessionId, resumeFrom})` → `continueStream()` 恢复
-- 用户几小时后回来也能续（durable）
+- API 收到 approval response → 注入回 agent stream 恢复执行
 
 **Steering & Follow-up（借鉴 Pi）**
-Tournament 长循环中用户中途插话/追加任务，不等到 needsApproval 节点：
+Tournament 长循环中用户中途插话/追加任务，不等到 toolApproval 节点：
 - **Steering**：用户在 tool 执行中插入消息，当前 turn 结束后注入到 agent context
 - **Follow-up**：agent 本要停止时，队列注入消息让它继续
-- AI SDK WorkflowAgent 无原生支持，我们在 API 层实现 message queue + turn boundary 检测：
+- ToolLoopAgent 无原生 steering 支持，我们在 API 层实现 message queue + turn boundary 检测：
   - `POST /runs/:runId/steer` — 注入 steering 消息
   - message queue 持久化到 SQLite，workflow 下一个 step 边界检查并注入
   - `steeringMode: 'one-at-a-time' | 'all'`（settings 可配）
@@ -509,8 +498,8 @@ Sisyphus.tournamentWorkflow
   ├─ Loop (round = 2..MAX_ROUNDS):
   │    ├─ Explore (并行) → 每个假设的 F1 + 反例日志
   │    ├─ Oracle → 批判 + 突变（淘汰低分，保留优质变异）
-  │    ├─ [人机协同] review_leading_hypothesis (needsApproval)
-  │    │    └─ User 审查 + 输入专家直觉
+  │    ├─ [人机协同] review_leading_hypothesis (toolApproval)
+  │    │    └─ User 审查 + 输入专家直觉（stream 暂停 emit tool-approval-request）
   │    ├─ Prometheus → 调整搜索参数 + 下一轮规划
   │    └─ 收敛检测（F1 ≥ TARGET_F1 或 round ≥ MAX_ROUNDS）
   └─ Prometheus → MHD cfg + 卫星观测建议书
@@ -568,12 +557,22 @@ Sisyphus.tournamentWorkflow
 
 ### 7.2 SSE 流
 
+**RunRegistry**（`apps/api/src/lib/run-stream.ts`）：in-memory chunk ring buffer，管理 active runs。
+- `Run` 持有 `{runId, abortController, chunks: UIMessageChunk[], result: Promise<TournamentResult>, cancel(), getReadable({startIndex}), getTailIndex()}`
+- `start(input: TournamentWorkflowInput): Run` — 生成 runId，创建 Run，后台异步跑 `tournamentWorkflow({...input, emitChunk: chunk => run.chunks.push(chunk)})`。60s 后自动 evict 完成的 run。
+- `getRun(runId): Run | undefined`
+- `Run.getReadable({startIndex}): ReadableStream<UIMessageChunk>` — 从 `chunks[startIndex]` 开始（支持 startIndex<0 tail-relative）
+- `Run.getTailIndex(): number` — `chunks.length - 1`
+- `Run.cancel()` — `abortController.abort()`
+
+**SSE 响应**：`createUIMessageStreamResponse({stream, headers: {x-workflow-run-id}})`，stream 是 `Run.getReadable()` 返回的 `ReadableStream<UIMessageChunk>`。tournamentWorkflow 内每个子 agent 的 `result.fullStream` 通过 `streamAgentOutput`（`shared/stream.ts`）转 UIMessageChunk，经 `emitChunk` 回调逐层冒泡到 RunRegistry。
+
 `GET /runs/:runId/stream` 返回 SSE：
-- workflow step 事件（start/step-start/tool-execution-start/tool-execution-end/step-end/end）
-- `tool-approval-request` 事件（人机协同 needsApproval 节点）
+- UIMessageChunk 流（start/start-step/finish-step/text-*/reasoning-*/tool-*/finish/abort/error/custom）
+- `tool-approval-request` 事件（人机协同 toolApproval 节点）
 - `steering-injected` 事件（steering 消息注入成功通知）
 - 错误事件
-- 断线重连：`WorkflowChatTransport` 处理，POST 返回 `x-workflow-run-id` header，GET `/{runId}/stream` 端点续传
+- 断线重连：POST `/runs` 返回 `x-workflow-run-id` header，GET `/{runId}/stream?startIndex=N` 端点续传（startIndex<0 tail-relative，返 `x-workflow-stream-tail-index` header）
 
 ### 7.3 并发控制
 
@@ -673,7 +672,7 @@ Sisyphus.tournamentWorkflow
 4. 组装并返回 **`ModelArg`** = `{provider, model, baseURL?, apiKey, thinkingLevel}` —— **plain object**，可跨 workflow structured-clone 边界传递（不能放 SDK `LanguageModel` 实例）
 5. 附带 `sessionId`（runtimeContext 传入）用于 provider 端 prompt cache 复用
 
-**重建时机**：`ModelArg` 随 runtimeContext 传入 workflow，每个子 agent 在 step 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel` 实例（step 在 host Node runtime 跑，可持有 SDK client）。
+**重建时机**：`ModelArg` 随 workflow input 传入，每个子 agent 在 workflow 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel` 实例。
 
 ---
 
@@ -719,7 +718,7 @@ packages/config → packages/storage (读 credentials + settings)
 13. `packages/agents/sisyphus` — Tournament 主循环编排
 
 ### Phase 4: API 层
-14. `apps/api` — Hono routes + Nitro + SSE + 人机协同审批 + steering + 配置管理端点
+14. `apps/api` — Hono routes + @hono/node-server + RunRegistry SSE + 人机协同审批（toolApproval） + steering + 配置管理端点
 
 ### Phase 5: 集成测试
 15. 端到端跑通 Tournament Evolution（seed → MHD cfg）
@@ -729,20 +728,16 @@ packages/config → packages/storage (读 credentials + settings)
 
 ## 11. 约束与注意事项
 
-### Workflow DevKit 约束
-- 三文件边界必须分离（agent.ts / workflow.ts / steps/index.ts），见 §3.2 方案 A
-- **workflow body（VM 内）严禁 `await import()`**：`@workflow/core` VM sandbox 无 `importModuleDynamically` callback，必抛 `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`。一切 Node 模块拉取必须在 step 函数体内（step 在 host Node runtime 跑）
-- workflow.ts 必须是纯 VM-safe 薄壳：只 import `./steps/index.ts` 的 `runXxxStep` + `return await runXxxStep(input)`，不调 `getWritable`，不构造 agent
-- workflow 模块图必须精简，重依赖在 step 内动态 import
-- runtimeContext / toolsContext 必须可序列化（plain data），`ModelArg` 是跨边界传 model 配置的载体（step 内才 `createModelFromConfig` 重建）
-- Nitro 作为 build system（`nitro.config.ts` 配 `workflow/nitro` module）
-- tsconfig 加 workflow TS plugin
-
-### workflow/nitro + pnpm workspace + Node type stripping 约束
-- workflow/nitro 的 step bundle（esbuild via `@workflow/builders`）在 dev 模式把 workspace 包 externalize，runtime 用 bare specifier `@open-scientist/config` → `package.json exports ./src/index.ts` → Node 26 type stripping 加载（默认开启，无需 flag）
-- **源码内部相对 import 用 `.ts` 后缀**（不是 `.js`）：Node type stripping 不做 `.js`→`.ts` fallback，加 `.js` 会 `ERR_MODULE_NOT_FOUND`
+### ToolLoopAgent + @hono/node-server 约束
+- 每 role 两文件：`agent.ts`（构造工厂，`new ToolLoopAgent`）+ `workflow.ts`（plain async，`await agent.stream({messages})` + `streamAgentOutput` + `return result.output`）
+- `runtimeContext` 是 ToolLoopAgent **构造参数**（不是 `agent.stream()` 调用选项）
+- `agent.stream()` 返回 `Promise<StreamTextResult>`，**必须 await**（与 WorkflowAgent 同步返回不同）
+- SSE 流通过 `emitChunk` 回调从子 workflow 逐层冒泡到 `RunRegistry`——tournamentWorkflow 接受 `emitChunk?: EmitChunk`，转发给每个子 workflow
+- `toolApproval`（人机协同审批）在 ToolLoopAgent 构造时或 `prepareCall` 返回值里设置，返回 `'user-approval'` 暂停流 emit `tool-approval-request` chunk
+- **源码内部相对 import 用 `.ts` 后缀**（不是 `.js`）：tsx + Node type stripping 不做 `.js`→`.ts` fallback
 - `tsconfig.base.json` 开 `allowImportingTsExtensions: true` + `rewriteRelativeImportExtensions: true`
-- **`apps/api/nitro.config.ts` 的 `noExternals` 需列全 8 个 workspace 包**（agents/logger/tools/skills/helix/config/schema/mcp），否则 nitro dev bundle 无法 resolve
+- **package.json exports 指向 `./src/index.ts`**：workspace 包间 import 走 Node type stripping 加载
+- dev 用 `tsx watch src/server.ts`，生产用 `tsc` → `node dist/server.js`，无 build-time bundle
 
 ### bash-tool 使用
 - working dir = `data/projects/<name>/workspace/<hypo_id>/`，project + hypothesis 隔离

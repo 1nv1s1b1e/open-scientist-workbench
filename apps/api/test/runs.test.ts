@@ -4,15 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 /**
  * Runs-route unit tests.
  *
- * The tournament workflow + workflow runtime (`workflow/api`) + storage layer
+ * The tournament workflow + RunRegistry (`../lib/run-stream`) + storage layer
  * are all mocked so no real LLM call, SQLite write, or workflow run is
  * triggered. Each test configures the mock return values, issues an
  * `app.request(...)` against the Hono app, and asserts on the Response.
  *
  * Mocking strategy:
- *   - `workflow/api` → `start` + `getRun` are replaced with vi.fn() stubs. The
- *     `start` stub returns a fake `Run`-like object whose `readable` is a
- *     ReadableStream of one trivial chunk and whose `runId` is deterministic.
+ *   - `../lib/run-stream` → `start` + `getRun` are replaced with vi.fn()
+ *     stubs. The `start` stub returns a fake `Run`-like object whose
+ *     `getReadable()` yields a trivial chunk stream and whose `runId` is
+ *     deterministic.
  *   - `@open-scientist/storage` → `createCredentialStore`, `getProject`,
  *     `createRun`, `getRun` (storage), `updateRunStatus` are stubbed.
  *   - `@open-scientist/config` → `getSettings` is stubbed to return a model
@@ -34,11 +35,10 @@ let storageGetRunRow: Record<string, unknown> | null
 let storageCreateRunResult: { id: string; status: string } | null
 let updateRunStatusCalls: Array<{ projectName: string; runId: string; status: string }>
 
-// workflow/api stubs
+// run-stream stubs
 let startCalls: Array<unknown[]>
 let startRun: {
   runId: string
-  readable: ReadableStream
   cancel: () => Promise<void>
   getReadable: (opts?: { startIndex?: number }) => {
     pipeThrough: <T>(transform: TransformStream<unknown, T>) => ReadableStream<T>
@@ -48,17 +48,19 @@ let startRun: {
 
 // ─── Mocks (hoisted) ─────────────────────────────────────────────────────────
 
-vi.mock('workflow/api', () => ({
-  start: vi.fn(async (...args: unknown[]) => {
+vi.mock('../src/lib/run-stream', () => ({
+  start: vi.fn((...args: unknown[]) => {
     startCalls.push(args)
     return startRun
   }),
-  getRun: vi.fn((runId: string) => ({
-    runId,
-    readable: startRun.readable,
-    cancel: startRun.cancel,
-    getReadable: startRun.getReadable,
-  })),
+  getRun: vi.fn((runId: string) => {
+    if (startRun === undefined) return undefined
+    return {
+      runId,
+      cancel: startRun.cancel,
+      getReadable: startRun.getReadable,
+    }
+  }),
 }))
 
 vi.mock('@open-scientist/storage', () => ({
@@ -125,12 +127,11 @@ function singleChunkStream(): ReadableStream {
   })
 }
 
-/** Build the fake Run object used by the workflow/api mock. */
+/** Build the fake Run object used by the run-stream mock. */
 function makeFakeRun(runId: string, tailIndex = 0) {
   const readable = singleChunkStream()
   return {
     runId,
-    readable,
     cancel: vi.fn(async () => {}),
     getReadable: (_opts?: { startIndex?: number }) => ({
       pipeThrough: <T>(transform: TransformStream<unknown, T>) => readable.pipeThrough(transform),
@@ -142,7 +143,7 @@ function makeFakeRun(runId: string, tailIndex = 0) {
 // ─── App import (after mocks are in place) ───────────────────────────────────
 // biome-ignore lint/correctness/noUnusedImports: re-import for type only
 import type { Hono } from 'hono'
-import app from '../src/index.js'
+import app from '../src/index'
 
 // ─── Test setup ──────────────────────────────────────────────────────────────
 
@@ -186,11 +187,11 @@ describe('POST /api/projects/:name/runs', () => {
     expect(res.headers.get('x-workflow-run-id')).toBe('wrun_test-123')
     expect(res.headers.get('content-type')).toContain('text/event-stream')
 
-    // start() was called once with the tournament workflow + a ModelArg payload.
+    // start() was called once with a single ModelArg-bearing payload (the
+    // RunRegistry's start takes the input object directly, not a
+    // [workflowFn, [args]] tuple).
     expect(startCalls).toHaveLength(1)
-    const [workflowFn, args] = startCalls[0]! as [unknown, unknown[]]
-    expect(typeof workflowFn).toBe('function')
-    const input = args[0] as {
+    const input = startCalls[0]![0] as {
       seed: string
       projectId: string
       runId: string
@@ -198,14 +199,13 @@ describe('POST /api/projects/:name/runs', () => {
     }
     expect(input.seed).toBe('nanoflare reconnection heats the corona')
     expect(input.projectId).toBe('my-proj')
-    expect(input.runId).toMatch(/^run-\d+$/)
+    expect(input.runId).toMatch(/^run-\d+-[0-9a-f]{8}$/)
     expect(input.modelConfig.apiKey).toBe('sk-test-key')
     expect(input.modelConfig.provider).toBe('openai')
     expect(input.modelConfig.model).toBe('gpt-4o')
 
-    // createRun persisted with the SDK run id + status running.
+    // createRun persisted with the run id + status running.
     expect(storageCreateRunResult).not.toBeNull()
-    expect(storageCreateRunResult?.id).toBe('wrun_test-123')
     expect(storageCreateRunResult?.status).toBe('running')
   })
 
@@ -269,7 +269,7 @@ describe('POST /api/projects/:name/runs', () => {
       body: JSON.stringify({ seed: 'x' }),
     })
     expect(res.status).toBe(200)
-    const input = (startCalls[0]![1] as unknown[])[0] as { modelConfig: ModelArg }
+    const input = startCalls[0]![0] as { modelConfig: ModelArg }
     expect(input.modelConfig.baseURL).toBe('http://gw.test/v1')
     expect(input.modelConfig.thinkingLevel).toBe('high')
   })
@@ -287,7 +287,7 @@ describe('POST /api/projects/:name/runs', () => {
       body: JSON.stringify({ seed: 'x' }),
     })
     expect(res.status).toBe(200)
-    const input = (startCalls[0]![1] as unknown[])[0] as { modelConfig: ModelArg }
+    const input = startCalls[0]![0] as { modelConfig: ModelArg }
     expect(input.modelConfig.baseURL).toBeUndefined()
   })
 
@@ -305,7 +305,7 @@ describe('POST /api/projects/:name/runs', () => {
       body: JSON.stringify({ seed: 'x', modelAlias: 'qwen-80b' }),
     })
     expect(res.status).toBe(200)
-    const input = (startCalls[0]![1] as unknown[])[0] as { modelConfig: ModelArg }
+    const input = startCalls[0]![0] as { modelConfig: ModelArg }
     expect(input.modelConfig.model).toBe('qwen-2.5-80b')
     expect(input.modelConfig.baseURL).toBe('http://gw.qwen/v1')
     expect(input.modelConfig.thinkingLevel).toBe('high')
@@ -333,7 +333,7 @@ describe('POST /api/projects/:name/runs', () => {
       body: JSON.stringify({ seed: 'x', modelAlias: '' }),
     })
     expect(res.status).toBe(200)
-    const input = (startCalls[0]![1] as unknown[])[0] as { modelConfig: ModelArg }
+    const input = startCalls[0]![0] as { modelConfig: ModelArg }
     expect(input.modelConfig.model).toBe('gpt-4o')
   })
 })
@@ -361,6 +361,14 @@ describe('GET /api/projects/:name/runs/:runId/stream', () => {
   it('returns 400 when startIndex is not an integer', async () => {
     const res = await app.request('/api/projects/my-proj/runs/wrun_test-123/stream?startIndex=abc')
     expect(res.status).toBe(400)
+  })
+
+  it('returns 404 when the run is not in the registry (completed / unknown)', async () => {
+    // Override the getRun mock to return undefined for this test only.
+    const runStream = await import('../src/lib/run-stream')
+    vi.mocked(runStream.getRun).mockReturnValueOnce(undefined)
+    const res = await app.request('/api/projects/my-proj/runs/unknown/stream')
+    expect(res.status).toBe(404)
   })
 })
 
@@ -424,5 +432,26 @@ describe('POST /api/projects/:name/runs/:runId/stop', () => {
       method: 'POST',
     })
     expect(res.status).toBe(404)
+  })
+
+  it('still marks stopped in storage when the run already evicted from registry', async () => {
+    storageGetRunRow = {
+      id: 'wrun_test-123',
+      projectId: 'proj-uuid-1',
+      status: 'running',
+      startedAt: '2026-01-01T00:00:00.000Z',
+      endedAt: null,
+      currentRound: 1,
+      bestF1: 0,
+    }
+    const runStream = await import('../src/lib/run-stream')
+    vi.mocked(runStream.getRun).mockReturnValueOnce(undefined)
+    const res = await app.request('/api/projects/my-proj/runs/wrun_test-123/stop', {
+      method: 'POST',
+    })
+    expect(res.status).toBe(200)
+    expect(updateRunStatusCalls).toEqual([
+      { projectName: 'my-proj', runId: 'wrun_test-123', status: 'stopped' },
+    ])
   })
 })

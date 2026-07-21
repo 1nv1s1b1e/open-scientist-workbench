@@ -1,4 +1,3 @@
-import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { getMcpTools } from '@open-scientist/mcp'
 import { type McpServerConfig, PrometheusOutputSchema } from '@open-scientist/schema'
@@ -9,7 +8,7 @@ import {
   discoverSkills,
 } from '@open-scientist/skills'
 import { createBashToolForHypothesis, mhdConfigTool } from '@open-scientist/tools'
-import { isStepCount, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, ToolLoopAgent, type ToolSet } from 'ai'
 
 export interface PrometheusAgentDeps {
   /**
@@ -37,6 +36,12 @@ export interface PrometheusAgentDeps {
    * `tools` is not provided.
    */
   mcpServers?: McpServerConfig[]
+  /**
+   * Optional runtime context passed to the ToolLoopAgent constructor. Carries
+   * serializable identifiers (projectId / runId / round) for telemetry and
+   * lineage. Must be plain data (no functions / class instances).
+   */
+  runtimeContext?: Record<string, unknown>
 }
 
 /**
@@ -58,10 +63,8 @@ const PROMETHEUS_WORKSPACE = 'prometheus'
  * - `loadSkill` — progressive disclosure (loads `mhd-config-gen` SKILL.md)
  *
  * NOTE: createBashTool is async (sandbox init) + discoverSkills does fs I/O, so this
- * whole factory is async. The workflow calls it before agent.stream() — outside any
- * 'use step' boundary is fine because workflow.ts is a 'use workflow' module and
- * can await. runtimeContext carries only serializable identifiers (projectId /
- * runId / round); no bash toolkit or HelixDB clients cross the workflow boundary.
+ * whole factory is async. Call it before `agent.stream()`. runtimeContext carries
+ * only serializable identifiers (projectId / runId / round).
  *
  * Tool-to-destination equivalence: createBashToolForHypothesis(projectId, 'prometheus')
  * calls createBashTool({ destination: getWorkspaceDir(projectId, 'prometheus') }) —
@@ -101,12 +104,13 @@ export async function createPrometheusAgent({
   instructions,
   skillDirectories,
   mcpServers,
+  runtimeContext,
 }: PrometheusAgentDeps) {
   const model = createModelFromConfig(modelConfig)
   const resolvedTools =
     tools ?? (await getDefaultPrometheusTools(projectId, skillDirectories, mcpServers))
 
-  return new WorkflowAgent({
+  return new ToolLoopAgent({
     id: 'prometheus',
     model,
     instructions:
@@ -134,6 +138,7 @@ Output: PrometheusOutput { plan: PlanSchema, mhdConfig: MhdConfigSchema | null, 
     tools: resolvedTools,
     output: Output.object({ schema: PrometheusOutputSchema }),
     stopWhen: isStepCount(20),
+    ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }
 

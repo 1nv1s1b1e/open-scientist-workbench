@@ -1,4 +1,3 @@
-import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { getMcpTools } from '@open-scientist/mcp'
 import { type McpServerConfig, OracleOutputSchema } from '@open-scientist/schema'
@@ -14,7 +13,7 @@ import {
   createBashToolForHypothesis,
   getCritiquesByHypothesisTool,
 } from '@open-scientist/tools'
-import { isStepCount, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, ToolLoopAgent, type ToolSet } from 'ai'
 
 export interface OracleAgentDeps {
   /**
@@ -42,6 +41,12 @@ export interface OracleAgentDeps {
    * `tools` is not provided.
    */
   mcpServers?: McpServerConfig[]
+  /**
+   * Optional runtime context passed to the ToolLoopAgent constructor. Carries
+   * serializable identifiers (projectId / runId / round) for telemetry and
+   * lineage. Must be plain data (no functions / class instances).
+   */
+  runtimeContext?: Record<string, unknown>
 }
 
 /** Shared workspace subdir for Oracle (not per-hypothesis). */
@@ -59,8 +64,7 @@ const ORACLE_WORKSPACE_HYPO = '__oracle__'
  * - `loadSkill` — progressive disclosure (loads `critique-protocol` + `hypothesis-mutation` skills)
  *
  * NOTE: This function performs async I/O (skills fs scan + bash-tool sandbox init).
- * It must be called outside the workflow body OR inside a `'use step'` function if
- * called from within a workflow. The workflow below calls it before agent.stream().
+ * Call it from an async context before `agent.stream()`.
  */
 export async function getDefaultOracleTools(
   projectId: string,
@@ -97,12 +101,13 @@ export async function createOracleAgent({
   instructions,
   skillDirectories,
   mcpServers,
+  runtimeContext,
 }: OracleAgentDeps) {
   const model = createModelFromConfig(modelConfig)
   const resolvedTools =
     tools ?? (await getDefaultOracleTools(projectId, skillDirectories, mcpServers))
 
-  return new WorkflowAgent({
+  return new ToolLoopAgent({
     id: 'oracle',
     model,
     instructions:
@@ -135,6 +140,7 @@ Tournament Evolution: act as a rigorous scientific reviewer. Use high thinking l
     tools: resolvedTools,
     output: Output.object({ schema: OracleOutputSchema }),
     stopWhen: isStepCount(25),
+    ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }
 

@@ -1,9 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./.output",
+    "outDir": "./dist",
     "rootDir": ".",
-    "plugins": [{ "name": "workflow" }]
+    "noEmit": false,
+    "declaration": false,
+    "declarationMap": false
   },
-  "include": ["src/**/*.ts", "nitro.config.ts"]
+  "include": ["src/**/*.ts"]
 }

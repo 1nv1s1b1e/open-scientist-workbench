@@ -1,18 +1,18 @@
 // Pure tournament-orchestration logic, extracted from workflow.ts so it can be
-// unit-tested without spinning up the Workflow DevKit runtime. These functions
-// are deterministic and side-effect free — they operate on plain Hypothesis /
+// unit-tested without spinning up an agent runtime. These functions are
+// deterministic and side-effect free — they operate on plain Hypothesis /
 // EvalResult / OracleOutput / ConvergenceEntry data structures.
 //
 // The tournament constants (MAX_ROUNDS / TARGET_F1) are inlined here rather
-// than imported from `@open-scientist/config` because that package is a barrel
-// that re-exports paths.ts (node:path) + settings.ts (node:fs), which would
-// drag Node modules into the esbuild workflow bundle. The values mirror
-// `@open-scientist/config/constants.ts` exactly — if you change one, change
-// both. (A future cleanup could move these constants to the zero-dependency
-// `@open-scientist/schema` package so both sites can import them cleanly.)
+// than imported from `@open-scientist/config` to keep this module dependency-
+// light (the config package re-exports paths.ts + settings.ts which pull
+// node:* modules). The values mirror `@open-scientist/config/constants.ts`
+// exactly — if you change one, change both. (A future cleanup could move these
+// constants to the zero-dependency `@open-scientist/schema` package so both
+// sites can import them cleanly.)
 
 import type { EvalResult, Hypothesis, OracleOutput } from '@open-scientist/schema'
-import type { ConvergenceEntry } from '../prometheus/workflow.ts'
+import type { ConvergenceEntry } from '../shared/convergence.ts'
 
 /** Max tournament rounds — mirrors `@open-scientist/config` MAX_ROUNDS. */
 const MAX_ROUNDS = 10
@@ -96,5 +96,7 @@ export function shouldStopByPrometheus(shouldContinue: boolean, round: number): 
   return !shouldContinue || round >= MAX_ROUNDS
 }
 
+/** Re-export the shared convergence type (consumed by Prometheus input). */
+export type { ConvergenceEntry } from '../shared/convergence.ts'
 /** Re-export the round cap so callers can introspect the same constant. */
 export { MAX_ROUNDS, TARGET_F1 }

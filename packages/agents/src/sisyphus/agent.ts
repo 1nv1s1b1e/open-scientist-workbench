@@ -1,19 +1,17 @@
-import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { getMcpTools } from '@open-scientist/mcp'
 import { type McpServerConfig, TournamentResultSchema } from '@open-scientist/schema'
-import { isStepCount, Output, type ToolSet, tool } from 'ai'
+import { isStepCount, Output, ToolLoopAgent, type ToolSet, tool } from 'ai'
 import { z } from 'zod'
 
 export interface SisyphusAgentDeps {
   /**
    * Serializable model descriptor — reconstructed into a `LanguageModel` inside
-   * this factory via `createModelFromConfig`. Kept for uniformity with the other
-   * 5 agents even though `tournamentWorkflow` currently drives the tournament
-   * via deterministic Workflow Composition rather than Sisyphus' own LLM loop.
-   * Never pass a `LanguageModel` instance across the workflow boundary (workflow
-   * args are structured-clone serialized and cannot carry bound methods / SDK
-   * clients).
+   * this factory via `createModelFromConfig`. Kept for uniformity with the
+   * other 5 agents even though `tournamentWorkflow` currently drives the
+   * tournament via deterministic control flow rather than Sisyphus' own LLM
+   * loop. Never pass a `LanguageModel` instance across call boundaries (keep
+   * it as plain data).
    */
   modelConfig: ModelArg
   /** Optional override toolset. When omitted, default tools are assembled. */
@@ -29,6 +27,12 @@ export interface SisyphusAgentDeps {
    * `tools` is not provided (caller-provided toolsets take full precedence).
    */
   mcpServers?: McpServerConfig[]
+  /**
+   * Optional runtime context passed to the ToolLoopAgent constructor. Carries
+   * serializable identifiers (projectId / runId) for telemetry and lineage.
+   * Must be plain data (no functions / class instances).
+   */
+  runtimeContext?: Record<string, unknown>
 }
 
 /**
@@ -36,19 +40,26 @@ export interface SisyphusAgentDeps {
  * a round so a physicist can review the leading hypothesis and either approve
  * (continue), reject (force another round), or inject steering feedback.
  *
- * `needsApproval: true` is a first-class tool property in the AI SDK — the
- * workflow runtime suspends execution until the user responds via the approval
- * API. The execute body below is the default fallback; the actual approval
- * response is injected by the runtime on resume.
+ * Approval is wired via `toolApproval` on the ToolLoopAgent constructor (see
+ * `createSisyphusAgent` below), NOT via the deprecated tool-level
+ * `needsApproval`. When `toolApproval.review_leading_hypothesis` returns
+ * `'user-approval'`, the stream suspends and emits a `tool-approval-request`
+ * chunk. The Phase 4 API layer captures that chunk, surfaces it to the user
+ * via SSE, and injects the user's response back into the agent stream to
+ * resume execution.
  *
- * NOTE: In AI SDK 7, tool-level `needsApproval` is marked deprecated in favor
- * of streamText-level `toolApproval`. WorkflowAgent does not currently expose
- * `toolApproval` on its stream options, so the tool-level flag is still the
- * available mechanism. Sisyphus does NOT drive its own agent.stream() loop in
- * the current tournament implementation (the workflow is deterministic control
- * flow that direct-awaits the 5 sub-agent workflows), so this tool is wired
- * here for the Phase 4 API layer to invoke when human review is wired into the
- * tournament loop. See `tournamentWorkflow` for the current simplified path.
+ * The execute body below is the fallback that runs after the user approves
+ * (or when the tool is invoked outside an approval-bearing call context).
+ * When the user denies, the tool is not executed and the agent receives a
+ * denial result that it can react to in its next step.
+ *
+ * Sisyphus does NOT drive its own agent.stream() loop in the current
+ * tournament implementation — `tournamentWorkflow` is deterministic control
+ * flow that direct-awaits the 5 sub-agent runs. This tool is wired here for
+ * the Phase 4 API layer to invoke when it spins up a Sisyphus agent.stream()
+ * for free-form steering or the review node. See `tournamentWorkflow` for the
+ * `onReviewLeadingHypothesis` callback hook that lets the deterministic
+ * tournament pause for human review without an LLM loop.
  */
 const reviewLeadingHypothesisTool = tool({
   description:
@@ -63,11 +74,11 @@ const reviewLeadingHypothesisTool = tool({
     approved: z.boolean(),
     feedback: z.string().nullable(),
   }),
-  needsApproval: true,
   execute: async () => {
     // Default fallback when invoked outside an approval-bearing call context.
-    // The actual approval response is injected by the workflow runtime when
-    // the user resumes via the approval API.
+    // When `toolApproval` returns `'user-approval'`, the stream suspends
+    // before reaching execute; on resume the user's decision is injected and
+    // execute runs with the approved input (or the tool is skipped on deny).
     return { approved: true, feedback: null }
   },
 })
@@ -77,8 +88,10 @@ const reviewLeadingHypothesisTool = tool({
  *
  * Tools:
  * - `review_leading_hypothesis` — the Sisyphus-exclusive human-in-the-loop
- *   approval tool (needsApproval: true). Used at the end of high-stakes rounds
- *   to let a physicist review the leader before Prometheus commits to the next
+ *   approval tool. Approval is configured via `toolApproval` on the
+ *   ToolLoopAgent constructor (not the deprecated tool-level
+ *   `needsApproval`). Used at the end of high-stakes rounds to let a
+ *   physicist review the leader before Prometheus commits to the next
  *   round's compute budget or the final MHD cfg.
  *
  * Sisyphus does NOT get a bash tool or HelixDB tools — it is a pure
@@ -109,13 +122,20 @@ export async function getDefaultSisyphusTools(mcpServers?: McpServerConfig[]): P
  *
  * Sisyphus is the Tournament Evolution conductor. In the current Phase 4
  * implementation, `tournamentWorkflow` (workflow.ts) drives the tournament via
- * deterministic Workflow Composition — it direct-awaits the 5 sub-agent
- * workflows (librarian → looker → explore ×N parallel → oracle → prometheus)
- * and does NOT spin up a Sisyphus LLM loop itself. The agent is still
- * constructed and exported so the Phase 4 API layer can use it for:
+ * deterministic control flow — it direct-awaits the 5 sub-agent runs
+ * (librarian → looker → explore ×N parallel → oracle → prometheus) and does
+ * NOT spin up a Sisyphus LLM loop itself. The agent is still constructed and
+ * exported so the Phase 4 API layer can use it for:
  *   - interpreting free-form user steering messages mid-tournament,
  *   - driving the `review_leading_hypothesis` approval tool when the
- *     human-in-the-loop node is wired in.
+ *     human-in-the-loop node is wired in via `toolApproval`.
+ *
+ * The `toolApproval` setting on the ToolLoopAgent constructor configures the
+ * `review_leading_hypothesis` tool to require user approval: when the agent
+ * calls that tool, the stream suspends and emits a `tool-approval-request`
+ * chunk. The Phase 4 API layer surfaces that to the frontend via SSE and
+ * injects the user's response to resume. This replaces the deprecated
+ * tool-level `needsApproval` mechanism.
  *
  * Output schema (TournamentResult) + stopWhen (isStepCount(50)) are fixed by
  * the SPEC — do not change them.
@@ -125,11 +145,12 @@ export async function createSisyphusAgent({
   tools,
   instructions,
   mcpServers,
+  runtimeContext,
 }: SisyphusAgentDeps) {
   const model = createModelFromConfig(modelConfig)
   const resolvedTools = tools ?? (await getDefaultSisyphusTools(mcpServers))
 
-  return new WorkflowAgent({
+  return new ToolLoopAgent({
     id: 'sisyphus',
     model,
     instructions:
@@ -157,6 +178,15 @@ You are a conductor, not a specialist — do NOT run physics code, query HelixDB
     tools: resolvedTools,
     output: Output.object({ schema: TournamentResultSchema }),
     stopWhen: isStepCount(50),
+    // Configure the review_leading_hypothesis tool to require user approval.
+    // When the agent calls this tool, the stream suspends and emits a
+    // `tool-approval-request` chunk. The Phase 4 API layer surfaces that to
+    // the frontend via SSE and injects the user's response to resume.
+    // This replaces the deprecated tool-level `needsApproval` mechanism.
+    toolApproval: {
+      review_leading_hypothesis: 'user-approval',
+    },
+    ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }
 

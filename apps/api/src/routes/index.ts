@@ -3,7 +3,7 @@ import { credentials } from './credentials'
 import { devProbe } from './dev-probe'
 import { health } from './health'
 import { projects } from './projects'
-import { runs } from './runs.js'
+import { runs } from './runs'
 import { settings } from './settings'
 import { testLlm } from './test-llm'
 

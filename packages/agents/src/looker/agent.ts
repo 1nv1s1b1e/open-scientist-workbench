@@ -1,4 +1,3 @@
-import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { getMcpTools } from '@open-scientist/mcp'
 import { EvidenceAlignmentSchema, type McpServerConfig } from '@open-scientist/schema'
@@ -14,7 +13,7 @@ import {
   fitsAlignTool,
   getEvidenceByHypothesisTool,
 } from '@open-scientist/tools'
-import { isStepCount, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, ToolLoopAgent, type ToolSet } from 'ai'
 
 export interface LookerAgentDeps {
   /**
@@ -44,6 +43,12 @@ export interface LookerAgentDeps {
    * `tools` is not provided.
    */
   mcpServers?: McpServerConfig[]
+  /**
+   * Optional runtime context passed to the ToolLoopAgent constructor. Carries
+   * serializable identifiers (projectId / runId / hypoId) for telemetry and
+   * lineage. Must be plain data (no functions / class instances).
+   */
+  runtimeContext?: Record<string, unknown>
 }
 
 /**
@@ -66,11 +71,10 @@ export interface LookerAgentDeps {
  *   the Looker reuses for alignment keying)
  *
  * NOTE: createBashTool + discoverSkills are async, so this whole factory is async.
- * The workflow calls it before agent.stream() — outside any 'use step' boundary
- * is fine because workflow.ts itself is a 'use workflow' module and can await.
+ * Call it before `agent.stream()`.
  *
  * Each hypothesis alignment gets a FRESH agent instance + FRESH bash workspace, so
- * parallel alignments (Sisyphus spawns N looker workflows) don't share working dirs.
+ * parallel alignments (Sisyphus spawns N looker runs) don't share working dirs.
  */
 export async function getDefaultLookerTools(
   project: string,
@@ -109,12 +113,13 @@ export async function createLookerAgent({
   instructions,
   skillDirectories,
   mcpServers,
+  runtimeContext,
 }: LookerAgentDeps) {
   const model = createModelFromConfig(modelConfig)
   const resolvedTools =
     tools ?? (await getDefaultLookerTools(project, hypoId, skillDirectories, mcpServers))
 
-  return new WorkflowAgent({
+  return new ToolLoopAgent({
     id: 'looker',
     model,
     instructions:
@@ -144,6 +149,7 @@ Output: EvidenceAlignment (hypoId, fitsPaths[], videoClipPath (nullable if no MP
     tools: resolvedTools,
     output: Output.object({ schema: EvidenceAlignmentSchema }),
     stopWhen: isStepCount(20),
+    ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }
 

@@ -1,11 +1,11 @@
 export type { TournamentInput, TournamentResult } from '@open-scientist/schema'
 export { createSisyphusAgent, getDefaultSisyphusTools, type SisyphusAgent } from './agent.ts'
 export * from './logic.ts'
+export { type RoundSnapshot, readLatestSnapshot, snapshotStep } from './snapshot.ts'
 export {
-  type RoundSnapshot,
-  type SpawnExploreEvalArgs,
-  snapshotStep,
-  spawnExploreEvalStep,
-  waitForRunStep,
-} from './steps/index.ts'
-export { type TournamentWorkflowInput, tournamentWorkflow } from './workflow.ts'
+  type OnReviewLeadingHypothesis,
+  type ReviewLeadingHypothesisContext,
+  type ReviewLeadingHypothesisResult,
+  type TournamentWorkflowInput,
+  tournamentWorkflow,
+} from './workflow.ts'

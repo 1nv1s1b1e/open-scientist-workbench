@@ -1,4 +1,3 @@
-import { WorkflowAgent } from '@ai-sdk/workflow'
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { getMcpTools } from '@open-scientist/mcp'
 import { EvalResultSchema, type McpServerConfig } from '@open-scientist/schema'
@@ -9,7 +8,7 @@ import {
   discoverSkills,
 } from '@open-scientist/skills'
 import { createBashToolForHypothesis } from '@open-scientist/tools'
-import { isStepCount, Output, type ToolSet } from 'ai'
+import { isStepCount, Output, ToolLoopAgent, type ToolSet } from 'ai'
 
 export interface ExploreAgentDeps {
   /**
@@ -39,6 +38,12 @@ export interface ExploreAgentDeps {
    * `tools` is not provided.
    */
   mcpServers?: McpServerConfig[]
+  /**
+   * Optional runtime context passed to the ToolLoopAgent constructor. Carries
+   * serializable identifiers (projectId / runId / round / hypoId) for telemetry
+   * and lineage. Must be plain data (no functions / class instances).
+   */
+  runtimeContext?: Record<string, unknown>
 }
 
 /**
@@ -50,12 +55,11 @@ export interface ExploreAgentDeps {
  *   no sandbox — runs Python directly on host per AGENTS.md decision)
  * - `loadSkill` — progressive disclosure (loads `fits-snapshot-search` SKILL.md)
  *
- * NOTE: createBashTool is async (sandbox init), so this whole factory is async. The
- * workflow calls it before agent.stream() — outside any 'use step' boundary is fine
- * because workflow.ts itself is a 'use workflow' module and can await.
+ * NOTE: createBashTool is async (sandbox init), so this whole factory is async. Call
+ * it before `agent.stream()`.
  *
  * Each hypothesis evaluation gets a FRESH agent instance + FRESH bash workspace, so
- * parallel evaluations (Sisyphus spawns N explore workflows) don't share working dirs.
+ * parallel evaluations (Sisyphus spawns N explore runs) don't share working dirs.
  */
 export async function getDefaultExploreTools(
   project: string,
@@ -91,12 +95,13 @@ export async function createExploreAgent({
   instructions,
   skillDirectories,
   mcpServers,
+  runtimeContext,
 }: ExploreAgentDeps) {
   const model = createModelFromConfig(modelConfig)
   const resolvedTools =
     tools ?? (await getDefaultExploreTools(project, hypoId, skillDirectories, mcpServers))
 
-  return new WorkflowAgent({
+  return new ToolLoopAgent({
     id: 'explore',
     model,
     instructions:
@@ -120,6 +125,7 @@ Output: EvalResult (hypoId, f1, truePositives, falsePositives, falseNegatives, c
     tools: resolvedTools,
     output: Output.object({ schema: EvalResultSchema }),
     stopWhen: isStepCount(30),
+    ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }
 

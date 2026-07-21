@@ -2,13 +2,12 @@
 // Kept for ongoing observation after P0 runs route lands; not registered by
 // default (see routes/index.ts).
 
-import { createModelCallToUIChunkTransform } from '@ai-sdk/workflow'
-import { tournamentWorkflow } from '@open-scientist/agents'
 import type { ModelArg } from '@open-scientist/config'
 import { createCredentialStore } from '@open-scientist/storage'
-import { createUIMessageStreamResponse } from 'ai'
+import { createUIMessageStreamResponse, type UIMessageChunk } from 'ai'
 import { Hono } from 'hono'
-import { start } from 'workflow/api'
+
+import { start as startRun } from '../lib/run-stream'
 
 export const devProbe = new Hono()
 
@@ -35,17 +34,21 @@ devProbe.post('/api/dev-probe/stream-test', async (c) => {
   }
 
   const runId = `probe-${Date.now()}`
-  const run = await start(tournamentWorkflow, [
-    {
-      seed,
-      projectId: 'probe-project',
-      runId,
-      modelConfig,
-    },
-  ])
+  const run = startRun({
+    seed,
+    projectId: 'probe-project',
+    runId,
+    modelConfig,
+  })
 
   return createUIMessageStreamResponse({
-    stream: run.readable.pipeThrough(createModelCallToUIChunkTransform()),
+    stream: run.getReadable({ startIndex: 0 }).pipeThrough(
+      new TransformStream<UIMessageChunk, UIMessageChunk>({
+        transform(chunk, controller) {
+          controller.enqueue(chunk)
+        },
+      }),
+    ),
     headers: { 'x-workflow-run-id': run.runId },
   })
 })

@@ -1,5 +1,5 @@
-import { createModelCallToUIChunkTransform } from '@ai-sdk/workflow'
-import { tournamentWorkflow } from '@open-scientist/agents'
+import { randomUUID } from 'node:crypto'
+import { readLatestSnapshot, tournamentWorkflow } from '@open-scientist/agents'
 import {
   type AgentRuntimeConfig,
   ModelAliasNotFoundError,
@@ -11,12 +11,13 @@ import {
   createCredentialStore,
   createRun,
   getProject,
-  getRun,
+  getRun as getStorageRun,
   updateRunStatus,
 } from '@open-scientist/storage'
-import { createUIMessageStreamResponse } from 'ai'
+import { createUIMessageStreamResponse, type UIMessageChunk } from 'ai'
 import { Hono } from 'hono'
-import { getRun as getWorkflowRun, start } from 'workflow/api'
+
+import { getRun as getRegistryRun, start as startRun } from '../lib/run-stream'
 
 export const runs = new Hono()
 
@@ -44,8 +45,7 @@ async function resolveRunModelArg(projectName: string, modelAlias?: string): Pro
  * entry carries its own resolved `modelConfig` (from `settings.models[role]`
  * with fallback `default` → `sisyphus`) plus any non-model overrides
  * (`instructions` / `skillDirectories` / `mcpServers`) configured under
- * `settings.agents[role]`. The whole map is plain-serializable and crosses
- * the workflow structured-clone boundary intact.
+ * `settings.agents[role]`.
  *
  * If `modelAlias` is supplied it overrides the `sisyphus` role's modelConfig
  * only (sub-agents still resolve via `settings.models[role]`); this mirrors
@@ -74,11 +74,12 @@ async function resolveRunAgentConfigs(
  * `settings.modelAliases[alias]` (400 if not found); otherwise it falls back
  * to `settings.models.sisyphus ?? settings.models.default`.
  *
- * Starts `tournamentWorkflow` via `start()` (returns a `Run` once the run is
- * registered, without awaiting its completion), persists a `runs` row keyed by
- * the SDK run id, and returns an SSE stream of `UIMessageChunk`s flattened from
- * the parent run's event log. The `x-workflow-run-id` response header carries
- * the SDK run id for client-side reconnection.
+ * Starts `tournamentWorkflow` via the in-memory `RunRegistry` (returns a
+ * `Run` once the run is registered, without awaiting its completion),
+ * persists a `runs` row keyed by the run id, and returns an SSE stream of
+ * `UIMessageChunk`s flattened from the parent run's event log. The
+ * `x-workflow-run-id` response header carries the run id for client-side
+ * reconnection.
  */
 runs.post('/api/projects/:name/runs', async (c) => {
   const projectName = c.req.param('name')
@@ -109,38 +110,42 @@ runs.post('/api/projects/:name/runs', async (c) => {
     return c.json({ error, message }, status)
   }
 
-  const run = await start(tournamentWorkflow, [
-    {
-      seed,
-      // The workflow's `projectId` is the project name/slug — it drives the
-      // workspace dir + HelixDB scoping via getProjectDir(name).
-      projectId: projectName,
-      // A business-level run label threaded through runtimeContext for the
-      // workflow's snapshot persistence (snapshot.json `runId` field). This is
-      // distinct from the SDK `run.runId` (returned below in the
-      // `x-workflow-run-id` header) which is the transport-level id used for
-      // streaming / cancel / SQLite `runs.id`. Keeping the two separate avoids
-      // a chicken-and-egg: the SDK run id only exists *after* start(), but the
-      // workflow body needs a runId at invocation time.
-      runId: `run-${Date.now()}`,
-      // Default model — kept for backward compat (sub-agents without an
-      // explicit agentConfigs entry fall back to this).
-      modelConfig,
-      // Per-agent runtime config map: each role gets its own resolved
-      // modelConfig + any non-model overrides (instructions / skillDirectories
-      // / mcpServers) configured under settings.agents[role]. See
-      // resolveRunAgentConfigs.
-      agentConfigs,
-    },
-  ])
+  const run = startRun({
+    seed,
+    // The workflow's `projectId` is the project name/slug — it drives the
+    // workspace dir + HelixDB scoping via getProjectDir(name).
+    projectId: projectName,
+    // A business-level run label threaded through runtimeContext for the
+    // workflow's snapshot persistence (snapshot.json `runId` field). This is
+    // the same id used as the transport-level `x-workflow-run-id` (returned
+    // below) since we no longer have an SDK run id distinct from the
+    // business run id — the RunRegistry keys runs by this label directly.
+    // Suffix a short random UUID to avoid same-millisecond collisions when
+    // two POST /runs land in the same Date.now() tick.
+    runId: `run-${Date.now()}-${randomUUID().slice(0, 8)}`,
+    // Default model — kept for backward compat (sub-agents without an
+    // explicit agentConfigs entry fall back to this).
+    modelConfig,
+    // Per-agent runtime config map: each role gets its own resolved
+    // modelConfig + any non-model overrides (instructions / skillDirectories
+    // / mcpServers) configured under settings.agents[role]. See
+    // resolveRunAgentConfigs.
+    agentConfigs,
+  })
 
-  // Persist a runs row keyed by the SDK run id so GET /stream + POST /stop can
+  // Persist a runs row keyed by the run id so GET /stream + POST /stop can
   // look it up by the same id the client received in the response header.
   // project.id is the projects-table UUID (foreign reference).
   await createRun(projectName, project.id, { id: run.runId, status: 'running' })
 
   return createUIMessageStreamResponse({
-    stream: run.readable.pipeThrough(createModelCallToUIChunkTransform()),
+    stream: run.getReadable({ startIndex: 0 }).pipeThrough(
+      new TransformStream<UIMessageChunk, UIMessageChunk>({
+        transform(chunk, controller) {
+          controller.enqueue(chunk)
+        },
+      }),
+    ),
     headers: { 'x-workflow-run-id': run.runId },
   })
 })
@@ -164,17 +169,30 @@ runs.get('/api/projects/:name/runs/:runId/stream', async (c) => {
     return c.json({ error: 'bad_request', message: 'startIndex must be an integer' }, 400)
   }
 
-  const run = getWorkflowRun(runId)
+  const run = getRegistryRun(runId)
+  if (!run) {
+    return c.json(
+      { error: 'not_found', message: `Run "${runId}" not found or already completed` },
+      404,
+    )
+  }
+
   const headers: Record<string, string> = { 'x-workflow-run-id': runId }
+  const readable = run.getReadable({ startIndex })
 
   if (startIndex < 0) {
-    const tailIndex = await run.getReadable().getTailIndex()
+    const tailIndex = await readable.getTailIndex()
     headers['x-workflow-stream-tail-index'] = String(tailIndex)
   }
 
-  const readable = run.getReadable({ startIndex })
   return createUIMessageStreamResponse({
-    stream: readable.pipeThrough(createModelCallToUIChunkTransform()),
+    stream: readable.pipeThrough(
+      new TransformStream<UIMessageChunk, UIMessageChunk>({
+        transform(chunk, controller) {
+          controller.enqueue(chunk)
+        },
+      }),
+    ),
     headers,
   })
 })
@@ -183,12 +201,12 @@ runs.get('/api/projects/:name/runs/:runId/stream', async (c) => {
  * GET /api/projects/:name/runs/:runId — fetch a run's persisted status.
  *
  * Reads the `runs` row from the project db. The body mirrors the row plus the
- * SDK run id for client convenience.
+ * run id for client convenience.
  */
 runs.get('/api/projects/:name/runs/:runId', async (c) => {
   const projectName = c.req.param('name')
   const runId = c.req.param('runId')
-  const row = await getRun(projectName, runId)
+  const row = await getStorageRun(projectName, runId)
   if (!row) {
     return c.json(
       { error: 'not_found', message: `Run "${runId}" not found in project "${projectName}"` },
@@ -209,14 +227,14 @@ runs.get('/api/projects/:name/runs/:runId', async (c) => {
 /**
  * POST /api/projects/:name/runs/:runId/stop — cancel a running workflow.
  *
- * Cancels the SDK run (signals the workflow runtime to stop) and marks the
- * SQLite row as `stopped` (which also sets `endedAt`).
+ * Aborts the in-memory run (signals tool exec / LLM calls to stop) and marks
+ * the SQLite row as `stopped` (which also sets `endedAt`).
  */
 runs.post('/api/projects/:name/runs/:runId/stop', async (c) => {
   const projectName = c.req.param('name')
   const runId = c.req.param('runId')
 
-  const row = await getRun(projectName, runId)
+  const row = await getStorageRun(projectName, runId)
   if (!row) {
     return c.json(
       { error: 'not_found', message: `Run "${runId}" not found in project "${projectName}"` },
@@ -224,8 +242,98 @@ runs.post('/api/projects/:name/runs/:runId/stop', async (c) => {
     )
   }
 
-  const run = getWorkflowRun(runId)
-  await run.cancel()
+  const run = getRegistryRun(runId)
+  if (run) {
+    await run.cancel()
+  }
   await updateRunStatus(projectName, runId, 'stopped')
   return c.json({ ok: true, runId, status: 'stopped' })
 })
+
+/**
+ * POST /api/projects/:name/runs/:runId/resume — resume a crashed run from its
+ * latest snapshot.
+ *
+ * Dev-mode crash recovery: after a `tsx watch` restart or process crash, an
+ * in-flight tournament run is lost from the in-memory `RunRegistry`. This
+ * endpoint reads the latest `rounds/<n>/snapshot.json` for the run and
+ * restarts `tournamentWorkflow` from `snapshot.round + 1`, skipping Round 1
+ * (Librarian) and restoring the hypotheses + convergence history from the
+ * snapshot.
+ *
+ * Body: `{ seed?: string, modelAlias?: string }`. The `seed` is only needed
+ * for display purposes (the resumed run doesn't call Librarian); `modelAlias`
+ * resolves the model config the same way as POST `/runs`.
+ *
+ * Returns the same SSE stream shape as POST `/runs` — the client can treat
+ * the resumed run identically (same `x-workflow-run-id` header, same
+ * `/stream` reconnect endpoint).
+ *
+ * 404 if the run has no snapshots (e.g. it crashed before completing Round 1).
+ */
+runs.post('/api/projects/:name/runs/:runId/resume', async (c) => {
+  const projectName = c.req.param('name')
+  const runId = c.req.param('runId')
+  const body = await c.req.json().catch(() => ({}))
+  const modelAlias =
+    typeof body?.modelAlias === 'string' && body.modelAlias.length > 0 ? body.modelAlias : undefined
+  // seed is optional on resume — only used for display, not passed to Librarian.
+  const seed = typeof body?.seed === 'string' ? body.seed : '(resumed)'
+
+  const project = await getProject(projectName)
+  if (!project) {
+    return c.json({ error: 'not_found', message: `Project "${projectName}" not found` }, 404)
+  }
+
+  // Find the latest snapshot for this run.
+  const snapshot = await readLatestSnapshot(projectName, runId)
+  if (!snapshot) {
+    return c.json(
+      {
+        error: 'not_found',
+        message: `No snapshot found for run "${runId}" — cannot resume (the run may have crashed before completing Round 1)`,
+      },
+      404,
+    )
+  }
+
+  let modelConfig: ModelArg
+  let agentConfigs: Record<string, AgentRuntimeConfig>
+  try {
+    modelConfig = await resolveRunModelArg(projectName, modelAlias)
+    agentConfigs = await resolveRunAgentConfigs(projectName, modelAlias)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    const status = err instanceof ModelAliasNotFoundError ? 400 : 500
+    const error = err instanceof ModelAliasNotFoundError ? 'bad_request' : 'model_config_error'
+    return c.json({ error, message }, status)
+  }
+
+  const run = startRun({
+    seed,
+    projectId: projectName,
+    runId,
+    modelConfig,
+    agentConfigs,
+    resumeFrom: snapshot,
+  })
+
+  // Update the SQLite row back to 'running' (it may have been 'stopped' or
+  // stuck in 'running' from the crash).
+  await updateRunStatus(projectName, runId, 'running')
+
+  return createUIMessageStreamResponse({
+    stream: run.getReadable({ startIndex: 0 }).pipeThrough(
+      new TransformStream<UIMessageChunk, UIMessageChunk>({
+        transform(chunk, controller) {
+          controller.enqueue(chunk)
+        },
+      }),
+    ),
+    headers: { 'x-workflow-run-id': run.runId },
+  })
+})
+
+// Re-export tournamentWorkflow for tests that assert on the workflow function
+// passed to the registry (previously asserted via workflow/api's start()).
+export { tournamentWorkflow }
