@@ -226,7 +226,7 @@ describe('schema', () => {
     const m = MhdConfigSchema.parse({
       runId: 'r1',
       cfgPath: '/tmp/r1.cfg',
-      observationProposal: 'observe AR1140',
+      proposalPath: '/tmp/r1_proposal.md',
       summary: 'MHD config for nanoflare hypothesis',
     })
     expect(m.cfgPath).toContain('r1')
@@ -256,7 +256,7 @@ describe('schema', () => {
       bestF1: 0.92,
       totalRounds: 5,
       mhdConfigPath: '/tmp/r1.cfg',
-      observationProposal: 'observe AR1140',
+      proposalPath: '/tmp/r1_proposal.md',
     })
     expect(t.bestF1).toBe(0.92)
   })

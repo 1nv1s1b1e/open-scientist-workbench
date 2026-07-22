@@ -194,14 +194,68 @@
 
 ---
 
-## 当前状态（2026-07-20）
+#### Phase 7: ToolLoopAgent 迁移 + 真实 LLM 端到端跑通（2026-07-22，未 commit）
+
+**从 WorkflowAgent/Nitro 迁移到 ToolLoopAgent/@hono/node-server**：
+- 移除 `@ai-sdk/workflow` / `workflow` DevKit / Nitro 全部依赖
+- 全 6 agent 改用 `ToolLoopAgent`（从 `ai` 包直接导出），`agent.ts` 构造工厂 + `workflow.ts` plain async 函数（无 `'use workflow'`）
+- `apps/api` 从 Nitro 迁移到 `@hono/node-server`（无 build-time bundle，dev 用 `tsx watch`）
+- 移除 `workflow-bundle-fixup.ts`、VM sandbox workaround、`steps/index.ts` 三文件边界
+- 源码内部 import 保持 `.ts` 后缀（tsx + Node type stripping 不做 `.js`→`.ts` fallback）
+- `pnpm typecheck` 11/11 通过 + `pnpm lint` clean + `pnpm test` 380/380 通过
+
+**中文化**：所有 prompt、instructions、skills 翻译为中文（2 个 SKILL.md + 6 个 agent.ts instructions + 5 个 workflow.ts prompt）。
+
+**路径修复**：`packages/config/src/paths.ts` 新增 `getDatasetDir()` 函数（默认 `<BASE_DIR>/dataset`，支持 `DATASET_DIR` 环境变量），Explore agent prompt 注入绝对路径 `${datasetDir}`，修复工作目录距 `data/` 有 7 层导致的 `No such file or directory`。
+
+**HelixDB BigInt bug 修复**：`packages/helix/src/client.ts` 新增 `safeBigInt(v)` — 对非数字字符串 hypoId 返回 null 而非 throw，避免 Oracle agent 调 `getCritiquesByHypothesis` 时 LLM 传字符串 hypoId 导致崩溃。
+
+**extractSubmitResult fallback 修复**：
+- `packages/agents/src/shared/tool-output.ts` — `extractSubmitResult(staticToolCalls, toolName?, fallback?)` 新增 `fallback?: T` 参数。未找到 submit_result 时：有 fallback 返回 fallback（不 throw），无 fallback 才 throw。
+- 所有 5 个 workflow（librarian/explore/oracle/prometheus/looker）都传 fallback 值，确保 agent 达到 step limit 未调用 submit_result 时不崩溃，tournament 正常继续。
+
+**Step limits 增大**：
+| Agent | 旧 | 新 |
+|---|---|---|
+| Librarian | 30 | 50 |
+| Oracle | 40 | 60 |
+| Prometheus | 30 | 60 |
+| Explore | 50→80 | 120 |
+| Sisyphus | 80 | 120 |
+| Looker | 30 | 50 |
+
+**Prometheus observationProposal 写文件**：
+- **问题**：Prometheus submit_result 需嵌入完整 observationProposal markdown（数千字），导致 `AI_InvalidToolInputError: JSON parsing failed`。
+- **修复**：`mhdConfigTool` inputSchema 新增 `observationProposal: z.string()` 参数，execute 写两个文件（`<runId>.cfg` + `<runId>_proposal.md`），返回 `{runId, cfgPath, proposalPath, summary}`。Schema 全链路 `observationProposal` → `proposalPath`（`packages/schema` + `packages/storage` + `packages/tools` + `packages/agents` + `packages/skills` + 3 个测试文件）。
+
+**DB status 修复**：
+- **问题**：`apps/api/src/routes/runs.ts` POST handler 在 `startRun()` 后调 `createRun(status='running')` 但没有在 `run.result` 完成后更新 SQLite status，导致 DB 卡在 "running"。
+- **修复**：`packages/storage/src/repo/run.ts` 新增 `completeRun(projectName, runId, status: 'completed'|'failed', metrics?: {bestF1?, currentRound?})` 函数。`runs.ts` POST handler 加 `void run.result.then(output => completeRun(..., 'completed', {bestF1, currentRound}), () => completeRun(..., 'failed'))`。
+
+**真实 LLM 端到端验证（3 轮 tournament 完整跑通）**：
+- Run `run-1784716873175-53f30def`：3 轮 tournament evolution，463 条消息，`status=completed, round=3, bestF1=0.8794`
+- Librarian 生成 2 条假设（AC turbulent braiding + DC nanoflare shear）
+- Explore 评估 F1=0.8799 (TP=12215, FP=1891, FN=1444)，中文反例分析
+- Oracle 五维评审 + 突变
+- Prometheus 3 轮规划，末轮生成 MHD cfg + 观测建议书（无 JSON parse 错误）
+- **MHD config**：假设 DC Model — Critical Current Density Nanoflare Heating，12 个物理参数
+- **观测建议书**：6 个可观测预言 + SDO/AIA + IRIS + SDO/HMI 仪器方案
+- 共享 venv：`data/dataset/.venv`（numpy 2.5.1 + scipy 1.18.0）
+- eval.py 执行时间 6ms
+
+**Python venv 更新**：`data/dataset/.venv` 安装 numpy 2.5.1 + scipy 1.18.0（最新版），Explore agent 使用绝对路径 `/Users/didi/personal/open-scientist/data/dataset/.venv/bin/python`。
+
+---
+
+## 当前状态（2026-07-22）
 
 ### 代码
 - **11 包**：apps/api + apps/web + packages/{schema,config,storage,helix,logger,tools,skills,mcp,agents}
-- **368 tests pass**（29 files，无 flaky）
-- **typecheck** 11 包全 Done（apps/web 用 TS 6.0.3，其余包 TS 7.0.2）
+- **380 tests pass**（无 flaky）
+- **typecheck** 11 包全通过
 - **lint** clean
-- **12 commits + Phase 4/6 未 commit 改动**（见上）
+- **所有 agent 用 ToolLoopAgent**（从 `ai` 包导入，无 WorkflowAgent/Nitro）
+- **3 轮 tournament 完整跑通**：Librarian → Explore(2并行) → Oracle → Prometheus × 3 rounds → MHD cfg + 观测建议书
 
 ### Phase 4 进展（未 commit）
 
@@ -220,31 +274,31 @@
 - **`ERR_IMPORT_ATTRIBUTE_MISSING` 修复**：`@workflow/builders` fast-discovery 误判 `serde-checker.js` 为 serde file（字符串字面量命中 regex）→ 拉入 `builtin-modules` JSON import → esbuild CJS 丢 import attribute → VM `defaultLoadSync` 拒绝。修复：`apps/api/src/workflow-bundle-fixup.ts` nitro 模块，build 时后处理 `.nitro/workflow/steps.mjs`+`workflows.mjs`，regex 替换死代码 JSON import 为空数组。非 patch，版本受控。
 - **真实模型 E2E**：tournament run SSE 流跑通，Librarian 带 `[TEST-OVERRIDE]` 自定义指令实际生效（精确调 addHypothesis 2 次遵循 "exactly 2 hypotheses" 指令）。遗留 `AI_NoObjectGeneratedError`（Qwen3-Next-80B 结构化 JSON 输出兼容问题，非本次改动引入）。
 
-#### 待验证
-- librarian 是否产出有效 HypothesisPool schema output（Qwen3-Next-80B `AI_NoObjectGeneratedError`——模型未产结构化 JSON，需换模型或调 prompt/schema）
-- 完整 tournament 流程（librarian → explore → oracle → prometheus → MHD cfg）
-- skills discover 找不到 defaults 目录（nitro workflow bundle 相对路径问题，非阻塞，discoverSkills 容错返回空）
+#### 已验证
+- **3 轮 tournament 端到端跑通**：seed → Librarian(2假设) → Explore(F1=0.8799) → Oracle(批判+突变) → Prometheus(MHD cfg + 观测建议书) × 3 rounds，`status=completed, bestF1=0.8794`
+- **Prometheus submit_result 无 JSON parse 错误**：observationProposal 写文件方案生效
+- **DB status 正确更新**：`completeRun` 在 `run.result` resolve 后写入 SQLite
+- **fallback 机制生效**：agent 达到 step limit 未提交结果时不崩溃
+- **HelixDB BigInt 安全**：字符串 hypoId 不再导致 Oracle 崩溃
+- **中文 prompt 生效**：Librarian/Explore/Oracle/Prometheus 全部使用中文 instructions + skills
+- **绝对路径注入**：Explore agent 使用 `getDatasetDir()` 绝对路径，不再 `No such file or directory`
 
-### 已验证
-- HelixDB 本地启动（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969，dev instance，in-memory storage）+ 10 个集成测试通过（Docker `ghcr.io/helixdb/enterprise-dev` 也可用）
-- Python venv（`uv venv /tmp/solar-test`，astropy 8.0.1/sunpy 8.0.0/scipy 1.18.0/numpy 2.5.1）+ FITS 创建读回
-- API 端到端：health/settings/credentials/test-llm 全 200（LLM 用内部端点 + `llab/Qwen3-Next-80B-A3B-Instruct`，500ms 响应）
+### 已验证（Phase 1-4 遗留）
+- HelixDB 本地启动（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969）
+- Python venv（`data/dataset/.venv`，numpy 2.5.1 + scipy 1.18.0）
+- API 端到端：health/settings/credentials/test-llm 全 200
 - `@ai-sdk/openai` 用 `openai.chat(model)` 而非 `openai(model)`（第三方网关只完整支持 Chat Completions API）
-- workflow builder 注册 6 个 workflow 成功（`workflows build complete (18 steps, 6 workflows)`）
-- nitro workflow 内部路由可达（`/.well-known/workflow/v1/flow` 返 400 而非 404）
-- **Node 26 type stripping**：`node -e "import('@open-scientist/config')..."` 成功加载（bare specifier → package.json exports → `./src/index.ts` → type strip）
-- **dev-probe 端到端**：POST `/api/dev-probe/stream-test` 全链路打通（SSE 流 + 多轮 tool loop + finish），未抛 VM / module 错误
-- **per-agent config curl E2E**：14 个 agent CRUD checks 全过（GET/PUT/DELETE /api/settings/agents/:role + 项目级 PATCH）
-- **tournament 真实模型 E2E**：`POST /api/projects/e2e-final/runs` SSE 流跑通，Librarian 带 `[TEST-OVERRIDE]` 自定义指令实际生效（loadSkill/searchPapers×3/searchHypotheses×2/addHypothesis 精确 2 次遵循 "exactly 2 hypotheses" 指令）。`ERR_IMPORT_ATTRIBUTE_MISSING` 已修复（`workflow-bundle-fixup` nitro 模块）
-- **遗留**：Librarian 建完假设后 `AI_NoObjectGeneratedError`（Qwen3-Next-80B 未产 `Output.object({schema: HypothesisPoolSchema})` 期望的结构化 JSON——模型/Schema 兼容问题，非本次改动引入）
+- **Node 26 type stripping**：`node -e "import('@open-scientist/config')..."` 成功加载
+- **per-agent config curl E2E**：14 个 agent CRUD checks 全过
 
 ### 技术栈定型
-- Node.js + pnpm（不用 Bun）+ TypeScript 7 + Biome 2.5 + Zod 4
-- Hono + Nitro（`modules: ['workflow/nitro']`）+ AI SDK 7（`ai` + `@ai-sdk/workflow` + `workflow` DevKit）
-- 全 6 agent 用 WorkflowAgent（durable 版 ToolLoopAgent，三文件边界）
-- Drizzle ORM + better-sqlite3（双 SQLite）+ HelixDB（本地 Docker，graph+vector 一体）
+- Node.js + pnpm（不用 Bun）+ TypeScript 6 + Biome 2.5 + Zod 4
+- Hono + `@hono/node-server`（无 build-time bundle，dev 用 `tsx watch`）+ AI SDK 7（`ai` 包，含 `ToolLoopAgent`）
+- 全 6 agent 用 `ToolLoopAgent`（`ai` 包直接导出，plain async workflow 函数）
+- Drizzle ORM + better-sqlite3（双 SQLite）+ HelixDB（本地 graph+vector 一体）
 - bash-tool（host child_process，无沙箱，靠 project name 隔离 working dir）
-- `@ai-sdk/mcp`（正式包，HTTP transport 为主）+ Skills 自实现（agentskills.io 开放格式）
+- `@ai-sdk/mcp`（正式包）+ Skills 自实现（agentskills.io 开放格式）
+- 共享 venv：`data/dataset/.venv`（numpy 2.5.1 + scipy 1.18.0）
 
 ---
 
@@ -320,17 +374,9 @@
 
 ---
 
-### Phase 5: 集成测试（SPEC §10.5）
+### Phase 5: 集成测试（已完成，2026-07-22）
 
-**目标**：端到端跑通 Tournament Evolution + 人机协同节点测试。
-
-**待做**：
-1. 端到端跑通 Tournament Evolution（seed → MHD cfg），需真实 LLM + HelixDB + Python venv
-2. 人机协同节点测试（approve / 几小时后 resume）
-3. 断线重连测试（SSE 流中断后续传）
-4. Steering 注入测试（round boundary 检查 + 注入）
-5. 并发测试（多 run 同时跑 + MAX_CONCURRENT_RUNS 限制）
-6. 性能测试（单 run 耗时 / LLM token 消耗 / HelixDB 查询延迟）
+3 轮 tournament evolution 端到端跑通（seed → MHD cfg + 观测建议书）。人机协同审批 / steering 注入 / 断线重连 / 并发测试待后续迭代。
 
 ---
 
@@ -350,11 +396,10 @@
 
 ## 关键约束（贯穿所有 Phase）
 
-- **WorkflowAgent 三文件边界**：agent.ts（构造，拉 Node 模块链）/ workflow.ts（`'use workflow'` 纯 VM-safe 薄壳，只调 step）/ steps/（`'use step'`，agent 构造 + stream 在此）。**workflow body 内不能 `await import()`**（VM 无 importModuleDynamically），**只能出现在 step 里**。
-- **源码内部 import 用 `.ts` 后缀**（不是 `.js`）：Node 26 type stripping 默认开启但不做 `.js`→`.ts` fallback。tsconfig 开 `allowImportingTsExtensions` + `rewriteRelativeImportExtensions`。
-- **`noExternals` 列全 8 个 workspace 包**：`apps/api/nitro.config.ts` 需配 agents/logger/tools/skills/helix/config/schema/mcp，否则 nitro dev bundle 无法 resolve。
-- **context 必须可序列化**：runtimeContext / toolsContext 不能放 functions/class instances/symbols/SDK clients，只能 plain data。`ModelArg` 是跨 workflow 边界传 model 配置的载体。
-- **Nitro build**：`apps/api/nitro.config.ts` 配 `modules: ['workflow/nitro']`，非 Hono 自带 build
+- **ToolLoopAgent 两文件边界**：`agent.ts`（构造工厂，拉 Node 模块链，`new ToolLoopAgent`）+ `workflow.ts`（plain async 函数，`await agent.stream({messages})` + `streamAgentOutput` + `return result.output`）。无 VM sandbox，`await import()` 随便用。
+- **源码内部 import 用 `.ts` 后缀**（不是 `.js`）：tsx + Node type stripping 默认开启但不做 `.js`→`.ts` fallback。tsconfig 开 `allowImportingTsExtensions` + `rewriteRelativeImportExtensions`。
+- **context 必须可序列化**：runtimeContext 不能放 functions/class instances/symbols/SDK clients，只能 plain data。`ModelArg` 是跨 workflow 边界传 model 配置的载体。
+- **`@hono/node-server` + tsx**：dev 用 `tsx watch src/server.ts`（on-the-fly type stripping + watch），生产用 `tsc` → `node dist/server.js`，无 build-time bundle。
 - **bash-tool 无沙箱**：host child_process，靠 project name 隔离 working dir（用户明确决定不加 Docker）
 - **模型配置全走 Web API + 文件**：不用 .env 存模型配置（settings.json + CredentialStore）
 - **MCP server 是远程代码执行**：per-project 加载需信任（`mcp_trust` 表 + `fingerprintTools` 漂移检测）
@@ -367,6 +412,6 @@
 - **Node.js** v26.5.0（`.node-version` 文件，fnm 自动切换；`eval "$(fnm env --shell zsh)" && fnm use`）
 - **pnpm** 11.x（`node-linker=hoisted`，`allowBuilds` for better-sqlite3 + esbuild）
 - **HelixDB** v3.0.8 CLI（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969，dev instance in-memory；Docker `ghcr.io/helixdb/enterprise-dev` 也可用；`helix.toml` gitignored）
-- **Python** v3.9.6 系统 + `uv venv /tmp/solar-test`（astropy 8.0.1/sunpy 8.0.0/scipy 1.18.0/numpy 2.5.1）
+- **Python** v3.9.6 系统 + `data/dataset/.venv`（numpy 2.5.1 + scipy 1.18.0）
 - **LLM 测试端点**：内部端点 + key（已脱敏） + 模型 `llab/Qwen3-Next-80B-A3B-Instruct`
-- **服务重启**：`pkill -f 'nitro.*dev'; rm -rf apps/api/node_modules/.nitro apps/api/.output; nohup pnpm --filter @open-scientist/api dev > /tmp/nitro-X.log 2>&1 &`
+- **服务重启**：`pkill -f 'tsx.*server'; nohup pnpm dev > /tmp/opencode-api.log 2>&1 &`

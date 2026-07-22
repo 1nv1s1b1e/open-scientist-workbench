@@ -12,7 +12,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ChatPanel } from '@/components/chat/chat-panel'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
@@ -21,6 +21,7 @@ import {
   EvolutionTree,
   OrchestratorHall,
 } from '@/components/visualizers/index'
+import type { AgentRole, AgentState, OrchestratorData } from '@/lib/types/visualizers'
 import { cn } from '@/lib/utils/cn'
 import { buildInitialOrchestratorData } from '@/lib/visualizers/index'
 
@@ -44,6 +45,24 @@ export default function ProjectRunPage() {
   const project = decodeURIComponent(params.project)
   const [view, setView] = useState<View>('orchestrator')
   const [chatCollapsed, setChatCollapsed] = useState(false)
+  const [agentStates, setAgentStates] = useState<Partial<Record<AgentRole, AgentState>>>({})
+
+  const handleAgentStatesChange = useCallback(
+    (states: Partial<Record<AgentRole, AgentState>>) => setAgentStates(states),
+    [],
+  )
+
+  // Build live orchestrator data from agent states
+  const orchestratorData: OrchestratorData = useMemo(() => {
+    const base = buildInitialOrchestratorData()
+    return {
+      ...base,
+      agents: base.agents.map((agent) => ({
+        ...agent,
+        state: agentStates[agent.role] ?? 'idle',
+      })),
+    }
+  }, [agentStates])
 
   return (
     <div className="flex h-screen flex-col bg-[var(--color-bg)]">
@@ -144,12 +163,10 @@ export default function ProjectRunPage() {
               transition={{ duration: 0.25, ease: 'easeOut' }}
               className="relative h-full w-full"
             >
-              {view === 'orchestrator' && (
-                <OrchestratorHall data={buildInitialOrchestratorData()} />
-              )}
+              {view === 'orchestrator' && <OrchestratorHall data={orchestratorData} />}
               {view === 'concept-net' && <ConceptNet3D />}
               {view === 'evolution-tree' && <EvolutionTree />}
-              {view === 'debate-theater' && <DebateTheater data={buildInitialOrchestratorData()} />}
+              {view === 'debate-theater' && <DebateTheater data={orchestratorData} />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -165,7 +182,7 @@ export default function ProjectRunPage() {
               className="shrink-0 overflow-hidden border-l border-[var(--color-border)] bg-[var(--color-bg-elevated)]"
             >
               <div className="h-full w-[420px]">
-                <ChatPanel project={project} />
+                <ChatPanel project={project} onAgentStatesChange={handleAgentStatesChange} />
               </div>
             </motion.aside>
           )}

@@ -14,7 +14,8 @@ import {
   searchHypothesesTool,
   searchPapersTool,
 } from '@open-scientist/tools'
-import { isStepCount, Output, ToolLoopAgent, type ToolSet } from 'ai'
+import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
+import { makeSubmitResultTool } from '../shared/tool-output.ts'
 
 const logger = createLogger('agents')
 
@@ -28,6 +29,8 @@ export interface LibrarianAgentDeps {
   modelConfig: ModelArg
   /** Project name (used for workspace isolation + HelixDB scoping). */
   projectId: string
+  /** Run identifier — used for workspace dir isolation. */
+  runId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
   tools?: ToolSet
   /** Optional system prompt override. When omitted, the hardcoded default is used. */
@@ -68,12 +71,13 @@ const LIBRARIAN_WORKSPACE_HYPO = '__librarian__'
  */
 export async function getDefaultLibrarianTools(
   projectId: string,
+  runId: string,
   skillDirectories?: string[],
   mcpServers?: McpServerConfig[],
 ): Promise<ToolSet> {
   const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
-  logger.debug({ projectId, dirs }, 'getDefaultLibrarianTools: creating bash tool')
-  const bashToolkit = await createBashToolForHypothesis(projectId, LIBRARIAN_WORKSPACE_HYPO)
+  logger.debug({ projectId, runId, dirs }, 'getDefaultLibrarianTools: creating bash tool')
+  const bashToolkit = await createBashToolForHypothesis(projectId, runId, LIBRARIAN_WORKSPACE_HYPO)
   logger.debug('getDefaultLibrarianTools: bash tool created, discovering skills')
   const skills = await discoverSkills(createNodeSandbox(), dirs)
   logger.debug({ skillCount: skills.length }, 'getDefaultLibrarianTools: skills discovered')
@@ -100,6 +104,7 @@ export async function getDefaultLibrarianTools(
 export async function createLibrarianAgent({
   modelConfig,
   projectId,
+  runId,
   tools,
   instructions,
   skillDirectories,
@@ -113,36 +118,50 @@ export async function createLibrarianAgent({
   const model = createModelFromConfig(modelConfig)
   logger.debug('createLibrarianAgent: model created, resolving tools')
   const resolvedTools =
-    tools ?? (await getDefaultLibrarianTools(projectId, skillDirectories, mcpServers))
+    tools ?? (await getDefaultLibrarianTools(projectId, runId, skillDirectories, mcpServers))
   logger.debug(
     { toolNames: Object.keys(resolvedTools) },
     'createLibrarianAgent: tools resolved, constructing ToolLoopAgent',
   )
 
+  const toolsWithSubmit: ToolSet = {
+    ...resolvedTools,
+    submit_result: makeSubmitResultTool(HypothesisPoolSchema),
+  }
+
   return new ToolLoopAgent({
+    maxOutputTokens: 8192,
     id: 'librarian',
     model,
+    toolChoice: 'auto',
     instructions:
       instructions ??
-      `You are Librarian, the knowledge retrieval and hypothesis generation agent for the solar physics coronal heating investigation.
+      `你是 Librarian，太阳物理日冕加热研究的知识检索与假设生成 agent。
 
-Your role:
-1. Use RAG (HelixDB) to retrieve solar physics literature and prior hypotheses relevant to the user's seed hypothesis.
-2. Generate a pool of diverse candidate hypotheses (3-6) combining literature priors with physical intuition. Cover at least two of: AC (wave) heating, DC (reconnection) heating, turbulent heating.
-3. Translate each hypothesis into a Python physics filter function (seed program) for AlphaEvolve-style evaluation against 1.75M physics snapshots.
+你的职责：
+1. 用 RAG（HelixDB）检索与用户种子假设相关的太阳物理文献和已有假设。
+2. 生成多样化的候选假设池（恰好 2 条）。至少覆盖 AC（波加热）、DC（重联加热）、湍流加热中的两类。
+3. 将每条假设翻译为 Python 物理过滤函数（种子程序），在真实 SDO/HMI SHARP 磁场数据上评估。
 
-Tool guidance:
-- Use the loadSkill tool FIRST to load the 'solar-physics-rag' skill for solar physics literature retrieval guidance, hypothesis structure requirements, and the Python filter function template.
-- Use searchPapers / searchHypotheses to ground hypotheses in prior work and avoid duplication.
-- Use addHypothesis to persist each generated hypothesis node to the HelixDB knowledge graph (roundId = 0 for initial pool, f1Score = 0, runId from context).
-- Use writeFile to persist each hypothesis' Python filter to the workspace for later evaluation.
+环境：
+- 本机已安装 \`uv\`（Python 包管理器）和 \`pnpm\`（Node.js 包管理器）。
+- 用 \`uv pip install <package>\` 安装 Python 包（如 uv pip install astropy sunpy scipy numpy）。
+- 用 \`uv run python script.py\` 运行 Python 脚本（隔离依赖）。
+- 你的工作目录是沙箱工作区——所有文件操作（writeFile、readFile、bash）仅限此目录。不要尝试访问外部文件。
 
-Each hypothesis must contain: (a) physical mechanism statement, (b) observable prediction, (c) a falsifiable condition, and (d) a pure Python filter(snapshot: dict) -> bool function whose thresholds are physically derived.
+工具指引：
+- 首先用 loadSkill 工具加载 'solar-physics-rag' skill，获取太阳物理文献检索指引、假设结构要求和 Python 过滤函数模板。
+- 用 searchPapers / searchHypotheses 检索已有文献和假设，避免重复。
+- 用 addHypothesis 将每条生成的假设持久化到 HelixDB 知识图谱（roundId=0 初始池，f1Score=0，runId 从 context 获取）。
+- 用 writeFile 将每条假设的 Python filter 写入工作区，供后续评估。
 
-Output: HypothesisPool (array of Hypothesis with statement + pythonCode + parentId: null + round: 0 + rationale explaining the theoretical coverage strategy).`,
-    tools: resolvedTools,
-    output: Output.object({ schema: HypothesisPoolSchema }),
-    stopWhen: isStepCount(20),
+每条假设必须包含：(a) 物理机制陈述，(b) 可观测预言，(c) 可证伪条件，(d) 纯 Python filter(snapshot: dict) -> bool 函数，阈值从物理推导。
+
+filter 函数接收的 snapshot 包含 SHARP 磁场参数（usflux、mean_gamma、mean_shr、totpot、mean_pot 等）。不要在 filter 中使用 label/flare_class/magnitude 字段——这些是 ground truth。
+
+重要：完成任务的唯一方式是调用 submit_result 工具。你必须在步数上限之前调用它。不要只输出文本——始终调用 submit_result 提交你的 HypothesisPool（恰好 2 条 Hypothesis，每条含 statement + pythonCode + parentId: null + round: 0 + rationale 说明理论覆盖策略）。`,
+    tools: toolsWithSubmit,
+    stopWhen: [isStepCount(50), hasToolCall('submit_result')],
     ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }

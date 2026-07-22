@@ -2,7 +2,9 @@ import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
 import { ensureIndexes } from '@open-scientist/helix'
 import { createLogger } from '@open-scientist/logger'
 import type { HypothesisPool } from '@open-scientist/schema'
+import { persistAgentRun } from '../shared/persist.ts'
 import { type EmitChunk, streamAgentOutput } from '../shared/stream.ts'
+import { extractSubmitResult } from '../shared/tool-output.ts'
 import { createLibrarianAgent } from './agent.ts'
 
 const logger = createLogger('agents')
@@ -61,6 +63,7 @@ export async function librarianWorkflow(input: LibrarianWorkflowInput): Promise<
   const agent = await createLibrarianAgent({
     modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
     projectId: input.projectId,
+    runId: input.runId,
     runtimeContext: {
       projectId: input.projectId,
       runId: input.runId,
@@ -79,26 +82,29 @@ export async function librarianWorkflow(input: LibrarianWorkflowInput): Promise<
   await ensureIndexes()
   logger.info('librarian workflow: starting agent.stream')
 
+  const prompt = `种子假设：${input.seed}
+
+为日冕加热之谜生成多样化的候选假设池。每条假设：
+1. 陈述物理机制（AC/DC/湍流/组合），能量传输路径，耗散位置。
+2. 给出可观测预言（哪些 SDO/AIA/HMI/IRIS 通带或磁场特征应出现）。
+3. 给出可证伪条件（预言失效的场景）。
+4. 写纯 Python filter(snapshot: dict) -> bool 函数，阈值从物理推导。
+
+先加载 'solar-physics-rag' skill 获取检索指引和 Python filter 模板。用 searchPapers 和 searchHypotheses 检索已有文献和假设，避免重复。用 addHypothesis 将每条假设持久化到 HelixDB（roundId=0, f1Score=0, runId=${input.runId}, createdAt=now ISO 8601），用 writeFile 将 Python filter 写入工作区。
+
+返回 HypothesisPool，rationale 说明覆盖策略。`
+
   const result = await agent.stream({
-    messages: [
-      {
-        role: 'user',
-        content: `Seed hypothesis: ${input.seed}
-
-Generate a diverse pool of 3-6 candidate hypotheses for the coronal heating mystery. For each hypothesis:
-1. State the physical mechanism (AC/DC/turbulent/combined), energy transport path, and dissipation location.
-2. Give an observable prediction (which SDO/AIA/HMI/IRIS bandpass or magnetic signature should appear).
-3. Give a falsifiable condition (a scenario where the prediction fails).
-4. Write a pure Python filter(snapshot: dict) -> bool function with physically-derived thresholds.
-
-Load the 'solar-physics-rag' skill first for retrieval guidance and the Python filter template. Use searchPapers and searchHypotheses to ground your hypotheses in prior work and avoid duplication. Persist each hypothesis to HelixDB via addHypothesis (roundId=0, f1Score=0, runId=${input.runId}, createdAt=now ISO 8601) and write its Python filter to the workspace via writeFile.
-
-Return the HypothesisPool with rationale explaining your coverage strategy.`,
-      },
-    ],
+    messages: [{ role: 'user', content: prompt }],
     ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
   })
 
   await streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)
-  return result.output
+  await persistAgentRun(input.projectId, input.runId, 'librarian', prompt, result)
+  const staticToolCalls = await result.staticToolCalls
+  const fallback: HypothesisPool = {
+    hypotheses: [],
+    rationale: 'Librarian agent reached step limit without calling submit_result',
+  }
+  return extractSubmitResult(staticToolCalls, 'submit_result', fallback) as HypothesisPool
 }

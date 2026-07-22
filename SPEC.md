@@ -257,7 +257,7 @@ const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
 - `src/hypothesis.ts` — `HypothesisSchema`（id, statement, pythonCode, parentId, round, f1, status）
 - `src/eval.ts` — `EvalResultSchema`（hypoId, f1, truePositives, falsePositives, counterexamples[], logs）
 - `src/critique.ts` — `CritiqueSchema` + `MutationSchema`（hypoId, critique, mutatedHypothesis, rationale）
-- `src/plan.ts` — `PlanSchema` + `MhdConfigSchema`（round, searchParams, mhdCfg, observationProposal）
+- `src/plan.ts` — `PlanSchema` + `MhdConfigSchema`（round, searchParams, mhdCfg, proposalPath）。Prometheus 末轮调 mhdConfig tool 时把 observationProposal markdown 作为输入参数传入，tool 写 `<runId>_proposal.md` 文件并返回 `proposalPath`，避免 submit_result JSON 过大导致 parse 失败
 - `src/evidence.ts` — `EvidenceAlignmentSchema`（hypoId, fitsPaths[], videoClipPath, metadata）
 - `src/api.ts` — REST 请求/响应 schema（CreateProjectRequest, StartRunRequest, ApproveRequest 等）
 - `src/runtime-context.ts` — `RuntimeContextSchema`（可序列化的 workflow 上下文：projectId, runId, round, hypotheses[], leadingHypoId, ...）
@@ -351,7 +351,7 @@ export async function tournamentWorkflow(input: TournamentWorkflowInput) {
     if (bestF1 >= TARGET_F1) converged = true
   }
 
-  return {winningHypothesis: hypotheses[0], mhdConfig, observationProposal}
+  return {winningHypothesis: hypotheses[0], mhdConfig, proposalPath}
 }
 ```
 
@@ -447,7 +447,7 @@ critiques: { id, hypoId, critiqueText, rationale, round, createdAt }
 
 mutations: { id, parentHypoId, childHypoId, mutationRationale, round, createdAt }
 
-plans: { id, runId, round, searchParams_json, mhdCfgPath, observationProposal, createdAt }
+plans: { id, runId, round, searchParams_json, mhdCfgPath, proposalPath, createdAt }
 
 logs: { id, runId, level, message_json, timestamp }
 ```
@@ -472,6 +472,7 @@ data/projects/<project_name>/
 │   └── video_clip.mp4        # 演化视频切片
 ├── mhd/
 │   └── <runId>.cfg           # MHD 仿真配置
+│   └── <runId>_proposal.md   # 卫星观测建议书
 ├── workspace/<hypo_id>/      # Explore 的 bash-tool working dir
 ├── skills/                   # project 级 skill override
 ├── mcp/config.json           # project 级 MCP server 配置
@@ -511,6 +512,18 @@ Sisyphus.tournamentWorkflow
 - `round >= MAX_ROUNDS`（默认 10）
 - 收敛检测：连续 N 轮 bestF1 提升小于阈值
 - 用户手动终止（API 端点）
+
+### 6.3 Fallback 机制
+
+每个 workflow 函数都有 fallback 输出——当 agent 达到 step limit 未调用 submit_result 时，`extractSubmitResult(staticToolCalls, toolName?, fallback?)` 返回 fallback 值（而非 throw），确保 tournament 不因单个 agent 超时崩溃。fallback 值标记 f1=0 / 空数组等，下游 agent 可正常处理。
+
+Step limits（`isStepCount(N)` 双终止条件 + `hasToolCall('submit_result')`）：
+- Librarian: 50 步
+- Explore: 120 步（含 eval 迭代调参）
+- Oracle: 60 步
+- Prometheus: 60 步
+- Sisyphus: 120 步（预留 free-form steering）
+- Looker: 50 步
 
 ### 6.3 每轮快照
 
@@ -559,7 +572,7 @@ Sisyphus.tournamentWorkflow
 
 **RunRegistry**（`apps/api/src/lib/run-stream.ts`）：in-memory chunk ring buffer，管理 active runs。
 - `Run` 持有 `{runId, abortController, chunks: UIMessageChunk[], result: Promise<TournamentResult>, cancel(), getReadable({startIndex}), getTailIndex()}`
-- `start(input: TournamentWorkflowInput): Run` — 生成 runId，创建 Run，后台异步跑 `tournamentWorkflow({...input, emitChunk: chunk => run.chunks.push(chunk)})`。60s 后自动 evict 完成的 run。
+- `start(input: TournamentWorkflowInput): Run` — 生成 runId，创建 Run，后台异步跑 `tournamentWorkflow({...input, emitChunk: chunk => run.chunks.push(chunk)})`。`run.result` 完成后调 `completeRun(projectName, runId, 'completed'|'failed', {bestF1?, currentRound?})` 更新 SQLite status。60s 后自动 evict 完成的 run。
 - `getRun(runId): Run | undefined`
 - `Run.getReadable({startIndex}): ReadableStream<UIMessageChunk>` — 从 `chunks[startIndex]` 开始（支持 startIndex<0 tail-relative）
 - `Run.getTailIndex(): number` — `chunks.length - 1`

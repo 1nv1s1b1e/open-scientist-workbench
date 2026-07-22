@@ -368,8 +368,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "observation_proposal": {
-          "name": "observation_proposal",
+        "proposal_path": {
+          "name": "proposal_path",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

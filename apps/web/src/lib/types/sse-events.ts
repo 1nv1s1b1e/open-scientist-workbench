@@ -84,4 +84,5 @@ export const CustomEventKind = {
   SteeringInjected: 'steering-injected',
   RoundTransition: 'round-transition',
   Convergence: 'convergence',
+  AgentState: 'tournament.agent-state',
 } as const

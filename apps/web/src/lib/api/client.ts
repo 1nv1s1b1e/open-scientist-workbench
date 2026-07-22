@@ -36,6 +36,13 @@ export class ApiError extends Error {
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' } as const
 
+/**
+ * SSE streaming endpoints must bypass the Next.js rewrite proxy, which buffers
+ * the entire response (breaking live streaming). In dev, point directly to the
+ * API server. In prod, a reverse proxy should handle /api/* without buffering.
+ */
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
+
 async function parseError(res: Response): Promise<ApiError> {
   let body: ApiErrorBody | null = null
   try {
@@ -344,7 +351,7 @@ export async function startRun(
   body: StartRunRequest,
   fetchFn: typeof fetch = fetch,
 ): Promise<{ response: Response; runId: string }> {
-  const res = await fetchFn(`/api/projects/${encodeURIComponent(project)}/runs`, {
+  const res = await fetchFn(`${API_BASE}/api/projects/${encodeURIComponent(project)}/runs`, {
     method: 'POST',
     headers: JSON_HEADERS,
     body: JSON.stringify(body),
@@ -373,7 +380,7 @@ export async function reconnectRunStream(
   fetchFn: typeof fetch = fetch,
 ): Promise<{ response: Response; tailIndex: number | null }> {
   const res = await fetchFn(
-    `/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/stream?startIndex=${startIndex}`,
+    `${API_BASE}/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/stream?startIndex=${startIndex}`,
   )
   if (!res.ok) throw await parseError(res)
 

@@ -60,7 +60,7 @@ CREATE TABLE `plans` (
 	`round` integer NOT NULL,
 	`search_params_json` text NOT NULL,
 	`mhd_cfg_path` text,
-	`observation_proposal` text,
+	`proposal_path` text,
 	`created_at` text NOT NULL
 );
 --> statement-breakpoint

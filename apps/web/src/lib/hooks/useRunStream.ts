@@ -15,6 +15,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, reconnectRunStream, startRun, stopRun } from '@/lib/api/client'
 import type { UIMessageChunk } from '@/lib/types/sse-events'
+import { CustomEventKind } from '@/lib/types/sse-events'
+import type { AgentRole, AgentState } from '@/lib/types/visualizers'
 
 /** 累积后的消息 part（一个 tool call / 一段 text / 一段 reasoning） */
 export interface MessagePart {
@@ -61,6 +63,8 @@ interface UseRunStreamReturn {
   messages: RunMessage[]
   state: StreamState
   error: Error | null
+  /** Per-agent live state (updated from agent-state custom chunks) */
+  agentStates: Partial<Record<AgentRole, AgentState>>
   start: (seed: string, modelAlias?: string) => Promise<void>
   stop: () => Promise<void>
   /** 重置（离开页面时） */
@@ -76,6 +80,7 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
   const [messages, setMessages] = useState<RunMessage[]>([])
   const [state, setState] = useState<StreamState>('idle')
   const [error, setError] = useState<Error | null>(null)
+  const [agentStates, setAgentStates] = useState<Partial<Record<AgentRole, AgentState>>>({})
 
   const abortRef = useRef<AbortController | null>(null)
   const runIdRef = useRef<string | null>(null)
@@ -83,6 +88,7 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
   const userStoppedRef = useRef(false)
   const partMapRef = useRef<Map<string, MessagePart>>(new Map())
   const currentMessageRef = useRef<RunMessage | null>(null)
+  const msgCounterRef = useRef(0)
 
   const reset = useCallback(() => {
     abortRef.current?.abort()
@@ -92,10 +98,12 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     userStoppedRef.current = false
     partMapRef.current = new Map()
     currentMessageRef.current = null
+    msgCounterRef.current = 0
     setRunId(null)
     setMessages([])
     setState('idle')
     setError(null)
+    setAgentStates({})
   }, [])
 
   const pushPart = useCallback((part: MessagePart) => {
@@ -118,8 +126,12 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     (chunk: UIMessageChunk): 'done' | 'continue' => {
       switch (chunk.type) {
         case 'start': {
-          const msgId = chunk.messageId ?? `msg-${Date.now()}`
-          currentMessageRef.current = { id: msgId, parts: [] }
+          msgCounterRef.current += 1
+          const msgId = chunk.messageId ?? `msg-${msgCounterRef.current}`
+          // 确保唯一：即使后端多个 start chunk 带相同 messageId 也不冲突
+          const uniqueId = `${msgId}-${msgCounterRef.current}`
+          currentMessageRef.current = { id: uniqueId, parts: [] }
+          partMapRef.current = new Map()
           setMessages((prev) => [...prev, currentMessageRef.current!])
           break
         }
@@ -194,11 +206,24 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
           break
         }
         case 'finish':
-          return 'done'
+          // finish = one agent step completed. In a tournament, multiple
+          // finish chunks arrive (one per agent). We don't stop reading —
+          // the SSE [DONE] marker handles stream termination.
+          break
         case 'abort':
         case 'error':
-          return 'done'
+          // error/abort = agent-level failure. Don't stop the stream —
+          // the tournament may continue with the next agent.
+          break
         case 'custom': {
+          // Agent-state custom chunk: update agentStates for live UI
+          if (chunk.kind === CustomEventKind.AgentState) {
+            const role = (chunk as Record<string, unknown>).role as AgentRole
+            const agentState = (chunk as Record<string, unknown>).state as AgentState
+            if (role && agentState) {
+              setAgentStates((prev) => ({ ...prev, [role]: agentState }))
+            }
+          }
           // 自定义事件（steering-injected / round-transition 等）
           pushPart({
             id: `custom-${Date.now()}-${Math.random()}`,
@@ -343,5 +368,5 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     }
   }, [])
 
-  return { runId, messages, state, error, start, stop, reset }
+  return { runId, messages, state, error, agentStates, start, stop, reset }
 }

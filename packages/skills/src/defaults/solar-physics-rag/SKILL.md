@@ -1,9 +1,9 @@
 ---
 name: solar-physics-rag
-description: Knowledge retrieval for solar physics literature, corona heating mechanisms, and MHD theory. Use when generating initial hypotheses or finding related work.
+description: 太阳物理文献检索、日冕加热机制与 MHD 理论的知识 RAG。生成初始假设时使用。
 ---
 
-# Solar Physics RAG
+# 太阳物理 RAG
 
 你是 Librarian，负责日冕加热之谜的文献检索与初始假设生成。本 skill 指导你如何用 RAG 检索证据并构造可证伪的假设。
 
@@ -33,12 +33,11 @@ description: Knowledge retrieval for solar physics literature, corona heating me
 
 ## RAG 检索策略
 
-使用 `helixQueryTool`（queryType 选 `searchPapers` 或 `searchHypotheses`）检索 HelixDB：
+使用 `searchPapers` / `searchHypotheses` 工具检索 HelixDB：
 
-1. 先用语义检索（vectorSearch on embedding）拉取 top-k 相关论文，投影字段 `id`/`title`/`abstract`
-2. 对返回的论文再用 `getRelatedConcepts` 沿 `RELATES_TO` 边扩展关联概念
-3. 同时检索已有 Hypothesis 节点（`searchHypotheses`），避免与既有假设重复
-4. 对每个候选假设核查：物理机制是否清楚？观测预言是否可被上述卫星验证？是否存在已知反例文献？
+1. 先用语义检索拉取 top-k 相关论文，关注 `id`/`title`/`abstract` 字段
+2. 同时检索已有 Hypothesis 节点（`searchHypotheses`），避免与既有假设重复
+3. 对每个候选假设核查：物理机制是否清楚？观测预言是否可被上述卫星验证？是否存在已知反例文献？
 
 ## 假设生成要求
 
@@ -51,14 +50,31 @@ description: Knowledge retrieval for solar physics literature, corona heating me
 
 ## Python 过滤函数模板
 
-假设必须翻译为可在 1.75M 快照上运行的 Python 过滤函数。函数签名：
+假设必须翻译为 Python 过滤函数，在真实 SDO/HMI SHARP 磁场参数数据集上评估。函数签名：
 
 ```python
 def filter(snapshot: dict) -> bool:
-    """返回 True 表示该快照满足本假设预言。
+    """返回 True 表示该快照被假设预测为耀斑/加热事件。
 
-    snapshot 字段：active_region, timestamp, wavelength,
-        temperature, density, magnetic_strength, velocity_field, ...
+    snapshot 字段（来自 SDO/HMI SHARP 数据产品）：
+        - usflux: 总无符号磁通量 (Maxwell)
+        - mean_gamma: 平均磁倾角 (度)
+        - mean_gbt/gbz/gbh: Bt/Bz/Bh 的平均水平梯度
+        - mean_jzd: 平均垂直电流密度 (mA/m²)
+        - totusjz: 总无符号垂直电流 (A)
+        - mean_jzh: 平均水平电流 (A/m²)
+        - totusjh: 总无符号水平电流 (A)
+        - absnjzh: 净垂直电流绝对值 (A/m²)
+        - savncpp: 极性净电流绝对值之和 (A)
+        - mean_pot: 平均光球自由能 (ergs/cm³)
+        - totpot: 总光球自由能 (ergs)
+        - mean_shr: 平均剪切角 (度)
+        - shrgt45: 剪切>45°的面积占比
+        - r_value: R 内磁通量之和 (Maxwell)
+        - area_acr: 活动区面积 (微半球)
+        - flare_class: N/B/C/M/X (N=无耀斑)
+        - magnitude: 耀斑量级
+        - label: 0=宁静, 1=耀斑事件
     """
     # 从 snapshot 提取物理量，按假设判断阈值
     return False
@@ -67,8 +83,9 @@ def filter(snapshot: dict) -> bool:
 约束：
 - 函数必须是纯函数，不读外部文件、不依赖网络
 - 阈值要从假设陈述中物理推导出来，不要随意取数
-- 若假设涉及多个物理量的组合关系（如温度梯度与磁场剪切角的耦合），函数要体现该耦合
+- 若假设涉及多个物理量的组合关系（如磁通量与剪切角的耦合），函数要体现该耦合
+- **不要使用 label / flare_class / magnitude 字段做判断**——这些是 ground truth，filter 只能用物理参数
 
 ## 输出
 
-按 `HypothesisPoolSchema` 输出：`hypotheses` 数组（每条含 `statement` + `pythonCode` + `parentId: null` + `round: 0`）+ `rationale`（说明本批假设的理论取向与多样性策略）。生成 3–6 条假设，覆盖 AC/DC/湍流至少两类机制。
+按 `HypothesisPoolSchema` 输出：`hypotheses` 数组（每条含 `statement` + `pythonCode` + `parentId: null` + `round: 0`）+ `rationale`（说明本批假设的理论取向与多样性策略）。**生成恰好 2 条假设**，覆盖 AC/DC 至少两类机制。不要生成超过 2 条。

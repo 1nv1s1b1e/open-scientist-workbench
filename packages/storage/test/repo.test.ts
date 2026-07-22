@@ -493,7 +493,7 @@ describe('plan repo', () => {
       round: 1,
       searchParams: { q: 'corona' },
       mhdCfgPath: '/mhd/a.cfg',
-      observationProposal: 'prop-1',
+      proposalPath: 'prop-1',
     })
     expect(p.runId).toBe(runId)
     expect(p.round).toBe(1)
@@ -512,11 +512,11 @@ describe('plan repo', () => {
     expect(await listPlans('proj-a', randomUUID())).toEqual([])
   })
 
-  it('addPlan stores mhdCfgPath + observationProposal as null when omitted', async () => {
+  it('addPlan stores mhdCfgPath + proposalPath as null when omitted', async () => {
     await addPlan('proj-a', runId, { round: 1, searchParams: {} })
     const plans = await listPlans('proj-a', runId)
     expect((plans[0] as { mhdCfgPath: string | null }).mhdCfgPath).toBeNull()
-    expect((plans[0] as { observationProposal: string | null }).observationProposal).toBeNull()
+    expect((plans[0] as { proposalPath: string | null }).proposalPath).toBeNull()
   })
 })
 

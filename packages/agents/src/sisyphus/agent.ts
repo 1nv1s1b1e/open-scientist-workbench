@@ -1,8 +1,9 @@
 import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
 import { getMcpTools } from '@open-scientist/mcp'
 import { type McpServerConfig, TournamentResultSchema } from '@open-scientist/schema'
-import { isStepCount, Output, ToolLoopAgent, type ToolSet, tool } from 'ai'
+import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet, tool } from 'ai'
 import { z } from 'zod'
+import { makeSubmitResultTool } from '../shared/tool-output.ts'
 
 export interface SisyphusAgentDeps {
   /**
@@ -137,7 +138,7 @@ export async function getDefaultSisyphusTools(mcpServers?: McpServerConfig[]): P
  * injects the user's response to resume. This replaces the deprecated
  * tool-level `needsApproval` mechanism.
  *
- * Output schema (TournamentResult) + stopWhen (isStepCount(50)) are fixed by
+ * Output schema (TournamentResult) + stopWhen (isStepCount(80)) are fixed by
  * the SPEC — do not change them.
  */
 export async function createSisyphusAgent({
@@ -150,34 +151,42 @@ export async function createSisyphusAgent({
   const model = createModelFromConfig(modelConfig)
   const resolvedTools = tools ?? (await getDefaultSisyphusTools(mcpServers))
 
+  const toolsWithSubmit: ToolSet = {
+    ...resolvedTools,
+    submit_result: makeSubmitResultTool(TournamentResultSchema),
+  }
+
   return new ToolLoopAgent({
+    maxOutputTokens: 8192,
     id: 'sisyphus',
     model,
+    toolChoice: 'auto',
     instructions:
       instructions ??
-      `You are Sisyphus, the orchestrator agent of a solar physics multi-agent system investigating the coronal heating mystery.
+      `你是 Sisyphus，太阳物理多智能体系统的编排器 agent，负责调查日冕加热之谜。
 
-Your role: Coordinate the Tournament Evolution workflow by invoking 5 specialist sub-agents:
-- Librarian: knowledge retrieval + hypothesis generation (translates hypotheses to Python physics filter functions)
-- Multimodal Looker: FITS image + MP4 video cross-modal spatiotemporal alignment
-- Explore: AlphaEvolve deterministic evaluation (runs Python code on 1.75M physics snapshots, computes F1)
-- Oracle: Co-Scientist critique + mutation + counterexample debugging (tournament debate)
-- Prometheus: multi-round planning (scaling test-time compute, adjusting search params; final round outputs MHD .cfg + satellite observation proposal)
+你的角色：协调锦标赛进化工作流，调用 5 个专家子 agent：
+- Librarian：知识检索 + 假设生成（将假设翻译为 Python 物理过滤函数）
+- Multimodal Looker：FITS 图像 + MP4 视频跨模态时空对齐
+- Explore：AlphaEvolve 确定性评估（在真实 SDO/HMI SHARP 快照上跑 Python 代码，计算 F1）
+- Oracle：Co-Scientist 批判 + 突变 + 反例调试（锦标赛辩论）
+- Prometheus：多轮规划（scaling test-time compute，调整搜索参数；末轮输出 MHD .cfg + 卫星观测建议书）
 
-Workflow: hypothesis generation → evidence review → tournament debate → multi-round planning → convergence.
+工作流：假设生成 → 证据审查 → 锦标赛辩论 → 多轮规划 → 收敛。
 
-Tournament protocol:
-- Round 1: Librarian generates a 3-6 hypothesis pool (covering AC/DC/turbulent mechanisms).
-- Round 2..MAX_ROUNDS (10): Explore evaluates every hypothesis in parallel (F1 over 1.75M snapshots); Oracle critiques + mutates + eliminates; Prometheus re-plans search params + compute budget.
-- Convergence: stop when best F1 >= 0.9 OR round >= 10 OR Prometheus says shouldContinue=false.
-- Final round: Prometheus translates the winning hypothesis into an MHD .cfg + satellite observation proposal.
+锦标赛协议：
+- 第 1 轮：Librarian 生成假设池（覆盖 AC/DC/湍流机制）。
+- 第 2..MAX_ROUNDS(10) 轮：Explore 并行评估每条假设（在 21,578 条快照上算 F1）；Oracle 批判 + 突变 + 淘汰；Prometheus 重新规划搜索参数 + 计算预算。
+- 收敛：best F1 >= 0.9 或 round >= 10 或 Prometheus 判定 shouldContinue=false 时停止。
+- 末轮：Prometheus 将获胜假设翻译为 MHD .cfg + 卫星观测建议书。
 
-At human-in-the-loop nodes (high-stakes rounds), call the \`review_leading_hypothesis\` tool to pause the tournament and ask the physicist to review the leader. The user can approve, reject, or inject steering feedback that downstream agents should incorporate.
+在人在回路节点（关键轮次），调用 \`review_leading_hypothesis\` 工具暂停锦标赛，请物理学家审查领先假设。用户可以批准、拒绝或注入引导反馈，下游 agent 应纳入这些反馈。
 
-You are a conductor, not a specialist — do NOT run physics code, query HelixDB, or write MHD configs yourself. Delegate all concrete work to the 5 sub-agents via their workflows.`,
-    tools: resolvedTools,
-    output: Output.object({ schema: TournamentResultSchema }),
-    stopWhen: isStepCount(50),
+你是指挥者，不是专家——不要自己跑物理代码、查 HelixDB 或写 MHD 配置。将所有具体工作委托给 5 个子 agent 的工作流。
+
+重要：完成任务的唯一方式是调用 submit_result 工具。你必须在步数上限之前调用它。不要只输出文本——始终调用 submit_result 提交你的 TournamentResult。`,
+    tools: toolsWithSubmit,
+    stopWhen: [isStepCount(120), hasToolCall('submit_result')],
     // Configure the review_leading_hypothesis tool to require user approval.
     // When the agent calls this tool, the stream suspends and emits a
     // `tool-approval-request` chunk. The Phase 4 API layer surfaces that to

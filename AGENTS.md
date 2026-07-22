@@ -64,6 +64,8 @@ packages/
 
 **`shared/convergence.ts`**：`ConvergenceEntry` 接口（`{round, bestF1, count}`），被 sisyphus/logic.ts + prometheus/workflow.ts 共享。
 
+**`shared/tool-output.ts`**：`extractSubmitResult(staticToolCalls, toolName?, fallback?)` — 从 ToolLoopAgent 的 staticToolCalls 提取 submit_result tool 的输入。第三个参数 `fallback?: T`：有 fallback 时未找到 submit_result 返回 fallback（不 throw），无 fallback 时 throw。所有 5 个 workflow 都传 fallback，确保 agent 达到 step limit 未提交结果时不崩溃。
+
 **context 传递**：`ModelArg`（plain object `{provider, model, baseURL?, apiKey, thinkingLevel}`）是跨调用边界的 model 配置载体。workflow 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel`。`runtimeContext` 也是 plain object（`{projectId, runId, round?, hypoId?}`），在构造 ToolLoopAgent 时传入。
 
 **ToolLoopAgent.stream 关键点**：返回 `Promise<StreamTextResult>`（**必须 await**，WorkflowAgent.stream 是同步的）。`result.fullStream: AsyncIterableStream<TextStreamPart<TOOLS>>`（是 `AsyncIterable<T> & ReadableStream<T>`，可直接喂给 `toUIMessageStream`）。`result.output: Promise<OUTPUT>`。
@@ -119,7 +121,7 @@ FS 产物在 `data/projects/<name>/` 下：runs/ / rounds/ / hypotheses/ / evide
 | Oracle | Co-Scientist 批判 + 突变 + 反例 debug | Critique + Mutation |
 | Prometheus | 多轮规划，末轮输出 MHD .cfg + 观测建议书 | Plan + MhdConfig |
 
-编排：`tournamentWorkflow` 是 plain async 函数，直接 await 5 个子 workflow——顺序用 `await xxxWorkflow(input)`（共享 run ID），并行 Explore 用 `Promise.all(hypotheses.map(h => exploreWorkflow(input)))`。SSE 流通过 `emitChunk` 回调从子 workflow 逐层冒泡到 `RunRegistry`（`apps/api/src/lib/run-stream.ts`）。
+编排：`tournamentWorkflow` 是 plain async 函数，直接 await 5 个子 workflow——顺序用 `await xxxWorkflow(input)`（共享 run ID），并行 Explore 用 `Promise.all(hypotheses.map(h => exploreWorkflow(input)))`。SSE 流通过 `emitChunk` 回调从子 workflow 逐层冒泡到 `RunRegistry`（`apps/api/src/lib/run-stream.ts`）。`run.result` 完成后调 `completeRun` 更新 SQLite status（`completed`/`failed`）+ bestF1 + currentRound。
 
 ## Tournament Evolution 工作流
 
@@ -128,6 +130,27 @@ Round 1: Librarian 生成 → Loop(Explore 并行评估 → Oracle 批判突变 
 终止条件：`TARGET_F1` / `MAX_ROUNDS` / 收敛检测 / 手动。每轮快照写 FS（`snapshotStep` → `data/projects/<projectId>/rounds/<round>/snapshot.json`，可用于 crash 后 resume）。`MAX_ROUNDS=10` / `TARGET_F1=0.9` 内联在 `sisyphus/logic.ts`。
 
 > Looker 在当前 tournamentWorkflow 中**未被调用**（代码就绪但未编排进 round 循环，Phase 5 待补）。
+
+## Step Limits + Fallback
+
+| Agent | Step Limit | 说明 |
+|---|---|---|
+| Librarian | 50 | 2 假设生成 + HelixDB 检索 |
+| Explore | 120 | eval 迭代调参（含 bash tool） |
+| Oracle | 60 | 五维评审 + 突变 |
+| Prometheus | 60 | 多轮规划 + MHD cfg + 观测建议书 |
+| Sisyphus | 120 | 预留 free-form steering |
+| Looker | 50 | FITS/MP4 对齐 |
+
+终止条件：`stopWhen: [isStepCount(N), hasToolCall('submit_result')]`（任一满足即停）。所有 5 个 workflow 传 fallback 给 `extractSubmitResult`，达到 step limit 未提交结果时返回 fallback 而非 throw。
+
+## MHD 配置 + 观测建议书
+
+Prometheus 末轮调 `mhdConfigTool` 时传入 `observationProposal` markdown 作为输入参数。Tool 写两个文件：
+- `<runId>.cfg` — MHD 仿真配置（12+ 物理参数）
+- `<runId>_proposal.md` — 卫星观测建议书
+
+返回 `{runId, cfgPath, proposalPath, summary}`。`proposalPath` 而非 `observationProposal` 字符串，避免 submit_result JSON 过大导致 parse 失败。
 
 ## 安全约束
 

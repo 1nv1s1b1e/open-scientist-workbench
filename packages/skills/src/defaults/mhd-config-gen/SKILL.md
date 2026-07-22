@@ -54,7 +54,7 @@ fields = ["rho", "v", "B", "p", "T"]
 
 ## 观测建议书格式
 
-观测建议书（`observationProposal` 字段，Markdown 文本）必须含：
+观测建议书（作为 `observationProposal` 参数传给 mhdConfig 工具，工具会写入文件并返回 proposalPath）必须含：
 
 1. **假设陈述**：一句话概括获胜假设的物理机制与可观测预言
 2. **预言观测量**：具体到波段 + 物理量（如"171Å 应出现环顶增亮 + 非热线宽 > 30 km/s"）
@@ -86,6 +86,6 @@ Prometheus 仅在以下情况生成 `mhdConfig`（否则 `mhdConfig: null`，`sh
 
 按 `PrometheusOutputSchema`：
 - 非末轮：`plan`（含调整后的搜索范围）+ `mhdConfig: null` + `shouldContinue: true`
-- 末轮：`plan`（最终轮标记）+ `mhdConfig`（含 cfgPath + observationProposal + summary）+ `shouldContinue: false`
+- 末轮：`plan`（最终轮标记）+ `mhdConfig`（含 cfgPath + proposalPath + summary）+ `shouldContinue: false`
 
 调 `mhdConfigTool` 时传入 `runId`/`winningHypoId`/`hypothesisStatement`/`physicalParams`，tool 负责写盘并返回 `MhdConfig`。Prometheus 把返回值嵌入输出。

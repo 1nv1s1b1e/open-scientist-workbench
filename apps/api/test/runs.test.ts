@@ -80,6 +80,7 @@ vi.mock('@open-scientist/storage', () => ({
   updateRunStatus: vi.fn(async (projectName: string, runId: string, status: string) => {
     updateRunStatusCalls.push({ projectName, runId, status })
   }),
+  completeRun: vi.fn(async () => {}),
 }))
 
 vi.mock('@open-scientist/config', async () => {
@@ -133,6 +134,14 @@ function makeFakeRun(runId: string, tailIndex = 0) {
   return {
     runId,
     cancel: vi.fn(async () => {}),
+    result: Promise.resolve({
+      runId,
+      winningHypoId: '',
+      bestF1: 0,
+      totalRounds: 1,
+      mhdConfigPath: null,
+      proposalPath: null,
+    }),
     getReadable: (_opts?: { startIndex?: number }) => ({
       pipeThrough: <T>(transform: TransformStream<unknown, T>) => readable.pipeThrough(transform),
       getTailIndex: async () => tailIndex,

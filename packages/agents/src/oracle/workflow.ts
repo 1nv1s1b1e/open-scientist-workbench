@@ -1,6 +1,8 @@
 import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
 import type { EvalResult, Hypothesis, OracleOutput } from '@open-scientist/schema'
+import { persistAgentRun } from '../shared/persist.ts'
 import { type EmitChunk, streamAgentOutput } from '../shared/stream.ts'
+import { extractSubmitResult } from '../shared/tool-output.ts'
 import { createOracleAgent } from './agent.ts'
 import { buildEvalSummaryBlock, buildHypothesesBlock } from './logic.ts'
 
@@ -49,6 +51,7 @@ export async function oracleWorkflow(input: OracleWorkflowInput): Promise<Oracle
   const agent = await createOracleAgent({
     modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
     projectId: input.projectId,
+    runId: input.runId,
     runtimeContext: {
       projectId: input.projectId,
       runId: input.runId,
@@ -68,35 +71,40 @@ export async function oracleWorkflow(input: OracleWorkflowInput): Promise<Oracle
   const hypothesesBlock = buildHypothesesBlock(input.hypotheses, input.evalResults)
   const evalSummaryBlock = buildEvalSummaryBlock(input.evalResults)
 
-  const result = await agent.stream({
-    messages: [
-      {
-        role: 'user',
-        content: `Oracle round ${input.round} (runId=${input.runId}, projectId=${input.projectId}).
+  const prompt = `Oracle 第 ${input.round} 轮（runId=${input.runId}，projectId=${input.projectId}）。
 
-Below are the ${input.hypotheses.length} hypotheses evaluated this round, each with its F1 score and Explore counterexamples. Your job: critique every hypothesis, mutate the high-potential ones, eliminate the fatal / low-F1 ones, and name a winner ONLY if the tournament has clearly converged this round.
+以下是本轮评估的 ${input.hypotheses.length} 条假设，每条含 F1 分数和 Explore 反例。你的任务：批判每条假设，突变高潜力者，淘汰 fatal / 低 F1 者，仅在锦标赛明确收敛时命名赢家。
 
-Eval summary:
-${evalSummaryBlock || '  (no eval results yet)'}
+评估摘要：
+${evalSummaryBlock || '  （尚无评估结果）'}
 
-Hypotheses + counterexamples:
+假设 + 反例：
 ${hypothesesBlock}
 
-Steps:
-1. Load the 'critique-protocol' and 'hypothesis-mutation' skills first for the 5-dimension scoring rubric, severity mapping, mutation operators, and counterexample-debug flow.
-2. For EACH hypothesis: issue one Critique with severity (fatal/major/minor) grounded in a specific Explore counterexample or a physical conservation law. Use getCritiquesByHypothesis to avoid repeating prior-round points.
-3. Persist each critique to HelixDB via addCritique (createdAt = now ISO 8601).
-4. For high-potential parents (major critiques that look fixable): generate Mutations following the 4 AlphaEvolve operators. Each mutatedHypothesis must be a full Hypothesis with a fresh id, parentId = parentHypoId, round = ${input.round}, status = 'mutated', and a pythonCode consistent with its statement. Optionally use bash/writeFile to sanity-check the mutated filter on representative snapshot inputs.
-5. Record MUTATED_FROM edges via addMutationLink(parentHypoId, childHypoId, mutationType). Use getEvolutionChain (via HelixDB) to avoid cyclic mutations back to eliminated forms.
-6. Fill eliminatedIds with the ids of hypotheses you eliminate this round (fatal critiques or persistently low F1).
-7. Set winningHypoId to the winning hypothesis id ONLY if convergence is reached this round; otherwise leave it null.
+步骤：
+1. 先加载 'critique-protocol' 和 'hypothesis-mutation' skill，获取五维评分标准、严重性映射、突变算子和反例调试流程。
+2. 对每条假设：发出一条 Critique，severity（fatal/major/minor）基于具体 Explore 反例或物理守恒定律。用 getCritiquesByHypothesis 避免重复前序轮次的问题。
+3. 用 addCritique 将每条批判持久化到 HelixDB（createdAt = now ISO 8601）。
+4. 对高潜力父假设（major 批判但可修复）：按 4 种 AlphaEvolve 算子生成突变。每个 mutatedHypothesis 必须是完整 Hypothesis，含新 id、parentId = parentHypoId、round = ${input.round}、status = 'mutated'、与 statement 一致的 pythonCode。可用 bash/writeFile 在代表性快照上验证突变 filter。
+5. 用 addMutationLink(parentHypoId, childHypoId, mutationType) 记录 MUTATED_FROM 边。用 getEvolutionChain（HelixDB）避免回到已淘汰形式的环状突变。
+6. 将本轮淘汰的假设 id 填入 eliminatedIds（fatal 批判或持续低 F1）。
+7. 仅当本轮收敛时设置 winningHypoId 为获胜假设 id；否则留 null。
 
-Return OracleOutput (critiques[], mutations[], eliminatedIds[], winningHypoId). Each major/fatal critique must pair with either a mutation or an elimination.`,
-      },
-    ],
+返回 OracleOutput（critiques[]、mutations[]、eliminatedIds[]、winningHypoId）。每条 major/fatal 批判必须配对一个突变或一次淘汰。`
+
+  const result = await agent.stream({
+    messages: [{ role: 'user', content: prompt }],
     ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
   })
 
   await streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)
-  return result.output
+  await persistAgentRun(input.projectId, input.runId, 'oracle', prompt, result)
+  const staticToolCalls = await result.staticToolCalls
+  const fallback: OracleOutput = {
+    critiques: [],
+    mutations: [],
+    eliminatedIds: [],
+    winningHypoId: null,
+  }
+  return extractSubmitResult(staticToolCalls, 'submit_result', fallback) as OracleOutput
 }

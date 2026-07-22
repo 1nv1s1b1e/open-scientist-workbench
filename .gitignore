@@ -16,3 +16,8 @@ queries.json
 .helix/
 helix.toml
 target/
+apps/api/downloads/
+__oracle__/
+__pycache__/
+*.pyc
+filter.py

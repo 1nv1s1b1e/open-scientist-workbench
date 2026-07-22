@@ -40,6 +40,6 @@ export const TournamentResultSchema = z.object({
   bestF1: z.number(),
   totalRounds: z.number(),
   mhdConfigPath: z.string().nullable(),
-  observationProposal: z.string().nullable(),
+  proposalPath: z.string().nullable(),
 })
 export type TournamentResult = z.infer<typeof TournamentResultSchema>

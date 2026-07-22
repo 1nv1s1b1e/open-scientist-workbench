@@ -66,6 +66,32 @@ export async function updateRunStatus(projectName: string, runId: string, status
     .run()
 }
 
+/**
+ * Mark a run as completed (or failed) with final metrics.
+ *
+ * Called by the API layer when `run.result` settles — updates the SQLite row
+ * with the tournament's final `bestF1` + `currentRound` + `endedAt` in a
+ * single write, so GET /runs/:id returns accurate status after the SSE stream
+ * ends.
+ */
+export async function completeRun(
+  projectName: string,
+  runId: string,
+  status: 'completed' | 'failed',
+  metrics?: { bestF1?: number; currentRound?: number },
+) {
+  const { db } = createProjectDb(projectName)
+  db.update(runs)
+    .set({
+      status,
+      endedAt: new Date().toISOString(),
+      ...(metrics?.bestF1 !== undefined ? { bestF1: metrics.bestF1 } : {}),
+      ...(metrics?.currentRound !== undefined ? { currentRound: metrics.currentRound } : {}),
+    })
+    .where(eq(runs.id, runId))
+    .run()
+}
+
 export async function saveResumeState(projectName: string, runId: string, blob: string) {
   const { db } = createProjectDb(projectName)
   db.update(runs).set({ resumeStateBlob: blob }).where(eq(runs.id, runId)).run()

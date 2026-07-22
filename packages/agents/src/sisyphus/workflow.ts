@@ -195,6 +195,23 @@ export async function tournamentWorkflow(
   // Helper: pull this role's override (if any) from agentConfigs.
   const agentConfigFor = (role: string) => agentConfigs?.[role]
 
+  // Helper: emit an agent-state custom chunk so the frontend can update the
+  // orchestrator hall node status in real time. The chunk shape matches the
+  // UIMessageChunk `custom` type: { type:'custom', kind:'tournament.agent-state', role, state }.
+  // Cast needed: the AI SDK's custom stream part type restricts `kind` to
+  // `${string}.${string}` and doesn't allow extra fields, but toUIMessageStream
+  // passes custom parts through verbatim at runtime.
+  const emitAgentState = (role: string, agentState: string) => {
+    if (emitChunk) {
+      emitChunk({
+        type: 'custom',
+        kind: 'tournament.agent-state',
+        role,
+        state: agentState,
+      } as never)
+    }
+  }
+
   // ─── Round 1: Librarian generates the hypothesis pool (or resume from snapshot) ───
   //
   // When `resumeFrom` is provided (dev-mode crash recovery), skip Round 1 and
@@ -224,6 +241,7 @@ export async function tournamentWorkflow(
     leadingHypoId = resumeFrom.leadingHypoId
     convergenceHistory = [...resumeFrom.convergenceHistory]
   } else {
+    emitAgentState('librarian', 'thinking')
     const hypoPool = await librarianWorkflow({
       seed,
       projectId,
@@ -233,6 +251,7 @@ export async function tournamentWorkflow(
       ...(emitChunk ? { emitChunk } : {}),
       ...(abortSignal ? { abortSignal } : {}),
     })
+    emitAgentState('librarian', 'idle')
     hypotheses = [...hypoPool.hypotheses]
     bestF1 = 0
     leadingHypoId = null
@@ -241,7 +260,7 @@ export async function tournamentWorkflow(
 
   // Final-round outputs (filled by Prometheus when the tournament converges).
   let mhdConfigPath: string | null = null
-  let observationProposal: string | null = null
+  let proposalPath: string | null = null
   let totalRounds = resumeFrom ? resumeFrom.round : 1
 
   // ─── Rounds (resumeFrom.round + 1)..MAX_ROUNDS: Explore → Oracle → Prometheus loop ───
@@ -258,6 +277,7 @@ export async function tournamentWorkflow(
     // per-hypothesis bash workspace. Fan-out via Promise.all gives true
     // parallelism; all sub-agent chunks forward to emitChunk concurrently
     // (JS is single-threaded, so the push is safe; chunks may interleave).
+    emitAgentState('explore', 'thinking')
     const evalResults: EvalResult[] = await Promise.all(
       hypotheses.map((h) =>
         exploreWorkflow({
@@ -273,6 +293,7 @@ export async function tournamentWorkflow(
         }),
       ),
     )
+    emitAgentState('explore', 'idle')
 
     // ── Update hypotheses with F1 + status from this round's evaluations ──
     hypotheses = updateHypothesesWithEval(hypotheses, evalResults)
@@ -309,6 +330,7 @@ export async function tournamentWorkflow(
     }
 
     // ── Oracle: critique + mutate + eliminate ──
+    emitAgentState('oracle', 'thinking')
     const oracleOutput = await oracleWorkflow({
       projectId,
       runId,
@@ -320,6 +342,7 @@ export async function tournamentWorkflow(
       ...(emitChunk ? { emitChunk } : {}),
       ...(abortSignal ? { abortSignal } : {}),
     })
+    emitAgentState('oracle', 'idle')
 
     // Apply Oracle's pruning + mutations to the pool.
     hypotheses = applyOraclePruning(hypotheses, oracleOutput)
@@ -361,6 +384,7 @@ export async function tournamentWorkflow(
     }
 
     // ── Prometheus: plan next round ──
+    emitAgentState('prometheus', 'thinking')
     const prometheusOutput = await prometheusWorkflow({
       projectId,
       runId,
@@ -374,6 +398,7 @@ export async function tournamentWorkflow(
       ...(reviewFeedback !== null ? { userFeedback: reviewFeedback } : {}),
       ...(abortSignal ? { abortSignal } : {}),
     })
+    emitAgentState('prometheus', 'idle')
 
     // ── Convergence check #2: Prometheus says stop OR round cap hit ──
     if (shouldStopByPrometheus(prometheusOutput.shouldContinue, round)) {
@@ -382,6 +407,7 @@ export async function tournamentWorkflow(
   }
 
   // ─── Final round: Prometheus generates MHD cfg + observation proposal ───
+  emitAgentState('prometheus', 'thinking')
   const winningStatement =
     leadingHypoId != null ? (hypotheses.find((h) => h.id === leadingHypoId)?.statement ?? '') : ''
 
@@ -399,10 +425,11 @@ export async function tournamentWorkflow(
     ...(emitChunk ? { emitChunk } : {}),
     ...(abortSignal ? { abortSignal } : {}),
   })
+  emitAgentState('prometheus', 'idle')
 
   if (finalPrometheus.mhdConfig) {
     mhdConfigPath = finalPrometheus.mhdConfig.cfgPath
-    observationProposal = finalPrometheus.mhdConfig.observationProposal
+    proposalPath = finalPrometheus.mhdConfig.proposalPath
   }
 
   return {
@@ -411,6 +438,6 @@ export async function tournamentWorkflow(
     bestF1,
     totalRounds,
     mhdConfigPath,
-    observationProposal,
+    proposalPath,
   }
 }

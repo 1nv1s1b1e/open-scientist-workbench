@@ -29,10 +29,11 @@ const tool = mhdConfigTool as unknown as {
     winningHypoId: string
     hypothesisStatement: string
     physicalParams: Record<string, number>
+    observationProposal: string
   }) => Promise<{
     runId: string
     cfgPath: string
-    observationProposal: string
+    proposalPath: string
     summary: string
   }>
 }
@@ -42,6 +43,7 @@ const INPUT = {
   winningHypoId: 'h-7',
   hypothesisStatement: 'AC wave heating via Alfvén wave dissipation',
   physicalParams: { temperature: 1e6, beta: 0.1, magneticField: 5e-4 },
+  observationProposal: '# Observation Proposal\n\nObserve AR 1140 with SDO/AIA.',
 }
 
 describe('mhdConfigTool.execute', () => {
@@ -72,7 +74,7 @@ describe('mhdConfigTool.execute', () => {
     const parsed = MhdConfigSchema.parse(result)
     expect(parsed.runId).toBe('run-xyz')
     expect(parsed.cfgPath).toBe(result.cfgPath)
-    expect(parsed.observationProposal).toContain('h-7')
+    expect(parsed.proposalPath).toContain('run-xyz_proposal.md')
     expect(parsed.summary).toContain('AC wave heating via Alfvén wave dissipation')
   })
 
@@ -88,6 +90,7 @@ describe('mhdConfigTool.execute', () => {
         viscosity: 1e-6,
         resistivity: 1e-7,
       },
+      observationProposal: '# Proposal\nMulti-param test.',
     })
     const cfg = await readFile(result.cfgPath, 'utf-8')
     expect(cfg).toContain('density = 1000000000000000')

@@ -55,6 +55,22 @@ function renderInline(text: string, baseKey: string): React.ReactNode[] {
 }
 
 export function MarkdownText({ text }: MarkdownTextProps) {
+  // Detect if the entire text is a JSON object/array → pretty-print it
+  const jsonBlock = useMemo(() => {
+    const trimmed = text.trim()
+    if (
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))
+    ) {
+      try {
+        return JSON.parse(trimmed)
+      } catch {
+        // not valid JSON, fall through to normal markdown
+      }
+    }
+    return null
+  }, [text])
+
   const blocks = useMemo(() => {
     // 切分 code fence
     const parts = text.split(/(```[\s\S]*?```)/g)
@@ -66,6 +82,14 @@ export function MarkdownText({ text }: MarkdownTextProps) {
       return { type: 'text' as const, content: part, key: `block-${i}` }
     })
   }, [text])
+
+  if (jsonBlock !== null) {
+    return (
+      <pre className="overflow-x-auto rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] p-3 font-mono text-[11px] leading-relaxed text-muted">
+        {JSON.stringify(jsonBlock, null, 2)}
+      </pre>
+    )
+  }
 
   return (
     <div className="space-y-2.5 text-sm leading-relaxed text-body">

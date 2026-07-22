@@ -10,7 +10,7 @@ export async function addPlan(
     round: number
     searchParams: Record<string, unknown>
     mhdCfgPath?: string | null
-    observationProposal?: string | null
+    proposalPath?: string | null
   },
 ) {
   const { db } = createProjectDb(projectName)
@@ -23,7 +23,7 @@ export async function addPlan(
       round: data.round,
       searchParamsJson: JSON.stringify(data.searchParams),
       mhdCfgPath: data.mhdCfgPath ?? null,
-      observationProposal: data.observationProposal ?? null,
+      proposalPath: data.proposalPath ?? null,
       createdAt: now,
     })
     .run()

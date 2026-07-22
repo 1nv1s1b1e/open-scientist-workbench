@@ -95,6 +95,19 @@ export function start(input: TournamentWorkflowInput): Run {
   // Kick off the tournament in the background. The abort signal is threaded
   // into tournamentWorkflow → sub-workflows → agent.stream so cancellation
   // actually halts in-flight LLM + tool calls (not just marks SQLite).
+  //
+  // Error handling:
+  // - Abort (POST /stop): resolve to `undefined` silently. The stop endpoint
+  //   already marks the run as 'stopped' in SQLite; resolving (not rejecting)
+  //   avoids a race where `runs.ts` would overwrite 'stopped' with 'failed'.
+  // - Real errors: emit an error UIMessageChunk on the SSE feed so the client
+  //   sees the failure, then re-throw so `run.result` rejects. The caller in
+  //   `runs.ts` attaches `.then(onFulfilled, onRejected)` which calls
+  //   `completeRun(..., 'failed')` on rejection.
+  // - The `.catch(swallow)` after `.finally()` prevents unhandled rejection
+  //   from the finally-derived promise (the main `.then(onFulfilled,
+  //   onRejected)` in runs.ts handles the original rejection, but `.finally()`
+  //   creates a new derived promise that also rejects).
   const result = tournamentWorkflow({
     ...input,
     emitChunk: emit,
@@ -105,6 +118,12 @@ export function start(input: TournamentWorkflowInput): Run {
       if (abortController.signal.aborted) {
         return undefined as unknown as TournamentResult
       }
+      // Emit an error chunk so the client sees the failure on the SSE feed
+      // rather than the stream just silently ending.
+      emit({
+        type: 'error',
+        errorText: err instanceof Error ? err.message : String(err),
+      } as UIMessageChunk)
       throw err
     },
   )
@@ -125,23 +144,30 @@ export function start(input: TournamentWorkflowInput): Run {
   // registry doesn't grow unboundedly across runs. We keep the run around
   // while in-flight so /stream reconnects work; after completion clients
   // should read final status from SQLite via GET /runs/:id.
-  void result.finally(() => {
-    // Close any remaining live subscribers so they see stream end rather
-    // than hanging on a buffer that will never grow again.
-    for (const controller of activeControllers) {
-      try {
-        controller.close()
-      } catch {
-        // Already closed — ignore.
+  //
+  // The `.catch(() => {})` after `.finally()` swallows the rejection from the
+  // finally-derived promise — the original `result` rejection is already
+  // handled by `runs.ts`'s `.then(onFulfilled, onRejected)` which calls
+  // `completeRun(..., 'failed')`.
+  void result
+    .finally(() => {
+      // Close any remaining live subscribers so they see stream end rather
+      // than hanging on a buffer that will never grow again.
+      for (const controller of activeControllers) {
+        try {
+          controller.close()
+        } catch {
+          // Already closed — ignore.
+        }
       }
-    }
-    activeControllers.clear()
-    // Defer eviction slightly so a reconnect landing right at completion
-    // still finds the run.
-    setTimeout(() => {
-      registry.delete(runId)
-    }, 60_000)
-  })
+      activeControllers.clear()
+      // Defer eviction slightly so a reconnect landing right at completion
+      // still finds the run.
+      setTimeout(() => {
+        registry.delete(runId)
+      }, 60_000)
+    })
+    .catch(() => {})
 
   return run
 }

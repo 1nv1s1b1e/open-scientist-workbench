@@ -30,6 +30,7 @@ function fakeModelConfig(): ModelArg {
 }
 
 const PROJECT = 'construct-test-project'
+const RUN = 'run-test-1'
 const HYPO = 'h1'
 
 describe('agent construction', () => {
@@ -44,11 +45,15 @@ describe('agent construction', () => {
   it('constructs sisyphus agent with id + tools', async () => {
     const agent = await createSisyphusAgent({ modelConfig: fakeModelConfig() })
     expect(agent.id).toBe('sisyphus')
-    expect(Object.keys(agent.tools).sort()).toEqual(['review_leading_hypothesis'])
+    expect(Object.keys(agent.tools).sort()).toEqual(['review_leading_hypothesis', 'submit_result'])
   })
 
   it('constructs librarian agent with id + tools', async () => {
-    const agent = await createLibrarianAgent({ modelConfig: fakeModelConfig(), projectId: PROJECT })
+    const agent = await createLibrarianAgent({
+      modelConfig: fakeModelConfig(),
+      projectId: PROJECT,
+      runId: RUN,
+    })
     expect(agent.id).toBe('librarian')
     expect(Object.keys(agent.tools).sort()).toEqual(
       [
@@ -58,6 +63,7 @@ describe('agent construction', () => {
         'readFile',
         'searchHypotheses',
         'searchPapers',
+        'submit_result',
         'writeFile',
       ].sort(),
     )
@@ -67,14 +73,25 @@ describe('agent construction', () => {
     const agent = await createExploreAgent({
       modelConfig: fakeModelConfig(),
       project: PROJECT,
+      runId: RUN,
       hypoId: HYPO,
     })
     expect(agent.id).toBe('explore')
-    expect(Object.keys(agent.tools).sort()).toEqual(['bash', 'loadSkill', 'readFile', 'writeFile'])
+    expect(Object.keys(agent.tools).sort()).toEqual([
+      'bash',
+      'loadSkill',
+      'readFile',
+      'submit_result',
+      'writeFile',
+    ])
   })
 
   it('constructs oracle agent with id + tools', async () => {
-    const agent = await createOracleAgent({ modelConfig: fakeModelConfig(), projectId: PROJECT })
+    const agent = await createOracleAgent({
+      modelConfig: fakeModelConfig(),
+      projectId: PROJECT,
+      runId: RUN,
+    })
     expect(agent.id).toBe('oracle')
     expect(Object.keys(agent.tools).sort()).toEqual(
       [
@@ -84,6 +101,7 @@ describe('agent construction', () => {
         'getCritiquesByHypothesis',
         'loadSkill',
         'readFile',
+        'submit_result',
         'writeFile',
       ].sort(),
     )
@@ -93,6 +111,7 @@ describe('agent construction', () => {
     const agent = await createLookerAgent({
       modelConfig: fakeModelConfig(),
       project: PROJECT,
+      runId: RUN,
       hypoId: HYPO,
     })
     expect(agent.id).toBe('looker')
@@ -104,6 +123,7 @@ describe('agent construction', () => {
         'getEvidenceByHypothesis',
         'loadSkill',
         'readFile',
+        'submit_result',
         'writeFile',
       ].sort(),
     )
@@ -113,6 +133,7 @@ describe('agent construction', () => {
     const agent = await createPrometheusAgent({
       modelConfig: fakeModelConfig(),
       projectId: PROJECT,
+      runId: RUN,
     })
     expect(agent.id).toBe('prometheus')
     expect(Object.keys(agent.tools).sort()).toEqual([
@@ -120,6 +141,7 @@ describe('agent construction', () => {
       'loadSkill',
       'mhdConfig',
       'readFile',
+      'submit_result',
       'writeFile',
     ])
   })
@@ -137,6 +159,6 @@ describe('agent construction', () => {
       modelConfig: fakeModelConfig(),
       tools: custom as never,
     })
-    expect(Object.keys(agent.tools)).toEqual(['customTool'])
+    expect(Object.keys(agent.tools).sort()).toEqual(['customTool', 'submit_result'])
   })
 })

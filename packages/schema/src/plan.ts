@@ -18,7 +18,7 @@ export type Plan = z.infer<typeof PlanSchema>
 export const MhdConfigSchema = z.object({
   runId: z.string(),
   cfgPath: z.string(),
-  observationProposal: z.string(),
+  proposalPath: z.string(),
   summary: z.string(),
 })
 export type MhdConfig = z.infer<typeof MhdConfigSchema>

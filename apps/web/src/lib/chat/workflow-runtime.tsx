@@ -19,8 +19,9 @@ import {
   type ThreadMessageLike,
   useExternalStoreRuntime,
 } from '@assistant-ui/react'
-import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { useRunStream } from '@/lib/hooks/useRunStream'
+import type { AgentRole, AgentState } from '@/lib/types/visualizers'
 import { toThreadMessages } from './to-thread-messages'
 
 interface WorkflowRuntimeProviderProps {
@@ -28,6 +29,7 @@ interface WorkflowRuntimeProviderProps {
   modelAlias?: string
   onRunIdChange?: (runId: string | null) => void
   onStateChange?: (state: string) => void
+  onAgentStatesChange?: (states: Partial<Record<AgentRole, AgentState>>) => void
   children: ReactNode
 }
 
@@ -36,10 +38,11 @@ export function WorkflowRuntimeProvider({
   modelAlias,
   onRunIdChange,
   onStateChange,
+  onAgentStatesChange,
   children,
 }: WorkflowRuntimeProviderProps) {
   const [seed, setSeed] = useState<string | null>(null)
-  const { messages, state, runId, start, stop, reset } = useRunStream({
+  const { messages, state, runId, agentStates, start, stop, reset } = useRunStream({
     project,
     onFinish: () => console.log('[workflow] run finished'),
     onError: (e) => console.error('[workflow] run error', e),
@@ -47,13 +50,26 @@ export function WorkflowRuntimeProvider({
 
   // 通知父组件 runId 变化
   const notifyRunId = useCallback((id: string | null) => onRunIdChange?.(id), [onRunIdChange])
-  if (runId !== undefined && runId !== null) {
-    notifyRunId(runId)
-  }
+  useEffect(() => {
+    if (runId !== undefined && runId !== null) {
+      notifyRunId(runId)
+    }
+  }, [runId, notifyRunId])
 
   // 通知父组件 state 变化
   const notifyState = useCallback((s: string) => onStateChange?.(s), [onStateChange])
-  notifyState(state)
+  useEffect(() => {
+    notifyState(state)
+  }, [state, notifyState])
+
+  // 通知父组件 agentStates 变化
+  const notifyAgentStates = useCallback(
+    (s: Partial<Record<AgentRole, AgentState>>) => onAgentStatesChange?.(s),
+    [onAgentStatesChange],
+  )
+  useEffect(() => {
+    notifyAgentStates(agentStates)
+  }, [agentStates, notifyAgentStates])
 
   // RunMessage[] + seed → ThreadMessageLike[]
   const threadMessages = useMemo<ThreadMessageLike[]>(

@@ -85,7 +85,7 @@ export const plans = sqliteTable('plans', {
   round: integer('round').notNull(),
   searchParamsJson: text('search_params_json').notNull(),
   mhdCfgPath: text('mhd_cfg_path'),
-  observationProposal: text('observation_proposal'),
+  proposalPath: text('proposal_path'),
   createdAt: text('created_at').notNull(),
 })
 

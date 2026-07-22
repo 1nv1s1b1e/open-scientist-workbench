@@ -1,6 +1,8 @@
-import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
+import { type AgentRuntimeConfig, getDatasetDir, type ModelArg } from '@open-scientist/config'
 import type { EvalResult } from '@open-scientist/schema'
+import { persistAgentRun } from '../shared/persist.ts'
 import { type EmitChunk, streamAgentOutput } from '../shared/stream.ts'
+import { extractSubmitResult } from '../shared/tool-output.ts'
 import { createExploreAgent } from './agent.ts'
 
 export interface ExploreWorkflowInput {
@@ -53,9 +55,11 @@ export interface ExploreWorkflowInput {
  * `fullStream` is forwarded to it (after conversion via `toUIMessageStream`).
  */
 export async function exploreWorkflow(input: ExploreWorkflowInput): Promise<EvalResult> {
+  const datasetDir = getDatasetDir()
   const agent = await createExploreAgent({
     modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
     project: input.projectId,
+    runId: input.runId,
     hypoId: input.hypoId,
     runtimeContext: {
       projectId: input.projectId,
@@ -74,36 +78,46 @@ export async function exploreWorkflow(input: ExploreWorkflowInput): Promise<Eval
       : {}),
   })
 
-  const result = await agent.stream({
-    messages: [
-      {
-        role: 'user',
-        content: `Evaluate this hypothesis against the 1.75M solar physics snapshot dataset.
+  const prompt = `在真实 SDO/HMI SHARP 磁场数据集（21,578 条快照）上评估此假设。
 
-Hypothesis id: ${input.hypoId}
-Run id: ${input.runId}
-Round: ${input.round}
+假设 id：${input.hypoId}
+运行 id：${input.runId}
+轮次：${input.round}
+数据集目录：${datasetDir}
 
-Statement:
+假设陈述：
 ${input.hypothesis.statement}
 
-Python filter code:
+Python filter 代码：
 \`\`\`python
 ${input.hypothesis.pythonCode}
 \`\`\`
 
-Steps:
-1. Load the 'fits-snapshot-search' skill first for snapshot dataset structure + F1 contract + Python env setup.
-2. Write the filter to filter.py in the working directory.
-3. Write run.py that loads snapshots, imports filter, evaluates all 1.75M, prints TP/FP/FN/F1 + first 5-10 counterexamples.
-4. Set up Python env if needed (python3 -m venv .venv && source .venv/bin/activate && uv pip install astropy sunpy scipy numpy).
-5. Run python3 run.py, read stdout, debug counterexamples, modify code, re-run until F1 converges or you hit the step limit.
-6. Return EvalResult with hypoId=${input.hypoId}, f1, truePositives, falsePositives, falseNegatives, counterexamples[] (physically specific), logs (commands + key stdout), executionMs.`,
-      },
-    ],
+步骤：
+1. 先加载 'fits-snapshot-search' skill 获取数据集结构 + 评估契约。
+2. 将 filter 写入工作目录的 filter.py。
+3. 运行：source ${datasetDir}/.venv/bin/activate && python3 ${datasetDir}/eval.py filter.py
+4. 读取 JSON 输出（F1、TP/FP/FN、反例）。如果 F1 低，调试反例，修改 filter.py，重新运行。
+5. 共享 venv（含 numpy/scipy）在 ${datasetDir}/.venv。如需额外包：uv pip install --python ${datasetDir}/.venv/bin/python <package>
+6. 返回 EvalResult，含 hypoId=${input.hypoId}、f1、truePositives、falsePositives、falseNegatives、counterexamples[]（物理具体）、logs（命令 + 关键 stdout）、executionMs。`
+
+  const result = await agent.stream({
+    messages: [{ role: 'user', content: prompt }],
     ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
   })
 
   await streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)
-  return result.output
+  await persistAgentRun(input.projectId, input.runId, 'explore', prompt, result)
+  const staticToolCalls = await result.staticToolCalls
+  const fallback: EvalResult = {
+    hypoId: input.hypoId,
+    f1: 0,
+    truePositives: 0,
+    falsePositives: 0,
+    falseNegatives: 0,
+    counterexamples: [],
+    logs: 'Explore agent reached step limit without calling submit_result',
+    executionMs: 0,
+  }
+  return extractSubmitResult(staticToolCalls, 'submit_result', fallback) as EvalResult
 }

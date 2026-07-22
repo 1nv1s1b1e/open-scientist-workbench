@@ -12,6 +12,14 @@ interface ChatPanelProps {
   modelAlias?: string
   onRunIdChange?: (runId: string | null) => void
   onStateChange?: (state: string) => void
+  onAgentStatesChange?: (
+    states: Partial<
+      Record<
+        import('@/lib/types/visualizers').AgentRole,
+        import('@/lib/types/visualizers').AgentState
+      >
+    >,
+  ) => void
 }
 
 /** 顶部工具栏（含 reset 按钮） */
@@ -35,13 +43,20 @@ function ChatToolbar() {
   )
 }
 
-export function ChatPanel({ project, modelAlias, onRunIdChange, onStateChange }: ChatPanelProps) {
+export function ChatPanel({
+  project,
+  modelAlias,
+  onRunIdChange,
+  onStateChange,
+  onAgentStatesChange,
+}: ChatPanelProps) {
   return (
     <WorkflowRuntimeProvider
       project={project}
       modelAlias={modelAlias}
       onRunIdChange={onRunIdChange}
       onStateChange={onStateChange}
+      onAgentStatesChange={onAgentStatesChange}
     >
       {/* 注册工具 + 自定义事件渲染器（挂载即注册） */}
       <WorkflowToolUIs />

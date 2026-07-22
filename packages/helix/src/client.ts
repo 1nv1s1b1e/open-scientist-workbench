@@ -71,6 +71,18 @@ function unwrap<T>(container: ReadContainer<T> | undefined): T[] {
   return container?.properties ?? []
 }
 
+/**
+ * Safely convert a value to BigInt. Returns null for non-numeric strings
+ * (e.g. "hypothesis-ac-phasemixing") that would cause BigInt() to throw.
+ */
+function safeBigInt(v: string | number | bigint): bigint | null {
+  if (typeof v === 'bigint') return v
+  if (typeof v === 'number') return BigInt(v)
+  const n = Number(v)
+  if (Number.isFinite(n) && /^\d+$/.test(v.trim())) return BigInt(v.trim())
+  return null
+}
+
 function first<T>(arr: T[] | undefined): T | null {
   return arr && arr.length > 0 ? arr[0]! : null
 }
@@ -121,17 +133,21 @@ export async function searchHypothesesVector(
 }
 
 export async function getPaper(id: string | number | bigint): Promise<PaperNode | null> {
+  const bid = safeBigInt(id)
+  if (bid === null) return null
   const res = await getHelixClient()
     .query<PaperResult>()
-    .dynamic(queries.call.getPaper({ id: BigInt(id) }))
+    .dynamic(queries.call.getPaper({ id: bid }))
     .send()
   return first(unwrap(res.paper))
 }
 
 export async function getHypothesis(id: string | number | bigint): Promise<HypothesisNode | null> {
+  const bid = safeBigInt(id)
+  if (bid === null) return null
   const res = await getHelixClient()
     .query<HypoResult>()
-    .dynamic(queries.call.getHypothesis({ id: BigInt(id) }))
+    .dynamic(queries.call.getHypothesis({ id: bid }))
     .send()
   return first(unwrap(res.hypo))
 }
@@ -139,9 +155,11 @@ export async function getHypothesis(id: string | number | bigint): Promise<Hypot
 export async function getHypothesesByPaper(
   paperId: string | number | bigint,
 ): Promise<HypothesisNode[]> {
+  const bid = safeBigInt(paperId)
+  if (bid === null) return []
   const res = await getHelixClient()
     .query<HypothesesResult>()
-    .dynamic(queries.call.getHypothesesByPaper({ paperId: BigInt(paperId) }))
+    .dynamic(queries.call.getHypothesesByPaper({ paperId: bid }))
     .send()
   return unwrap(res.hypos)
 }
@@ -149,9 +167,11 @@ export async function getHypothesesByPaper(
 export async function getEvidenceByHypothesis(
   hypoId: string | number | bigint,
 ): Promise<EvidenceNode[]> {
+  const bid = safeBigInt(hypoId)
+  if (bid === null) return []
   const res = await getHelixClient()
     .query<EvidenceByHypoResult>()
-    .dynamic(queries.call.getEvidenceByHypothesis({ hypoId: BigInt(hypoId) }))
+    .dynamic(queries.call.getEvidenceByHypothesis({ hypoId: bid }))
     .send()
   return [...unwrap(res.support), ...unwrap(res.contradict)]
 }
@@ -159,17 +179,21 @@ export async function getEvidenceByHypothesis(
 export async function getCritiquesByHypothesis(
   hypoId: string | number | bigint,
 ): Promise<CritiqueNode[]> {
+  const bid = safeBigInt(hypoId)
+  if (bid === null) return []
   const res = await getHelixClient()
     .query<CritiquesResult>()
-    .dynamic(queries.call.getCritiquesByHypothesis({ hypoId: BigInt(hypoId) }))
+    .dynamic(queries.call.getCritiquesByHypothesis({ hypoId: bid }))
     .send()
   return unwrap(res.critiques)
 }
 
 export async function getRelatedConcepts(hypoId: string | number | bigint): Promise<ConceptNode[]> {
+  const bid = safeBigInt(hypoId)
+  if (bid === null) return []
   const res = await getHelixClient()
     .query<ConceptsResult>()
-    .dynamic(queries.call.getRelatedConcepts({ hypoId: BigInt(hypoId) }))
+    .dynamic(queries.call.getRelatedConcepts({ hypoId: bid }))
     .send()
   return unwrap(res.concepts)
 }
@@ -193,9 +217,11 @@ export async function getHypothesesByRound(roundId: number): Promise<HypothesisN
 export async function getEvolutionChain(
   hypoId: string | number | bigint,
 ): Promise<HypothesisNode[]> {
+  const bid = safeBigInt(hypoId)
+  if (bid === null) return []
   const res = await getHelixClient()
     .query<HypothesesResult>()
-    .dynamic(queries.call.getEvolutionChain({ hypoId: BigInt(hypoId) }))
+    .dynamic(queries.call.getEvolutionChain({ hypoId: bid }))
     .send()
   return unwrap(res.hypos)
 }
@@ -327,8 +353,13 @@ export async function addEvidence(input: AddEvidenceInput): Promise<void> {
     },
     'addEvidence: sending write',
   )
+  const bid = safeBigInt(input.hypoId)
+  if (bid === null) {
+    logger.warn({ hypoId: input.hypoId }, 'addEvidence: non-numeric hypoId, skipping write')
+    return
+  }
   const params = {
-    hypoId: BigInt(input.hypoId),
+    hypoId: bid,
     content: input.content,
     f1Score: input.f1Score,
     fitsPaths: input.fitsPaths,
@@ -360,11 +391,16 @@ export async function addCritique(input: AddCritiqueInput): Promise<void> {
     },
     'addCritique: sending write',
   )
+  const bid = safeBigInt(input.hypoId)
+  if (bid === null) {
+    logger.warn({ hypoId: input.hypoId }, 'addCritique: non-numeric hypoId, skipping write')
+    return
+  }
   await getHelixClient()
     .query()
     .dynamic(
       queries.call.addCritique({
-        hypoId: BigInt(input.hypoId),
+        hypoId: bid,
         content: input.content,
         severity: input.severity,
         mutationType: input.mutationType ?? null,
@@ -382,12 +418,21 @@ export interface AddMutationLinkInput {
 }
 
 export async function addMutationLink(input: AddMutationLinkInput): Promise<void> {
+  const fromBid = safeBigInt(input.fromHypoId)
+  const toBid = safeBigInt(input.toHypoId)
+  if (fromBid === null || toBid === null) {
+    logger.warn(
+      { fromHypoId: input.fromHypoId, toHypoId: input.toHypoId },
+      'addMutationLink: non-numeric id, skipping write',
+    )
+    return
+  }
   await getHelixClient()
     .query()
     .dynamic(
       queries.call.addMutationLink({
-        fromHypoId: BigInt(input.fromHypoId),
-        toHypoId: BigInt(input.toHypoId),
+        fromHypoId: fromBid,
+        toHypoId: toBid,
         mutationType: input.mutationType,
       }),
     )
@@ -411,7 +456,9 @@ export async function addSnapshot(input: AddSnapshotInput): Promise<void> {
       queries.call.addSnapshot({
         roundId: BigInt(input.roundId),
         runId: input.runId,
-        hypothesisIds: input.hypothesisIds.map((id) => BigInt(id)),
+        hypothesisIds: input.hypothesisIds
+          .map((id) => safeBigInt(id))
+          .filter((b): b is bigint => b !== null),
         createdAt: input.createdAt,
       }),
     )
@@ -433,13 +480,17 @@ export interface AddCaptureInEdgesInput {
 }
 
 export async function addCaptureInEdges(input: AddCaptureInEdgesInput): Promise<void> {
+  const snapBid = safeBigInt(input.snapshotId)
+  if (snapBid === null) return
   for (const hypoId of input.hypoIds) {
+    const bid = safeBigInt(hypoId)
+    if (bid === null) continue
     await getHelixClient()
       .query()
       .dynamic(
         queries.call.addCaptureInEdge({
-          hypoId: BigInt(hypoId),
-          snapshotId: BigInt(input.snapshotId),
+          hypoId: bid,
+          snapshotId: snapBid,
         }),
       )
       .send()

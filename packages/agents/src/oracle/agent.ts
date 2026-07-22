@@ -13,7 +13,8 @@ import {
   createBashToolForHypothesis,
   getCritiquesByHypothesisTool,
 } from '@open-scientist/tools'
-import { isStepCount, Output, ToolLoopAgent, type ToolSet } from 'ai'
+import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
+import { makeSubmitResultTool } from '../shared/tool-output.ts'
 
 export interface OracleAgentDeps {
   /**
@@ -25,6 +26,8 @@ export interface OracleAgentDeps {
   modelConfig: ModelArg
   /** Project name (used for workspace isolation + HelixDB scoping). */
   projectId: string
+  /** Run identifier — used for workspace dir isolation. */
+  runId: string
   /** Optional override toolset. When omitted, default tools are assembled. */
   tools?: ToolSet
   /** Optional system prompt override. When omitted, the hardcoded default is used. */
@@ -68,11 +71,12 @@ const ORACLE_WORKSPACE_HYPO = '__oracle__'
  */
 export async function getDefaultOracleTools(
   projectId: string,
+  runId: string,
   skillDirectories?: string[],
   mcpServers?: McpServerConfig[],
 ): Promise<ToolSet> {
   const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
-  const bashToolkit = await createBashToolForHypothesis(projectId, ORACLE_WORKSPACE_HYPO)
+  const bashToolkit = await createBashToolForHypothesis(projectId, runId, ORACLE_WORKSPACE_HYPO)
   const skills = await discoverSkills(createNodeSandbox(), dirs)
   const loadSkillTool = createLoadSkillTool(skills)
 
@@ -97,6 +101,7 @@ export async function getDefaultOracleTools(
 export async function createOracleAgent({
   modelConfig,
   projectId,
+  runId,
   tools,
   instructions,
   skillDirectories,
@@ -105,41 +110,55 @@ export async function createOracleAgent({
 }: OracleAgentDeps) {
   const model = createModelFromConfig(modelConfig)
   const resolvedTools =
-    tools ?? (await getDefaultOracleTools(projectId, skillDirectories, mcpServers))
+    tools ?? (await getDefaultOracleTools(projectId, runId, skillDirectories, mcpServers))
+
+  const toolsWithSubmit: ToolSet = {
+    ...resolvedTools,
+    submit_result: makeSubmitResultTool(OracleOutputSchema),
+  }
 
   return new ToolLoopAgent({
+    maxOutputTokens: 8192,
     id: 'oracle',
     model,
+    toolChoice: 'auto',
     instructions:
       instructions ??
-      `You are Oracle, the Co-Scientist evaluator and tournament debater agent for the solar physics coronal heating investigation.
+      `你是 Oracle，太阳物理日冕加热研究的 Co-Scientist 评审与锦标赛辩论 agent。
 
-Your role:
-1. Critique each evaluated hypothesis (Co-Scientist 5-dimension scoring: physical plausibility, observational consistency, falsifiability, theoretical completeness, novelty).
-2. Mutate high-potential hypotheses (AlphaEvolve-style 4 operators: parameter / structural / crossover / counterexample-driven).
-3. Eliminate low-score hypotheses (fill eliminatedIds with the ids of fatal / low-F1 hypotheses).
-4. Optionally name a winner (winningHypoId) when the tournament has converged this round — otherwise null.
-5. Debug counterexamples dialectically — cluster Explore's counterexamples by failure mode, decide fix vs. structural mutation vs. elimination.
+你的职责：
+1. 批判每条已评估的假设（Co-Scientist 五维评分：物理合理性、观测一致性、可证伪性、理论完备性、新颖性）。
+2. 突变高潜力假设（AlphaEvolve 式 4 算子：参数突变 / 结构突变 / 交叉 / 反例驱动）。
+3. 淘汰低分假设（将 fatal / 低 F1 假设的 id 填入 eliminatedIds）。
+4. 锦标赛收敛时可选命名赢家（winningHypoId），否则为 null。
+5. 辩证调试反例——将 Explore 的反例按失败模式聚类，决定修复 vs. 结构突变 vs. 淘汰。
 
-Tool guidance:
-- Load the 'critique-protocol' and 'hypothesis-mutation' skills FIRST for the 5-dimension scoring rubric, severity mapping (fatal/major/minor), mutation operator constraints, and the dialectical counterexample-debug flow.
-- Use getCritiquesByHypothesis to read prior-round critiques on a hypothesis before re-critiquing (avoid repeating already-resolved points).
-- Use addCritique to persist each critique you issue to HelixDB (createdAt = now ISO 8601).
-- Use addMutationLink to record MUTATED_FROM edges between parent and child hypotheses (for evolution-chain tracking; use getEvolutionChain via HelixDB to detect cyclic mutations back to eliminated forms).
-- Use bash / writeFile to write lightweight test scripts that verify a proposed mutation's filter behaves as intended on representative snapshot inputs before committing it. Working directory is project-scoped (\`__oracle__\` subdir), shared across all critiques in a round — keep it tidy.
+环境：
+- 本机已安装 \`uv\`（Python 包管理器）和 \`pnpm\`（Node.js 包管理器）。
+- 用 \`uv pip install <package>\` 安装 Python 包（如 uv pip install astropy sunpy scipy numpy）。
+- 用 \`uv run python script.py\` 运行 Python 脚本（隔离依赖）。
+- 你的工作目录是沙箱工作区——所有文件操作（writeFile、readFile、bash）仅限此目录。不要尝试访问外部文件。
 
-Output contract (OracleOutputSchema):
-- critiques[]: one Critique per evaluated hypothesis — { hypoId, critiqueText (specific, e.g. "fails in static strong-shear regions"), rationale (cite Explore counterexample or conservation law), severity (fatal/major/minor), round }.
-- mutations[]: zero or more Mutations for high-potential parents — { parentHypoId, mutatedHypothesis (full HypothesisSchema with new id + parentId + round + status 'mutated' + fresh pythonCode consistent with statement), mutationRationale (operator type + what changed + why, citing counterexamples), round }.
-- eliminatedIds[]: ids of hypotheses you eliminate this round (fatal critiques or low F1).
-- winningHypoId: string | null — set only when convergence is reached this round; otherwise null.
+工具指引：
+- 首先加载 'critique-protocol' 和 'hypothesis-mutation' skill，获取五维评分标准、严重性映射（fatal/major/minor）、突变算子约束和辩证反例调试流程。
+- 用 getCritiquesByHypothesis 读取该假设前序轮次的批判（避免重复已解决的问题）。
+- 用 addCritique 将每条批判持久化到 HelixDB（createdAt = now ISO 8601）。
+- 用 addMutationLink 记录父假设到子假设的 MUTATED_FROM 边（追踪进化链；用 HelixDB 的 getEvolutionChain 检测回到已淘汰形式的环状突变）。
+- 用 bash / writeFile 写轻量测试脚本，在提交突变前验证新 filter 在代表性快照上的行为。工作目录是 project 级的（\`__oracle__\` 子目录），一轮内所有批判共享——保持整洁。
 
-Each major/fatal critique must pair with either a mutation or an elimination. Critique text must be physically specific (point to concrete parameters / bands / failure modes), never generic ("theory is flawed").
+输出契约（OracleOutputSchema）：
+- critiques[]：每条已评估假设一条 Critique——{ hypoId, critiqueText（具体，如"在静态强剪切区失效"）, rationale（引用 Explore 反例或守恒定律）, severity（fatal/major/minor）, round }。
+- mutations[]：零或多条高潜力父假设的突变——{ parentHypoId, mutatedHypothesis（完整 HypothesisSchema，含新 id + parentId + round + status 'mutated' + 与 statement 一致的新 pythonCode）, mutationRationale（算子类型 + 改了什么 + 为什么，引用反例）, round }。
+- eliminatedIds[]：本轮淘汰的假设 id（fatal 批判或低 F1）。
+- winningHypoId：string | null——仅当本轮收敛时设置，否则 null。
 
-Tournament Evolution: act as a rigorous scientific reviewer. Use high thinking level for deep physical reasoning. Do NOT fabricate F1 numbers — Oracle only consumes Explore's EvalResults; it does not re-evaluate.`,
-    tools: resolvedTools,
-    output: Output.object({ schema: OracleOutputSchema }),
-    stopWhen: isStepCount(25),
+每条 major/fatal 批判必须配对一个突变或一次淘汰。批判文本必须物理具体（指向具体参数/波段/失败模式），不能空泛（如"理论有缺陷"）。
+
+锦标赛进化：你扮演严谨的科学审稿人。用高 thinking level 进行深度物理推理。不要编造 F1 数字——Oracle 只消费 Explore 的 EvalResults，不重新评估。
+
+重要：完成任务的唯一方式是调用 submit_result 工具。你必须在步数上限之前调用它。不要只输出文本——始终调用 submit_result 提交你的 OracleOutput。`,
+    tools: toolsWithSubmit,
+    stopWhen: [isStepCount(60), hasToolCall('submit_result')],
     ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }

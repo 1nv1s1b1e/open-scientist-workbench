@@ -9,6 +9,7 @@ import {
 } from '../src/index.ts'
 
 const PROJECT = 'tools-test-project'
+const RUN = 'run-test-1'
 const HYPO = 'h1'
 
 describe('getDefaultXxxTools toolset keys', () => {
@@ -26,7 +27,7 @@ describe('getDefaultXxxTools toolset keys', () => {
   })
 
   it('librarian → helix + bash + loadSkill', async () => {
-    const tools = await getDefaultLibrarianTools(PROJECT)
+    const tools = await getDefaultLibrarianTools(PROJECT, RUN)
     expect(Object.keys(tools).sort()).toEqual(
       [
         'addHypothesis',
@@ -41,12 +42,12 @@ describe('getDefaultXxxTools toolset keys', () => {
   })
 
   it('explore → bash + loadSkill', async () => {
-    const tools = await getDefaultExploreTools(PROJECT, HYPO)
+    const tools = await getDefaultExploreTools(PROJECT, RUN, HYPO)
     expect(Object.keys(tools).sort()).toEqual(['bash', 'loadSkill', 'readFile', 'writeFile'])
   })
 
   it('oracle → helix critique + bash + loadSkill', async () => {
-    const tools = await getDefaultOracleTools(PROJECT)
+    const tools = await getDefaultOracleTools(PROJECT, RUN)
     expect(Object.keys(tools).sort()).toEqual(
       [
         'addCritique',
@@ -61,7 +62,7 @@ describe('getDefaultXxxTools toolset keys', () => {
   })
 
   it('looker → fitsAlign + helix evidence + bash + loadSkill', async () => {
-    const tools = await getDefaultLookerTools(PROJECT, HYPO)
+    const tools = await getDefaultLookerTools(PROJECT, RUN, HYPO)
     expect(Object.keys(tools).sort()).toEqual(
       [
         'addEvidence',
@@ -76,7 +77,7 @@ describe('getDefaultXxxTools toolset keys', () => {
   })
 
   it('prometheus → mhdConfig + bash + loadSkill', async () => {
-    const tools = await getDefaultPrometheusTools(PROJECT)
+    const tools = await getDefaultPrometheusTools(PROJECT, RUN)
     expect(Object.keys(tools).sort()).toEqual([
       'bash',
       'loadSkill',

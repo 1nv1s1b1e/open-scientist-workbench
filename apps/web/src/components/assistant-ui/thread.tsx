@@ -92,13 +92,13 @@ function ThreadEmpty() {
 /** Composer 输入区 */
 function ThreadComposer() {
   return (
-    <ComposerPrimitive.Root className="mx-auto flex w-full max-w-3xl flex-col rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] focus-within:border-white/30">
+    <ComposerPrimitive.Root className="flex w-full flex-col rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] focus-within:border-white/30">
       <ComposerPrimitive.Input
         placeholder="例如：Alfvén 波在日冕等离子体中的耗散主导了加热过程…"
         className="min-h-[56px] w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-sm text-body placeholder:text-muted focus:outline-none"
         rows={3}
       />
-      <div className="flex items-center justify-between px-3 pb-3">
+      <div className="flex items-center justify-between px-4 pb-3">
         <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
           seed · single-turn
         </span>
@@ -134,7 +134,7 @@ export function Thread() {
           }}
         />
       </ThreadPrimitive.Viewport>
-      <div className="border-t border-[var(--color-border)] p-3">
+      <div className="border-t border-[var(--color-border)] px-4 py-3">
         <ThreadComposer />
       </div>
     </ThreadPrimitive.Root>

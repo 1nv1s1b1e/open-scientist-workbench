@@ -98,8 +98,9 @@ export function toThreadMessages(
       if (converted) parts.push(converted)
     }
 
+    // 确保 id 唯一：runMsg.id 已含 counter 后缀，但再加 index 双保险
     msgs.push({
-      id: runMsg.id,
+      id: `${runMsg.id}-${i}`,
       role: 'assistant',
       content: parts.length > 0 ? parts : [{ type: 'text', text: '' }],
       status: isLast ? toMessageStatus(state) : { type: 'complete', reason: 'stop' },
