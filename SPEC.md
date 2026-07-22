@@ -18,8 +18,8 @@
 
 | 层            | 选型                                                   | 理由                                                                                                                                                               |
 | ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Runtime       | **Node.js**                                            | AI SDK 7 纯 TS 兼容；better-sqlite3 + vitest                                                                                                                       |
-| Lint/Format   | **Biome**                                              | 单工具替代 ESLint+Prettier，零配置                                                                                                                                 |
+| Runtime       | **Node.js**                                            | AI SDK 7 纯 TS 兼容；better-sqlite3                                                                                                                                |
+| Lint/Format   | **Vite+**（Oxlint + Oxfmt）                            | 统一工具链，替代 ESLint+Prettier+Biome，零配置                                                                                                                     |
 | Schema 校验   | **Zod**                                                | AI SDK `tool.inputSchema` / `Output.object(zodSchema)` 必选                                                                                                        |
 | HTTP 框架     | **Hono**                                               | 轻量、Node 原生适配；返回标准 Response 可直返                                                                                                                      |
 | Server        | **@hono/node-server**                                  | hono 官方推荐生产 server；无 build-time bundle，dev 用 `tsx watch` 热重载                                                                                          |
@@ -71,7 +71,7 @@ open-scientist/
 │   ├── schema/                       # Zod schemas + TS 类型（共享，无依赖）
 │   └── config/                       # env / 路径 / provider 抽象
 ├── data/                             # 用户数据（.gitignore，base_dir 默认）
-├── biome.json
+├── vite.config.ts
 ├── tsconfig.base.json
 └── package.json                      # workspaces 根
 ```
@@ -317,7 +317,7 @@ const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
 **关键设计**：
 
 - **模型配置不走 env**：API key / model 选择 / thinkingLevel 全存 SQLite（`credentials` + `settings` 表），通过 Web API 管理
-- **Credential = endpoint bundle**：`{id, provider, apiKey, baseURL?}`，id 命名实体不按 provider 唯一，支持「同 provider 不同 endpoint」组合，upsert by id
+- **Credential = endpoint bundle**：`{id, provider, apiKey, baseURL?}`，id 命名实体，按 id 唯一（非按 provider），支持「同 provider 不同 endpoint」组合，upsert by id
 - **ModelConfig 用 credentialId 引用**：`{model, thinkingLevel, credentialId}`，provider/baseURL/apiKey 全由 credentialId 引用的 Credential 条目决定
 - **CredentialStore 串行 modify**（借鉴 Pi）：OAuth refresh 加锁防双刷，API key 加密存储
 - **两层 settings merge**：global `data/settings.json` + per-project `data/projects/<name>/settings.json` override（deep merge），`getSettings(projectName?)` 返回合并结果
@@ -417,7 +417,7 @@ RuntimeContextSchema = z.object({
 })
 ```
 
-**禁止放入 runtimeContext**：functions / class instances / symbols / WeakMap / SDK clients / DB handles（虽然不再跨 VM 边界，但保持 plain data 习惯）。传 identifiers（projectId, runId, hypoId），在 workflow 函数内重建资源。
+**禁止放入 runtimeContext**：functions / class instances / symbols / WeakMap / SDK clients / DB handles（保持 plain data 习惯）。传 identifiers（projectId, runId, hypoId），在 workflow 函数内重建资源。
 
 ### 4.4 人机协同节点
 
@@ -453,7 +453,7 @@ Tournament 长循环中用户中途插话/追加任务，不等到 toolApproval 
 credentials: {
   ;(id, provider, type, encryptedKey, baseUrl, metadata_json, createdAt, updatedAt)
 }
-// id 命名实体（用户指定或 auto `${provider}-${ts}`），不按 provider 唯一，支持「同 provider 不同 baseURL+apiKey」组合，upsert by id
+// id 命名实体（用户指定或 auto `${provider}-${ts}`），按 id 唯一（非按 provider），支持「同 provider 不同 baseURL+apiKey」组合，upsert by id
 // type: 'api-key' | 'oauth-token'；encryptedKey 加密存储；baseUrl 可选（同 provider 不同 endpoint）；CredentialStore 串行 modify
 
 settings: {
@@ -741,7 +741,7 @@ Step limits（`isStepCount(N)` 双终止条件 + `hasToolCall('submit_result')`�
 
 ### 8.4 凭证管理（Web API + SQLite 加密）
 
-一个 Credential = 一个完整 endpoint bundle `{id, provider, apiKey, baseURL?}`：支持「同 provider 不同 baseURL+apiKey」组合，**id 命名实体（用户指定或 auto `${provider}-${ts}`），不再按 provider 唯一**，upsert by id（后加覆盖先加）。
+一个 Credential = 一个完整 endpoint bundle `{id, provider, apiKey, baseURL?}`：支持「同 provider 不同 baseURL+apiKey」组合，**id 命名实体（用户指定或 auto `${provider}-${ts}`），按 id 唯一（非按 provider）**，upsert by id（后加覆盖先加）。
 
 通过 `POST /credentials` 管理：
 
@@ -759,7 +759,7 @@ Step limits（`isStepCount(N)` 双终止条件 + `hasToolCall('submit_result')`�
 
 ### 8.5 per-agent model 解析
 
-**模型配置形态**：`ModelConfig = {model, thinkingLevel, credentialId}`（移除 provider+baseURL —— provider/baseURL/apiKey 全部由 credentialId 引用的 Credential 条目决定）。`settings.models.<role>` 和 `settings.modelAliases.<alias>` 都用此形态。
+**模型配置形态**：`ModelConfig = {model, thinkingLevel, credentialId}` —— provider/baseURL/apiKey 全部由 credentialId 引用的 Credential 条目决定。`settings.models.<role>` 和 `settings.modelAliases.<alias>` 都用此形态。
 
 `packages/config/src/models.ts` 的 `resolveModelArg(projectName, credentials, {role?, modelAlias?})` 流程：
 

@@ -132,13 +132,13 @@ app.on('before-quit', () => apiProcess?.kill())
 
 ```bash
 # 1. 构建 api
-pnpm --filter @open-scientist/api build
+vp run --filter @open-scientist/api build
 
 # 2. 构建 web (standalone)
-pnpm --filter @open-scientist/web build
+vp run --filter @open-scientist/web build
 
 # 3. 构建 electron main
-pnpm --filter @open-scientist/electron build
+vp run --filter @open-scientist/electron build
 
 # 4. 打包
 electron-builder

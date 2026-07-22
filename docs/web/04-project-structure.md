@@ -148,7 +148,6 @@ apps/web/
 ├── next.config.ts
 ├── tailwind.config.ts                      # Tailwind v4 配置
 ├── components.json                         # shadcn/ui 配置
-├── biome.json                              # 与后端共享 biome 配置
 ├── tsconfig.json
 └── package.json
 ```

@@ -5,28 +5,30 @@ Open-scientist：太阳物理多智能体假设生成与证据推理系统（赛
 ## 常用命令
 
 ```bash
-vp lint           # biome check .（lint + format）
-vp fmt --write         # biome format --write .
-vp run -r typecheck      # 全 11 包 tsc --noEmit
-vp test run           # vitest run（测试文件 *.test.ts）
-vp lint -- --write     # biome auto-fix
+vp lint           # oxlint（lint）
+vp fmt --write    # oxfmt（format）
+vp check          # format + lint + typecheck 一条命令
+vp run -r typecheck  # 全 11 包 tsc --noEmit
+vp test run       # vitest run（测试文件 *.test.ts）
 vp dev            # 启动 apps/api（tsx watch src/server.ts）
 vp run --filter @open-scientist/storage db:generate    # drizzle-kit generate（storage 包）
 vp run --filter @open-scientist/storage db:migrate     # drizzle-kit migrate（storage 包）
 ```
 
 - 单包操作：`vp run --filter @open-scientist/agents typecheck`
-- web 单独验证：`cd apps/web && npx tsc --noEmit && npx biome check .`
+- web 单独验证：`cd apps/web && npx tsc --noEmit`
 - web dev server：`cd apps/web && npx next dev -p 5173`
 - 加依赖：在对应 package.json 加 + `vp install`（pnpm workspaces，node-linker=hoisted）
-- 测试框架：`vitest`，测试文件放 `*.test.ts`
+- 测试框架：Vitest（vite-plus 内置），测试文件放 `*.test.ts`，import 从 `vite-plus/test`
+- commit message 和 PR 描述用英文
+- 文档描述现状，不写变更过程（PROGRESS.md 除外）
 
 ## 技术栈
 
-Node.js + pnpm + TypeScript 6 + Biome 2.5 + Zod 4 + Hono + `@hono/node-server` + AI SDK 7（`ai`，含 `ToolLoopAgent`）+ Drizzle ORM（双 SQLite）+ HelixDB（本地 graph+vector）+ `bash-tool` + `@ai-sdk/mcp`。
+Node.js + pnpm + TypeScript 6 + Vite+（Oxlint + Oxfmt + Vitest）+ Zod 4 + Hono + `@hono/node-server` + AI SDK 7（`ai`，含 `ToolLoopAgent`）+ Drizzle ORM（双 SQLite）+ HelixDB（本地 graph+vector）+ `bash-tool` + `@ai-sdk/mcp`。
 
-- **Runtime**：Node.js（包管理用 pnpm，不用 Bun）
-- **Lint/Format**：Biome（单工具，无 ESLint/Prettier）。`biome.json` 已配 2.5.4 preset
+- **Runtime**：Node.js（包管理用 pnpm）
+- **Lint/Format**：Vite+（Oxlint + Oxfmt，单工具链，无 ESLint/Prettier/Biome）。`vite.config.ts` 配 lint/fmt/test/staged block
 - **Schema**：Zod 4（AI SDK `tool().inputSchema` / `Output.object({schema})` 必选）
 - **Agent**：全 6 角色用 `ToolLoopAgent`（`ai` 包直接导出）。每 role 两文件：`agent.ts`（构造工厂）+ `workflow.ts`（plain async 编排函数，无 `'use workflow'`）
 - **Build**：`@hono/node-server` 生产 server（`apps/api/src/server.ts`）；dev 用 `tsx watch` 热重载；无 build-time bundle
@@ -48,7 +50,7 @@ packages/
   logger        — consola wrapper + 11 个预定义 tag
 ```
 
-依赖方向：`schema`（零依赖）← 所有包；`logger` ← 所有包；`config` 不再依赖 `storage`（Credential/CredentialRecord/CredentialStore 接口移到 schema，config 从 schema import）；`agents → {tools, skills, mcp, helix, config, schema, logger}`；`apps/web → {schema}`。
+依赖方向：`schema`（零依赖）← 所有包；`logger` ← 所有包；`config` 只依赖 `schema`（Credential/CredentialRecord/CredentialStore 接口在 schema，config 从 schema import）；`agents → {tools, skills, mcp, helix, config, schema, logger}`；`apps/web → {schema}`。
 
 ## Agent 文件结构（ToolLoopAgent）
 
@@ -98,9 +100,9 @@ packages/
 
 ## 配置层
 
-- **env 极简**（`.env.example`）：`BASE_DIR` / `PORT` / `HELIX_URL` / `LOG_LEVEL`。**不用 .env 存模型配置**
-- **Credential = Endpoint bundle**：一个 credential = 一个完整 endpoint `{id, provider, apiKey, baseURL?}`。`id` 命名实体（用户指定或 auto `${provider}-${ts}`），**不再按 provider 唯一**，支持「同 provider 不同 baseURL+apiKey」组合。upsert by id（后加覆盖先加）。SQLite 加密（`data/global.sqlite`），串行 modifyLock 防 OAuth 双刷。
-- **ModelConfig 用 credentialId 引用**：`ModelConfig = {model, thinkingLevel, credentialId}`（移除 provider+baseURL）。provider/baseURL/apiKey 全部由 credentialId 引用的 Credential 条目决定。`settings.models.<role>` 和 `settings.modelAliases.<alias>` 都用此形态。
+- **env 极简**（`.env.example`）：`BASE_DIR` / `PORT` / `HELIX_URL` / `LOG_LEVEL`。模型配置走 Web API + SQLite
+- **Credential = Endpoint bundle**：一个 credential = 一个完整 endpoint `{id, provider, apiKey, baseURL?}`。`id` 命名实体（用户指定或 auto `${provider}-${ts}`），**按 id 唯一**（非按 provider），支持「同 provider 不同 baseURL+apiKey」组合。upsert by id（后加覆盖先加）。SQLite 加密（`data/global.sqlite`），串行 modifyLock 防 OAuth 双刷。
+- **ModelConfig 用 credentialId 引用**：`ModelConfig = {model, thinkingLevel, credentialId}`。provider/baseURL/apiKey 全部由 credentialId 引用的 Credential 条目决定。`settings.models.<role>` 和 `settings.modelAliases.<alias>` 都用此形态。
 - **ModelArg 跨边界载体**：`ModelArg = {provider, model, baseURL?, apiKey, thinkingLevel}` 是 plain object。`resolveModelArg(projectName, credentials, {role?, modelAlias?})` 读 settings → ModelConfig（含 credentialId）→ `credentials.get(credentialId)` → 从 credential 拿 provider/apiKey/baseURL → 组装 `ModelArg`。workflow 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel`。
 - **两层 settings**：global `data/settings.json` + per-project `data/projects/<name>/settings.json` override（deep merge）。`getSettings(projectName?)` 自动 merge 两层。
 
@@ -160,16 +162,15 @@ Prometheus 末轮调 `mhdConfigTool` 时传入 `observationProposal` markdown �
 
 - `bash-tool` 无沙箱（host child_process），靠 project name 隔离 working dir
 - MCP server 是远程代码执行，per-project 加载需信任（`mcp_trust` 表 + `fingerprintTools` 漂移检测）
-- env 不进 git（`.gitignore` 已配 `.env`）
+- env 不进 git（`.gitignore` 配 `.env`）
 - HelixDB strict mode
 
 ## 不要做
 
-- 不要用 ESLint/Prettier（用 Biome）
+- 不要用 ESLint/Prettier/Biome（用 Vite+ 的 Oxlint + Oxfmt）
 - 不要用 .env 存模型配置（走 Web API + SQLite）
 - 不要给 Explore 的 Python 加 Docker 沙箱（用户明确决定：host child_process + project name 隔离）
-- 不要用 `WorkflowAgent` / `@ai-sdk/workflow` / `workflow` 包（已迁移到 `ToolLoopAgent`，从 `ai` 导入）
-- 不要用 Nitro（已迁移到 `@hono/node-server`，无 build-time bundle）
+- 不要用 `WorkflowAgent` / `@ai-sdk/workflow` / `workflow` 包（用 `ToolLoopAgent`，从 `ai` 导入）
 - 不要给源码内部 import 加 `.js` 后缀（用 `.ts`，tsx + Node type stripping 不 fallback）
 - 不要在 `tsconfig.json` 的 `compilerOptions` 里放 `extends`（放顶层）
-- 不要把非序列化对象放进 `runtimeContext`（虽然不再跨 VM 边界，但保持 plain data 习惯）
+- 不要把非序列化对象放进 `runtimeContext`（保持 plain data 习惯）

@@ -250,7 +250,7 @@ Deep merge patch 到 project settings。
 
 ## 3. Credentials
 
-Credentials 存在 `data/global.sqlite` 加密表中。**Credential = Endpoint bundle**：一个 credential = 一个完整 endpoint `{id, provider, apiKey, baseURL?}`，不再按 provider 唯一，支持「同 provider 不同 baseURL+apiKey」组合（upsert by id）。
+Credentials 存在 `data/global.sqlite` 加密表中。**Credential = Endpoint bundle**：一个 credential = 一个完整 endpoint `{id, provider, apiKey, baseURL?}`，按 id 唯一（非按 provider），支持「同 provider 不同 baseURL+apiKey」组合（upsert by id）。
 
 ### `GET /api/credentials`
 
@@ -271,7 +271,7 @@ Credentials 存在 `data/global.sqlite` 加密表中。**Credential = Endpoint b
 
 ### `POST /api/credentials`
 
-添加/更新凭证（**upsert by id**：同 id 先删后加，不再按 provider 唯一）。
+添加/更新凭证（**upsert by id**：同 id 先删后加，按 id 唯一）。
 
 **Request body**：`AddCredentialRequest`
 

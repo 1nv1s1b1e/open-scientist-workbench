@@ -141,7 +141,7 @@
 **基础配置**（`apps/web/`）：
 
 - Next.js 16.2.10 (Turbopack) + React 19.2.7 + TypeScript 6.0.3（devDep，为兼容 Next 15/16 的 `verify-typescript-setup` 检查 `typescript/lib/typescript.js`——TS 7 重构了包结构无此文件）
-- Tailwind v4.3.3 stable + Biome（与 monorepo 一致）
+- Tailwind v4.3.3 stable + Vite+（Oxlint + Oxfmt，与 monorepo 一致）
 - `next.config.ts`：`images: { unoptimized: true }`（适配 Electron + 避免 sharp native build）+ rewrites 代理 `/api/*` → `${API_BASE_URL}/api/*`（同源避免 CORS，后端无 CORS middleware）
 - `tsconfig.json`：extends base，移除 `baseUrl`（TS 6 弃用 TS5101），`rewriteRelativeImportExtensions: false`（noEmit 时开此项报 TS2877），保留 `allowImportingTsExtensions: true`
 - `pnpm-workspace.yaml`：`sharp: true`（pnpm 把 build approval 从 .npmrc 移到此处）
@@ -210,7 +210,7 @@
 **验证状态**：
 
 - typecheck: 0 error（`npx tsc --noEmit`）
-- lint: 0 error/warning（`npx biome check .`，62 files）
+- lint: 0 error/warning（`vp check`，62 files）
 - dev server: `next dev -p 5173` Next 16.2.10 Turbopack Ready in 258ms，/、/settings、/projects/test 全 200
 - 无 any（用户明确要求）
 
@@ -225,7 +225,7 @@
 - `apps/api` 从 Nitro 迁移到 `@hono/node-server`（无 build-time bundle，dev 用 `tsx watch`）
 - 移除 `workflow-bundle-fixup.ts`、VM sandbox workaround、`steps/index.ts` 三文件边界
 - 源码内部 import 保持 `.ts` 后缀（tsx + Node type stripping 不做 `.js`→`.ts` fallback）
-- `pnpm typecheck` 11/11 通过 + `pnpm lint` clean + `pnpm test` 380/380 通过
+- `vp run -r typecheck` 11/11 通过 + `vp check` clean + `vp test run` 380/380 通过
 
 **中文化**：所有 prompt、instructions、skills 翻译为中文（2 个 SKILL.md + 6 个 agent.ts instructions + 5 个 workflow.ts prompt）。
 
@@ -325,7 +325,7 @@
 
 ### 技术栈定型
 
-- Node.js + pnpm（不用 Bun）+ TypeScript 6 + Biome 2.5 + Zod 4
+- Node.js + pnpm + TypeScript 6 + Vite+（Oxlint + Oxfmt + Vitest）+ Zod 4
 - Hono + `@hono/node-server`（无 build-time bundle，dev 用 `tsx watch`）+ AI SDK 7（`ai` 包，含 `ToolLoopAgent`）
 - 全 6 agent 用 `ToolLoopAgent`（`ai` 包直接导出，plain async workflow 函数）
 - Drizzle ORM + better-sqlite3（双 SQLite）+ HelixDB（本地 graph+vector 一体）
@@ -438,7 +438,7 @@
 - **bash-tool 无沙箱**：host child_process，靠 project name 隔离 working dir（用户明确决定不加 Docker）
 - **模型配置全走 Web API + 文件**：不用 .env 存模型配置（settings.json + CredentialStore）
 - **MCP server 是远程代码执行**：per-project 加载需信任（`mcp_trust` 表 + `fingerprintTools` 漂移检测）
-- **不要用 ESLint/Prettier**（用 Biome）/ **不要用 Bun**（用 Node.js + pnpm）/ **不要给 Explore 的 Python 加 Docker 沙箱**
+- **不要用 ESLint/Prettier/Biome**（用 Vite+ 的 Oxlint + Oxfmt）/ **不要用 Bun**（用 Node.js + pnpm）/ **不要给 Explore 的 Python 加 Docker 沙箱**
 
 ---
 
@@ -449,4 +449,4 @@
 - **HelixDB** v3.0.8 CLI（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969，dev instance in-memory；Docker `ghcr.io/helixdb/enterprise-dev` 也可用；`helix.toml` gitignored）
 - **Python** v3.9.6 系统 + `data/dataset/.venv`（numpy 2.5.1 + scipy 1.18.0）
 - **LLM 测试端点**：内部端点 + key（已脱敏） + 模型 `llab/Qwen3-Next-80B-A3B-Instruct`
-- **服务重启**：`pkill -f 'tsx.*server'; nohup pnpm dev > /tmp/opencode-api.log 2>&1 &`
+- **服务重启**：`pkill -f 'tsx.*server'; nohup vp dev > /tmp/opencode-api.log 2>&1 &`
