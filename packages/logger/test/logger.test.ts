@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vite-plus/test'
 import { consola, createLogger, type LoggerTag, loggersByTag, setLogLevel } from '../src/index.ts'
 
 beforeEach(() => {

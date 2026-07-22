@@ -126,7 +126,7 @@ export async function getSettings(projectName?: string): Promise<GlobalSettings 
     ...global,
     ...project,
     models: { ...global.models, ...project.models },
-    modelAliases: { ...(global.modelAliases ?? {}), ...(project.modelAliases ?? {}) },
+    modelAliases: { ...global.modelAliases, ...project.modelAliases },
     agents: mergedAgents,
     tournament: { ...global.tournament, ...project.tournament },
     concurrency: { ...global.concurrency, ...project.concurrency },

@@ -10,17 +10,17 @@ description: Paper download and full-text extraction protocol. Use when download
 ## 1. 下载流程
 
 ```
-search_papers(query, sources, limit) 
+search_papers(query, sources, limit)
   → 拿到 Paper[]（含 doi / arxiv_id / url）
   → 筛选 top-N（按 relevance + year + source 可靠性）
-  → download_with_fallback(paper) 
+  → download_with_fallback(paper)
      → OA-first fallback chain:
         1. 源站直链（arXiv PDF / PMC / bioRxiv）
         2. OpenAIRE / CORE / Europe PMC 发现
         3. Unpaywall DOI 解析（需 PAPER_SEARCH_MCP_UNPAYWALL_EMAIL）
         4. (可选) Sci-Hub —— 默认不启用
      → 返回 local_path 或 error
-  → read_paper(local_path) 
+  → read_paper(local_path)
      → 提取全文 markdown（含 sections / figures caption / references）
 ```
 
@@ -44,6 +44,7 @@ search_papers(query, sources, limit)
 ## 4. 引用提取
 
 `read_paper` 返回的 markdown 含 References 节。提取引用时：
+
 - 优先取 `[arXiv:ID]` 或 `doi:10.xxxx/...` 格式。
 - 若返回纯文本无结构化引用，用正则 `\b\d{4}\.\d{4,5}\b` 扫 arXiv ID。
 - 引用进入假设 rationale 时格式：`[author2024, arXiv:2401.12345]`。

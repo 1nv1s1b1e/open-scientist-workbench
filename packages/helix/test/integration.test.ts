@@ -1,5 +1,5 @@
 import { env } from '@open-scientist/config'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import {
   addCaptureInEdges,
   addHypothesis,

@@ -178,7 +178,12 @@ app/（页面）
 
 ```ts
 // 前端 import
-import { HypothesisSchema, EvalResultSchema, CritiqueSchema, PlanSchema } from '@open-scientist/schema'
+import {
+  HypothesisSchema,
+  EvalResultSchema,
+  CritiqueSchema,
+  PlanSchema,
+} from '@open-scientist/schema'
 ```
 
 前端不直接 import 后端 agent 代码，只通过 `InferUITools<typeof tools>` 推断 tool 类型（在后端导出一个纯类型，前端 import type）。
@@ -188,9 +193,7 @@ import { HypothesisSchema, EvalResultSchema, CritiqueSchema, PlanSchema } from '
 ```tsx
 // app/layout.tsx
 <QueryClientProvider client={queryClient}>
-  <AssistantRuntimeProvider runtime={runtime}>
-    {children}
-  </AssistantRuntimeProvider>
+  <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>
 </QueryClientProvider>
 ```
 

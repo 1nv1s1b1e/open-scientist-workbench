@@ -1,5 +1,5 @@
 import type { ToolSet } from 'ai'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 /**
  * Mock the storage layer (getTrust/setTrust) and the `ai` SDK drift helpers

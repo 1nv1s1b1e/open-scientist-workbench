@@ -8,7 +8,7 @@
 // 运行时经 `queries.call.<name>(params)` 生成 DynamicQueryRequest，
 // 再由 client.query<T>().dynamic(req).send() 发送。
 //
-// 编译：pnpm --filter @open-scientist/helix generate-queries
+// 编译：vp run --filter @open-scientist/helix generate-queries
 // （Helix CLI v3 已无 `queries compile` 子命令；改用运行时 queries.generate 写入 src/queries.json，
 //   本文件末尾的 void queries.generate(...) 在 import 时即触发，generate-queries 脚本只是 import 一次。）
 
@@ -587,16 +587,7 @@ const addCritiqueParams = defineParams({
 })
 
 const addCritique = registerWrite((p) => {
-  const entries: [
-    string,
-    (
-      | typeof p.hypoId
-      | typeof p.content
-      | typeof p.severity
-      | typeof p.mutationType
-      | typeof p.createdAt
-    ),
-  ][] = [
+  const entries: [string, typeof p.hypoId | typeof p.content | typeof p.mutationType][] = [
     ['hypothesisId', p.hypoId],
     ['content', p.content],
     ['severity', p.severity],
@@ -749,7 +740,7 @@ export const queries = defineQueries({
   },
 })
 
-// 编译：pnpm --filter @open-scientist/helix generate-queries
+// 编译：vp run --filter @open-scientist/helix generate-queries
 // （运行时 queries.generate 在模块 import 时即写入 src/queries.json；
 //   失败不阻塞 import —— 动态查询路径仍可用。）
 void queries.generate(new URL('./queries.json', import.meta.url).pathname).catch((err: unknown) => {

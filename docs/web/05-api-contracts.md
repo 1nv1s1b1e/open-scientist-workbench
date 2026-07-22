@@ -21,6 +21,7 @@
 探活，无需认证。
 
 **Response 200**：
+
 ```json
 {
   "status": "ok",
@@ -34,6 +35,7 @@
 ## 2. Settings
 
 Settings 是两层结构：
+
 - **Global settings**：`data/settings.json`（文件存储）
 - **Project settings**：`data/projects/<name>/settings.json`，override 全局（deep merge）
 
@@ -175,6 +177,7 @@ Deep merge patch 到当前 settings（嵌套对象递归合并，数组替换，
 设置某个 role 的 agent 配置（**整体替换**该 role 的 AgentConfig，body 经 `AgentConfigSchema.parse` 校验）。传空对象 `{}` 清除所有 override（agent 回退到硬编码默认）。
 
 **Request body**：`AgentConfig`（所有字段可选）
+
 ```ts
 {
   instructions?: string,
@@ -328,6 +331,7 @@ Project 是逻辑隔离单位，每个 project 有独立 SQLite + FS 产物目�
 获取单个 project。
 
 **Response 200**：
+
 ```ts
 {
   id: string,                    // projects 表 UUID
@@ -336,6 +340,7 @@ Project 是逻辑隔离单位，每个 project 有独立 SQLite + FS 产物目�
   config: unknown | null,        // configJson 解析后的对象
 }
 ```
+
 **Response 404**：`{ "error": "not_found", "message": "Project \"<name>\" not found" }`
 
 ### `DELETE /api/projects/:project`
@@ -368,6 +373,7 @@ Project 是逻辑隔离单位，每个 project 有独立 SQLite + FS 产物目�
 **Response 200**：`TestLlmResponse`
 
 成功：
+
 ```ts
 {
   ok: true,
@@ -383,6 +389,7 @@ Project 是逻辑隔离单位，每个 project 有独立 SQLite + FS 产物目�
 ```
 
 失败：
+
 ```ts
 {
   ok: false,
@@ -404,6 +411,7 @@ Project 是逻辑隔离单位，每个 project 有独立 SQLite + FS 产物目�
 启动一个 tournament run。
 
 **前置条件**：
+
 1. project 必须存在（`getProject(name)`，否则 404）
 2. model 配置可解析（见下）
 3. credential 可解析（见下）
@@ -418,12 +426,14 @@ Project 是逻辑隔离单位，每个 project 有独立 SQLite + FS 产物目�
 ```
 
 **model 解析逻辑**（`resolveModelArg`，从 `@open-scientist/config` 导入）：
+
 - 若传 `modelAlias`：从 `settings.modelAliases[alias]` 查找（找不到抛 `ModelAliasNotFoundError` → 400）
 - 否则：`settings.models.sisyphus ?? settings.models.default`（都无则 500）
 - 拿到 `ModelConfig = {model, thinkingLevel, credentialId}` 后，按 `cfg.credentialId` 查 credential（`credentialStore.get(credentialId)`，找不到 500）
 - 从 credential 拿 `provider` / `apiKey` / `baseURL?`，组装 `ModelArg = { provider, model, baseURL?, apiKey, thinkingLevel }`
 
 **per-agent config 解析逻辑**（`resolveAgentConfigs`）：
+
 - 启动 run 时，server 调 `resolveAgentConfigs(projectName, credentials)` 为全 6 个 tournament role（sisyphus/librarian/looker/explore/oracle/prometheus）各 resolve 一个 `AgentRuntimeConfig = { modelConfig: ModelArg, instructions?, skillDirectories?, mcpServers? }`
 - 每个 role 的 `modelConfig` = `resolveModelArg(role)`（fallback `default` → `sisyphus`）
 - `instructions` / `skillDirectories` / `mcpServers` 从 `settings.agents[role]` 读取（undefined → agent 工厂用硬编码默认）
@@ -431,6 +441,7 @@ Project 是逻辑隔离单位，每个 project 有独立 SQLite + FS 产物目�
 - 组装的 `agentConfigs: Record<string, AgentRuntimeConfig>` 传给 `tournamentWorkflow`，各子 workflow 按 role 取 `agentConfigs[role]` 作为 `agentConfig` 传入
 
 **Response 200**（SSE 流）：
+
 ```
 Headers:
   Content-Type: text/event-stream
@@ -450,9 +461,11 @@ Body 为 SSE 流，每个事件 `data: <UIMessageChunk JSON>\n\n`。详见下方
 断线重连，从指定 chunk index 续传。
 
 **Query**：
+
 - `startIndex`：整数，默认 0。**负数表示 tail-relative**（如 `-3` 读最后 3 个 chunk）。
 
 **Response 200**（SSE 流）：
+
 ```
 Headers:
   Content-Type: text/event-stream
@@ -467,6 +480,7 @@ Headers:
 查询 run 的持久化状态（读 project SQLite `runs` 表）。
 
 **Response 200**：
+
 ```ts
 {
   runId: string,                // 同 path param
@@ -478,6 +492,7 @@ Headers:
   bestF1: number,               // 最佳 F1
 }
 ```
+
 **Response 404**：`{ "error": "not_found", "message": "Run \"<runId>\" not found in project \"<name>\"" }`
 
 ### `POST /api/projects/:name/runs/:runId/stop`
@@ -500,6 +515,7 @@ Headers:
 **Response 200**（SSE 流）：同 `POST /api/projects/:name/runs`，header 带 `x-workflow-run-id`。
 
 **内部行为**：
+
 - 从 `credentialStore.list()` 找 `provider === 'openai'` 的第一条，再 `store.get(cred.id)` 拿 full credential（含 apiKey+baseURL）
 - 硬编码 modelConfig：`provider: 'openai'`, `model: 'llab/Qwen3-Next-80B-A3B-Instruct'`, `baseURL: <cred.baseURL>`, `apiKey: <cred.apiKey>`, `thinkingLevel: 'medium'`
 - `projectId: 'probe-project'`（无需预创建，workflow 内部按需建 workspace dir）
@@ -517,58 +533,58 @@ Headers:
 
 ### 生命周期事件
 
-| `type` | 字段 | 含义 | 前端处理 |
-|---|---|---|---|
-| `start` | `messageId?: string`, `messageMetadata?: unknown` | 消息开始 | 创建新 message bubble |
-| `start-step` | — | 一个 agent step 开始（librarian/oracle/explore 等） | 可渲染 step 边界 |
-| `finish-step` | — | agent step 结束 | 更新 step 状态 |
-| `finish` | `finishReason?: string`, `messageMetadata?: unknown` | 整个流结束 | 完成 message bubble |
-| `abort` | `reason?: string` | 流被中止 | 显示中止提示 |
-| `error` | `errorText: string` | 错误 | 显示错误 |
+| `type`        | 字段                                                 | 含义                                                | 前端处理              |
+| ------------- | ---------------------------------------------------- | --------------------------------------------------- | --------------------- |
+| `start`       | `messageId?: string`, `messageMetadata?: unknown`    | 消息开始                                            | 创建新 message bubble |
+| `start-step`  | —                                                    | 一个 agent step 开始（librarian/oracle/explore 等） | 可渲染 step 边界      |
+| `finish-step` | —                                                    | agent step 结束                                     | 更新 step 状态        |
+| `finish`      | `finishReason?: string`, `messageMetadata?: unknown` | 整个流结束                                          | 完成 message bubble   |
+| `abort`       | `reason?: string`                                    | 流被中止                                            | 显示中止提示          |
+| `error`       | `errorText: string`                                  | 错误                                                | 显示错误              |
 
 ### 文本事件
 
-| `type` | 字段 | 含义 |
-|---|---|---|
-| `text-start` | `id: string` | 一段文本开始 |
+| `type`       | 字段                          | 含义             |
+| ------------ | ----------------------------- | ---------------- |
+| `text-start` | `id: string`                  | 一段文本开始     |
 | `text-delta` | `id: string`, `delta: string` | 文本增量（追加） |
-| `text-end` | `id: string` | 一段文本结束 |
+| `text-end`   | `id: string`                  | 一段文本结束     |
 
 ### Reasoning（thinking）事件
 
-| `type` | 字段 | 含义 |
-|---|---|---|
-| `reasoning-start` | `id: string` | thinking 段开始 |
-| `reasoning-delta` | `id: string`, `delta: string` | thinking 增量 |
-| `reasoning-end` | `id: string` | thinking 段结束 |
+| `type`            | 字段                          | 含义            |
+| ----------------- | ----------------------------- | --------------- |
+| `reasoning-start` | `id: string`                  | thinking 段开始 |
+| `reasoning-delta` | `id: string`, `delta: string` | thinking 增量   |
+| `reasoning-end`   | `id: string`                  | thinking 段结束 |
 
 ### Tool 调用事件
 
-| `type` | 字段 | 含义 |
-|---|---|---|
-| `tool-input-start` | `toolCallId`, `toolName` | tool 调用开始 |
-| `tool-input-delta` | `toolCallId`, `inputTextDelta: string` | tool 参数增量（JSON 字符串碎片） |
-| `tool-input-available` | `toolCallId`, `toolName`, `input: unknown` | tool 参数完整可用 |
-| `tool-output-available` | `toolCallId`, `output: unknown` | tool 执行结果可用 |
-| `tool-input-error` | `toolCallId`, `toolName`, `input`, `errorText` | tool 参数错误 |
-| `tool-output-error` | `toolCallId`, `errorText` | tool 执行错误 |
+| `type`                  | 字段                                           | 含义                             |
+| ----------------------- | ---------------------------------------------- | -------------------------------- |
+| `tool-input-start`      | `toolCallId`, `toolName`                       | tool 调用开始                    |
+| `tool-input-delta`      | `toolCallId`, `inputTextDelta: string`         | tool 参数增量（JSON 字符串碎片） |
+| `tool-input-available`  | `toolCallId`, `toolName`, `input: unknown`     | tool 参数完整可用                |
+| `tool-output-available` | `toolCallId`, `output: unknown`                | tool 执行结果可用                |
+| `tool-input-error`      | `toolCallId`, `toolName`, `input`, `errorText` | tool 参数错误                    |
+| `tool-output-error`     | `toolCallId`, `errorText`                      | tool 执行错误                    |
 
 ### 审批事件（人机协同，当前未启用）
 
-| `type` | 字段 | 含义 |
-|---|---|---|
-| `tool-approval-request` | `approvalId`, `toolCallId`, `isAutomatic?`, `signature?` | 请求用户审批 |
-| `tool-approval-response` | `approvalId`, `approved: boolean`, `reason?` | 审批响应 |
+| `type`                   | 字段                                                     | 含义         |
+| ------------------------ | -------------------------------------------------------- | ------------ |
+| `tool-approval-request`  | `approvalId`, `toolCallId`, `isAutomatic?`, `signature?` | 请求用户审批 |
+| `tool-approval-response` | `approvalId`, `approved: boolean`, `reason?`             | 审批响应     |
 
 ### 其他事件
 
-| `type` | 字段 | 含义 |
-|---|---|---|
-| `source-url` | `sourceId`, `url`, `title?` | URL 来源 |
-| `source-document` | `sourceId`, `mediaType`, `title`, `filename?` | 文档来源 |
-| `file` | `url`, `mediaType` | 文件附件 |
-| `message-metadata` | `messageMetadata: unknown` | 消息元数据更新 |
-| `custom` | `kind: '<namespace>.<name>'` | 自定义事件 |
+| `type`             | 字段                                          | 含义           |
+| ------------------ | --------------------------------------------- | -------------- |
+| `source-url`       | `sourceId`, `url`, `title?`                   | URL 来源       |
+| `source-document`  | `sourceId`, `mediaType`, `title`, `filename?` | 文档来源       |
+| `file`             | `url`, `mediaType`                            | 文件附件       |
+| `message-metadata` | `messageMetadata: unknown`                    | 消息元数据更新 |
+| `custom`           | `kind: '<namespace>.<name>'`                  | 自定义事件     |
 
 ### 实测样例（librarian 首轮）
 
@@ -645,12 +661,12 @@ TournamentResult
 
 ### 子 agent 产出 schema（供前端理解 tool-output 内容）
 
-| Agent | Output Schema | 关键字段 |
-|---|---|---|
-| Librarian | `HypothesisPool` | `hypotheses: Hypothesis[]`, `rationale: string` |
-| Explore | `EvalResult` | `hypoId`, `f1`, `truePositives`, `falsePositives`, `falseNegatives`, `counterexamples`, `logs`, `executionMs` |
-| Oracle | `OracleOutput` | `critiques: Critique[]`, `mutations: Mutation[]`, `eliminatedIds: string[]`, `winningHypoId: string\|null` |
-| Prometheus | `PrometheusOutput` | `plan: Plan`, `mhdConfig: MhdConfig\|null`, `shouldContinue: boolean` |
+| Agent      | Output Schema      | 关键字段                                                                                                      |
+| ---------- | ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Librarian  | `HypothesisPool`   | `hypotheses: Hypothesis[]`, `rationale: string`                                                               |
+| Explore    | `EvalResult`       | `hypoId`, `f1`, `truePositives`, `falsePositives`, `falseNegatives`, `counterexamples`, `logs`, `executionMs` |
+| Oracle     | `OracleOutput`     | `critiques: Critique[]`, `mutations: Mutation[]`, `eliminatedIds: string[]`, `winningHypoId: string\|null`    |
+| Prometheus | `PrometheusOutput` | `plan: Plan`, `mhdConfig: MhdConfig\|null`, `shouldContinue: boolean`                                         |
 
 详见 `packages/schema/src/` 各文件。
 

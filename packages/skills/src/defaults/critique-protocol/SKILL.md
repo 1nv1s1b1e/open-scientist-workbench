@@ -22,6 +22,7 @@ description: Structured critique and mutation protocol for scientific hypotheses
 ## Critique 输出格式
 
 每条 critique 按 `CritiqueSchema`：
+
 - `severity`：`fatal`（致命，必须淘汰）/ `major`（重大，需变异修正）/ `minor`（轻微，可保留但记录）
 - `critiqueText`：具体问题（如"假设 A 在静态强剪切区失效，因 filter 未约束 velocity_field 下限"）
 - `rationale`：为何这是问题（引用 Explore 反例或物理守恒律）
@@ -42,6 +43,7 @@ severity 映射：5 维均分 ≤ 2 → fatal；任一维 = 2 且总分 ≤ 12 �
 ## 反例 Debug
 
 Oracle 收到 Explore 的 `counterexamples[]` 后：
+
 1. 按物理参数聚类反例（哪些反例共享同一失效模式）
 2. 对每类失效模式判断：是 filter 实现缺陷（→ 参数变异）还是机制本身缺陷（→ 结构变异/淘汰）
 3. 若同一条假设累计 3 轮变异仍无法解决同一类反例 → 标记 `fatal` 淘汰，避免循环变异

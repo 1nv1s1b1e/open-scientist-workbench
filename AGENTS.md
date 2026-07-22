@@ -5,20 +5,20 @@ Open-scientist：太阳物理多智能体假设生成与证据推理系统（赛
 ## 常用命令
 
 ```bash
-pnpm lint           # biome check .（lint + format）
-pnpm format         # biome format --write .
-pnpm typecheck      # 全 11 包 tsc --noEmit
-pnpm test           # vitest run（测试文件 *.test.ts）
-pnpm lint -- --write     # biome auto-fix
-pnpm dev            # 启动 apps/api（tsx watch src/server.ts）
-pnpm db:generate    # drizzle-kit generate（storage 包）
-pnpm db:migrate     # drizzle-kit migrate（storage 包）
+vp lint           # biome check .（lint + format）
+vp fmt --write         # biome format --write .
+vp run -r typecheck      # 全 11 包 tsc --noEmit
+vp test run           # vitest run（测试文件 *.test.ts）
+vp lint -- --write     # biome auto-fix
+vp dev            # 启动 apps/api（tsx watch src/server.ts）
+vp run --filter @open-scientist/storage db:generate    # drizzle-kit generate（storage 包）
+vp run --filter @open-scientist/storage db:migrate     # drizzle-kit migrate（storage 包）
 ```
 
-- 单包操作：`pnpm --filter @open-scientist/agents typecheck`
+- 单包操作：`vp run --filter @open-scientist/agents typecheck`
 - web 单独验证：`cd apps/web && npx tsc --noEmit && npx biome check .`
 - web dev server：`cd apps/web && npx next dev -p 5173`
-- 加依赖：在对应 package.json 加 + `pnpm install`（pnpm workspaces，node-linker=hoisted）
+- 加依赖：在对应 package.json 加 + `vp install`（pnpm workspaces，node-linker=hoisted）
 - 测试框架：`vitest`，测试文件放 `*.test.ts`
 
 ## 技术栈
@@ -53,10 +53,12 @@ packages/
 ## Agent 文件结构（ToolLoopAgent）
 
 每个 agent 在 `packages/agents/src/<role>/` 下两文件：
+
 - `agent.ts` — `createXxxAgent(...)` async 工厂：拉 tools/skills/config（Node 模块链），`new ToolLoopAgent({id, model, instructions, tools, output: Output.object({schema}), stopWhen: isStepCount(N), runtimeContext?})`。deps 接口含 `modelConfig: ModelArg` + `runtimeContext?: Record<string, unknown>`，构造时传 runtimeContext（ToolLoopAgent.stream 不接受 runtimeContext 调用选项）。
 - `workflow.ts` — **plain async 函数**（无 `'use workflow'`）：静态 import `./agent.ts`，`const result = await agent.stream({messages})`，调 `streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)` 把 fullStream 转 UIMessageChunk 推给 SSE，`return result.output`。input 接口含 `emitChunk?: EmitChunk`。
 
 部分 role 还有：
+
 - `logic.ts` — 纯函数（sisyphus/oracle/prometheus）
 - `snapshot.ts` — `snapshotStep` + `RoundSnapshot`（sisyphus 独有）
 
@@ -105,6 +107,7 @@ packages/
 ## 数据层
 
 双 SQLite：
+
 - `data/global.sqlite` — credentials / settings / mcp_trust / mcp_tool_baselines
 - `data/projects/<name>/db.sqlite` — projects / runs / messages / steering_messages / hypotheses / evidence / critiques / mutations / plans / logs
 
@@ -112,14 +115,14 @@ FS 产物在 `data/projects/<name>/` 下：runs/ / rounds/ / hypotheses/ / evide
 
 ## 6 Agent 角色
 
-| 角色 | 职责 | Output Schema |
-|---|---|---|
-| Sisyphus | 编排器，tournamentWorkflow 纯确定性控制流调 5 子 agent | TournamentResult |
-| Librarian | RAG 检索（HelixDB）+ 初始假设生成 | HypothesisPool |
-| Multimodal Looker | FITS 图像 + MP4 视频对齐 | EvidenceAlignment |
-| Explore | bash-tool 跑 Python 在 1.75M 快照搜索，算 F1 | EvalResult |
-| Oracle | Co-Scientist 批判 + 突变 + 反例 debug | Critique + Mutation |
-| Prometheus | 多轮规划，末轮输出 MHD .cfg + 观测建议书 | Plan + MhdConfig |
+| 角色              | 职责                                                   | Output Schema       |
+| ----------------- | ------------------------------------------------------ | ------------------- |
+| Sisyphus          | 编排器，tournamentWorkflow 纯确定性控制流调 5 子 agent | TournamentResult    |
+| Librarian         | RAG 检索（HelixDB）+ 初始假设生成                      | HypothesisPool      |
+| Multimodal Looker | FITS 图像 + MP4 视频对齐                               | EvidenceAlignment   |
+| Explore           | bash-tool 跑 Python 在 1.75M 快照搜索，算 F1           | EvalResult          |
+| Oracle            | Co-Scientist 批判 + 突变 + 反例 debug                  | Critique + Mutation |
+| Prometheus        | 多轮规划，末轮输出 MHD .cfg + 观测建议书               | Plan + MhdConfig    |
 
 编排：`tournamentWorkflow` 是 plain async 函数，直接 await 5 个子 workflow——顺序用 `await xxxWorkflow(input)`（共享 run ID），并行 Explore 用 `Promise.all(hypotheses.map(h => exploreWorkflow(input)))`。SSE 流通过 `emitChunk` 回调从子 workflow 逐层冒泡到 `RunRegistry`（`apps/api/src/lib/run-stream.ts`）。`run.result` 完成后调 `completeRun` 更新 SQLite status（`completed`/`failed`）+ bestF1 + currentRound。
 
@@ -133,20 +136,21 @@ Round 1: Librarian 生成 → Loop(Explore 并行评估 → Oracle 批判突变 
 
 ## Step Limits + Fallback
 
-| Agent | Step Limit | 说明 |
-|---|---|---|
-| Librarian | 50 | 2 假设生成 + HelixDB 检索 |
-| Explore | 120 | eval 迭代调参（含 bash tool） |
-| Oracle | 60 | 五维评审 + 突变 |
-| Prometheus | 60 | 多轮规划 + MHD cfg + 观测建议书 |
-| Sisyphus | 120 | 预留 free-form steering |
-| Looker | 50 | FITS/MP4 对齐 |
+| Agent      | Step Limit | 说明                            |
+| ---------- | ---------- | ------------------------------- |
+| Librarian  | 50         | 2 假设生成 + HelixDB 检索       |
+| Explore    | 120        | eval 迭代调参（含 bash tool）   |
+| Oracle     | 60         | 五维评审 + 突变                 |
+| Prometheus | 60         | 多轮规划 + MHD cfg + 观测建议书 |
+| Sisyphus   | 120        | 预留 free-form steering         |
+| Looker     | 50         | FITS/MP4 对齐                   |
 
 终止条件：`stopWhen: [isStepCount(N), hasToolCall('submit_result')]`（任一满足即停）。所有 5 个 workflow 传 fallback 给 `extractSubmitResult`，达到 step limit 未提交结果时返回 fallback 而非 throw。
 
 ## MHD 配置 + 观测建议书
 
 Prometheus 末轮调 `mhdConfigTool` 时传入 `observationProposal` markdown 作为输入参数。Tool 写两个文件：
+
 - `<runId>.cfg` — MHD 仿真配置（12+ 物理参数）
 - `<runId>_proposal.md` — 卫星观测建议书
 

@@ -87,7 +87,10 @@ export const BashToolUI = makeAssistantToolUI({
     >
       {args?.command && (
         <pre className="rounded-sm bg-[var(--color-surface)] p-2 text-[11px] text-emerald-300">
-          $ {String(args.command).slice(0, 200)}
+          ${' '}
+          {typeof args.command === 'string'
+            ? args.command
+            : JSON.stringify(args.command).slice(0, 200)}
         </pre>
       )}
       <JsonPreview label="output" data={result} />
@@ -107,7 +110,8 @@ export const HelixQueryToolUI = makeAssistantToolUI({
     >
       {args?.query && (
         <p className="font-mono text-[11px] text-muted">
-          query: {String(args.query).slice(0, 120)}
+          query:{' '}
+          {typeof args.query === 'string' ? args.query : JSON.stringify(args.query).slice(0, 120)}
         </p>
       )}
       <JsonPreview label="results" data={result} />
@@ -156,7 +160,9 @@ export const LoadSkillToolUI = makeAssistantToolUI({
       status={status.type}
     >
       {args?.skill && (
-        <p className="font-mono text-[11px] text-muted">skill: {String(args.skill)}</p>
+        <p className="font-mono text-[11px] text-muted">
+          skill: {typeof args.skill === 'string' ? args.skill : JSON.stringify(args.skill)}
+        </p>
       )}
       <JsonPreview label="output" data={result} />
     </ToolShell>

@@ -10,6 +10,7 @@ description: Generate MHD simulation configuration files and satellite observati
 ## MHD 仿真背景
 
 理想 MHD 方程组（5 个）：连续性、动量、能量、感应方程、约束 ∇·B=0。仿真需要：
+
 - 边界条件（boundary）：日冕底部光球层通常用 velocity 驱动 + 磁场 fixed-flux
 - 刹始条件（init）：磁场位形（势场 / 无作用力场 / 实测外推）、密度温度剖面
 - 网格参数（grid）：分辨率 + 求解器配置
@@ -48,6 +49,7 @@ fields = ["rho", "v", "B", "p", "T"]
 ```
 
 参数取值原则：
+
 - 从获胜假设的 filter 阈值反推物理参数范围（如 filter 用 magnetic_strength > 30G，则 init 的 B 场幅值要覆盖该阈值）
 - 加热率必须与假设预言的能量耗散率量级一致（安静太阳 ~300 W/m²，活动区更高）
 - Lundquist 数 >> 1 才能进入快重联 regime；过低则 nanoflare 假设无法验证
@@ -64,18 +66,19 @@ fields = ["rho", "v", "B", "p", "T"]
 
 ## 推荐卫星与仪器
 
-| 卫星/仪器 | 适用预言 | 关键能力 |
-|---|---|---|
-| SDO/AIA | EUV 环拓扑、温度分布、波动 | 7 波段 EUV 成像，12s cadence，全日面 |
-| SDO/HMI | 磁场演化、磁通量、剪切角 | 矢量磁场，45s cadence |
-| Hinode/XRT | 高温日冕（>2 MK）成分 | X 射线成像，高温敏感 |
-| IRIS | 过渡区光谱、非热线宽 | Mg II/C II/Si IV 光谱，高光谱分辨 |
-| Parker Solar Probe | 原位 Alfvén 波、磁场扰动 | 近日（~10 R_sun）原位测量 |
-| Solar Orbiter | 高分辨成像 + 原位耦合 | 偏轴高分辨 EUV，多视角 |
+| 卫星/仪器          | 适用预言                   | 关键能力                             |
+| ------------------ | -------------------------- | ------------------------------------ |
+| SDO/AIA            | EUV 环拓扑、温度分布、波动 | 7 波段 EUV 成像，12s cadence，全日面 |
+| SDO/HMI            | 磁场演化、磁通量、剪切角   | 矢量磁场，45s cadence                |
+| Hinode/XRT         | 高温日冕（>2 MK）成分      | X 射线成像，高温敏感                 |
+| IRIS               | 过渡区光谱、非热线宽       | Mg II/C II/Si IV 光谱，高光谱分辨    |
+| Parker Solar Probe | 原位 Alfvén 波、磁场扰动   | 近日（~10 R_sun）原位测量            |
+| Solar Orbiter      | 高分辨成像 + 原位耦合      | 偏轴高分辨 EUV，多视角               |
 
 ## 末轮触发条件
 
 Prometheus 仅在以下情况生成 `mhdConfig`（否则 `mhdConfig: null`，`shouldContinue: true`）：
+
 - 收敛检测通过：领先假设 F1 ≥ `TARGET_F1` 且与第二名差距 ≥ 0.1
 - 或达到 `MAX_ROUNDS`（强制收尾）
 - 且领先假设已通过人机协同 review（`needsApproval` 通过）
@@ -85,6 +88,7 @@ Prometheus 仅在以下情况生成 `mhdConfig`（否则 `mhdConfig: null`，`sh
 ## 输出
 
 按 `PrometheusOutputSchema`：
+
 - 非末轮：`plan`（含调整后的搜索范围）+ `mhdConfig: null` + `shouldContinue: true`
 - 末轮：`plan`（最终轮标记）+ `mhdConfig`（含 cfgPath + proposalPath + summary）+ `shouldContinue: false`
 

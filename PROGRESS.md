@@ -10,6 +10,7 @@
 ### Phase 1-3 已完成（2026-07-19）
 
 #### `b5ea7b9` — chore: init project scaffold
+
 - pnpm workspaces monorepo（10 包：apps/api + packages/{schema,config,storage,helix,logger,tools,skills,mcp,agents}）
 - Biome 2.5.4（lint + format，单工具，无 ESLint/Prettier）
 - Vitest 2.1.9（测试框架）
@@ -18,6 +19,7 @@
 - `.npmrc node-linker=hoisted` + `pnpm-workspace.yaml allowBuilds`（better-sqlite3 + esbuild 原生编译）
 
 #### `5ea582d` — feat(infra): schema + config + storage + helix + logger
+
 - **schema**：7 文件 Zod schemas（hypothesis/eval/critique/plan/evidence/api/runtime-context + settings），零业务依赖
 - **config**：env（4 变量 zod 校验）+ paths（12 路径函数）+ constants + settings（两层 merge：global `data/settings.json` + per-project override）+ models（provider 抽象 + `getAgentModel` + `createModelFromConfig`，OpenAI 优先，支持 baseURL）
 - **storage**：双 SQLite（`data/global.sqlite` 全局 credentials/settings/mcp_trust/mcp_tool_baselines + per-project `db.sqlite` 10 表）+ Drizzle ORM + WAL + 8 repo + `CredentialStore`（AES-256-CBC 加密 + 串行 modifyLock 防 OAuth 双刷）+ 自动 migration
@@ -25,18 +27,22 @@
 - **logger**：consola wrapper + 11 个预定义 tag + `setLogLevel`
 
 #### `5e9d779` — feat(tools): tools + skills + mcp
+
 - **tools**：14 个 helix tool（9 read + 5 write，精确 inputSchema/outputSchema）+ `createBashToolForHypothesis`（bash-tool 封装，per-hypo workspace 隔离）+ `mhdConfigTool`（写 .cfg 文件）+ `fitsAlignTool`（informative stub，throw 带安装指引）
 - **skills**：`Sandbox` 接口 + `createNodeSandbox` + `discoverSkills`（frontmatter 解析，first-name-wins）+ `buildSkillsPrompt` + `createLoadSkillTool` + 5 个默认 SKILL.md（solar-physics-rag / fits-snapshot-search / critique-protocol / mhd-config-gen / hypothesis-mutation）+ `DEFAULT_SKILLS_DIR` 导出
 - **mcp**：3 个自定义 MCP server（helix 13 tools / fits 3 tools / sandbox 4 tools）+ `getMcpTools`（client 缓存）+ `resolveTransport`（http/sse/stdio）+ `checkMcpTrust`（`fingerprintTools` + `detectToolDrift` 漂移检测）+ `trustServer` + stdio bin 入口 + 8 个集成测试（InMemoryTransport）
 
 #### `bf11770` — feat(agents-api): 6 WorkflowAgent + Hono API
+
 - **agents**：6 个 WorkflowAgent 占位（sisyphus/librarian/looker/explore/oracle/prometheus），每个三文件边界（agent.ts / workflow.ts `'use workflow'` / steps/index.ts `'use step'`），instructions + Output.object({schema}) + isStepCount(N) + ToolSet 类型
 - **apps/api**：Hono app + Nitro（`modules: ['workflow/nitro']`）+ REST routes（health/settings/credentials/projects/test-llm）+ 全局 onError/notFound
 
 #### `d61bad4` — feat(phase-2): helix queries + tools + skills + mcp servers
+
 - Phase 2 工具层完整实现（详见 `5e9d779` + `5ea582d` 的 helix 部分）
 
 #### `1730d03` — fix(helix): DSL nWhere+hasLabel bug + read unwrap + id projection
+
 - **根因**：HelixDB v3.0.8 上 `nWhere(EqExpr).hasLabel()` 对 i64 属性参数失效（返回 0 节点），必须用 `nWithLabelWhere(label, EqExpr)` 把 label 和属性谓词合并进 NWhere 的 And
 - 修了 `getSnapshot` / `getHypothesesByRound` / `getConceptByName`
 - read 返回值容器结构 unwrap（`readBatch().varAs().returning()` 返回 `{properties: T[]}` 而非 `T[]`）
@@ -47,6 +53,7 @@
 - 新增 `integration.test.ts`（10 tests，需 HelixDB 在线）
 
 #### `9fad5ed` — feat(phase-3): implement 6 WorkflowAgent + tournament orchestration
+
 - 6 个 agent 全部实现（agent.ts async 工厂 + workflow.ts `'use workflow'` + steps/index.ts）
 - **Librarian**：searchPapers/searchHypotheses/addHypothesis + bash/readFile/writeFile（`__librarian__` workspace）+ loadSkill（solar-physics-rag）
 - **Explore**：bash/readFile/writeFile（per-hypo workspace `<project>/workspace/<hypoId>/`）+ loadSkill（fits-snapshot-search）
@@ -59,6 +66,7 @@
 - **重构**：`sisyphus/logic.ts` 提取 6 个纯函数（updateHypothesesWithEval/computeLeader/shouldStopByTarget/applyOraclePruning/buildConvergenceEntry/shouldStopByPrometheus）；`oracle/logic.ts` 提取 buildHypothesesBlock/buildEvalSummaryBlock；`apps/api/src/lib/deep-merge.ts` 提取 deepMerge
 
 #### `9e84fd7` — test: expand coverage 28→341
+
 - 3 subagent 并行补测试，28 files / 341 tests
 - **schema**（53 tests）：全 schema happy + throw 路径
 - **config**（47 tests）：env + paths + settings-schema + constants
@@ -71,6 +79,7 @@
 - **apps/api**（30 tests）：routes（health/settings/projects/credentials/404）+ test-llm + settings-merge
 
 #### `0159ff2` — refactor: remove module-level state for testable isolation
+
 - **根因**：测试因跨包 mock/resetModules 太多。分析后确认是源码模块级状态问题，不是测试位置
 - `config/env.ts`：`export const env = loadEnv()` 模块级冻结 → Proxy 对象，每次属性访问动态调 `loadEnv()` 读 process.env。public API 零改动
 - `storage/global-db.ts`：单例 → `Map<path, GlobalDb>` 按路径缓存；新增 `closeGlobalDb(path?)`
@@ -78,14 +87,17 @@
 - 7 个测试文件去掉 `vi.resetModules()` + 动态 import + `StorageModule` 接口，-185 行样板，改回静态 import + `process.env.BASE_DIR` + `afterEach closeXxxDb`
 
 #### `af59d97` — refactor(test-llm): 依赖注入替代 vi.doMock('ai')
+
 - `test-llm.ts`：加 module-level `generateTextFn` + `setGenerateTextFn` setter，route 内改调 `generateTextFn`（生产默认用真实 `generateText`）
 - `test-llm.test.ts`：去掉 `loadAppWithMockedAi` + `vi.resetModules` + `vi.doMock('ai')`，改用 `setGenerateTextFn(vi.fn(...))`
 - 整个项目**零 `vi.doMock`**，只剩 `vi.mock` 用于 mcp trust/registry/servers（mock 外部 MCP SDK，合理）
 
 #### `484e832` — docs: PROGRESS.md 落盘
+
 - 232 行进度文档：Changelog（10 commits）+ 当前状态 + Phase 4-5 计划 + Web 层选型 + 关键约束 + 环境信息
 
 #### Phase 4 未 commit 改动（2026-07-20）
+
 - **modelConfig 重构**：`model: LanguageModel` → `modelConfig: ModelArg`（6 agent + workflow + 测试）。`ModelArg` 统一定义在 `packages/config/src/models.ts`，`createModelFromConfig(config: ModelArg)` 单参数。
 - **Credential endpoint bundle 改造**：credential = `{id, provider, apiKey, baseURL?}` 完整 endpoint（移除「按 provider 唯一」+「不存 baseURL」约束），upsert by id（支持同 provider 不同 baseURL+apiKey）。`ModelConfig = {model, thinkingLevel, credentialId}`（移除 provider+baseURL，用 credentialId 引用 credential）。`resolveModelArg(projectName, credentials, {role?, modelAlias?})` 从 credential 拿 provider/apiKey/baseURL 组装 ModelArg。settings 加 modelAliases（GET/PUT/DELETE `/api/settings/model-aliases/:alias`）。
 - **workflow VM 修复（方案 A）**：6 个 workflow.ts 改纯 VM-safe 薄壳（只 `import { runXxxStep } from './steps/index.ts'` + `return await runXxxStep(input)`），agent 构造 + `agent.stream` 全移进 `steps/index.ts` 的 `'use step'` 函数（host runtime 跑，`await import('../agent.ts')` 正常）。sisyphus/workflow.ts 的 6 个变量 specifier 动态 import 改静态 import（子 workflow.ts 已 VM-safe）+ MAX_ROUNDS/TARGET_F1 内联到 logic.ts。
@@ -97,6 +109,7 @@
 - **dev-probe 端到端验证**：POST `/api/dev-probe/stream-test` 全链路打通——SSE 流出 `start` → `start-step` → 多轮 `text-delta` + `tool-input-available` + `tool-output-available`（loadSkill/searchPapers/searchHypotheses/bash）→ `finish-step` → `finish`。未抛任何 VM / module 错误。
 
 #### Phase 4 续（2026-07-20，per-agent config + VM bundle fix + 真实模型 E2E）
+
 - **Per-agent config（模型/mcp/skills/sys prompt 全可配）**：
   - **schema**：`McpServerConfigSchema`（{name, transport:'http'|'stdio'|'sse', url?, command?, args?, headers?}）+ `AgentConfigSchema`（{instructions?, skillDirectories?, mcpServers?}）+ `GlobalSettingsSchema.agents: Record<string, AgentConfigSchema>.default({})`。
   - **config**：`DEFAULT_GLOBAL` 加 `agents: {}`；`getSettings` merge `agents: {...global.agents, ...project.agents}`（per-key）；新增 `AgentRuntimeConfig = {modelConfig: ModelArg, instructions?, skillDirectories?, mcpServers?}` + `resolveAgentConfigs(projectName, credentials): Promise<Record<AgentRole, AgentRuntimeConfig>>`（6 个 tournament role 各自 resolveModelArg + 非模型 override）。
@@ -126,6 +139,7 @@
 基于 `docs/web/` 5 spec 文件 + 后端 routes 实际实现（subagent 彻底读了 `apps/api/src/routes/` 全部文件，提取 8 端点组精确签名）。**不 mock，全部真实 fetch**。
 
 **基础配置**（`apps/web/`）：
+
 - Next.js 16.2.10 (Turbopack) + React 19.2.7 + TypeScript 6.0.3（devDep，为兼容 Next 15/16 的 `verify-typescript-setup` 检查 `typescript/lib/typescript.js`——TS 7 重构了包结构无此文件）
 - Tailwind v4.3.3 stable + Biome（与 monorepo 一致）
 - `next.config.ts`：`images: { unoptimized: true }`（适配 Electron + 避免 sharp native build）+ rewrites 代理 `/api/*` → `${API_BASE_URL}/api/*`（同源避免 CORS，后端无 CORS middleware）
@@ -134,6 +148,7 @@
 - workspace 依赖 `@open-scientist/schema`（复用 Zod schemas + 类型）
 
 **lib 层**（`apps/web/src/lib/`）：
+
 - `api/client.ts`：完整 REST 客户端覆盖全部 8 端点组。`ApiError` class。`startRun` 返回 `{response, runId}`（从 `x-workflow-run-id` header 提取 SDK run id）。`reconnectRunStream` 返回 `{response, tailIndex}`（`x-workflow-stream-tail-index` header 仅 startIndex<0 时存在）。聚合导出 `api` 对象。
 - `types/sse-events.ts`：UIMessageChunk 完整类型（生命周期/文本/reasoning/tool/审批/其他）+ CustomEventKind 常量
 - `types/visualizers.ts`：ConceptNode/Link/NetData, AgentNodeData/MessageEdgeData/OrchestratorData, HypothesisTreeNode/EvolutionTreeData
@@ -144,6 +159,7 @@
 - `transport/workflow-transport.ts`：TRANSPORT_CONFIG 常量（initialStartIndex:-50, maxConsecutiveErrors:5, throttle:50）
 
 **components 层**（`apps/web/src/components/`）：
+
 - `ui/`：13 个 shadcn/ui 原语（button/card/input/textarea/label/badge/dialog/tabs/scroll-area/select/tooltip/popover/spinner），全部 xAI 风格化（胶囊按钮、hairline 边、无阴影、mono uppercase label）
 - `site/`：banner（eyebrow + display 标题 + radial glow + accent-line-top）、eyebrow（Geist Mono uppercase tracked）、header（sticky 顶栏 + 旋转 corona logo）、footer
 - `visualizers/`：concept-net-3d（react-force-graph-3d + three Sprite 标签 + ResizeObserver）、orchestrator-hall（@xyflow/react v12 6 agent 环形 + AgentNodeCard）、evolution-tree（d3-hierarchy + SVG + Motion 动画）、debate-theater（Motion 重写 + 中心脉冲 + SVG 连线粒子）
@@ -154,6 +170,7 @@
 - `chat/chat-panel.tsx`：assistant-ui Thread + WorkflowRuntimeProvider + ChatToolbar
 
 **assistant-ui 集成**（`apps/web/src/lib/chat/` + `apps/web/src/components/assistant-ui/`）：
+
 - 选 **ExternalStoreRuntime** 模式（非 useChatRuntime + 自定义 transport），原因：请求形状不匹配（useChat 发 {messages}，我们发 {seed, modelAlias}）、重连协议不匹配（assistant-ui 用 GET /resume/:streamId，我们用 GET /runs/:id/stream?startIndex=N）、单轮约束、useRunStream 已实现重连
 - `to-thread-messages.ts`：RunMessage[] → ThreadMessageLike[] 转换（text→text, reasoning→reasoning, tool→tool-call, custom→data-{kind}）。用 `Extract<NonNullable<ThreadMessageLike['content']>, { type: string }>` 提取 part 类型，无 any
 - `workflow-runtime.tsx`：`useExternalStoreRuntime<ThreadMessageLike>` + `convertMessage: (msg) => msg` 恒等函数（ThreadMessageLike 不 extends ThreadMessage 需提供 convertMessage）。onNew 从 AppendMessage.content 找 textPart → setSeed + start。onCancel → stop。isSendDisabled: hasStarted && !isRunning（单轮）。不提供 onEdit/onReload → 编辑/重生成按钮不渲染。ResetContext 暴露 reset
@@ -165,28 +182,33 @@
 - `components/assistant-ui/tool-fallback.tsx`：未注册工具兜底
 
 **app 路由**（`apps/web/src/app/`）：
+
 - `layout.tsx`：next/font 加载 Inter + Geist + Geist Mono（变量注入 globals.css）+ 全局 fixed grain overlay + Providers（QueryClientProvider + TooltipProvider）
 - `page.tsx`（首页）：Banner hero「日冕加热之谜」+ 6 agent 卡片网格 + ProjectList + Mystery band（旋转 corona disk conic-gradient）
 - `settings/page.tsx`：dusk Banner + 3 Tabs（全局设置/凭证/LLM 测试）
 - `projects/[project]/page.tsx`：核心工作区。slim banner + 居中 pill 视图切换（协作大厅/知识图谱/演化树/辩论剧场）+ aside 侧边栏（AnimatePresence 滑入滑出）+ ChatPanel
 
 **xAI 风格美化**（参考 DESIGN.md）：
+
 - `globals.css`：xAI 色板（canvas #0a0a0a / surface #191919 / hairline #212327 / sunset #ff7a17 / dusk #7c3aed）、display 字号阶梯 token、pill-outline/pill-primary/eyebrow-mono/card-xai utilities、radial-sunset/dusk 径向辉光、bg-grid blueprint 网格、SVG fractal-noise 颗粒、shimmer/scanline/spin-slow/pulse-glow 动画、Radix 组件深色覆盖、React Flow 深色覆盖（`.react-flow__controls` / `.react-flow__minimap` / `.react-flow__attribution`）
 - UI 原语全部 xAI 化：button rounded-full 胶囊 + outline 默认、card 8px 直角 + hairline 边 + 无阴影、input h-11 surface-soft 底、badge mono uppercase 11px、tabs pill 容器
 - 所有表单/列表/卡片重写：FieldGroup helper、SectionShell（eyebrow+title+desc+action header）、3 列卡片网格、deterministic accent 色、Motion 入场动画
 - 后续用户反馈：移除卡片彩色 header 条（project-list 顶部色条、credential-list 顶部色条、首页 agent 卡片 hover 底部彩色 hairline）、移除 OrchestratorHall 的 Controls + MiniMap
 
 **依赖升级 + 循环依赖修复**（commit 277d256）：
+
 - web package.json 全量重写到最新版（除 TS 6.0.3）
 - monorepo 10 包版本统一到最新稳定版
 - 循环依赖根因：`config → storage`（纯类型 import CredentialStore）+ `storage → config`（运行时 import getBaseDir 等）。解法：Credential/CredentialRecord/CredentialStore 三接口移到 schema 包（零依赖），config 改 import 源 + 去掉 storage 依赖，storage/credential.ts 改为 re-export（向后兼容）
 - 删除未用的 gsap + @gsap/react（0 引用）
 
 **Electron 适配文档**（`docs/web/06-electron-adaptation.md`）：
+
 - 结论：可行，改动量小（~3.5 天）。方案 A（Next standalone + 本地 Nitro）推荐
 - 需改：next.config（API_BASE_URL env）、apps/api（PORT+BASE_DIR）、新增 apps/electron/（main process spawn api + BrowserWindow）。关 `images.unoptimized`（已关）。better-sqlite3 需 electron-rebuild。SSE 在 Electron Chromium 正常。无需改 lib/api/client、hooks/useRunStream、packages/**
 
 **验证状态**：
+
 - typecheck: 0 error（`npx tsc --noEmit`）
 - lint: 0 error/warning（`npx biome check .`，62 files）
 - dev server: `next dev -p 5173` Next 16.2.10 Turbopack Ready in 258ms，/、/settings、/projects/test 全 200
@@ -197,6 +219,7 @@
 #### Phase 7: ToolLoopAgent 迁移 + 真实 LLM 端到端跑通（2026-07-22，未 commit）
 
 **从 WorkflowAgent/Nitro 迁移到 ToolLoopAgent/@hono/node-server**：
+
 - 移除 `@ai-sdk/workflow` / `workflow` DevKit / Nitro 全部依赖
 - 全 6 agent 改用 `ToolLoopAgent`（从 `ai` 包直接导出），`agent.ts` 构造工厂 + `workflow.ts` plain async 函数（无 `'use workflow'`）
 - `apps/api` 从 Nitro 迁移到 `@hono/node-server`（无 build-time bundle，dev 用 `tsx watch`）
@@ -211,28 +234,33 @@
 **HelixDB BigInt bug 修复**：`packages/helix/src/client.ts` 新增 `safeBigInt(v)` — 对非数字字符串 hypoId 返回 null 而非 throw，避免 Oracle agent 调 `getCritiquesByHypothesis` 时 LLM 传字符串 hypoId 导致崩溃。
 
 **extractSubmitResult fallback 修复**：
+
 - `packages/agents/src/shared/tool-output.ts` — `extractSubmitResult(staticToolCalls, toolName?, fallback?)` 新增 `fallback?: T` 参数。未找到 submit_result 时：有 fallback 返回 fallback（不 throw），无 fallback 才 throw。
 - 所有 5 个 workflow（librarian/explore/oracle/prometheus/looker）都传 fallback 值，确保 agent 达到 step limit 未调用 submit_result 时不崩溃，tournament 正常继续。
 
 **Step limits 增大**：
-| Agent | 旧 | 新 |
-|---|---|---|
-| Librarian | 30 | 50 |
-| Oracle | 40 | 60 |
-| Prometheus | 30 | 60 |
-| Explore | 50→80 | 120 |
-| Sisyphus | 80 | 120 |
-| Looker | 30 | 50 |
+
+| Agent      | 旧    | 新  |
+| ---------- | ----- | --- |
+| Librarian  | 30    | 50  |
+| Oracle     | 40    | 60  |
+| Prometheus | 30    | 60  |
+| Explore    | 50→80 | 120 |
+| Sisyphus   | 80    | 120 |
+| Looker     | 30    | 50  |
 
 **Prometheus observationProposal 写文件**：
+
 - **问题**：Prometheus submit_result 需嵌入完整 observationProposal markdown（数千字），导致 `AI_InvalidToolInputError: JSON parsing failed`。
 - **修复**：`mhdConfigTool` inputSchema 新增 `observationProposal: z.string()` 参数，execute 写两个文件（`<runId>.cfg` + `<runId>_proposal.md`），返回 `{runId, cfgPath, proposalPath, summary}`。Schema 全链路 `observationProposal` → `proposalPath`（`packages/schema` + `packages/storage` + `packages/tools` + `packages/agents` + `packages/skills` + 3 个测试文件）。
 
 **DB status 修复**：
+
 - **问题**：`apps/api/src/routes/runs.ts` POST handler 在 `startRun()` 后调 `createRun(status='running')` 但没有在 `run.result` 完成后更新 SQLite status，导致 DB 卡在 "running"。
 - **修复**：`packages/storage/src/repo/run.ts` 新增 `completeRun(projectName, runId, status: 'completed'|'failed', metrics?: {bestF1?, currentRound?})` 函数。`runs.ts` POST handler 加 `void run.result.then(output => completeRun(..., 'completed', {bestF1, currentRound}), () => completeRun(..., 'failed'))`。
 
 **真实 LLM 端到端验证（3 轮 tournament 完整跑通）**：
+
 - Run `run-1784716873175-53f30def`：3 轮 tournament evolution，463 条消息，`status=completed, round=3, bestF1=0.8794`
 - Librarian 生成 2 条假设（AC turbulent braiding + DC nanoflare shear）
 - Explore 评估 F1=0.8799 (TP=12215, FP=1891, FN=1444)，中文反例分析
@@ -250,6 +278,7 @@
 ## 当前状态（2026-07-22）
 
 ### 代码
+
 - **11 包**：apps/api + apps/web + packages/{schema,config,storage,helix,logger,tools,skills,mcp,agents}
 - **380 tests pass**（无 flaky）
 - **typecheck** 11 包全通过
@@ -260,6 +289,7 @@
 ### Phase 4 进展（未 commit）
 
 #### 已完成
+
 - **modelConfig 重构**：6 个 agent 的 `model: LanguageModel` → `modelConfig: ModelArg`（plain object，可序列化）。`ModelArg = {provider, model, baseURL?, apiKey, thinkingLevel}` 统一定义在 `packages/config/src/models.ts`，workflow args 走 structured clone，不能传 `LanguageModel`（有方法的对象）。workflow 内部调 `createModelFromConfig(modelConfig)` 重建。apiKey 只用于构造 HTTP 请求头，不进 LLM prompt context。
 - **Credential endpoint bundle 改造**：credential = `{id, provider, apiKey, baseURL?}` 完整 endpoint（一个 credential = 一个完整 LLM endpoint），upsert by id（不再按 provider 唯一，支持同 provider 不同 baseURL+apiKey）。`ModelConfig = {model, thinkingLevel, credentialId}`（移除 provider+baseURL，用 credentialId 引用 credential）。`resolveModelArg(projectName, credentials, {role?, modelAlias?})` 从 credential 拿 provider/apiKey/baseURL 组装 ModelArg。settings 加 **model alias 功能**（`settings.modelAliases` record + GET/PUT/DELETE `/api/settings/model-aliases/:alias`）。
 - **workflow VM 修复（方案 A）**：`@workflow/core` VM sandbox 用裸 `runInContext`，无 `importModuleDynamically` callback → workflow body 内任何 `await import()` 必抛 `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`。解法：6 个 workflow.ts 改纯 VM-safe 薄壳（只静态 import `./steps/index.ts` 的 `runXxxStep` + `return await runXxxStep(input)`），agent 构造 + `agent.stream` 全移进 `steps/index.ts` 的 `'use step'` 函数（step 在 host Node runtime 跑，`import()` 走 host ESM loader 正常）。sisyphus/workflow.ts 的 6 个变量 specifier 动态 import 改静态 import（子 workflow.ts 已 VM-safe）+ MAX_ROUNDS/TARGET_F1 内联到 logic.ts（不 import config，避免 VM 污染）。
@@ -275,6 +305,7 @@
 - **真实模型 E2E**：tournament run SSE 流跑通，Librarian 带 `[TEST-OVERRIDE]` 自定义指令实际生效（精确调 addHypothesis 2 次遵循 "exactly 2 hypotheses" 指令）。遗留 `AI_NoObjectGeneratedError`（Qwen3-Next-80B 结构化 JSON 输出兼容问题，非本次改动引入）。
 
 #### 已验证
+
 - **3 轮 tournament 端到端跑通**：seed → Librarian(2假设) → Explore(F1=0.8799) → Oracle(批判+突变) → Prometheus(MHD cfg + 观测建议书) × 3 rounds，`status=completed, bestF1=0.8794`
 - **Prometheus submit_result 无 JSON parse 错误**：observationProposal 写文件方案生效
 - **DB status 正确更新**：`completeRun` 在 `run.result` resolve 后写入 SQLite
@@ -284,6 +315,7 @@
 - **绝对路径注入**：Explore agent 使用 `getDatasetDir()` 绝对路径，不再 `No such file or directory`
 
 ### 已验证（Phase 1-4 遗留）
+
 - HelixDB 本地启动（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969）
 - Python venv（`data/dataset/.venv`，numpy 2.5.1 + scipy 1.18.0）
 - API 端到端：health/settings/credentials/test-llm 全 200
@@ -292,6 +324,7 @@
 - **per-agent config curl E2E**：14 个 agent CRUD checks 全过
 
 ### 技术栈定型
+
 - Node.js + pnpm（不用 Bun）+ TypeScript 6 + Biome 2.5 + Zod 4
 - Hono + `@hono/node-server`（无 build-time bundle，dev 用 `tsx watch`）+ AI SDK 7（`ai` 包，含 `ToolLoopAgent`）
 - 全 6 agent 用 `ToolLoopAgent`（`ai` 包直接导出，plain async workflow 函数）
@@ -310,24 +343,24 @@
 
 **待实现端点**（已有：health/settings/credentials/projects/test-llm）：
 
-| 优先级 | Method | Path | 功能 | 依赖 |
-|---|---|---|---|---|
-| P0 | POST | `/projects/:name/runs` | 启动 Tournament run（seed hypothesis） | `tournamentWorkflow` + `start()` + run repo |
-| P0 | GET | `/projects/:name/runs/:runId/stream` | SSE 流（workflow 事件 + tool-approval-request） | `Run.readable` + `createUIMessageStreamResponse` |
-| P0 | GET | `/projects/:name/runs/:runId` | 获取 run 状态 | run repo |
-| P0 | POST | `/projects/:name/runs/:runId/stop` | 终止 run | `Run.cancel()` |
-| P1 | POST | `/projects/:name/runs/:runId/approve` | 提交人机协同审批 | `needsApproval` tool + workflow resume |
-| P1 | POST | `/projects/:name/runs/:runId/steer` | 注入 steering/follow-up 消息 | message queue + turn boundary |
-| P2 | GET | `/projects/:name/runs/:runId/hypotheses` | 列出假设池 | hypothesis repo |
-| P2 | GET | `/projects/:name/hypotheses/:hypoId` | 获取假设详情 | hypothesis repo |
-| P2 | GET | `/projects/:name/hypotheses/:hypoId/evidence` | 获取证据 | evidence repo |
-| P2 | GET | `/projects/:name/runs/:runId/rounds/:n` | 获取某轮快照 | FS `rounds/<n>/snapshot.json` |
-| P2 | GET | `/projects/:name/runs/:runId/mhd` | 下载 MHD cfg | FS `mhd/<runId>.cfg` |
-| P2 | GET | `/projects/:name/runs` | 列出 runs | run repo |
-| P3 | POST | `/credentials/:id/refresh` | 手动触发 OAuth refresh | CredentialStore |
-| P3 | PUT | `/projects/:name/mcp/config` | 更新 MCP server 配置 | mcp registry |
-| P3 | GET/POST | `/projects/:name/mcp/trust` | MCP server trust 管理 | mcp trust repo |
-| P3 | PUT | `/projects/:name/skills` | 上传/更新 project 级 skills | FS skills/ |
+| 优先级 | Method   | Path                                          | 功能                                            | 依赖                                             |
+| ------ | -------- | --------------------------------------------- | ----------------------------------------------- | ------------------------------------------------ |
+| P0     | POST     | `/projects/:name/runs`                        | 启动 Tournament run（seed hypothesis）          | `tournamentWorkflow` + `start()` + run repo      |
+| P0     | GET      | `/projects/:name/runs/:runId/stream`          | SSE 流（workflow 事件 + tool-approval-request） | `Run.readable` + `createUIMessageStreamResponse` |
+| P0     | GET      | `/projects/:name/runs/:runId`                 | 获取 run 状态                                   | run repo                                         |
+| P0     | POST     | `/projects/:name/runs/:runId/stop`            | 终止 run                                        | `Run.cancel()`                                   |
+| P1     | POST     | `/projects/:name/runs/:runId/approve`         | 提交人机协同审批                                | `needsApproval` tool + workflow resume           |
+| P1     | POST     | `/projects/:name/runs/:runId/steer`           | 注入 steering/follow-up 消息                    | message queue + turn boundary                    |
+| P2     | GET      | `/projects/:name/runs/:runId/hypotheses`      | 列出假设池                                      | hypothesis repo                                  |
+| P2     | GET      | `/projects/:name/hypotheses/:hypoId`          | 获取假设详情                                    | hypothesis repo                                  |
+| P2     | GET      | `/projects/:name/hypotheses/:hypoId/evidence` | 获取证据                                        | evidence repo                                    |
+| P2     | GET      | `/projects/:name/runs/:runId/rounds/:n`       | 获取某轮快照                                    | FS `rounds/<n>/snapshot.json`                    |
+| P2     | GET      | `/projects/:name/runs/:runId/mhd`             | 下载 MHD cfg                                    | FS `mhd/<runId>.cfg`                             |
+| P2     | GET      | `/projects/:name/runs`                        | 列出 runs                                       | run repo                                         |
+| P3     | POST     | `/credentials/:id/refresh`                    | 手动触发 OAuth refresh                          | CredentialStore                                  |
+| P3     | PUT      | `/projects/:name/mcp/config`                  | 更新 MCP server 配置                            | mcp registry                                     |
+| P3     | GET/POST | `/projects/:name/mcp/trust`                   | MCP server trust 管理                           | mcp trust repo                                   |
+| P3     | PUT      | `/projects/:name/skills`                      | 上传/更新 project 级 skills                     | FS skills/                                       |
 
 **关键实现点**：
 
@@ -367,6 +400,7 @@
    - CredentialStore 串行 modifyLock 防 OAuth 双刷
 
 **Phase 4 验收标准**：
+
 - `POST /runs` 启动 → `GET /runs/:id/stream` 收到 SSE 事件流 → run 完成 → 返回 `TournamentResult`
 - `POST /runs/:id/stop` 能终止 run，SSE 流发 error 后关闭
 - 断线重连：刷新页面后 `GET /runs/:id/stream?startIndex=-50` 续传
@@ -383,6 +417,7 @@
 ### Web 层（已完成，见上 Phase 6）
 
 **选型已定并落地**（`docs/web/` 6 文件 + `apps/web/`）：
+
 - Next.js 16 (Turbopack) + React 19 + TypeScript 6 + Tailwind v4
 - assistant-ui 0.14.27（ExternalStoreRuntime 模式）+ ThreadPrimitive 自建 Thread
 - Radix Primitives + shadcn/ui + Motion 12（主力动画）

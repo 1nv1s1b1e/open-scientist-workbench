@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 import type { McpServerConfig } from '../src/registry.ts'
 
 // Mock StdioClientTransport so the stdio branch doesn't spawn a real process.

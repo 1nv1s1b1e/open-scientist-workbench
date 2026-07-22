@@ -2,28 +2,28 @@
   "name": "@open-scientist/mcp",
   "version": "0.0.0",
   "private": true,
+  "bin": {
+    "open-scientist-fits-mcp": "./bin/fits-server.ts",
+    "open-scientist-helix-mcp": "./bin/helix-server.ts",
+    "open-scientist-sandbox-mcp": "./bin/sandbox-server.ts"
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
-  },
-  "bin": {
-    "open-scientist-helix-mcp": "./bin/helix-server.ts",
-    "open-scientist-fits-mcp": "./bin/fits-server.ts",
-    "open-scientist-sandbox-mcp": "./bin/sandbox-server.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc"
   },
   "dependencies": {
-    "@open-scientist/config": "workspace:*",
-    "@open-scientist/helix": "workspace:*",
-    "@open-scientist/schema": "workspace:*",
-    "@open-scientist/storage": "workspace:*",
     "@ai-sdk/mcp": "^2.0.15",
     "@ai-sdk/provider": "^4.0.3",
     "@ai-sdk/provider-utils": "^5.0.11",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@open-scientist/config": "workspace:*",
+    "@open-scientist/helix": "workspace:*",
+    "@open-scientist/schema": "workspace:*",
+    "@open-scientist/storage": "workspace:*",
     "ai": "^7.0.31",
     "zod": "^4.4.3"
   },

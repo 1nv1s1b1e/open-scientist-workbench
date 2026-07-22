@@ -2,13 +2,13 @@
 
 本目录包含 open-scientist Web 前端的完整技术规格。Web 端是 SPEC.md（后端 + Agent）的前端对应物，分文件组织如下：
 
-| 文件 | 内容 |
-|---|---|
-| [01-tech-stack.md](./01-tech-stack.md) | 技术选型表、依赖清单、版本要求 |
-| [02-architecture.md](./02-architecture.md) | Transport 流、6 agent 输出渲染、人机协同 approval、消息持久化、断线重连 |
-| [03-visualizers.md](./03-visualizers.md) | 三个 WOW 效果可视化设计（3D 知识图谱、辩论剧场、演化树）+ Sisyphus 协作大厅 |
-| [04-project-structure.md](./04-project-structure.md) | `apps/web/` 目录结构、模块划分 |
-| [05-api-contracts.md](./05-api-contracts.md) | 前后端 API 契约（transport 端点、steering、approval、history） |
+| 文件                                                 | 内容                                                                        |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| [01-tech-stack.md](./01-tech-stack.md)               | 技术选型表、依赖清单、版本要求                                              |
+| [02-architecture.md](./02-architecture.md)           | Transport 流、6 agent 输出渲染、人机协同 approval、消息持久化、断线重连     |
+| [03-visualizers.md](./03-visualizers.md)             | 三个 WOW 效果可视化设计（3D 知识图谱、辩论剧场、演化树）+ Sisyphus 协作大厅 |
+| [04-project-structure.md](./04-project-structure.md) | `apps/web/` 目录结构、模块划分                                              |
+| [05-api-contracts.md](./05-api-contracts.md)         | 前后端 API 契约（transport 端点、steering、approval、history）              |
 
 ## 核心定位
 
@@ -27,20 +27,20 @@
 
 ## 选型速查
 
-| 层 | 选型 |
-|---|---|
-| 框架 | Next.js 16（App Router） |
-| React | 19 |
-| Chat UI 框架 | assistant-ui |
-| Transport | WorkflowChatTransport |
-| 行为层 | Radix Primitives |
-| 业务 UI 层 | shadcn/ui |
-| 视觉效果层 | React Bits |
-| 动画主力 | Motion |
-| 动画辅助 | GSAP |
-| 3D 图谱 | react-force-graph-3d |
-| 演化树 | d3-hierarchy + 自写 SVG |
-| 协作大厅 | React Flow |
-| 状态 | Zustand |
-| 数据获取 | TanStack Query |
-| 样式 | Tailwind v4 |
+| 层           | 选型                     |
+| ------------ | ------------------------ |
+| 框架         | Next.js 16（App Router） |
+| React        | 19                       |
+| Chat UI 框架 | assistant-ui             |
+| Transport    | WorkflowChatTransport    |
+| 行为层       | Radix Primitives         |
+| 业务 UI 层   | shadcn/ui                |
+| 视觉效果层   | React Bits               |
+| 动画主力     | Motion                   |
+| 动画辅助     | GSAP                     |
+| 3D 图谱      | react-force-graph-3d     |
+| 演化树       | d3-hierarchy + 自写 SVG  |
+| 协作大厅     | React Flow               |
+| 状态         | Zustand                  |
+| 数据获取     | TanStack Query           |
+| 样式         | Tailwind v4              |

@@ -1,5 +1,5 @@
 import type { ModelArg } from '@open-scientist/config'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 /**
  * Runs-route unit tests.
@@ -103,10 +103,7 @@ vi.mock('@open-scientist/config', async () => {
       // modelConfig field, and the per-role entries are forwarded into
       // agentConfigs.
       const roles = ['sisyphus', 'librarian', 'looker', 'explore', 'oracle', 'prometheus'] as const
-      const configs = {} as Record<
-        string,
-        typeof resolveModelArgResult & { modelConfig: typeof resolveModelArgResult }
-      >
+      const configs = {} as Record<string, { modelConfig: typeof resolveModelArgResult }>
       for (const role of roles) {
         configs[role] = { modelConfig: resolveModelArgResult }
       }
@@ -150,8 +147,6 @@ function makeFakeRun(runId: string, tailIndex = 0) {
 }
 
 // ─── App import (after mocks are in place) ───────────────────────────────────
-// biome-ignore lint/correctness/noUnusedImports: re-import for type only
-import type { Hono } from 'hono'
 import app from '../src/index'
 
 // ─── Test setup ──────────────────────────────────────────────────────────────

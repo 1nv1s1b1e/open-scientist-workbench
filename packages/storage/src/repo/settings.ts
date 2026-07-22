@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { getGlobalDb } from '../global-db.ts'
 import { settings } from '../schema/global.ts'
 
-export async function getSetting(scope: string, name: string): Promise<unknown | null> {
+export async function getSetting(scope: string, name: string): Promise<unknown> {
   const { db } = await getGlobalDb()
   const rows = db
     .select()

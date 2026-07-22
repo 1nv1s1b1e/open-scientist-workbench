@@ -78,7 +78,11 @@ async function startApi() {
 }
 
 function createWindow() {
-  const win = new BrowserWindow({ width: 1440, height: 900, webPreferences: { contextIsolation: true } })
+  const win = new BrowserWindow({
+    width: 1440,
+    height: 900,
+    webPreferences: { contextIsolation: true },
+  })
   // dev: load Next.js dev server
   // prod: load built Next.js
   win.loadURL(`http://localhost:${process.env.WEB_PORT ?? 5173}`)
@@ -99,11 +103,11 @@ app.on('before-quit', () => apiProcess?.kill())
 
 ### 5. 原生模块处理
 
-| 模块 | 位置 | 处理 |
-|---|---|---|
+| 模块             | 位置     | 处理                                                                          |
+| ---------------- | -------- | ----------------------------------------------------------------------------- |
 | `better-sqlite3` | apps/api | electron-builder 自动 rebuild（`electron-rebuild`），或用 `@electron/rebuild` |
-| `sharp` | apps/web | 关闭 `images.unoptimized` 后可移除，或 `pnpm approve-builds` 允许 |
-| `three` | apps/web | 纯 JS，无原生依赖，无需处理 |
+| `sharp`          | apps/web | 关闭 `images.unoptimized` 后可移除，或 `pnpm approve-builds` 允许             |
+| `three`          | apps/web | 纯 JS，无原生依赖，无需处理                                                   |
 
 ## electron-builder 配置示例
 
@@ -151,14 +155,14 @@ electron-builder
 
 ## 工作量估算
 
-| 任务 | 工作量 |
-|---|---|
-| 新建 `apps/electron/`（main + preload + builder 配置） | 1 天 |
-| `apps/api` nitro build 适配（确保单文件 entry） | 0.5 天 |
-| `apps/web` standalone build + images.unoptimized | 0.5 天 |
-| 进程管理 + 健康检查 + 端口分配 | 0.5 天 |
-| electron-builder 配置 + 多平台测试 | 1 天 |
-| **合计** | **~3.5 天** |
+| 任务                                                   | 工作量      |
+| ------------------------------------------------------ | ----------- |
+| 新建 `apps/electron/`（main + preload + builder 配置） | 1 天        |
+| `apps/api` nitro build 适配（确保单文件 entry）        | 0.5 天      |
+| `apps/web` standalone build + images.unoptimized       | 0.5 天      |
+| 进程管理 + 健康检查 + 端口分配                         | 0.5 天      |
+| electron-builder 配置 + 多平台测试                     | 1 天        |
+| **合计**                                               | **~3.5 天** |
 
 ## 不需要改动的部分
 

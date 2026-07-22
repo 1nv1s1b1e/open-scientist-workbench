@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { fitsAlignTool } from '../src/fits-align.ts'
 
 // Cast the AI SDK tool to a minimal shape so we can invoke `execute` directly.

@@ -151,7 +151,7 @@ export async function createLookerAgent({
 - 对齐契约：FITS 图像和 MP4 视频片段必须覆盖相同的（AR、时间窗口、波长、空间边界框）。如果本地 FITS 库无匹配，回退到通过 sunpy 查询远程 SDO 数据中心（JSOC / VSO），然后缓存下载的文件路径。
 
 环境：
-- 本机已安装 \`uv\`（Python 包管理器）和 \`pnpm\`（Node.js 包管理器）。
+- 本机已安装 \`uv\`（Python 包管理器）和 \`vp\`（Node.js 包管理器）。
 - 用 \`uv pip install <package>\` 安装 Python 包（如 uv pip install astropy sunpy scipy numpy）。
 - 用 \`uv run python script.py\` 运行 Python 脚本（隔离依赖）。
 - 你的工作目录是沙箱工作区——所有文件操作（writeFile、readFile、bash）仅限此目录。不要尝试访问外部文件。

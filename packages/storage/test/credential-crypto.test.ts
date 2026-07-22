@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { decrypt, encrypt } from '../src/repo/credential.ts'
 
 describe('credential crypto (encrypt/decrypt)', () => {

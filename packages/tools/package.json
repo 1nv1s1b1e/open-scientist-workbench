@@ -11,13 +11,13 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@open-scientist/logger": "workspace:*",
-    "@open-scientist/schema": "workspace:*",
-    "@open-scientist/config": "workspace:*",
-    "@open-scientist/helix": "workspace:*",
-    "ai": "^7.0.31",
     "@ai-sdk/provider": "^4.0.3",
     "@ai-sdk/provider-utils": "^5.0.11",
+    "@open-scientist/config": "workspace:*",
+    "@open-scientist/helix": "workspace:*",
+    "@open-scientist/logger": "workspace:*",
+    "@open-scientist/schema": "workspace:*",
+    "ai": "^7.0.31",
     "zod": "^4.4.3"
   },
   "devDependencies": {

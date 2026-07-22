@@ -87,7 +87,7 @@ settings.put('/api/settings/model-aliases/:alias', async (c) => {
   const body = await c.req.json()
   const cfg = ModelConfigSchema.parse(body) as ModelAlias
   const current = await getGlobalSettings()
-  const modelAliases = { ...(current.modelAliases ?? {}), [alias]: cfg }
+  const modelAliases = { ...current.modelAliases, [alias]: cfg }
   await setGlobalSettings({ ...current, modelAliases })
   return c.json(cfg)
 })
@@ -95,7 +95,7 @@ settings.put('/api/settings/model-aliases/:alias', async (c) => {
 settings.delete('/api/settings/model-aliases/:alias', async (c) => {
   const alias = c.req.param('alias')
   const current = await getGlobalSettings()
-  const modelAliases = { ...(current.modelAliases ?? {}) }
+  const modelAliases = { ...current.modelAliases }
   delete modelAliases[alias]
   await setGlobalSettings({ ...current, modelAliases })
   return c.json({ ok: true })
@@ -135,7 +135,7 @@ settings.put('/api/settings/agents/:role', async (c) => {
   const body = await c.req.json()
   const cfg = AgentConfigSchema.parse(body) as AgentConfig
   const current = await getGlobalSettings()
-  const agents = { ...(current.agents ?? {}), [role]: cfg }
+  const agents = { ...current.agents, [role]: cfg }
   await setGlobalSettings({ ...current, agents })
   return c.json(cfg)
 })
@@ -143,7 +143,7 @@ settings.put('/api/settings/agents/:role', async (c) => {
 settings.delete('/api/settings/agents/:role', async (c) => {
   const role = c.req.param('role')
   const current = await getGlobalSettings()
-  const agents = { ...(current.agents ?? {}) }
+  const agents = { ...current.agents }
   delete agents[role]
   await setGlobalSettings({ ...current, agents })
   return c.json({ ok: true })

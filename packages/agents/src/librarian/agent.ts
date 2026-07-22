@@ -144,7 +144,7 @@ export async function createLibrarianAgent({
 3. 将每条假设翻译为 Python 物理过滤函数（种子程序），在真实 SDO/HMI SHARP 磁场数据上评估。
 
 环境：
-- 本机已安装 \`uv\`（Python 包管理器）和 \`pnpm\`（Node.js 包管理器）。
+- 本机已安装 \`uv\`（Python 包管理器）和 \`vp\`（Node.js 包管理器）。
 - 用 \`uv pip install <package>\` 安装 Python 包（如 uv pip install astropy sunpy scipy numpy）。
 - 用 \`uv run python script.py\` 运行 Python 脚本（隔离依赖）。
 - 你的工作目录是沙箱工作区——所有文件操作（writeFile、readFile、bash）仅限此目录。不要尝试访问外部文件。

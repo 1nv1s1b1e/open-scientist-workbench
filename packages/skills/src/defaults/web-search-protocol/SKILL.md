@@ -9,12 +9,12 @@ description: Web search protocol for scientific agents. Use when querying the we
 
 ## 1. 何时用哪个工具
 
-| 需求 | 工具 | 说明 |
-|---|---|---|
-| 学术论文（arXiv/PubMed/Semantic Scholar/...） | `paper-search-mcp` 的 `search_papers` | 多源去重，返回标准化 Paper dict（title/authors/abstract/doi/year/source） |
-| 下载论文 PDF / 读全文 | `paper-search-mcp` 的 `download_with_fallback` + `read_paper` | OA-first fallback chain（arXiv → PMC → Unpaywall → ...） |
-| 非学术 web（新闻/教程/数据集主页/观测计划） | `duckduckgo-mcp` 的 `search` | 免费匿名，无 API key |
-| 抓取网页正文 | `duckduckgo-mcp` 的 `fetch_content` | 输入 URL，返回清洗后 markdown |
+| 需求                                          | 工具                                                          | 说明                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 学术论文（arXiv/PubMed/Semantic Scholar/...） | `paper-search-mcp` 的 `search_papers`                         | 多源去重，返回标准化 Paper dict（title/authors/abstract/doi/year/source） |
+| 下载论文 PDF / 读全文                         | `paper-search-mcp` 的 `download_with_fallback` + `read_paper` | OA-first fallback chain（arXiv → PMC → Unpaywall → ...）                  |
+| 非学术 web（新闻/教程/数据集主页/观测计划）   | `duckduckgo-mcp` 的 `search`                                  | 免费匿名，无 API key                                                      |
+| 抓取网页正文                                  | `duckduckgo-mcp` 的 `fetch_content`                           | 输入 URL，返回清洗后 markdown                                             |
 
 **优先级**：学术问题先 `search_papers`（结构化 + 去重），`duckduckgo-mcp` 仅补非学术信息。
 

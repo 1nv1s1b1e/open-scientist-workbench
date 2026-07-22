@@ -40,23 +40,25 @@ const toolkit = defineToolkit({
   // 每个 agent 的输出对应一个 tool，用 per-tool renderer 渲染
   call_librarian: {
     type: 'backend',
-    render: ({ args, result }) => <LibrarianCard hypotheses={result?.hypotheses} />
+    render: ({ args, result }) => <LibrarianCard hypotheses={result?.hypotheses} />,
   },
   call_looker: {
     type: 'backend',
-    render: ({ args, result }) => <LookerCard evidence={result?.evidence} />
+    render: ({ args, result }) => <LookerCard evidence={result?.evidence} />,
   },
   call_explore: {
     type: 'backend',
-    render: ({ args, result }) => <ExploreCard eval={result?.evalResult} />
+    render: ({ args, result }) => <ExploreCard eval={result?.evalResult} />,
   },
   call_oracle: {
     type: 'backend',
-    render: ({ args, result }) => <OracleCard critique={result?.critique} mutation={result?.mutation} />
+    render: ({ args, result }) => (
+      <OracleCard critique={result?.critique} mutation={result?.mutation} />
+    ),
   },
   call_prometheus: {
     type: 'backend',
-    render: ({ args, result }) => <PrometheusCard plan={result?.plan} />
+    render: ({ args, result }) => <PrometheusCard plan={result?.plan} />,
   },
   // 人机协同审批节点
   review_leading_hypothesis: {
@@ -68,24 +70,24 @@ const toolkit = defineToolkit({
         onApprove={(reason) => respondToApproval({ approved: true, reason })}
         onReject={(reason) => respondToApproval({ approved: false, reason })}
       />
-    )
-  }
+    ),
+  },
 })
 ```
 
 ### Part 类型映射
 
-| part.type | 来源 agent | 渲染组件 |
-|---|---|---|
-| `tool-invocation`（call_librarian） | Librarian | LibrarianCard（候选假设列表） |
-| `tool-invocation`（call_looker） | Looker | LookerCard（FITS/视频凭证预览） |
-| `tool-invocation`（call_explore） | Explore | ExploreCard（F1 分数 + 反例日志） |
-| `tool-invocation`（call_oracle） | Oracle | OracleCard（批判 + 突变 diff） |
-| `tool-invocation`（call_prometheus） | Prometheus | PrometheusCard（规划参数 + 算力分配） |
-| `tool-invocation`（review_leading_hypothesis） | Sisyphus（人机协同） | ApprovalCard（approve/reject） |
-| `text` | 任意 agent 的文本输出 | 标准 message bubble |
-| `reasoning` | 任意 agent 的 thinking | 可折叠的 reasoning panel |
-| `dynamic`（自定义 data part） | 系统事件 | RoundTransition / ConvergenceBadge 等 |
+| part.type                                      | 来源 agent             | 渲染组件                              |
+| ---------------------------------------------- | ---------------------- | ------------------------------------- |
+| `tool-invocation`（call_librarian）            | Librarian              | LibrarianCard（候选假设列表）         |
+| `tool-invocation`（call_looker）               | Looker                 | LookerCard（FITS/视频凭证预览）       |
+| `tool-invocation`（call_explore）              | Explore                | ExploreCard（F1 分数 + 反例日志）     |
+| `tool-invocation`（call_oracle）               | Oracle                 | OracleCard（批判 + 突变 diff）        |
+| `tool-invocation`（call_prometheus）           | Prometheus             | PrometheusCard（规划参数 + 算力分配） |
+| `tool-invocation`（review_leading_hypothesis） | Sisyphus（人机协同）   | ApprovalCard（approve/reject）        |
+| `text`                                         | 任意 agent 的文本输出  | 标准 message bubble                   |
+| `reasoning`                                    | 任意 agent 的 thinking | 可折叠的 reasoning panel              |
+| `dynamic`（自定义 data part）                  | 系统事件               | RoundTransition / ConvergenceBadge 等 |
 
 ## 人机协同 Approval
 
@@ -252,7 +254,7 @@ Tournament 长循环流式 chunk 多，`useChat` 配 `throttle: 50`（50ms）节
 ```tsx
 useChat({
   transport,
-  throttle: 50,  // 仅 React
+  throttle: 50, // 仅 React
 })
 ```
 

@@ -7,8 +7,7 @@
     "dev": "next dev -p 5173",
     "build": "next build",
     "start": "next start -p 5173",
-    "typecheck": "tsc --noEmit",
-    "lint": "biome check ."
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/provider": "^4.0.3",
@@ -42,7 +41,6 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.4",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^26.1.1",

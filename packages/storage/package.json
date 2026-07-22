@@ -15,9 +15,9 @@
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts"
   },
   "dependencies": {
-    "@open-scientist/schema": "workspace:*",
     "@open-scientist/config": "workspace:*",
     "@open-scientist/logger": "workspace:*",
+    "@open-scientist/schema": "workspace:*",
     "better-sqlite3": "^12.11.1",
     "drizzle-orm": "^0.45.2"
   },

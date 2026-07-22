@@ -2,7 +2,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolResultSchema, ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { createFitsServer, createHelixServer, createSandboxServer } from '../src/index.ts'
 
 // ------------------------------------------------------------
@@ -27,6 +27,11 @@ async function callTool(client: Client, name: string, args: Record<string, unkno
     { method: 'tools/call', params: { name, arguments: args } },
     CallToolResultSchema,
   )
+}
+
+function textContent(res: Awaited<ReturnType<typeof callTool>>): string {
+  const item = res.content?.[0]
+  return item && item.type === 'text' ? item.text : ''
 }
 
 // ------------------------------------------------------------
@@ -79,7 +84,7 @@ describe('helix-mcp server', () => {
     expect(res.isError).toBeFalsy()
     expect(res.content).toHaveLength(1)
     expect(res.content?.[0]?.type).toBe('text')
-    const parsed = JSON.parse(res.content?.[0]?.text ?? '{}')
+    const parsed = JSON.parse(textContent(res) || '{}')
     expect(parsed).toEqual([{ id: 'p1', title: 'nano-flares' }])
     await client.close()
   })
@@ -96,7 +101,7 @@ describe('helix-mcp server', () => {
       createdAt: '2026-01-01T00:00:00Z',
     })
     expect(res.isError).toBe(true)
-    expect(res.content?.[0]?.text).toContain('must be one of')
+    expect(textContent(res)).toContain('must be one of')
     await client.close()
   })
 })
@@ -124,7 +129,7 @@ describe('fits-mcp server', () => {
       wavelength: '171A',
     })
     expect(res.isError).toBeFalsy()
-    const parsed = JSON.parse(res.content?.[0]?.text ?? '{}')
+    const parsed = JSON.parse(textContent(res) || '{}')
     expect(parsed.stub).toBe(true)
     expect(parsed.message).toContain('astropy')
     await client.close()
@@ -156,7 +161,7 @@ describe('sandbox-mcp server', () => {
     const client = await connect(server)
     const res = await callTool(client, 'bash', { command: 'echo hello-mcp' })
     expect(res.isError).toBeFalsy()
-    const parsed = JSON.parse(res.content?.[0]?.text ?? '{}')
+    const parsed = JSON.parse(textContent(res) || '{}')
     expect(parsed.exitCode).toBe(0)
     expect(parsed.stdout.trim()).toBe('hello-mcp')
     await client.close()
@@ -170,7 +175,7 @@ describe('sandbox-mcp server', () => {
     expect(writeRes.isError).toBeFalsy()
     const readRes = await callTool(client, 'read_file', { path })
     expect(readRes.isError).toBeFalsy()
-    const parsed = JSON.parse(readRes.content?.[0]?.text ?? '{}')
+    const parsed = JSON.parse(textContent(readRes) || '{}')
     expect(parsed.content).toBe('hi')
     await client.close()
   })

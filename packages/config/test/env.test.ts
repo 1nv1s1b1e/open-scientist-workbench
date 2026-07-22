@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
 import { type Env, EnvSchema, loadEnv } from '../src/env.ts'
 
 // Snapshot of process.env keys we mutate so we can restore them.

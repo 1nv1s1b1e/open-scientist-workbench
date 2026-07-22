@@ -11,9 +11,9 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.16",
     "@open-scientist/logger": "workspace:*",
     "@open-scientist/schema": "workspace:*",
-    "@ai-sdk/openai": "^4.0.16",
     "ai": "^7.0.31",
     "zod": "^4.4.3"
   },

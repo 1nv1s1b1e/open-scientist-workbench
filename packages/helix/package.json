@@ -9,14 +9,14 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "test": "vitest run",
-    "generate-queries": "bun -e \"import('./src/queries.ts').then(() => console.log('queries.json generated')).catch(e => { console.error(e); process.exit(1) })\""
+    "test": "vp test run",
+    "generate-queries": "vp exec tsx src/queries.ts"
   },
   "dependencies": {
     "@helix-db/helix-db": "^2.0.5",
+    "@open-scientist/config": "workspace:*",
     "@open-scientist/logger": "workspace:*",
     "@open-scientist/schema": "workspace:*",
-    "@open-scientist/config": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

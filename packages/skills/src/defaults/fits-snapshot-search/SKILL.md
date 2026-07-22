@@ -19,28 +19,28 @@ description: 在真实 SDO/HMI SHARP 磁场数据上评估假设过滤函数的 
 
 ### 每条快照的字段
 
-| 字段 | 含义 | 单位 |
-|---|---|---|
-| `usflux` | 总无符号磁通量 | Maxwell |
-| `mean_gamma` | 平均磁倾角 | 度 |
-| `mean_gbt` | Bt 水平梯度 | G/Mm |
-| `mean_gbz` | Bz 水平梯度 | G/Mm |
-| `mean_gbh` | Bh 水平梯度 | G/Mm |
-| `mean_jzd` | 平均垂直电流密度 | mA/m² |
-| `totusjz` | 总无符号垂直电流 | A |
-| `mean_jzh` | 平均水平电流 | A/m² |
-| `totusjh` | 总无符号水平电流 | A |
-| `absnjzh` | 净垂直电流绝对值 | A/m² |
-| `savncpp` | 极性净电流绝对值之和 | A |
-| `mean_pot` | 平均光球自由能 | ergs/cm³ |
-| `totpot` | 总光球自由能 | ergs |
-| `mean_shr` | 平均剪切角 | 度 |
-| `shrgt45` | 剪切>45°面积占比 | % |
-| `r_value` | R 内磁通量之和 | Maxwell |
-| `area_acr` | 活动区面积 | 微半球 |
-| `flare_class` | 耀斑等级 | N/B/C/M/X |
-| `magnitude` | 耀斑量级 | 数值 |
-| `label` | 真值标签 | 0=宁静, 1=耀斑 |
+| 字段          | 含义                 | 单位           |
+| ------------- | -------------------- | -------------- |
+| `usflux`      | 总无符号磁通量       | Maxwell        |
+| `mean_gamma`  | 平均磁倾角           | 度             |
+| `mean_gbt`    | Bt 水平梯度          | G/Mm           |
+| `mean_gbz`    | Bz 水平梯度          | G/Mm           |
+| `mean_gbh`    | Bh 水平梯度          | G/Mm           |
+| `mean_jzd`    | 平均垂直电流密度     | mA/m²          |
+| `totusjz`     | 总无符号垂直电流     | A              |
+| `mean_jzh`    | 平均水平电流         | A/m²           |
+| `totusjh`     | 总无符号水平电流     | A              |
+| `absnjzh`     | 净垂直电流绝对值     | A/m²           |
+| `savncpp`     | 极性净电流绝对值之和 | A              |
+| `mean_pot`    | 平均光球自由能       | ergs/cm³       |
+| `totpot`      | 总光球自由能         | ergs           |
+| `mean_shr`    | 平均剪切角           | 度             |
+| `shrgt45`     | 剪切>45°面积占比     | %              |
+| `r_value`     | R 内磁通量之和       | Maxwell        |
+| `area_acr`    | 活动区面积           | 微半球         |
+| `flare_class` | 耀斑等级             | N/B/C/M/X      |
+| `magnitude`   | 耀斑量级             | 数值           |
+| `label`       | 真值标签             | 0=宁静, 1=耀斑 |
 
 **重要**: `filter()` 函数只能使用物理参数字段（usflux, mean_gamma, ...），**不能使用 label / flare_class / magnitude**——这些是 ground truth。
 
@@ -56,7 +56,7 @@ def filter(snapshot: dict) -> bool:
     usflux = snapshot.get("usflux", 0)
     mean_shr = snapshot.get("mean_shr", 0)
     totpot = snapshot.get("totpot", 0)
-    
+
     # 物理阈值判断
     return usflux > 5e21 and mean_shr > 40
 ```
@@ -73,6 +73,7 @@ python3 <datasetDir>/eval.py filter.py
 ```
 
 脚本会：
+
 - 加载 `data/dataset/snapshots.jsonl`（21,578 条真实快照）
 - 对每条快照调用你的 `filter()` 函数
 - 计算 TP/FP/FN/Precision/Recall/F1
@@ -81,6 +82,7 @@ python3 <datasetDir>/eval.py filter.py
 ### 3. 调试反例
 
 读取 eval.py 的 JSON 输出中的 `counterexamples` 数组：
+
 - FP（误报）: filter 预测耀斑但实际宁静 → 分析哪些参数导致误判
 - FN（漏报）: filter 预测宁静但实际有耀斑 → 分析哪些阈值太高
 
@@ -89,6 +91,7 @@ python3 <datasetDir>/eval.py filter.py
 ### 4. 提交结果
 
 当 F1 收敛或达到步数上限，调用 `submit_result` 提交 EvalResult：
+
 - `hypoId`: 输入中给的 hypothesis id
 - `f1`: eval.py 输出的 f1 值
 - `truePositives` / `falsePositives` / `falseNegatives`: eval.py 输出
@@ -108,17 +111,20 @@ python3 <datasetDir>/eval.py filter.py
 一个共享的 Python 虚拟环境已在 `data/dataset/.venv` 中预置好，包含 numpy 2.5.1 和 scipy 1.18.0。
 
 运行评估时直接用这个 venv（`<datasetDir>` 路径在 prompt 中给出）：
+
 ```bash
 source <datasetDir>/.venv/bin/activate
 python3 <datasetDir>/eval.py filter.py
 ```
 
 如果你的 filter 需要额外依赖，可以装到这个 venv 里：
+
 ```bash
 uv pip install --python <datasetDir>/.venv/bin/python <package>
 ```
 
 或者用 `uv run` 直接指定 venv：
+
 ```bash
 uv run --python <datasetDir>/.venv/bin/python <datasetDir>/eval.py filter.py
 ```

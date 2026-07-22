@@ -1,5 +1,5 @@
 import type { EvalResult, Hypothesis, OracleOutput } from '@open-scientist/schema'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import type { ConvergenceEntry } from '../src/prometheus/workflow.ts'
 import {
   applyOraclePruning,
