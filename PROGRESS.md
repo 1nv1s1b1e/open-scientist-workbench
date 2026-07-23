@@ -7,6 +7,14 @@
 
 ## Changelog
 
+#### `2ebaf4c` — feat(web): redesign debate theater, 2d evolution tree, high-dpi concept net, and agent focus mode (2026-07-23)
+
+- **主界面重构**：将辩论剧场与六大 AI 智能体拓扑发光球体融合为项目默认主界面，围绕日冕加热演化核心（Solar Core）环形布局。
+- **动态呼吸光圈与 Hover 卡片**：智能体在思考/工具调用时激活对应颜色的呼吸光圈 (Pulsing Aura)，悬停浮现黑玻璃科技感 Hover Card。
+- **Agent Focus 独立输出过滤**：点击任意 Agent 球体高亮聚焦，并独立过滤右侧对话面板输出，避免视图杂乱。
+- **2D Node-Link 假说演化树**：基于贝塞尔曲线（Bezier Cable Links）重构演化树，可视化胜出路径（Winner Gold Line 🏆）、F1 分数与演化节点详情。
+- **高分屏渲染与平移缩放**：解决 3D 知识图谱在 Retina 高分屏下的字体模糊问题；全视图支持鼠标拖拽平移 (Pan) 与滚轮缩放 (Zoom)，全面移除浏览器原生滚动条。
+
 ### Phase 1-3 已完成（2026-07-19）
 
 #### `b5ea7b9` — chore: init project scaffold

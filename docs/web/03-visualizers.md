@@ -51,53 +51,42 @@
 
 ---
 
-## WOW 效果 2：Co-Scientist 智能体协作大厅 + 辩论剧场（Debate Theater）
+## WOW 效果 2：主界面 · 辩论与协作大厅 (Master Debate Theater)
 
 ### 定位
 
-界面中央展示圆形"Sisyphus 智能体协作大厅"，6 个 agent Avatar 呈环形排列，实时展示"科学辩论与协作"过程。
+作为项目运行默认主界面，融合六大 AI 智能体拓扑与太阳物理日冕加热演化核心（Solar Core），呈环形排列展示智能体独立角色、实时状态与科学辩论。
 
 ### 技术栈
 
-- **React Flow**（`@xyflow/react`）— 6 agent 头像作节点，消息流作边
-- **GSAP** — 剧本式多元素同步动画（核心亮点）
-- **React Bits** — Avatar 光环、能量场等视觉效果
-- **Radix Tooltip** — agent 状态提示
+- **Motion (framer-motion)** — 6 智能体发光球体 (Glowing Spheres) 环形公转与呼吸光圈
+- **Pan & Zoom Canvas** — 鼠标左键平移与滚轮缩放，零浏览器原生滚动条
+- **Hover Glass Cards** — 悬停弹出黑玻璃深色面板
+- **Agent Focus Mode** — 点击球体高亮聚焦并独立过滤右侧对话面板输出
 
 ### 节点设计
 
-6 个 agent 作 React Flow 自定义节点，环形排列：
+6 个 Agent 围绕中央日冕核心呈环形分布式排列：
 
 ```
-            Sisyphus（编排器，顶部）
-           /        \
-      Librarian    Prometheus
-          |            |
-       Looker       Oracle
-           \        /
-            Explore（底部）
+            SISYPHUS（锦标赛总控）
+           /                    \
+    LIBRARIAN                  PROMETHEUS
+        │        Solar Core        │
+     LOOKER      (日冕演化)      ORACLE
+           \                    /
+             EXPLORE（MHD 演化）
 ```
 
-每个节点显示：
+每个发光球体节点支持：
 
-- Agent 名称 + 角色
-- 当前状态（idle / thinking / executing tool / waiting approval）
-- 实时 token usage（圆形进度环）
-- 最新输出摘要（hover 展开）
+- 专属角色色彩与图标（Amber, Emerald, Cyan, Purple, Crimson, Gold）
+- **思考/工具调用激活**：扩散动态呼吸/脉冲彩色光圈 (Pulsing Aura)
+- **Hover Card**：悬停弹出角色说明、模型指标与运行状态
+- **Focus Click**：点击高亮聚焦并联动右侧 Chat 面板进行单智能体日志筛选
 
-### 辩论剧场动画（GSAP timeline 剧本式）
+---
 
-| 场景                  | 动画序列                                                                  |
-| --------------------- | ------------------------------------------------------------------------- |
-| Oracle 抛出批判       | Oracle 节点闪红光 → 红色警告粒子沿边飞向被批判的假设节点 → 假设节点震动   |
-| Sisyphus 响应         | Sisyphus 节点亮起 → 蓝色脉冲扩散到相关 agent → 边变粗表示消息流           |
-| Librarian 生长 CoT 树 | Librarian 节点吐出绿色光线 → 光线分叉成树状 → 每个分叉点显示 CoT 步骤卡片 |
-| 假设被淘汰            | 被淘汰节点枯萎动画 → 灰色粒子消散                                         |
-| 假设获胜              | 获胜节点开花动画 → 金色光环扩散                                           |
-
-### 消息流边
-
-- React Flow 的 edge 实时显示 agent 间消息传递（脉冲粒子沿边流动）
 - 边颜色区分消息类型：蓝色=正常协作、红色=批判、绿色=新假设、金色=审批通过
 
 ---
