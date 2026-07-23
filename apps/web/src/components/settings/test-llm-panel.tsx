@@ -18,14 +18,14 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { ApiError } from '@/lib/api/client'
-import { useTestLlm } from '@/lib/hooks/useApi'
+import { useCredentials, useTestLlm } from '@/lib/hooks/useApi'
 
-const DEFAULT_FORM: Omit<TestLlmRequest, 'apiKey'> = {
-  provider: 'openai',
-  model: '',
-  prompt: 'Say hi in 3 words.',
-  maxTokens: 50,
-}
+const PRESET_MODELS = [
+  'llab/DeepSeek-V4-Flash-FP8',
+  'llab/Qwen3-Next-80B-A3B-Instruct',
+  'gpt-4o',
+  'claude-3-5-sonnet',
+]
 
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -47,31 +47,45 @@ function UsageStat({ label, value }: { label: string; value?: number }) {
 
 export function TestLlmPanel() {
   const testMutation = useTestLlm()
+  const credsQuery = useCredentials()
+
   const [provider, setProvider] = useState<'openai' | 'anthropic'>('openai')
-  const [model, setModel] = useState('')
+  const [model, setModel] = useState('llab/DeepSeek-V4-Flash-FP8')
   const [baseURL, setBaseURL] = useState('')
   const [apiKey, setApiKey] = useState('')
-  const [prompt, setPrompt] = useState(DEFAULT_FORM.prompt)
-  const [maxTokens, setMaxTokens] = useState(DEFAULT_FORM.maxTokens)
+  const [prompt, setPrompt] = useState('Say hi in 3 words.')
+  const [maxTokens, setMaxTokens] = useState(50)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<TestLlmResponse | null>(null)
+
+  // Quick fill from existing credential
+  const handleSelectCredential = (credId: string) => {
+    const cred = credsQuery.data?.find((c) => c.id === credId)
+    if (cred) {
+      setProvider(cred.provider as 'openai' | 'anthropic')
+      if (cred.baseURL) setBaseURL(cred.baseURL)
+    }
+  }
 
   const handleTest = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setResult(null)
+
     if (!model.trim() || !apiKey.trim()) {
-      setError('model 和 apiKey 必填')
+      setError('Model 与 API Key 必填')
       return
     }
+
     const body: TestLlmRequest = {
       provider,
       model: model.trim(),
-      apiKey,
+      apiKey: apiKey.trim(),
       prompt,
       maxTokens: Number(maxTokens),
     }
     if (baseURL.trim()) body.baseURL = baseURL.trim()
+
     try {
       const res = await testMutation.mutateAsync(body)
       setResult(res)
@@ -85,11 +99,32 @@ export function TestLlmPanel() {
       {/* Header */}
       <header className="border-b border-[var(--color-border)] px-6 py-5">
         <Eyebrow>Connectivity · thinkingLevel off</Eyebrow>
+
         <h3 className="mt-2 text-xl font-normal text-white">LLM 连通性测试</h3>
         <p className="mt-1 text-sm text-muted">
           直接调用 generateText 验证 endpoint 可达。thinkingLevel 硬编码为 off。
         </p>
       </header>
+
+      {/* Quick credential filler banner */}
+      {credsQuery.data && credsQuery.data.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-3">
+          <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
+            快速填充凭证:
+          </span>
+          {credsQuery.data.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => handleSelectCredential(c.id)}
+              className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 font-mono text-[11px] text-muted transition-colors hover:border-white/40 hover:text-white"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              {c.id}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-px bg-[var(--color-border)] lg:grid-cols-2">
         {/* ── Left — form ──────────────────────────────────────────────────────── */}
@@ -109,15 +144,33 @@ export function TestLlmPanel() {
                 </SelectContent>
               </Select>
             </FieldGroup>
+
             <FieldGroup label="Model">
               <Input
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                placeholder="gpt-4o / claude-3-5-sonnet"
+                placeholder="gpt-4o / llab/DeepSeek-V4-Flash-FP8"
                 required
                 className="font-mono text-xs"
               />
             </FieldGroup>
+          </div>
+
+          {/* Quick preset model tags */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
+              Presets:
+            </span>
+            {PRESET_MODELS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setModel(m)}
+                className="rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-0.5 font-mono text-[11px] text-muted transition-colors hover:border-white/30 hover:text-white"
+              >
+                {m}
+              </button>
+            ))}
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -125,7 +178,7 @@ export function TestLlmPanel() {
               <Input
                 value={baseURL}
                 onChange={(e) => setBaseURL(e.target.value)}
-                placeholder="https://api.example.com/v1"
+                placeholder="http://10.191.80.76:8084/v1"
                 className="font-mono text-xs"
               />
             </FieldGroup>
@@ -156,12 +209,12 @@ export function TestLlmPanel() {
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="min-h-[90px] font-mono text-xs"
+              className="min-h-[80px] font-mono text-xs"
             />
           </FieldGroup>
 
           <div className="flex items-center gap-4 pt-2">
-            <Button type="submit" disabled={testMutation.isPending}>
+            <Button type="submit" disabled={testMutation.isPending} variant="default">
               {testMutation.isPending && <Spinner className="mr-1" />}
               测试连接
             </Button>
@@ -186,7 +239,7 @@ export function TestLlmPanel() {
               <p className="mt-5 font-mono text-[11px] uppercase tracking-[1.4px] text-muted">
                 Awaiting test
               </p>
-              <p className="mt-1.5 text-xs text-muted">提交表单以查看响应</p>
+              <p className="mt-1.5 text-xs text-muted">输入 Key / URL 后点击「测试连接」</p>
             </div>
           )}
 

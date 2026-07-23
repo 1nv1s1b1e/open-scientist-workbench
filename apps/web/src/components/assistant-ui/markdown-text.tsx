@@ -55,6 +55,7 @@ function renderInline(text: string, baseKey: string): React.ReactNode[] {
 }
 
 export function MarkdownText({ text }: MarkdownTextProps) {
+  if (!text.trim()) return null
   // Detect if the entire text is a JSON object/array → pretty-print it
   const jsonBlock = useMemo(() => {
     const trimmed = text.trim()

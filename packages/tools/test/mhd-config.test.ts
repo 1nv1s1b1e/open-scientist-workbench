@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MhdConfigSchema } from '@open-scientist/schema'
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
-import { mhdConfigTool } from '../src/mhd-config.ts'
+import { createMhdConfigTool } from '../src/mhd-config.ts'
 
 /**
  * mhdConfigTool.execute calls getMhdDir(runId) → resolve(getBaseDir(), 'projects', runId, 'mhd').
@@ -23,7 +23,7 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true })
 })
 
-const tool = mhdConfigTool as unknown as {
+const tool = createMhdConfigTool('run-xyz') as unknown as {
   execute: (args: {
     runId: string
     winningHypoId: string

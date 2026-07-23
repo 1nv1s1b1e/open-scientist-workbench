@@ -194,7 +194,6 @@ export function WorkflowToolUIs() {
       <FitsAlignToolUI />
       <MhdConfigToolUI />
       <LoadSkillToolUI />
-      <GenericToolUI />
     </>
   )
 }

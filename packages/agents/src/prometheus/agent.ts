@@ -7,7 +7,7 @@ import {
   DEFAULT_SKILLS_DIR,
   discoverSkills,
 } from '@open-scientist/skills'
-import { createBashToolForHypothesis, mhdConfigTool } from '@open-scientist/tools'
+import { createBashToolForHypothesis, createMhdConfigTool } from '@open-scientist/tools'
 import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
 import { makeSubmitResultTool } from '../shared/tool-output.ts'
 
@@ -86,7 +86,7 @@ export async function getDefaultPrometheusTools(
   const loadSkillTool = createLoadSkillTool(skills)
 
   const baseTools: ToolSet = {
-    mhdConfig: mhdConfigTool,
+    mhdConfig: createMhdConfigTool(projectId),
     bash: bashToolkit.tools.bash,
     readFile: bashToolkit.tools.readFile,
     writeFile: bashToolkit.tools.writeFile,

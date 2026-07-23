@@ -2,8 +2,7 @@
  * ToolFallback — 未注册工具的兜底渲染器。
  *
  * 显示 toolName + args/result JSON（折叠）。
- * toolkit.tsx 的 GenericToolUI (toolName:'*') 已注册，但作为 MessagePrimitive.Parts
- * 的 fallback 也要有本地实现（用于不通过 makeAssistantToolUI 注册的场景）。
+ * 内部 submit_result 工具隐藏，避免混淆对话框。
  */
 
 'use client'
@@ -19,6 +18,11 @@ interface ToolFallbackProps {
 }
 
 export function ToolFallback({ toolName, args, result, status, isError }: ToolFallbackProps) {
+  // 隐藏内部的 submit_result 结果提交工具
+  if (toolName === 'submit_result' || toolName === 'submit-result') {
+    return null
+  }
+
   const isRunning = status?.type === 'running'
   return (
     <div className="my-1 rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] p-2.5">

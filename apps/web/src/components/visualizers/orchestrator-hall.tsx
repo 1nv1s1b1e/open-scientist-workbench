@@ -14,11 +14,17 @@ import { AGENT_COLORS, AGENT_LABELS } from '@/lib/visualizers/colorTheme'
 import { AGENT_POSITIONS, buildInitialOrchestratorData } from '@/lib/visualizers/orchestrator-data'
 
 const STATE_BADGE: Record<AgentState, { label: string; cls: string }> = {
-  idle: { label: '空闲', cls: 'bg-zinc-500/20 text-zinc-300' },
-  thinking: { label: '思考中', cls: 'bg-blue-500/20 text-blue-300' },
-  'executing-tool': { label: '执行工具', cls: 'bg-amber-500/20 text-amber-300' },
-  'waiting-approval': { label: '等待审批', cls: 'bg-purple-500/20 text-purple-300' },
-  error: { label: '错误', cls: 'bg-red-500/20 text-red-300' },
+  idle: { label: '空闲', cls: 'border-zinc-600/40 bg-zinc-800/40 text-zinc-400' },
+  thinking: { label: '思考中', cls: 'border-blue-500/40 bg-blue-500/10 text-blue-300' },
+  'executing-tool': {
+    label: '执行工具',
+    cls: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
+  },
+  'waiting-approval': {
+    label: '等待审批',
+    cls: 'border-purple-500/40 bg-purple-500/10 text-purple-300',
+  },
+  error: { label: '错误', cls: 'border-red-500/40 bg-red-500/10 text-red-400' },
 }
 
 const EDGE_COLORS: Record<MessageEdgeData['kind'], string> = {
@@ -36,38 +42,61 @@ function AgentNodeCard({ data }: NodeProps<AgentNode>) {
   const badge = STATE_BADGE[data.state]
   const tokenPct =
     data.tokenUsage && data.tokenLimit ? (data.tokenUsage / data.tokenLimit) * 100 : null
+
   return (
     <div
       className={cn(
-        'w-40 rounded-lg border-2 bg-[var(--color-surface)] px-3 py-2 text-center shadow-md',
-        data.state === 'error' && 'animate-pulse',
+        'group relative w-48 rounded-sm border bg-[var(--color-surface)] p-3.5 text-left transition-all hover:border-white/40',
+        data.state === 'error' && 'animate-pulse border-red-500',
       )}
-      style={{ borderColor: color }}
+      style={{ borderColor: data.state === 'idle' ? 'var(--color-border)' : color }}
     >
-      <div className="text-sm font-semibold" style={{ color }}>
-        {AGENT_LABELS[data.role]}
+      {/* Role header with color dot indicator */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span
+            className="h-2 w-2 rounded-full shadow-[0_0_8px_currentColor]"
+            style={{ backgroundColor: color, color }}
+          />
+          <span className="font-mono text-sm font-normal uppercase tracking-[1.4px] text-white">
+            {AGENT_LABELS[data.role]}
+          </span>
+        </div>
+        <span
+          className={cn(
+            'rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[1px]',
+            badge.cls,
+          )}
+        >
+          {badge.label}
+        </span>
       </div>
-      <div className={cn('mt-1 inline-block rounded px-1.5 py-0.5 text-[10px]', badge.cls)}>
-        {badge.label}
-      </div>
+
+      {/* Current active tool */}
       {data.currentTool && (
         <div
-          className="mt-1 truncate text-[10px] text-[var(--color-text-muted)]"
+          className="mt-2.5 flex items-center gap-1.5 rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 font-mono text-[10px] text-muted"
           title={data.currentTool}
         >
-          ⚙ {data.currentTool}
+          <span className="h-1 w-1 rounded-full bg-[var(--color-sunset)]" />
+          <span className="truncate">{data.currentTool}</span>
         </div>
       )}
+
+      {/* Token usage progress bar */}
       {tokenPct !== null && (
-        <div className="mt-2">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-bg)]">
+        <div className="mt-3 border-t border-[var(--color-border)]/60 pt-2">
+          <div className="flex justify-between font-mono text-[9px] uppercase tracking-[1px] text-muted">
+            <span>Tokens</span>
+            <span className="tabular-nums">
+              {data.tokenUsage} / {data.tokenLimit}
+            </span>
+          </div>
+          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[var(--color-bg)]">
             <div
-              className="h-full rounded-full"
+              className="h-full rounded-full transition-all duration-300"
               style={{ width: `${Math.min(tokenPct, 100)}%`, backgroundColor: color }}
             />
-          </div>
-          <div className="mt-0.5 text-[9px] text-[var(--color-text-muted)]">
-            {data.tokenUsage}/{data.tokenLimit}
           </div>
         </div>
       )}
@@ -101,8 +130,8 @@ export function OrchestratorHall({
         target: e.target,
         animated: e.active,
         label: e.label,
-        labelStyle: { fill: '#e8eaf0', fontSize: 10 },
-        labelBgStyle: { fill: '#161b30' },
+        labelStyle: { fill: '#ffffff', fontSize: 10, fontFamily: 'var(--font-mono)' },
+        labelBgStyle: { fill: '#0a0a0a', stroke: '#212327' },
         style: { stroke: EDGE_COLORS[e.kind], strokeWidth: e.active ? 2 : 1 },
       })),
     [data.edges],
@@ -113,7 +142,7 @@ export function OrchestratorHall({
   }, [])
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full bg-[var(--color-bg)]">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -125,7 +154,7 @@ export function OrchestratorHall({
         nodesConnectable={false}
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#232a44" gap={20} />
+        <Background color="rgba(255, 255, 255, 0.05)" gap={24} />
       </ReactFlow>
     </div>
   )

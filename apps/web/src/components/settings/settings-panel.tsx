@@ -18,7 +18,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApiError } from '@/lib/api/client'
-import { useGlobalSettings, useUpdateGlobalSettings } from '@/lib/hooks/useApi'
+import { useCredentials, useGlobalSettings, useUpdateGlobalSettings } from '@/lib/hooks/useApi'
 
 const THINKING_LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const
 const STEERING_MODES = ['one-at-a-time', 'all'] as const
@@ -113,6 +113,7 @@ function NumberField({
 
 export function SettingsPanel() {
   const settingsQuery = useGlobalSettings()
+  const credsQuery = useCredentials()
   const updateMutation = useUpdateGlobalSettings()
   const data = settingsQuery.data
 
@@ -266,12 +267,30 @@ export function SettingsPanel() {
                       />
                     </FieldGroup>
                     <FieldGroup label="Credential ID">
-                      <Input
-                        value={cfg.credentialId}
-                        onChange={(e) => updateModelField(role, 'credentialId', e.target.value)}
-                        placeholder="openai-main"
-                        className="font-mono text-xs"
-                      />
+                      {credsQuery.data && credsQuery.data.length > 0 ? (
+                        <Select
+                          value={cfg.credentialId}
+                          onValueChange={(v) => updateModelField(role, 'credentialId', v)}
+                        >
+                          <SelectTrigger className="font-mono text-xs">
+                            <SelectValue placeholder="选择 Credential" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {credsQuery.data.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.id} ({c.provider})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          value={cfg.credentialId}
+                          onChange={(e) => updateModelField(role, 'credentialId', e.target.value)}
+                          placeholder="openai-main"
+                          className="font-mono text-xs"
+                        />
+                      )}
                     </FieldGroup>
                     <FieldGroup label="Thinking Level">
                       <Select
