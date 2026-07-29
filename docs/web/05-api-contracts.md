@@ -729,11 +729,9 @@ POST /api/projects
 
 ---
 
-## 11. 已知限制 / TODO
+## 11. 已知限制
 
-1. **`GET /api/projects` 的 `createdAt` 始终 `null`**：当前只扫描目录，未查 SQLite。待补。
-2. **无 `GET /api/projects/:name/runs`（list runs）端点**：`listRuns` 函数存在于 storage 包但未暴露路由。如前端需要列表，需补路由。
-3. **无 hypotheses/evidence/rounds/mhd CRUD 端点**：这些数据当前只在 workflow 内部（HelixDB + FS 产物）生成，未暴露 REST。如前端需要展示，需补路由或直接读 FS 产物。
-4. **无 steering / approval 端点**：SPEC 设计了 `POST /runs/:id/steer` 和 approval 响应，但当前未实现（tournament 全自动运行）。`SteerRequestSchema` / `ApproveRequestSchema` 已在 schema 包定义但无路由。
-5. **`POST /runs` 返回 SSE 不返回 `TournamentResult`**：workflow `returnValue` 需另外 await（当前端点不 await）。前端判断完成靠 SSE `finish` 事件或轮询 `status`。
-6. **dev-probe 硬编码内网 LLM endpoint**：仅用于本地开发测试，前端不应依赖。
+1. **无 hypotheses/evidence/rounds/mhd CRUD 端点**：这些数据当前只在 workflow 内部（HelixDB + FS 产物）生成，未暴露 REST。如前端需要展示，需补路由或直接读 FS 产物。
+2. **无 steering / approval 端点**：SPEC 设计了 `POST /runs/:id/steer` 和 approval 响应，但当前未实现（tournament 全自动运行）。`SteerRequestSchema` / `ApproveRequestSchema` 已在 schema 包定义但无路由。
+3. **`POST /runs` 返回 SSE 不返回 `TournamentResult`**：workflow `returnValue` 需另外 await（当前端点不 await）。前端判断完成靠 SSE `finish` 事件或轮询 `status`。
+4. **dev-probe 硬编码内网 LLM endpoint**：仅用于本地开发测试，前端不应依赖。

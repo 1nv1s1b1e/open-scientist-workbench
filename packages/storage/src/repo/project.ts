@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto'
+import { readdir } from 'node:fs/promises'
+import { join } from 'node:path'
+import { getBaseDir } from '@open-scientist/config'
 import { eq } from 'drizzle-orm'
 import { createProjectDb } from '../db.ts'
 import { projects } from '../schema/project.ts'
@@ -22,4 +25,21 @@ export async function getProject(name: string) {
 export async function deleteProject(name: string) {
   const { db } = createProjectDb(name)
   db.delete(projects).where(eq(projects.name, name)).run()
+}
+
+export async function listProjects() {
+  const projectsDir = join(getBaseDir(), 'projects')
+  let entries: import('node:fs').Dirent[] = []
+  try {
+    entries = await readdir(projectsDir, { withFileTypes: true })
+  } catch {
+    return []
+  }
+  const result: { id: string; name: string; createdAt: string; configJson: string | null }[] = []
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue
+    const row = await getProject(entry.name)
+    if (row) result.push(row)
+  }
+  return result
 }

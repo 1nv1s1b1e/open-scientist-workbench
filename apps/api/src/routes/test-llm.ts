@@ -27,6 +27,7 @@ testLlm.post('/api/test-llm', async (c) => {
       model: req.model,
       ...(req.baseURL ? { baseURL: req.baseURL } : {}),
       thinkingLevel: 'off',
+      apiMode: 'chat',
       apiKey: req.apiKey,
     })
     const result = await generateTextFn({
@@ -49,13 +50,7 @@ testLlm.post('/api/test-llm', async (c) => {
     }
     return c.json(response)
   } catch (err) {
-    const durationMs = Date.now() - start
     const message = err instanceof Error ? err.message : String(err)
-    const response: TestLlmResponse = {
-      ok: false,
-      error: message,
-      durationMs,
-    }
-    return c.json(response)
+    return c.json({ error: 'internal_error', message }, 500)
   }
 })

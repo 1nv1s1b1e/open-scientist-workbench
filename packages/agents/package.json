@@ -4,21 +4,13 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./sisyphus": "./src/sisyphus/index.ts",
-    "./librarian": "./src/librarian/index.ts",
-    "./looker": "./src/looker/index.ts",
-    "./explore": "./src/explore/index.ts",
-    "./oracle": "./src/oracle/index.ts",
-    "./prometheus": "./src/prometheus/index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc"
   },
   "dependencies": {
-    "@ai-sdk/provider": "^4.0.3",
-    "@ai-sdk/provider-utils": "^5.0.11",
     "@open-scientist/config": "workspace:*",
     "@open-scientist/helix": "workspace:*",
     "@open-scientist/logger": "workspace:*",

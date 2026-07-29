@@ -16,7 +16,6 @@ let tmp: string
 // Hono's `app.request` returns a fetch Response; `.json()` is typed `unknown`.
 // The test bodies assert on a mix of object + array shapes, so the helper
 // returns a permissive record and each test narrows with `as` where needed.
-// biome-ignore lint/suspicious/noExplicitAny: test-only response shape is intentionally loose
 async function json(res: Response): Promise<any> {
   return await res.json()
 }
@@ -236,13 +235,15 @@ describe('GET / PUT / DELETE /api/settings/model-aliases/:alias', () => {
     expect(await json(del)).toEqual({ ok: true })
   })
 
-  it('PUT rejects an invalid ModelConfig (missing model) → 500 (zod throw → onError)', async () => {
+  it('PUT rejects an invalid ModelConfig (missing model) → 400 (zod throw → onError)', async () => {
     const res = await app.request('/api/settings/model-aliases/bad', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ credentialId: 'cred-1' }),
     })
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(400)
+    const body = await json(res)
+    expect(body.error).toBe('bad_request')
   })
 
   it('aliases surface on GET /api/settings', async () => {
@@ -383,7 +384,7 @@ describe('GET / PUT / DELETE /api/settings/agents/:role', () => {
     expect(body.agents.looker.instructions).toBe('custom looker prompt')
   })
 
-  it('PUT rejects an invalid mcpServer (missing name) → 500 (zod throw → onError)', async () => {
+  it('PUT rejects an invalid mcpServer (missing name) → 400 (zod throw → onError)', async () => {
     const res = await app.request('/api/settings/agents/oracle', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
@@ -391,7 +392,9 @@ describe('GET / PUT / DELETE /api/settings/agents/:role', () => {
         mcpServers: [{ transport: 'http', url: 'https://x.com' }],
       }),
     })
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(400)
+    const body = await json(res)
+    expect(body.error).toBe('bad_request')
   })
 })
 
@@ -438,14 +441,16 @@ describe('POST /api/projects', () => {
     expect(body.id).toBeTruthy()
   })
 
-  it('rejects an empty name → 400 (schema throw → 500 via onError)', async () => {
+  it('rejects an empty name → 400 (schema throw → onError)', async () => {
     const res = await app.request('/api/projects', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name: '' }),
     })
-    // Zod throw is caught by app.onError → 500 (no schema-validation middleware).
-    expect(res.status).toBe(500)
+    // Zod throw is caught by app.onError → 400 bad_request.
+    expect(res.status).toBe(400)
+    const body = await json(res)
+    expect(body.error).toBe('bad_request')
   })
 })
 
@@ -468,6 +473,10 @@ describe('GET /api/projects', () => {
     const names = body.map((p: { name: string }) => p.name)
     expect(names).toContain('proj-a')
     expect(names).toContain('proj-b')
+    // createdAt is now read from the DB, not null.
+    const projA = body.find((p: { name: string }) => p.name === 'proj-a')
+    expect(projA.createdAt).not.toBeNull()
+    expect(projA.id).toBeTruthy()
   })
 
   it('returns empty array when no projects exist', async () => {

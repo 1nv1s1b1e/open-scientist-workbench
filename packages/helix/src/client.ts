@@ -13,14 +13,18 @@ import type {
 
 const logger = createLogger('helix')
 
-let client: Client | null = null
+let _client: Client | null = null
 
 export function getHelixClient(): Client {
-  if (client) return client
+  if (_client) return _client
   logger.info({ helixUrl: env.HELIX_URL }, 'getHelixClient: creating new Client singleton')
-  client = new Client(env.HELIX_URL)
+  _client = new Client(env.HELIX_URL)
   logger.info('getHelixClient: Client singleton created')
-  return client
+  return _client
+}
+
+export function setHelixClient(client: Client | null): void {
+  _client = client
 }
 
 // ------------------------------------------------------------
@@ -29,7 +33,8 @@ export function getHelixClient(): Client {
 // 其中 properties 数组每项是投影后的属性对象（含 Expr.id() 投影出的 id 字段）。
 // ------------------------------------------------------------
 
-interface ReadContainer<T> {
+/** @internal */
+export interface ReadContainer<T> {
   properties?: T[]
   ids?: number[]
 }
@@ -67,15 +72,17 @@ interface ConceptResult {
 // 帮助函数
 // ------------------------------------------------------------
 
-function unwrap<T>(container: ReadContainer<T> | undefined): T[] {
+/** @internal */
+export function unwrap<T>(container: ReadContainer<T> | undefined): T[] {
   return container?.properties ?? []
 }
 
 /**
  * Safely convert a value to BigInt. Returns null for non-numeric strings
  * (e.g. "hypothesis-ac-phasemixing") that would cause BigInt() to throw.
+ * @internal
  */
-function safeBigInt(v: string | number | bigint): bigint | null {
+export function safeBigInt(v: string | number | bigint): bigint | null {
   if (typeof v === 'bigint') return v
   if (typeof v === 'number') return BigInt(v)
   const n = Number(v)
@@ -102,14 +109,6 @@ export async function searchPapers(query: string, k = 10): Promise<PaperNode[]> 
   return papers
 }
 
-export async function searchPapersVector(queryVector: number[], k = 10): Promise<PaperNode[]> {
-  const res = await getHelixClient()
-    .query<PapersResult>()
-    .dynamic(queries.call.searchPapersVector({ queryVector, k: BigInt(k) }))
-    .send()
-  return unwrap(res.papers)
-}
-
 export async function searchHypotheses(query: string, k = 10): Promise<HypothesisNode[]> {
   logger.info({ query, k }, 'searchHypotheses: sending query')
   const res = await getHelixClient()
@@ -119,17 +118,6 @@ export async function searchHypotheses(query: string, k = 10): Promise<Hypothesi
   const hypos = unwrap(res.hypos)
   logger.info({ query, k, count: hypos.length }, 'searchHypotheses: query done')
   return hypos
-}
-
-export async function searchHypothesesVector(
-  queryVector: number[],
-  k = 10,
-): Promise<HypothesisNode[]> {
-  const res = await getHelixClient()
-    .query<HypothesesResult>()
-    .dynamic(queries.call.searchHypothesesVector({ queryVector, k: BigInt(k) }))
-    .send()
-  return unwrap(res.hypos)
 }
 
 export async function getPaper(id: string | number | bigint): Promise<PaperNode | null> {
@@ -150,18 +138,6 @@ export async function getHypothesis(id: string | number | bigint): Promise<Hypot
     .dynamic(queries.call.getHypothesis({ id: bid }))
     .send()
   return first(unwrap(res.hypo))
-}
-
-export async function getHypothesesByPaper(
-  paperId: string | number | bigint,
-): Promise<HypothesisNode[]> {
-  const bid = safeBigInt(paperId)
-  if (bid === null) return []
-  const res = await getHelixClient()
-    .query<HypothesesResult>()
-    .dynamic(queries.call.getHypothesesByPaper({ paperId: bid }))
-    .send()
-  return unwrap(res.hypos)
 }
 
 export async function getEvidenceByHypothesis(
@@ -355,8 +331,7 @@ export async function addEvidence(input: AddEvidenceInput): Promise<void> {
   )
   const bid = safeBigInt(input.hypoId)
   if (bid === null) {
-    logger.warn({ hypoId: input.hypoId }, 'addEvidence: non-numeric hypoId, skipping write')
-    return
+    throw new Error(`addEvidence: non-numeric hypoId "${input.hypoId}"`)
   }
   const params = {
     hypoId: bid,
@@ -393,8 +368,7 @@ export async function addCritique(input: AddCritiqueInput): Promise<void> {
   )
   const bid = safeBigInt(input.hypoId)
   if (bid === null) {
-    logger.warn({ hypoId: input.hypoId }, 'addCritique: non-numeric hypoId, skipping write')
-    return
+    throw new Error(`addCritique: non-numeric hypoId "${input.hypoId}"`)
   }
   await getHelixClient()
     .query()
@@ -421,11 +395,9 @@ export async function addMutationLink(input: AddMutationLinkInput): Promise<void
   const fromBid = safeBigInt(input.fromHypoId)
   const toBid = safeBigInt(input.toHypoId)
   if (fromBid === null || toBid === null) {
-    logger.warn(
-      { fromHypoId: input.fromHypoId, toHypoId: input.toHypoId },
-      'addMutationLink: non-numeric id, skipping write',
+    throw new Error(
+      `addMutationLink: non-numeric id (fromHypoId="${input.fromHypoId}", toHypoId="${input.toHypoId}")`,
     )
-    return
   }
   await getHelixClient()
     .query()

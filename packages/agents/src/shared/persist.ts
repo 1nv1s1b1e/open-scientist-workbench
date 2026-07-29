@@ -48,7 +48,9 @@ export async function persistAgentRun(
 
     // Store each response message (assistant + tool turns)
     for (const msg of responseMessages) {
-      await appendMessage(projectId, runId, msg.role as 'assistant' | 'tool', [msg.content])
+      await appendMessage(projectId, runId, msg.role as 'assistant' | 'tool', [
+        msg.content as Parameters<typeof appendMessage>[3][number],
+      ])
     }
 
     // Store a summary record

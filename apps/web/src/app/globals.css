@@ -438,11 +438,6 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum';
   }
-
-  /* ── react-force-graph-3d + three.js need a positioned, non-zero parent ──── */
-  .force-graph-container canvas {
-    display: block;
-  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

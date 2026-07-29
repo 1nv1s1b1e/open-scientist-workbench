@@ -165,6 +165,7 @@ beforeEach(() => {
     baseURL: 'http://gw.test/v1',
     apiKey: 'sk-test-key',
     thinkingLevel: 'medium',
+    apiMode: 'chat',
   }
   projectRow = { id: 'proj-uuid-1', name: 'my-proj' }
 })
@@ -266,6 +267,7 @@ describe('POST /api/projects/:name/runs', () => {
       baseURL: 'http://gw.test/v1',
       apiKey: 'sk-test-key',
       thinkingLevel: 'high',
+      apiMode: 'chat',
     }
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',
@@ -284,6 +286,7 @@ describe('POST /api/projects/:name/runs', () => {
       model: 'gpt-4o',
       apiKey: 'sk-test-key',
       thinkingLevel: 'medium',
+      apiMode: 'chat',
     }
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',
@@ -302,6 +305,7 @@ describe('POST /api/projects/:name/runs', () => {
       baseURL: 'http://gw.qwen/v1',
       apiKey: 'sk-test-key',
       thinkingLevel: 'high',
+      apiMode: 'chat',
     }
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',

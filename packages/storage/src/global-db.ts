@@ -1,10 +1,11 @@
 import { mkdir } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { getGlobalDbPath } from '@open-scientist/config'
 import { createLogger } from '@open-scientist/logger'
 import Database from 'better-sqlite3'
 import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3'
-import { migrateDb } from './migrations.ts'
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import * as globalSchema from './schema/global.ts'
 import { enableWal } from './wal.ts'
 
@@ -15,6 +16,8 @@ type GlobalDb = {
 }
 
 const logger = createLogger('storage')
+
+const migrationsFolder = join(dirname(fileURLToPath(import.meta.url)), '..', 'drizzle', 'global')
 
 // Cache by db path (derived from BASE_DIR) instead of a single global
 // singleton, so different BASE_DIR values get distinct instances — tests no
@@ -34,8 +37,7 @@ export async function getGlobalDb() {
   enableWal(sqlite)
 
   const db = drizzle(sqlite, { schema: globalSchema })
-  migrateDb(db, 'global')
-  logger.info('global db migrated OK')
+  migrate(db, { migrationsFolder })
 
   const result: GlobalDb = { db, sqlite, schema: globalSchema }
   cache.set(path, result)

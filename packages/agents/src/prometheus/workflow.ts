@@ -1,13 +1,8 @@
 import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
-import type { PrometheusOutput } from '@open-scientist/schema'
-import type { ConvergenceEntry } from '../shared/convergence.ts'
-import { persistAgentRun } from '../shared/persist.ts'
-import { type EmitChunk, streamAgentOutput } from '../shared/stream.ts'
-import { extractSubmitResult } from '../shared/tool-output.ts'
+import type { ConvergenceEntry, PrometheusOutput } from '@open-scientist/schema'
+import { type EmitChunk } from '../shared/stream.ts'
+import { resolveAgentConfigArgs, runAgentWorkflow } from '../shared/run-workflow.ts'
 import { createPrometheusAgent } from './agent.ts'
-
-/** Re-exported for backward compatibility — sisyphus/logic.ts consumes this. */
-export type { ConvergenceEntry } from '../shared/convergence.ts'
 
 export interface PrometheusWorkflowInput {
   /** Project name — drives shared prometheus workspace dir + MHD output dir. */
@@ -36,7 +31,7 @@ export interface PrometheusWorkflowInput {
    * Per-agent runtime config override (instructions / skillDirectories /
    * mcpServers). When present, its `modelConfig` takes priority over the
    * `modelConfig` field above and its non-model fields override the factory
-   * defaults. Undefined → fully default behaviour (backward compat).
+   * defaults. Undefined → fully default behaviour.
    */
   agentConfig?: AgentRuntimeConfig
   /**
@@ -81,23 +76,10 @@ export async function prometheusWorkflow(
   input: PrometheusWorkflowInput,
 ): Promise<PrometheusOutput> {
   const agent = await createPrometheusAgent({
-    modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
+    ...resolveAgentConfigArgs(input.modelConfig, input.agentConfig),
     projectId: input.projectId,
     runId: input.runId,
-    runtimeContext: {
-      projectId: input.projectId,
-      runId: input.runId,
-      round: input.round,
-    },
-    ...(input.agentConfig?.instructions !== undefined
-      ? { instructions: input.agentConfig.instructions }
-      : {}),
-    ...(input.agentConfig?.skillDirectories !== undefined
-      ? { skillDirectories: input.agentConfig.skillDirectories }
-      : {}),
-    ...(input.agentConfig?.mcpServers !== undefined
-      ? { mcpServers: input.agentConfig.mcpServers }
-      : {}),
+    runtimeContext: { projectId: input.projectId, runId: input.runId, round: input.round },
   })
 
   const historyBlock =
@@ -137,23 +119,23 @@ ${input.userFeedback ? `\n人类审稿反馈（来自 review_leading_hypothesis 
 2. 分配 computeBudget：在接近收敛的高价值轮次提高 maxEvals / parallelWorkers；在搜索明显停滞时缩减。
 3. 输出 PrometheusOutput：plan（round=${input.round}，调整后的 searchParams.paramRange 为 name -> [min, max] 记录、populationSize、mutationRate、computeBudget { maxEvals, parallelWorkers }、rationale 说明探索/开发权衡${input.userFeedback ? ' + 审稿反馈如何纳入' : ''}）、mhdConfig = null、shouldContinue 按上述规则。`
 
-  const result = await agent.stream({
-    messages: [{ role: 'user', content: prompt }],
-    ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
-  })
-
-  await streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)
-  await persistAgentRun(input.projectId, input.runId, 'prometheus', prompt, result)
-  const staticToolCalls = await result.staticToolCalls
-  const fallback: PrometheusOutput = {
-    plan: {
-      round: input.round,
-      searchParams: { paramRange: {}, populationSize: 0, mutationRate: 0 },
-      computeBudget: { maxEvals: 0, parallelWorkers: 0 },
-      rationale: 'Prometheus agent reached step limit without calling submit_result',
+  return runAgentWorkflow<PrometheusOutput>({
+    agent,
+    projectId: input.projectId,
+    runId: input.runId,
+    role: 'prometheus',
+    prompt,
+    fallback: {
+      plan: {
+        round: input.round,
+        searchParams: { paramRange: {}, populationSize: 0, mutationRate: 0 },
+        computeBudget: { maxEvals: 0, parallelWorkers: 0 },
+        rationale: 'Prometheus agent reached step limit without calling submit_result',
+      },
+      mhdConfig: null,
+      shouldContinue: false,
     },
-    mhdConfig: null,
-    shouldContinue: false,
-  }
-  return extractSubmitResult(staticToolCalls, 'submit_result', fallback) as PrometheusOutput
+    emitChunk: input.emitChunk,
+    abortSignal: input.abortSignal,
+  })
 }

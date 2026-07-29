@@ -10,20 +10,18 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js'
+import { asString, errorResult, getArg, str, textResult } from './_helpers.ts'
 
 const execAsync = promisify(exec)
 
 // ------------------------------------------------------------
 // Sandbox MCP server
 //
-// 直接 host child_process 执行（与 bash-tool 一致的隔离策略：靠 project name
-// 隔离 working dir，无 Docker 沙箱 —— 用户明确决定，见 AGENTS.md）。让多个
-// agent 通过 MCP 共享同一套代码执行环境。
+// 直接 host child_process 执行（exec，非 bash-tool 的 spawn）。与 bash-tool
+// 的隔离策略不同：此处用 exec + maxBuffer，无路径守卫、无进程组 kill、无
+// 输出截断。workingDir 由调用方传入，不做 project-name 隔离。让多个 agent
+// 通过 MCP 共享同一套代码执行环境。
 // ------------------------------------------------------------
-
-function str(desc: string) {
-  return { type: 'string' as const, description: desc }
-}
 
 const TOOLS: Tool[] = [
   {
@@ -66,28 +64,11 @@ const TOOLS: Tool[] = [
     description: 'List entries in a directory.',
     inputSchema: {
       type: 'object',
-      properties: { path: str('Directory path (defaults to workingDir)') },
+      properties: { path: str('Directory path (required)') },
       required: ['path'],
     },
   },
 ]
-
-function textResult(payload: unknown): CallToolResult {
-  return { content: [{ type: 'text', text: JSON.stringify(payload) }] }
-}
-
-function errorResult(message: string): CallToolResult {
-  return { content: [{ type: 'text', text: message }], isError: true }
-}
-
-function asString(v: unknown, key: string): string {
-  if (typeof v !== 'string') throw new TypeError(`'${key}' must be a string`)
-  return v
-}
-
-function getArg(args: Record<string, unknown> | undefined, key: string): unknown {
-  return args?.[key]
-}
 
 interface BashResult {
   command: string

@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
-import { createNodeSandbox, type DiscoveredSkill, discoverSkills } from '../src/index.ts'
+import { type DiscoveredSkill, discoverSkills } from '../src/index.ts'
 
 // Build a temporary skills-root tree under os.tmpdir() per test.
 function makeSkillDir(
@@ -46,7 +46,7 @@ describe('discoverSkills', () => {
     await makeSkillDir(root, 'solar-physics-rag', 'RAG for solar physics literature')
     await makeSkillDir(root, 'critique-protocol', 'Critique protocol for Oracle')
 
-    const skills = await discoverSkills(createNodeSandbox(), [root])
+    const skills = await discoverSkills([root])
     expect(skills).toHaveLength(2)
 
     const names = skills.map((s) => s.name).sort()
@@ -61,35 +61,31 @@ describe('discoverSkills', () => {
     await makeSkillDir(root, 'real-skill', 'a real one')
     await makeEmptyDir(root, 'no-skill-md')
 
-    const skills = await discoverSkills(createNodeSandbox(), [root])
+    const skills = await discoverSkills([root])
     expect(skills).toHaveLength(1)
     expect(skills[0]?.name).toBe('real-skill')
   })
 
-  it('skips directories whose SKILL.md has no frontmatter (name falls back to unknown)', async () => {
+  it('skips directories whose SKILL.md has no frontmatter', async () => {
     await makeSkillDir(root, 'with-fm', 'has frontmatter')
     await makeDirWithoutFrontmatter(root, 'no-fm')
 
-    const skills = await discoverSkills(createNodeSandbox(), [root])
-    // The no-frontmatter dir still produces a skill entry, but with name='unknown'.
-    // We verify the frontmatter-parsed one is correct and the unknown one is present.
-    expect(skills).toHaveLength(2)
+    const skills = await discoverSkills([root])
+    // The no-frontmatter dir is skipped (name would be 'unknown').
+    expect(skills).toHaveLength(1)
     const withFm = skills.find((s) => s.name === 'with-fm')
     expect(withFm?.description).toBe('has frontmatter')
-    const unknown = skills.find((s) => s.name === 'unknown')
-    expect(unknown).toBeDefined()
-    expect(unknown?.description).toBe('')
   })
 
   it('returns [] for a directory containing only empty subdirectories', async () => {
     await makeEmptyDir(root, 'empty-one')
     await makeEmptyDir(root, 'empty-two')
-    const skills = await discoverSkills(createNodeSandbox(), [root])
+    const skills = await discoverSkills([root])
     expect(skills).toEqual([])
   })
 
   it('returns [] when the directory does not exist', async () => {
-    const skills = await discoverSkills(createNodeSandbox(), [join(root, 'does-not-exist')])
+    const skills = await discoverSkills([join(root, 'does-not-exist')])
     expect(skills).toEqual([])
   })
 
@@ -99,7 +95,7 @@ describe('discoverSkills', () => {
       await makeSkillDir(root, 'dup-skill', 'first description wins')
       await makeSkillDir(root2, 'dup-skill', 'second description loses')
 
-      const skills = await discoverSkills(createNodeSandbox(), [root, root2])
+      const skills = await discoverSkills([root, root2])
       expect(skills).toHaveLength(1)
       expect(skills[0]?.description).toBe('first description wins')
       // directory points at the first-seen location.

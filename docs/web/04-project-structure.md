@@ -68,7 +68,6 @@ apps/web/
 │   │   ├── ProjectSettings.tsx             # project settings
 │   │   ├── ModelConfig.tsx                 # per-agent model 配置
 │   │   ├── CredentialManager.tsx           # API key / OAuth 管理
-│   │   ├── McpTrustManager.tsx             # MCP server 信任管理
 │   │   └── SkillsManager.tsx               # Skills 上传/管理
 │   │
 │   ├── projects/                           # project 管理
@@ -112,7 +111,7 @@ apps/web/
 │   │   ├── mhd.ts                          # MHD config 查询
 │   │   ├── settings.ts                     # settings GET/PUT
 │   │   ├── credentials.ts                  # credentials CRUD
-│   │   └── mcp.ts                          # MCP trust 管理
+│   │   └── mcp.ts                          # MCP presets 查询
 │   │
 │   ├── transport/                          # chat transport 配置
 │   │   ├── workflow-transport.ts           # WorkflowChatTransport 实例

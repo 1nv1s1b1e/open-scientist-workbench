@@ -30,14 +30,14 @@ function toMessagePart(part: MessagePart): ContentPart | null {
         toolCallId: part.toolCallId ?? `call-${part.id}`,
         toolName: part.toolName ?? 'unknown',
         args: (part.input ?? {}) as ToolCallArgs,
-        result: part.output,
+        result: part.output ?? null,
         isError: part.errorText != null,
       }
     case 'custom': {
-      return {
-        type: `data-${part.customKind ?? 'event'}` as `data-${string}`,
-        data: {},
-      }
+      // Custom chunks (agent-state, phase-start, round-update) are used for
+      // state tracking only — they should NOT render as message content parts.
+      // Returning null here filters them out of the content array.
+      return null
     }
     default:
       return null
@@ -78,11 +78,17 @@ function getPartPriority(part: ContentPart): number {
  * - seed 作为第一条 user 消息
  * - 每个 RunMessage 成为一条 assistant 消息（按 reasoning → tools → text 优先次序排列）
  * - 自动过滤内部 submit_result 工具与纯空完成消息，防止产生空卡片框
+ * - 当 selectedAgent 非空时，仅显示该 agent 的消息（未到达的 agent 显示提示）
+ * - 当 selectedRound 非空时，仅显示该轮次的消息
+ * - 当 selectedHypoId 非空时，仅显示该假设的消息（Explore 并行多假设时区分）
  */
 export function toThreadMessages(
   seed: string | null,
   runMessages: RunMessage[],
   state: StreamState,
+  selectedAgent?: string | null,
+  selectedRound?: number | null,
+  selectedHypoId?: string | null,
 ): ThreadMessageLike[] {
   const msgs: ThreadMessageLike[] = []
 
@@ -95,10 +101,37 @@ export function toThreadMessages(
     })
   }
 
+  // 多级过滤：agent → round → hypoId
+  let filteredMessages = runMessages
+  if (selectedAgent) {
+    filteredMessages = filteredMessages.filter((m) => m.agentRole === selectedAgent)
+  }
+  if (selectedRound != null) {
+    filteredMessages = filteredMessages.filter((m) => m.round === selectedRound)
+  }
+  if (selectedHypoId) {
+    // Show messages for the selected hypothesis PLUS non-hypothesis-specific
+    // messages (Librarian/Oracle/Prometheus have hypoId == undefined/null).
+    filteredMessages = filteredMessages.filter(
+      (m) => m.hypoId === selectedHypoId || m.hypoId == null,
+    )
+  }
+
+  // selectedAgent 非空且该 agent 还没有任何消息 → 显示占位提示
+  if (selectedAgent && filteredMessages.length === 0) {
+    msgs.push({
+      id: 'agent-placeholder',
+      role: 'assistant',
+      content: [{ type: 'text', text: `等待 ${selectedAgent} agent 启动…` }],
+      status: { type: 'running' },
+    })
+    return msgs
+  }
+
   // assistant 消息
-  for (let i = 0; i < runMessages.length; i++) {
-    const runMsg = runMessages[i]!
-    const isLast = i === runMessages.length - 1
+  for (let i = 0; i < filteredMessages.length; i++) {
+    const runMsg = filteredMessages[i]!
+    const isLast = i === filteredMessages.length - 1
     const isRunning =
       isLast && (state === 'connecting' || state === 'streaming' || state === 'reconnecting')
     const parts: ContentPart[] = []

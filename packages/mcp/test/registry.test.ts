@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vite-plus/test'
-import type { McpServerConfig } from '../src/registry.ts'
+import type { McpServerConfig } from '@open-scientist/schema'
 
 // Mock StdioClientTransport so the stdio branch doesn't spawn a real process.
 // We capture the constructor args for assertion.

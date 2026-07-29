@@ -13,7 +13,6 @@ export function createMhdConfigTool(boundProjectId?: string) {
     description:
       'Generate MHD simulation configuration file (.cfg) and satellite observation proposal. Writes the proposal to a markdown file and returns file paths — the agent does NOT need to embed the proposal in submit_result.',
     inputSchema: z.object({
-      project: z.string().optional(),
       runId: z.string(),
       winningHypoId: z.string(),
       hypothesisStatement: z.string(),
@@ -22,14 +21,13 @@ export function createMhdConfigTool(boundProjectId?: string) {
     }),
     outputSchema: MhdConfigSchema,
     execute: async ({
-      project,
       runId,
       winningHypoId,
       hypothesisStatement,
       physicalParams,
       observationProposal,
     }) => {
-      const targetProject = project ?? boundProjectId ?? 'default'
+      const targetProject = boundProjectId ?? 'default'
       logger.info(
         {
           project: targetProject,
@@ -62,5 +60,3 @@ export function createMhdConfigTool(boundProjectId?: string) {
     },
   })
 }
-
-export const mhdConfigTool = createMhdConfigTool()

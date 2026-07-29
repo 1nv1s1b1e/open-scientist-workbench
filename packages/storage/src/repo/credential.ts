@@ -1,11 +1,10 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto'
-import type { Credential, CredentialRecord, CredentialStore } from '@open-scientist/schema'
+import type { Credential, CredentialStore } from '@open-scientist/schema'
 import { eq } from 'drizzle-orm'
 import { getGlobalDb } from '../global-db.ts'
 import { credentials } from '../schema/global.ts'
 
-// 类型从 @open-scientist/schema re-export，保持向后兼容（其他文件仍可从此处 import）。
-export type { Credential, CredentialRecord, CredentialStore }
+export type { Credential, CredentialStore }
 
 const ENCRYPTION_KEY =
   process.env.CREDENTIAL_ENCRYPTION_KEY ?? 'open-scientist-default-key-change-me'
@@ -60,7 +59,7 @@ export async function createCredentialStore(): Promise<CredentialStore> {
         id: r.id,
         provider: r.provider,
         type: r.type,
-        encryptedKey: r.encryptedKey,
+        apiKey: decrypt(r.encryptedKey),
         ...(r.baseURL ? { baseURL: r.baseURL } : {}),
         ...(r.metadataJson
           ? { metadata: JSON.parse(r.metadataJson) as Record<string, unknown> }

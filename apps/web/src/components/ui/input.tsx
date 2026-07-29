@@ -2,7 +2,6 @@ import * as React from 'react'
 import { cn } from '@/lib/utils/cn'
 
 // xAI text-input: canvas-soft bg, hairline border, 8px radius, no shadow
-// Refined: thinner height, better placeholder, smoother focus
 const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, type, ...props }, ref) => (
     <input

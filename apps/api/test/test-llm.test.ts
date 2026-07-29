@@ -9,7 +9,6 @@ import { setGenerateTextFn } from '../src/routes/test-llm.js'
 let tmp: string
 
 // Hono's `app.request` returns a fetch Response; `.json()` is typed `unknown`.
-// biome-ignore lint/suspicious/noExplicitAny: test-only response shape is intentionally loose
 async function json(res: Response): Promise<any> {
   return await res.json()
 }
@@ -58,7 +57,7 @@ describe('POST /api/test-llm', () => {
     expect(typeof body.durationMs).toBe('number')
   })
 
-  it('returns ok:false with error when generateText throws', async () => {
+  it('returns 500 with internal_error when generateText throws', async () => {
     setGenerateTextFn(
       vi.fn(async () => {
         throw new Error('connection refused')
@@ -74,15 +73,14 @@ describe('POST /api/test-llm', () => {
         apiKey: 'sk-test',
       }),
     })
-    // The route catches the error and returns a 200 with ok:false (by design).
-    expect(res.status).toBe(200)
+    // LLM call errors return 500 internal_error (matches the rest of the API).
+    expect(res.status).toBe(500)
     const body = await json(res)
-    expect(body.ok).toBe(false)
-    expect(body.error).toContain('connection refused')
-    expect(typeof body.durationMs).toBe('number')
+    expect(body.error).toBe('internal_error')
+    expect(body.message).toContain('connection refused')
   })
 
-  it('rejects a request missing apiKey → schema throw → 500', async () => {
+  it('rejects a request missing apiKey → schema throw → 400', async () => {
     // No generateText stub needed — the route should throw before reaching it.
     const res = await app.request('/api/test-llm', {
       method: 'POST',
@@ -93,11 +91,13 @@ describe('POST /api/test-llm', () => {
         // apiKey intentionally omitted
       }),
     })
-    // TestLlmRequestSchema.parse throws → app.onError → 500.
-    expect(res.status).toBe(500)
+    // TestLlmRequestSchema.parse throws → app.onError → 400 bad_request.
+    expect(res.status).toBe(400)
+    const body = await json(res)
+    expect(body.error).toBe('bad_request')
   })
 
-  it('rejects an invalid provider enum → schema throw → 500', async () => {
+  it('rejects an invalid provider enum → schema throw → 400', async () => {
     const res = await app.request('/api/test-llm', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -107,6 +107,8 @@ describe('POST /api/test-llm', () => {
         apiKey: 'x',
       }),
     })
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(400)
+    const body = await json(res)
+    expect(body.error).toBe('bad_request')
   })
 })

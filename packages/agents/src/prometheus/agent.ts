@@ -1,14 +1,12 @@
-import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
-import { getMcpTools } from '@open-scientist/mcp'
-import { type McpServerConfig, PrometheusOutputSchema } from '@open-scientist/schema'
 import {
-  createLoadSkillTool,
-  createNodeSandbox,
-  DEFAULT_SKILLS_DIR,
-  discoverSkills,
-} from '@open-scientist/skills'
-import { createBashToolForHypothesis, createMhdConfigTool } from '@open-scientist/tools'
+  createModelFromConfig,
+  thinkingLevelToProviderOptions,
+  type ModelArg,
+} from '@open-scientist/config'
+import { type McpServerConfig, PrometheusOutputSchema } from '@open-scientist/schema'
+import { createMhdConfigTool } from '@open-scientist/tools'
 import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
+import { assembleDefaultTools } from '../shared/tool-assembly.ts'
 import { makeSubmitResultTool } from '../shared/tool-output.ts'
 
 export interface PrometheusAgentDeps {
@@ -61,18 +59,13 @@ const PROMETHEUS_WORKSPACE = 'prometheus'
  *   file under `data/projects/<projectId>/mhd/<runId>.cfg` + returns MhdConfig
  *   (cfgPath / proposalPath / summary). Called only on the final round.
  * - `bash` / `readFile` / `writeFile` — bash-tool bound to a SHARED prometheus
- *   workspace (`data/projects/<projectId>/workspace/prometheus/`). No sandbox —
+ *   workspace (`data/projects/<projectId>/runs/<runId>/prometheus/`). No sandbox —
  *   runs on host per AGENTS.md decision. Shared across rounds of one run.
  * - `loadSkill` — progressive disclosure (loads `mhd-config-gen` SKILL.md)
  *
- * NOTE: createBashTool is async (sandbox init) + discoverSkills does fs I/O, so this
- * whole factory is async. Call it before `agent.stream()`. runtimeContext carries
- * only serializable identifiers (projectId / runId / round).
- *
- * Tool-to-destination equivalence: createBashToolForHypothesis(projectId, 'prometheus')
- * calls createBashTool({ destination: getWorkspaceDir(projectId, 'prometheus') }) —
- * identical to the SPEC's literal form, but kept here via the tools package to avoid
- * a direct bash-tool dependency in the agents package.
+ * NOTE: This factory is async because `assembleDefaultTools` performs async I/O
+ * (bash workspace dir creation + skills discovery). Call it before `agent.stream()`.
+ * runtimeContext carries only serializable identifiers (projectId / runId / round).
  */
 export async function getDefaultPrometheusTools(
   projectId: string,
@@ -80,25 +73,16 @@ export async function getDefaultPrometheusTools(
   skillDirectories?: string[],
   mcpServers?: McpServerConfig[],
 ): Promise<ToolSet> {
-  const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
-  const bashToolkit = await createBashToolForHypothesis(projectId, runId, PROMETHEUS_WORKSPACE)
-  const skills = await discoverSkills(createNodeSandbox(), dirs)
-  const loadSkillTool = createLoadSkillTool(skills)
-
-  const baseTools: ToolSet = {
-    mhdConfig: createMhdConfigTool(projectId),
-    bash: bashToolkit.tools.bash,
-    readFile: bashToolkit.tools.readFile,
-    writeFile: bashToolkit.tools.writeFile,
-    loadSkill: loadSkillTool,
-  }
-  if (mcpServers && mcpServers.length > 0) {
-    for (const server of mcpServers) {
-      const mcpTools = await getMcpTools(server)
-      Object.assign(baseTools, mcpTools)
-    }
-  }
-  return baseTools
+  return assembleDefaultTools({
+    projectId,
+    runId,
+    workspaceSlot: PROMETHEUS_WORKSPACE,
+    extraTools: {
+      mhdConfig: createMhdConfigTool(projectId),
+    },
+    skillDirectories,
+    mcpServers,
+  })
 }
 
 export async function createPrometheusAgent({
@@ -112,6 +96,10 @@ export async function createPrometheusAgent({
   runtimeContext,
 }: PrometheusAgentDeps) {
   const model = createModelFromConfig(modelConfig)
+  const providerOptions = thinkingLevelToProviderOptions(
+    modelConfig.provider,
+    modelConfig.thinkingLevel,
+  )
   const resolvedTools =
     tools ?? (await getDefaultPrometheusTools(projectId, runId, skillDirectories, mcpServers))
 
@@ -124,10 +112,13 @@ export async function createPrometheusAgent({
     maxOutputTokens: 8192,
     id: 'prometheus',
     model,
+    providerOptions,
     toolChoice: 'auto',
     instructions:
       instructions ??
       `你是 Prometheus，太阳物理日冕加热研究的多轮规划 agent（Scaling Test-time Compute）。
+
+**所有输出（plan、observationProposal、rationale 等自然语言字段）必须用中文撰写。** 只有 MHD cfg 参数名、工具名、JSON key 保持英文。
 
 你的职责：
 1. 根据当前假设分数分布和用户（人在回路）物理直觉，动态调整下一轮突变搜索的物理参数范围。
@@ -141,6 +132,7 @@ export async function createPrometheusAgent({
 - 用 \`uv pip install <package>\` 安装 Python 包（如 uv pip install astropy sunpy scipy numpy）。
 - 用 \`uv run python script.py\` 运行 Python 脚本（隔离依赖）。
 - 你的工作目录是沙箱工作区——所有文件操作（writeFile、readFile、bash）仅限此目录。不要尝试访问外部文件。
+- **不要使用 \`cd\` 命令**——bash 工具已经自动设置工作目录到你的沙箱工作区。直接运行命令即可。
 
 工具指引：
 - 加载 'mhd-config-gen' skill 获取 MHD 配置生成指引——在末轮（或收敛时）首先加载。skill 涵盖 .cfg 字段布局、从获胜 filter 阈值推导参数、观测建议书格式、推荐的卫星/仪器表（SDO/AIA、SDO/HMI、Hinode/XRT、IRIS、Parker Solar Probe、Solar Orbiter）。
@@ -162,5 +154,3 @@ mhdConfig 工具会把观测建议书写入文件，返回 { cfgPath, proposalPa
     ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }
-
-export type PrometheusAgent = Awaited<ReturnType<typeof createPrometheusAgent>>

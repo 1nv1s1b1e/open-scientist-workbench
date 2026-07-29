@@ -1,12 +1,11 @@
-// Temporary probe route to verify tournamentWorkflow stream flattening.
-// Kept for ongoing observation after P0 runs route lands; not registered by
-// default (see routes/index.ts).
+// Debug probe route to verify tournamentWorkflow stream flattening.
+// Registered in routes/index.ts — runs in all environments.
 
 import type { ModelArg } from '@open-scientist/config'
 import { createCredentialStore } from '@open-scientist/storage'
-import { createUIMessageStreamResponse, type UIMessageChunk } from 'ai'
 import { Hono } from 'hono'
 
+import { respondWithRunStream } from '../lib/run-helpers'
 import { start as startRun } from '../lib/run-stream'
 
 export const devProbe = new Hono()
@@ -22,15 +21,14 @@ devProbe.post('/api/dev-probe/stream-test', async (c) => {
   const list = await store.list()
   const cred = list.find((r) => r.provider === 'openai')
   if (!cred) return c.json({ error: 'no openai credential in store' }, 500)
-  const full = await store.get(cred.id)
-  if (!full) return c.json({ error: 'credential vanished' }, 500)
 
   const modelConfig: ModelArg = {
     provider: 'openai',
     model: 'llab/Qwen3-Next-80B-A3B-Instruct',
-    ...(full.baseURL ? { baseURL: full.baseURL } : {}),
-    apiKey: full.apiKey,
+    ...(cred.baseURL ? { baseURL: cred.baseURL } : {}),
+    apiKey: cred.apiKey,
     thinkingLevel: 'medium',
+    apiMode: 'chat',
   }
 
   const runId = `probe-${Date.now()}`
@@ -41,14 +39,5 @@ devProbe.post('/api/dev-probe/stream-test', async (c) => {
     modelConfig,
   })
 
-  return createUIMessageStreamResponse({
-    stream: run.getReadable({ startIndex: 0 }).pipeThrough(
-      new TransformStream<UIMessageChunk, UIMessageChunk>({
-        transform(chunk, controller) {
-          controller.enqueue(chunk)
-        },
-      }),
-    ),
-    headers: { 'x-workflow-run-id': run.runId },
-  })
+  return respondWithRunStream(c, run, 0)
 })

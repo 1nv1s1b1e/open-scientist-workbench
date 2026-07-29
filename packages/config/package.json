@@ -11,13 +11,16 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.2",
     "@ai-sdk/openai": "^4.0.16",
+    "@ai-sdk/provider-utils": "^5.0.11",
     "@open-scientist/logger": "workspace:*",
     "@open-scientist/schema": "workspace:*",
     "ai": "^7.0.31",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "typescript": "^6.0.3"
   }
 }

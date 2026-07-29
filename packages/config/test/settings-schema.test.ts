@@ -148,14 +148,18 @@ describe('GlobalSettingsSchema', () => {
     expect(s.models).toEqual({})
   })
 
-  it('throws when tournament is missing', () => {
-    expect(() =>
-      GlobalSettingsSchema.parse({
-        models: {},
-        concurrency: { maxConcurrentRuns: 4 },
-        steering: { mode: 'one-at-a-time' },
-      }),
-    ).toThrow()
+  it('applies tournament defaults when tournament is missing', () => {
+    const s = GlobalSettingsSchema.parse({
+      models: {},
+      concurrency: { maxConcurrentRuns: 4 },
+      steering: { mode: 'one-at-a-time' },
+    })
+    expect(s.tournament).toEqual({
+      maxRounds: 10,
+      targetF1: 0.9,
+      convergenceWindow: 3,
+      convergenceThreshold: 0.005,
+    })
   })
 
   it('throws when a model entry is missing credentialId', () => {

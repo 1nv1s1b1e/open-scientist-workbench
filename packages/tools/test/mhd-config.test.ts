@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
 import { createMhdConfigTool } from '../src/mhd-config.ts'
 
 /**
- * mhdConfigTool.execute calls getMhdDir(runId) → resolve(getBaseDir(), 'projects', runId, 'mhd').
+ * mhdConfigTool.execute calls getMhdDir(boundProjectId) → resolve(getBaseDir(), 'projects', boundProjectId, 'mhd').
  * `env` is a Proxy that re-reads `process.env.BASE_DIR` on every access, so
  * each test just sets BASE_DIR at a fresh temp dir — no vi.resetModules().
  */

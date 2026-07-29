@@ -30,7 +30,7 @@
 
 - **schema**：7 文件 Zod schemas（hypothesis/eval/critique/plan/evidence/api/runtime-context + settings），零业务依赖
 - **config**：env（4 变量 zod 校验）+ paths（12 路径函数）+ constants + settings（两层 merge：global `data/settings.json` + per-project override）+ models（provider 抽象 + `getAgentModel` + `createModelFromConfig`，OpenAI 优先，支持 baseURL）
-- **storage**：双 SQLite（`data/global.sqlite` 全局 credentials/settings/mcp_trust/mcp_tool_baselines + per-project `db.sqlite` 10 表）+ Drizzle ORM + WAL + 8 repo + `CredentialStore`（AES-256-CBC 加密 + 串行 modifyLock 防 OAuth 双刷）+ 自动 migration
+- **storage**：双 SQLite（`data/global.sqlite` 全局 credentials/settings + per-project `db.sqlite` 10 表）+ Drizzle ORM + WAL + 8 repo + `CredentialStore`（AES-256-CBC 加密 + 串行 modifyLock 防 OAuth 双刷）+ 自动 migration
 - **helix**：HelixDB client 封装 + 26 个 DSL 查询（15 read + 11 write）+ `queries.json` 运行时生成
 - **logger**：consola wrapper + 11 个预定义 tag + `setLogLevel`
 
@@ -38,7 +38,7 @@
 
 - **tools**：14 个 helix tool（9 read + 5 write，精确 inputSchema/outputSchema）+ `createBashToolForHypothesis`（bash-tool 封装，per-hypo workspace 隔离）+ `mhdConfigTool`（写 .cfg 文件）+ `fitsAlignTool`（informative stub，throw 带安装指引）
 - **skills**：`Sandbox` 接口 + `createNodeSandbox` + `discoverSkills`（frontmatter 解析，first-name-wins）+ `buildSkillsPrompt` + `createLoadSkillTool` + 5 个默认 SKILL.md（solar-physics-rag / fits-snapshot-search / critique-protocol / mhd-config-gen / hypothesis-mutation）+ `DEFAULT_SKILLS_DIR` 导出
-- **mcp**：3 个自定义 MCP server（helix 13 tools / fits 3 tools / sandbox 4 tools）+ `getMcpTools`（client 缓存）+ `resolveTransport`（http/sse/stdio）+ `checkMcpTrust`（`fingerprintTools` + `detectToolDrift` 漂移检测）+ `trustServer` + stdio bin 入口 + 8 个集成测试（InMemoryTransport）
+- **mcp**：3 个自定义 MCP server（helix 13 tools / fits 3 tools / sandbox 4 tools）+ `getMcpTools`（client 缓存）+ `resolveTransport`（http/sse/stdio）+ stdio bin 入口 + 8 个集成测试（InMemoryTransport）
 
 #### `bf11770` — feat(agents-api): 6 WorkflowAgent + Hono API
 
@@ -70,8 +70,8 @@
 - **Prometheus**：mhdConfig + bash（`__prometheus__` workspace）+ loadSkill（mhd-config-gen）
 - **Sisyphus**：`review_leading_hypothesis` tool（`needsApproval: true`，Phase 4 接 approval transport）+ `tournamentWorkflow`（纯确定性控制流：Round 1 librarian → Loop(explore 并行 background spawn → oracle direct await → prometheus → 收敛检测) → 末轮 MHD cfg）
 - **steps/index.ts（Sisyphus）**：`spawnExploreEvalStep` / `waitForRunStep` / `snapshotStep`（三个 `'use step'` 函数）
-- **关键 API 事实**：`getWritable` 从 `workflow` 导入；`ModelCallStreamPart` 从 `@ai-sdk/workflow` 导入；`result.output` 不是 Promise；`start(childWorkflow, [args])` 返回 `Run<TResult>`，`await run.returnValue` 拿 output；`needsApproval` 在 AI SDK 7 被 deprecated 但 tool-level 仍是唯一机制
-- **重构**：`sisyphus/logic.ts` 提取 6 个纯函数（updateHypothesesWithEval/computeLeader/shouldStopByTarget/applyOraclePruning/buildConvergenceEntry/shouldStopByPrometheus）；`oracle/logic.ts` 提取 buildHypothesesBlock/buildEvalSummaryBlock；`apps/api/src/lib/deep-merge.ts` 提取 deepMerge
+- **关键 API 事实**（WorkflowAgent 时代，已迁移）：`getWritable` 从 `workflow` 导入；`ModelCallStreamPart` 从 `@ai-sdk/workflow` 导入；`result.output` 不是 Promise；`start(childWorkflow, [args])` 返回 `Run<TResult>`，`await run.returnValue` 拿 output；`needsApproval` 在 AI SDK 7 被 deprecated 但 tool-level 仍是唯一机制
+- **重构**：`sisyphus/logic.ts` 提取 6 个纯函数（updateHypothesesWithEval/computeLeader/shouldStopByTarget/applyOraclePruning/buildConvergenceEntry/shouldStopByPrometheus）；`oracle/logic.ts` 提取 buildHypothesesBlock/buildEvalSummaryBlock；`apps/api/src/lib/deep-merge.ts` 提取 deepMerge（logic.ts 后在 ToolLoopAgent 迁移时内联进 workflow.ts）
 
 #### `9e84fd7` — test: expand coverage 28→341
 
@@ -82,7 +82,7 @@
 - **storage**（68 tests）：credential-crypto 纯函数 + repo CRUD（全 8 repo）+ credential-store + migrations
 - **tools**（37 tests）：14 helix tool schema + fits-align stub + mhd-config 写文件
 - **skills**（12 tests）：discover tmpdir + buildSkillsPrompt + load-tool
-- **mcp**（20 tests）：servers（8 集成）+ registry resolveTransport + trust 三分支
+- **mcp**（20 tests）：servers（8 集成）+ registry resolveTransport
 - **agents**（56 tests）：sisyphus-logic 纯函数 + 6 agent 构造 + 6 agent tools 装配 + snapshot-step + workflow import smoke + oracle-prompt
 - **apps/api**（30 tests）：routes（health/settings/projects/credentials/404）+ test-llm + settings-merge
 
@@ -98,7 +98,7 @@
 
 - `test-llm.ts`：加 module-level `generateTextFn` + `setGenerateTextFn` setter，route 内改调 `generateTextFn`（生产默认用真实 `generateText`）
 - `test-llm.test.ts`：去掉 `loadAppWithMockedAi` + `vi.resetModules` + `vi.doMock('ai')`，改用 `setGenerateTextFn(vi.fn(...))`
-- 整个项目**零 `vi.doMock`**，只剩 `vi.mock` 用于 mcp trust/registry/servers（mock 外部 MCP SDK，合理）
+- 整个项目**零 `vi.doMock`**，只剩 `vi.mock` 用于 mcp registry/servers（mock 外部 MCP SDK，合理）
 
 #### `484e832` — docs: PROGRESS.md 落盘
 
@@ -351,24 +351,23 @@
 
 **待实现端点**（已有：health/settings/credentials/projects/test-llm）：
 
-| 优先级 | Method   | Path                                          | 功能                                            | 依赖                                             |
-| ------ | -------- | --------------------------------------------- | ----------------------------------------------- | ------------------------------------------------ |
-| P0     | POST     | `/projects/:name/runs`                        | 启动 Tournament run（seed hypothesis）          | `tournamentWorkflow` + `start()` + run repo      |
-| P0     | GET      | `/projects/:name/runs/:runId/stream`          | SSE 流（workflow 事件 + tool-approval-request） | `Run.readable` + `createUIMessageStreamResponse` |
-| P0     | GET      | `/projects/:name/runs/:runId`                 | 获取 run 状态                                   | run repo                                         |
-| P0     | POST     | `/projects/:name/runs/:runId/stop`            | 终止 run                                        | `Run.cancel()`                                   |
-| P1     | POST     | `/projects/:name/runs/:runId/approve`         | 提交人机协同审批                                | `needsApproval` tool + workflow resume           |
-| P1     | POST     | `/projects/:name/runs/:runId/steer`           | 注入 steering/follow-up 消息                    | message queue + turn boundary                    |
-| P2     | GET      | `/projects/:name/runs/:runId/hypotheses`      | 列出假设池                                      | hypothesis repo                                  |
-| P2     | GET      | `/projects/:name/hypotheses/:hypoId`          | 获取假设详情                                    | hypothesis repo                                  |
-| P2     | GET      | `/projects/:name/hypotheses/:hypoId/evidence` | 获取证据                                        | evidence repo                                    |
-| P2     | GET      | `/projects/:name/runs/:runId/rounds/:n`       | 获取某轮快照                                    | FS `rounds/<n>/snapshot.json`                    |
-| P2     | GET      | `/projects/:name/runs/:runId/mhd`             | 下载 MHD cfg                                    | FS `mhd/<runId>.cfg`                             |
-| P2     | GET      | `/projects/:name/runs`                        | 列出 runs                                       | run repo                                         |
-| P3     | POST     | `/credentials/:id/refresh`                    | 手动触发 OAuth refresh                          | CredentialStore                                  |
-| P3     | PUT      | `/projects/:name/mcp/config`                  | 更新 MCP server 配置                            | mcp registry                                     |
-| P3     | GET/POST | `/projects/:name/mcp/trust`                   | MCP server trust 管理                           | mcp trust repo                                   |
-| P3     | PUT      | `/projects/:name/skills`                      | 上传/更新 project 级 skills                     | FS skills/                                       |
+| 优先级 | Method | Path                                          | 功能                                            | 依赖                                             |
+| ------ | ------ | --------------------------------------------- | ----------------------------------------------- | ------------------------------------------------ |
+| P0     | POST   | `/projects/:name/runs`                        | 启动 Tournament run（seed hypothesis）          | `tournamentWorkflow` + `start()` + run repo      |
+| P0     | GET    | `/projects/:name/runs/:runId/stream`          | SSE 流（workflow 事件 + tool-approval-request） | `Run.readable` + `createUIMessageStreamResponse` |
+| P0     | GET    | `/projects/:name/runs/:runId`                 | 获取 run 状态                                   | run repo                                         |
+| P0     | POST   | `/projects/:name/runs/:runId/stop`            | 终止 run                                        | `Run.cancel()`                                   |
+| P1     | POST   | `/projects/:name/runs/:runId/approve`         | 提交人机协同审批                                | `needsApproval` tool + workflow resume           |
+| P1     | POST   | `/projects/:name/runs/:runId/steer`           | 注入 steering/follow-up 消息                    | message queue + turn boundary                    |
+| P2     | GET    | `/projects/:name/runs/:runId/hypotheses`      | 列出假设池                                      | hypothesis repo                                  |
+| P2     | GET    | `/projects/:name/hypotheses/:hypoId`          | 获取假设详情                                    | hypothesis repo                                  |
+| P2     | GET    | `/projects/:name/hypotheses/:hypoId/evidence` | 获取证据                                        | evidence repo                                    |
+| P2     | GET    | `/projects/:name/runs/:runId/rounds/:n`       | 获取某轮快照                                    | FS `rounds/<n>/snapshot.json`                    |
+| P2     | GET    | `/projects/:name/runs/:runId/mhd`             | 下载 MHD cfg                                    | FS `mhd/<runId>.cfg`                             |
+| P2     | GET    | `/projects/:name/runs`                        | 列出 runs                                       | run repo                                         |
+| P3     | POST   | `/credentials/:id/refresh`                    | 手动触发 OAuth refresh                          | CredentialStore                                  |
+| P3     | PUT    | `/projects/:name/mcp/config`                  | 更新 MCP server 配置                            | mcp registry                                     |
+| P3     | PUT    | `/projects/:name/skills`                      | 上传/更新 project 级 skills                     | FS skills/                                       |
 
 **关键实现点**：
 
@@ -392,8 +391,8 @@
 4. **人机协同审批**（`POST /projects/:name/runs/:runId/approve`，P1）：
    - `review_leading_hypothesis` tool 带 `needsApproval: true`，workflow 暂停 + persist resume state
    - 客户端 POST `{approved: bool, reason?}` → workflow resume
-   - **难点**：AI SDK 7 的 `needsApproval` 被 deprecated，替代方案是 `streamText` 的 `toolApproval` option，但 `WorkflowAgentStreamOptions` 不暴露该 option。需调研 workflow resume 机制（`continueStream`）或自建 approval queue
-   - **TODO**：Phase 4 先实现 P0 端点，approval 留 P1 调研
+   - **难点**：AI SDK 7 的 `needsApproval` 被 deprecated，替代方案是 `streamText` 的 `toolApproval` option（ToolLoopAgent 构造时或 `prepareCall` 返回值设置）。需调研或自建 approval queue
+   - **未实现**：Phase 4 先实现 P0 端点，approval 留 P1
 
 5. **Steering 注入**（`POST /projects/:name/runs/:runId/steer`，P1）：
    - 接收 `{content, mode: 'steering'|'follow-up'}`
@@ -445,7 +444,7 @@
 - **`@hono/node-server` + tsx**：dev 用 `tsx watch src/server.ts`（on-the-fly type stripping + watch），生产用 `tsc` → `node dist/server.js`，无 build-time bundle。
 - **bash-tool 无沙箱**：host child_process，靠 project name 隔离 working dir（用户明确决定不加 Docker）
 - **模型配置全走 Web API + 文件**：不用 .env 存模型配置（settings.json + CredentialStore）
-- **MCP server 是远程代码执行**：per-project 加载需信任（`mcp_trust` 表 + `fingerprintTools` 漂移检测）
+- **MCP server 是远程代码执行**：per-project 自动信任（无 trust gate）
 - **不要用 ESLint/Prettier/Biome**（用 Vite+ 的 Oxlint + Oxfmt）/ **不要用 Bun**（用 Node.js + pnpm）/ **不要给 Explore 的 Python 加 Docker 沙箱**
 
 ---

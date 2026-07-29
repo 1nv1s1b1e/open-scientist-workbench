@@ -15,9 +15,7 @@
   "dependencies": {
     "@helix-db/helix-db": "^2.0.5",
     "@open-scientist/config": "workspace:*",
-    "@open-scientist/logger": "workspace:*",
-    "@open-scientist/schema": "workspace:*",
-    "zod": "^4.4.3"
+    "@open-scientist/logger": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3"

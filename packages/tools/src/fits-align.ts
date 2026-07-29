@@ -5,11 +5,18 @@ import { z } from 'zod'
 
 const logger = createLogger('tools')
 
-// Informativ stub: the Python scientific stack (astropy / sunpy / scipy / numpy)
-// is not installed in this environment, so real FITS/video alignment cannot run.
-// We throw a descriptive error so the agent learns the tool is unavailable and
-// can either surface the install instructions to the user or fall back to other
-// tools. The outputSchema is retained for when a real implementation lands.
+// Informative stub: the Python scientific stack (astropy / sunpy / scipy / numpy)
+// is not installed, so real FITS/video alignment cannot run. The tool throws a
+// descriptive error so the agent learns it is unavailable and can fall back to
+// other tools or surface install instructions to the user.
+//
+// NOTE: The MCP fits-server (`packages/mcp/src/servers/fits-server.ts`) exposes
+// a parallel `align_fits` stub that returns a graceful `{ok:false, stub:true}`
+// JSON payload (non-throwing) instead. The two stubs intentionally differ in
+// error contract: the in-process tool throws (AI SDK idiom for unavailable
+// tools), the MCP server returns a result (MCP idiom — no exceptions over
+// stdio). When a real Python bridge lands, update both in tandem. The
+// outputSchema is retained for when a real implementation replaces this stub.
 export const fitsAlignTool = tool({
   description:
     'Align high-score candidate cases with raw FITS images and MP4 video clips by spatiotemporal index. Requires Python with astropy + sunpy installed.',

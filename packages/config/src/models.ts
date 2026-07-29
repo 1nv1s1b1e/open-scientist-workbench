@@ -1,4 +1,6 @@
+import { createAnthropic } from '@ai-sdk/anthropic'
 import { createOpenAI } from '@ai-sdk/openai'
+import type { ProviderOptions } from '@ai-sdk/provider-utils'
 import { createLogger } from '@open-scientist/logger'
 import type { CredentialStore } from '@open-scientist/schema'
 import type { LanguageModel } from 'ai'
@@ -19,9 +21,7 @@ export class ModelAliasNotFoundError extends Error {
   }
 }
 
-export interface ProviderFactory {
-  create(config: ModelArg): LanguageModel
-}
+export type Provider = 'openai' | 'anthropic'
 
 /**
  * Serializable model descriptor passed across workflow + step boundaries.
@@ -38,40 +38,99 @@ export interface ProviderFactory {
  * credential-agnostic `ModelConfig` with a credential from `CredentialStore`.
  */
 export interface ModelArg {
-  provider: 'openai' | 'anthropic'
+  provider: Provider
   model: string
   baseURL?: string
   thinkingLevel: string
+  /** OpenAI only: 'chat' = /v1/chat/completions, 'responses' = /v1/responses. Anthropic ignores this. */
+  apiMode: 'chat' | 'responses'
   apiKey: string
 }
 
-class OpenAIFactory implements ProviderFactory {
-  create(config: ModelArg): LanguageModel {
-    logger.info(
-      {
-        provider: config.provider,
-        model: config.model,
-        baseURL: config.baseURL,
-        apiKeyPrefix: config.apiKey?.slice(0, 8),
-        thinkingLevel: config.thinkingLevel,
-      },
-      'OpenAIFactory.create: constructing language model',
-    )
-    const openai = createOpenAI({ apiKey: config.apiKey, baseURL: config.baseURL })
-    // 用 chat completions API（/v1/chat/completions）而非默认的 responses API（/v1/responses）。
-    // 自建/第三方 OpenAI 兼容网关（vLLM、Qwen 等）普遍只完整支持 chat completions，
-    // responses API 的 schema 校验（error.type、annotations 数组）常不匹配。
-    const model = openai.chat(config.model)
-    logger.info(
-      { provider: config.provider, model: config.model },
-      'OpenAIFactory.create: model constructed',
-    )
-    return model
+/**
+ * Provider-specific options derived from `thinkingLevel`. Passed to the
+ * `ToolLoopAgent` constructor as `providerOptions` so every `streamText` /
+ * `generateText` call inside the agent loop applies them.
+ *
+ * - **openai**: `reasoningEffort` ('none'..'max'). 'off' maps to 'none'.
+ * - **anthropic**: `thinking` (adaptive for newer models; 'off' omits the key).
+ */
+export function thinkingLevelToProviderOptions(
+  provider: Provider,
+  thinkingLevel: string,
+): ProviderOptions {
+  if (provider === 'openai') {
+    const effortMap: Record<string, string> = {
+      off: 'none',
+      minimal: 'minimal',
+      low: 'low',
+      medium: 'medium',
+      high: 'high',
+      xhigh: 'xhigh',
+      max: 'max',
+    }
+    return { openai: { reasoningEffort: effortMap[thinkingLevel] ?? 'medium' } }
+  }
+  // anthropic — adaptive thinking with effort; 'off' disables
+  if (thinkingLevel === 'off') return {}
+  const effortMap: Record<string, string> = {
+    minimal: 'low',
+    low: 'low',
+    medium: 'medium',
+    high: 'high',
+    xhigh: 'high',
+    max: 'max',
+  }
+  return {
+    anthropic: {
+      thinking: { type: 'adaptive', effort: effortMap[thinkingLevel] ?? 'medium' },
+    },
   }
 }
 
-const factories: Record<string, ProviderFactory> = {
-  openai: new OpenAIFactory(),
+/**
+ * Construct a `LanguageModel` from a {@link ModelArg}.
+ *
+ * - `openai`: `createOpenAI` + `.chat()` (chat completions API) or `.responses()`
+ *   (responses API). Third-party OpenAI-compatible gateways (vLLM, Qwen) only
+ *   support chat completions — use `apiMode: 'chat'` for those.
+ * - `anthropic`: `createAnthropic` + default model accessor.
+ */
+function createLanguageModel(config: ModelArg): LanguageModel {
+  logger.info(
+    {
+      provider: config.provider,
+      model: config.model,
+      baseURL: config.baseURL,
+      apiKeyPrefix: config.apiKey?.slice(0, 8),
+      thinkingLevel: config.thinkingLevel,
+      apiMode: config.apiMode,
+    },
+    'createLanguageModel: constructing language model',
+  )
+
+  if (config.provider === 'anthropic') {
+    const anthropic = createAnthropic({
+      apiKey: config.apiKey,
+      ...(config.baseURL ? { baseURL: config.baseURL } : {}),
+    })
+    const model = anthropic(config.model)
+    logger.info(
+      { provider: config.provider, model: config.model },
+      'createLanguageModel: model constructed',
+    )
+    return model
+  }
+
+  // openai
+  const openai = createOpenAI({ apiKey: config.apiKey, baseURL: config.baseURL })
+  const model =
+    config.apiMode === 'responses' ? openai.responses(config.model) : openai.chat(config.model)
+  logger.info(
+    { provider: config.provider, model: config.model, apiMode: config.apiMode },
+    'createLanguageModel: model constructed',
+  )
+  return model
 }
 
 /**
@@ -117,49 +176,16 @@ export async function resolveModelArg(
     )
   }
 
-  const provider = cred.provider as 'openai' | 'anthropic'
-  const factory = factories[provider]
-  if (!factory) throw new Error(`Unsupported provider: ${provider}`)
-
   return {
-    provider,
+    provider: cred.provider,
     model: cfg.model,
     ...(cred.baseURL ? { baseURL: cred.baseURL } : {}),
     apiKey: cred.apiKey,
     thinkingLevel: cfg.thinkingLevel ?? DEFAULT_THINKING_LEVEL,
+    apiMode: cfg.apiMode ?? 'chat',
   }
 }
 
-/**
- * Resolve a {@link LanguageModel} for an agent role (convenience wrapper around
- * {@link resolveModelArg} + {@link createModelFromConfig}).
- */
-export async function getAgentModel(
-  role: AgentRole,
-  projectName: string | undefined,
-  credentials: CredentialStore,
-): Promise<LanguageModel> {
-  logger.info({ role, projectName }, 'getAgentModel: start')
-  const modelArg = await resolveModelArg(projectName, credentials, { role })
-  logger.info(
-    { role, projectName, provider: modelArg.provider, model: modelArg.model },
-    'getAgentModel: model arg resolved',
-  )
-  return createModelFromConfig(modelArg)
-}
-
-// 便利函数：给定 ModelArg（含 apiKey）直接造 LanguageModel（不走 settings，给 /api/test-llm 用）
 export function createModelFromConfig(config: ModelArg): LanguageModel {
-  logger.info(
-    {
-      provider: config.provider,
-      model: config.model,
-      baseURL: config.baseURL,
-      apiKeyPrefix: config.apiKey?.slice(0, 8),
-    },
-    'createModelFromConfig: start',
-  )
-  const factory = factories[config.provider]
-  if (!factory) throw new Error(`Unsupported provider: ${config.provider}`)
-  return factory.create(config)
+  return createLanguageModel(config)
 }

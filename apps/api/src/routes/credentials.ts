@@ -10,7 +10,7 @@ export const credentials = new Hono()
 
 function toResponse(rec: {
   id: string
-  provider: string
+  provider: 'openai' | 'anthropic'
   type: 'api-key' | 'oauth-token'
   baseURL?: string
   metadata?: Record<string, unknown>

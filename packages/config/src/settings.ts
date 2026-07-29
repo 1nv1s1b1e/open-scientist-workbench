@@ -63,12 +63,7 @@ const DEFAULT_GLOBAL: GlobalSettings = {
       ],
     },
   },
-  tournament: {
-    maxRounds: 10,
-    targetF1: 0.9,
-    convergenceWindow: 3,
-    convergenceThreshold: 0.005,
-  },
+  tournament: TournamentSettingsSchema.parse({}),
   concurrency: { maxConcurrentRuns: 4 },
   steering: { mode: 'one-at-a-time' },
 }

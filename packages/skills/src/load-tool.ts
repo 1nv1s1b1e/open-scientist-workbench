@@ -31,7 +31,7 @@ export function createLoadSkillTool(skills: DiscoveredSkill[]): Tool {
         throw new Error(`Skill not found: ${name}`)
       }
       const content = await readFile(join(skill.directory, 'SKILL.md'), 'utf-8')
-      const withoutFrontmatter = content.replace(/^---\n[\s\S]*?\n---\n?/, '')
+      const withoutFrontmatter = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '')
       logger.info(
         { name, contentLen: withoutFrontmatter.length, directory: skill.directory },
         'loadSkillTool: execute done',

@@ -104,7 +104,6 @@ packages/agents/src/
 ├── sisyphus/
 │   ├── agent.ts             # ToolLoopAgent 构造工厂（拉 tools/skills/config）
 │   ├── workflow.ts          # plain async — tournamentWorkflow 主循环（编排子 workflow、收敛检测）
-│   ├── logic.ts             # 纯函数（updateHypothesesWithEval / computeLeader / shouldStop* / applyOraclePruning）
 │   └── snapshot.ts          # snapshotStep + RoundSnapshot（写 FS snapshot.json）
 ├── librarian/
 │   ├── agent.ts
@@ -117,8 +116,7 @@ packages/agents/src/
 │   └── workflow.ts          # plain async — bash-tool 跑 Python、F1 计算
 ├── oracle/
 │   ├── agent.ts
-│   ├── workflow.ts          # plain async — 批判、突变、反例 debug
-│   └── logic.ts             # 纯函数（buildHypothesesBlock / buildEvalSummaryBlock）
+│   └── workflow.ts          # plain async — 批判、突变、反例 debug（纯函数 buildHypothesesBlock / buildEvalSummaryBlock 已内联）
 ├── prometheus/
 │   ├── agent.ts
 │   └── workflow.ts          # plain async — 规划、MHD cfg 生成
@@ -196,8 +194,7 @@ packages/agents/src/
 - `src/fits-server.ts` — FITS 处理 MCP server（暴露对齐、切片 tools）
 - `src/sandbox-server.ts` — 代码执行 MCP server（暴露 bash、write、read tools）
 - `src/index.ts` — server 启动入口（stdio 本地 / HTTP 生产）
-- `src/registry.ts` — MCP server 注册表（按 project config 动态加载）
-- `src/trust.ts` — **Project Trust 安全机制**（借鉴 Pi）：per-project MCP server 首次连接需用户信任，存 baseline fingerprint，后续 `detectToolDrift` 检测变更
+- `src/registry.ts` — MCP server 注册表（按 project config 动态加载，自动信任）
 
 **MCP 客户端使用**（在 agent 构造时）：
 
@@ -206,9 +203,9 @@ const mcpClient = createMCPClient({transport: {type: 'http', url, headers}})
 const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
 ```
 
-**工具漂移检测**：`fingerprintTools` + `detectToolDrift` 防 "rug pull" 攻击，首次连接人工 review 后存 baseline（存 SQLite）。
+**自动信任**：MCP server 连接即信任，无 trust gate、fingerprint 或漂移检测。
 
-**依赖**：`packages/{helix, schema, storage}`, `@modelcontextprotocol/sdk`, `@ai-sdk/mcp`
+**依赖**：`packages/{helix, schema}`, `@modelcontextprotocol/sdk`, `@ai-sdk/mcp`
 
 ### 3.6 `packages/storage` — SQLite + Drizzle 持久化
 
@@ -217,7 +214,7 @@ const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
 **内容**：
 
 - `src/db.ts` — `better-sqlite3` + WAL mode + Drizzle 实例工厂（per-project）
-- `src/global-db.ts` — **全局 SQLite**（`data/global.sqlite`）：存 credentials、global settings、MCP trust baseline
+- `src/global-db.ts` — **全局 SQLite**（`data/global.sqlite`）：存 credentials、global settings
 - `src/schema.ts` — Drizzle 表定义（见 §5 数据模型）
 - `src/migrate.ts` — migration 脚本
 - `src/repo/` — repository 模式
@@ -230,11 +227,10 @@ const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
   - `plan.ts` — 规划参数 + MHD cfg 引用
   - `credential.ts` — **CredentialStore**（API key / OAuth token 加密存储，串行 modify 防双刷）
   - `settings.ts` — global + project 两层 settings 读写
-  - `mcp-trust.ts` — MCP server trust baseline + fingerprint 存储
 
 **关键设计**：
 
-- **双数据库**：全局 `data/global.sqlite`（credentials/settings/trust）+ per-project `data/projects/<name>/db.sqlite`（run/message/hypothesis 等）
+- **双数据库**：全局 `data/global.sqlite`（credentials/settings）+ per-project `data/projects/<name>/db.sqlite`（run/message/hypothesis 等）
 - per-project database：project 间无锁竞争
 - WAL mode：多读并发 + 写串行，支持单 project 多 run 并发
 - resume state 用 opaque blob 存储（workflow DevKit 序列化格式），`INSERT OR REPLACE`
@@ -371,7 +367,8 @@ export async function tournamentWorkflow(input: TournamentWorkflowInput) {
       emitChunk: input.emitChunk,
     })
 
-    // 人机协同节点（TODO Phase 4：通过 Sisyphus agent + toolApproval 接入）
+    // 人机协同节点（未实现 — Phase 4 P1：通过 Sisyphus agent + toolApproval 接入，
+    // ToolLoopAgent 构造时设 toolApproval 或 prepareCall 返回 'user-approval' 暂停流）
     // const review = await reviewLeadingHypothesis({leadingHypoId, critiques, projectId})
 
     // Prometheus 规划下一轮
@@ -460,16 +457,6 @@ settings: {
   ;(scope, name, value_json, updatedAt)
 }
 // scope: 'global' | 'project:<name>'；name: 'models' | 'tournament' | 'steering' 等
-
-mcp_trust: {
-  ;(id, projectName, serverName, fingerprint, trusted, firstSeen, lastChecked)
-}
-// MCP server 工具漂移检测 baseline
-
-mcp_tool_baselines: {
-  ;(id, trustId, toolName, digest, recordedAt)
-}
-// 每个 tool 的 fingerprint baseline
 ```
 
 **per-project 数据库** `data/projects/<name>/db.sqlite`：
@@ -631,8 +618,6 @@ Step limits（`isStepCount(N)` 双终止条件 + `hasToolCall('submit_result')`�
 | DELETE | `/credentials/:id`                            | 删除 credential                                        |
 | POST   | `/credentials/:id/refresh`                    | 手动触发 OAuth refresh                                 |
 | PUT    | `/projects/:name/mcp/config`                  | 更新 MCP server 配置                                   |
-| GET    | `/projects/:name/mcp/trust`                   | 列出 MCP server trust 状态                             |
-| POST   | `/projects/:name/mcp/trust`                   | 信任/拒绝 MCP server（首次连接 review）                |
 | PUT    | `/projects/:name/skills`                      | 上传/更新 project 级 skills                            |
 | GET    | `/health`                                     | 健康检查                                               |
 
@@ -799,14 +784,14 @@ packages/config → packages/storage (读 credentials + settings)
 
 1. `packages/schema` — 所有 Zod schemas（无依赖，先做）
 2. `packages/config` — paths + constants + settings 读写（依赖 storage，但先用接口解耦）
-3. `packages/storage` — 双 SQLite + Drizzle + migration + repo（含 credentials/settings/mcp_trust）
+3. `packages/storage` — 双 SQLite + Drizzle + migration + repo（含 credentials/settings）
 4. `packages/helix` — HelixDB client + queries
 
 ### Phase 2: 工具层
 
 5. `packages/tools` — bash-tool 封装、helix-query、fits-align、mhd-config
 6. `packages/skills` — discover + prompt + load-tool + 默认 skills
-7. `packages/mcp` — 自定义 MCP server（helix/fits/sandbox）+ trust 机制 + 漂移检测
+7. `packages/mcp` — 自定义 MCP server（helix/fits/sandbox）+ 自动信任
 
 ### Phase 3: Agent 层
 
@@ -834,7 +819,7 @@ packages/config → packages/storage (读 credentials + settings)
 
 - 每 role 两文件：`agent.ts`（构造工厂，`new ToolLoopAgent`）+ `workflow.ts`（plain async，`await agent.stream({messages})` + `streamAgentOutput` + `return result.output`）
 - `runtimeContext` 是 ToolLoopAgent **构造参数**（不是 `agent.stream()` 调用选项）
-- `agent.stream()` 返回 `Promise<StreamTextResult>`，**必须 await**（与 WorkflowAgent 同步返回不同）
+- `agent.stream()` 返回 `Promise<StreamTextResult>`，**必须 await**
 - SSE 流通过 `emitChunk` 回调从子 workflow 逐层冒泡到 `RunRegistry`——tournamentWorkflow 接受 `emitChunk?: EmitChunk`，转发给每个子 workflow
 - `toolApproval`（人机协同审批）在 ToolLoopAgent 构造时或 `prepareCall` 返回值里设置，返回 `'user-approval'` 暂停流 emit `tool-approval-request` chunk
 - **源码内部相对 import 用 `.ts` 后缀**（不是 `.js`）：tsx + Node type stripping 不做 `.js`→`.ts` fallback
@@ -857,7 +842,7 @@ packages/config → packages/storage (读 credentials + settings)
 ### 安全
 
 - env 不进 git（.gitignore）
-- MCP server 工具漂移检测（`fingerprintTools` + `detectToolDrift`）
+- MCP server 自动信任（无 trust gate）
 - project 间数据隔离（独立 SQLite + 独立目录）
 
 ---

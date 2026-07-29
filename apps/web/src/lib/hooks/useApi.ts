@@ -11,14 +11,6 @@ export function useProjects() {
   })
 }
 
-export function useProject(name: string | null) {
-  return useQuery({
-    queryKey: ['project', name],
-    queryFn: () => api.getProject(name!),
-    enabled: !!name,
-  })
-}
-
 export function useCreateProject() {
   const qc = useQueryClient()
   return useMutation({
@@ -50,14 +42,6 @@ export function useUpdateGlobalSettings() {
   })
 }
 
-export function useProjectSettings(project: string | null) {
-  return useQuery({
-    queryKey: ['project-settings', project],
-    queryFn: () => api.getProjectSettings(project!),
-    enabled: !!project,
-  })
-}
-
 /** Credentials */
 export function useCredentials() {
   return useQuery({ queryKey: ['credentials'], queryFn: () => api.listCredentials() })
@@ -84,26 +68,4 @@ export function useTestLlm() {
   return useMutation({
     mutationFn: (body: import('@open-scientist/schema').TestLlmRequest) => api.testLlm(body),
   })
-}
-
-/** Run 状态查询（轮询） */
-export function useRunStatus(project: string | null, runId: string | null) {
-  return useQuery({
-    queryKey: ['run-status', project, runId],
-    queryFn: () => api.getRunStatus(project!, runId!),
-    enabled: !!project && !!runId,
-    // run 进行中时轮询
-    refetchInterval: (query) => {
-      const status = query.state.data?.status
-      if (status === 'running' || status === 'pending' || status === 'awaiting_approval') {
-        return 3000
-      }
-      return false
-    },
-  })
-}
-
-/** Model aliases */
-export function useModelAliases() {
-  return useQuery({ queryKey: ['model-aliases'], queryFn: () => api.listModelAliases() })
 }

@@ -54,16 +54,3 @@ export interface SnapshotNode {
   hypothesisIds: number[]
   createdAt: string
 }
-
-// 边类型
-export type EdgeLabel =
-  | 'CITES'
-  | 'SUPPORTED_BY'
-  | 'CONTRADICTED_BY'
-  | 'CRITIQUED_BY'
-  | 'INVOLVES'
-  | 'MUTATED_FROM'
-  | 'CAPTURED_IN'
-
-// 节点 label
-export type NodeLabel = 'Paper' | 'Hypothesis' | 'Evidence' | 'Critique' | 'Concept' | 'Snapshot'

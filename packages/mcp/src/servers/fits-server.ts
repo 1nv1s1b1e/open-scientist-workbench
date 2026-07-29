@@ -3,11 +3,12 @@ import { resolve } from 'node:path'
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
-  CallToolRequestSchema,
   type CallToolResult,
+  CallToolRequestSchema,
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js'
+import { asString, errorResult, getArg, str, textResult } from './_helpers.ts'
 
 // ------------------------------------------------------------
 // FITS MCP server
@@ -17,10 +18,6 @@ import {
 // 返回安装提示而非真实数据。`list_fits_files` 直接读 FS，可独立运行。
 // 将来若引入 Python 子进程桥接，只需替换对应分支即可，MCP tool 接口不变。
 // ------------------------------------------------------------
-
-function str(desc: string) {
-  return { type: 'string' as const, description: desc }
-}
 
 const ASTROPY_STUB_MSG =
   'FITS processing requires Python with astropy + sunpy installed. ' +
@@ -66,23 +63,6 @@ const TOOLS: Tool[] = [
   },
 ]
 
-function textResult(payload: unknown): CallToolResult {
-  return { content: [{ type: 'text', text: JSON.stringify(payload) }] }
-}
-
-function errorResult(message: string): CallToolResult {
-  return { content: [{ type: 'text', text: message }], isError: true }
-}
-
-function asString(v: unknown, key: string): string {
-  if (typeof v !== 'string') throw new TypeError(`'${key}' must be a string`)
-  return v
-}
-
-function getArg(args: Record<string, unknown> | undefined, key: string): unknown {
-  return args?.[key]
-}
-
 async function dispatch(name: string, args: Record<string, unknown> | undefined): Promise<unknown> {
   const a = args ?? {}
   switch (name) {
@@ -105,7 +85,7 @@ async function dispatch(name: string, args: Record<string, unknown> | undefined)
       const files = entries
         .filter((e) => e.isFile())
         .map((e) => e.name)
-        .filter((name) => (ext ? name.toLowerCase().endsWith(ext) : true))
+        .filter((fileName) => (ext ? fileName.toLowerCase().endsWith(ext) : true))
       return textResult({ directory: dir, files })
     }
     case 'read_fits_header':

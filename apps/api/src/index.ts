@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { registerRoutes } from './routes'
+import { registerRoutes } from './routes/index.ts'
+import { ZodError } from 'zod'
 
 const app = new Hono()
 
@@ -21,6 +22,10 @@ app.notFound((c) => {
 })
 
 app.onError((err, c) => {
+  if (err instanceof ZodError) {
+    const message = err.issues.map((i) => i.message).join('; ')
+    return c.json({ error: 'bad_request', message }, 400)
+  }
   const message = err instanceof Error ? err.message : String(err)
   return c.json({ error: 'internal_error', message }, 500)
 })

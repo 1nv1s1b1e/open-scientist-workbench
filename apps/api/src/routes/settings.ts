@@ -19,6 +19,23 @@ import { deepMerge } from '../lib/deep-merge.js'
 
 export const settings = new Hono()
 
+async function updateGlobalSetting<T>(
+  section: keyof GlobalSettings,
+  key: string,
+  value: T,
+): Promise<void> {
+  const current = await getGlobalSettings()
+  const sectionObj = (current[section] as Record<string, T> | undefined) ?? {}
+  await setGlobalSettings({ ...current, [section]: { ...sectionObj, [key]: value } })
+}
+
+async function deleteGlobalSettingKey(section: keyof GlobalSettings, key: string): Promise<void> {
+  const current = await getGlobalSettings()
+  const sectionObj = { ...(current[section] as Record<string, unknown> | undefined) }
+  delete sectionObj[key]
+  await setGlobalSettings({ ...current, [section]: sectionObj })
+}
+
 settings.get('/api/settings', async (c) => {
   const s = await getGlobalSettings()
   return c.json(s)
@@ -56,18 +73,13 @@ settings.put('/api/settings/models/:role', async (c) => {
   const role = c.req.param('role')
   const body = await c.req.json()
   const cfg = ModelConfigSchema.parse(body) as ModelAlias
-  const current = await getGlobalSettings()
-  const models = { ...current.models, [role]: cfg }
-  await setGlobalSettings({ ...current, models })
+  await updateGlobalSetting('models', role, cfg)
   return c.json(cfg)
 })
 
 settings.delete('/api/settings/models/:role', async (c) => {
   const role = c.req.param('role')
-  const current = await getGlobalSettings()
-  const models = { ...current.models }
-  delete models[role]
-  await setGlobalSettings({ ...current, models })
+  await deleteGlobalSettingKey('models', role)
   return c.json({ ok: true })
 })
 
@@ -86,18 +98,13 @@ settings.put('/api/settings/model-aliases/:alias', async (c) => {
   const alias = c.req.param('alias')
   const body = await c.req.json()
   const cfg = ModelConfigSchema.parse(body) as ModelAlias
-  const current = await getGlobalSettings()
-  const modelAliases = { ...current.modelAliases, [alias]: cfg }
-  await setGlobalSettings({ ...current, modelAliases })
+  await updateGlobalSetting('modelAliases', alias, cfg)
   return c.json(cfg)
 })
 
 settings.delete('/api/settings/model-aliases/:alias', async (c) => {
   const alias = c.req.param('alias')
-  const current = await getGlobalSettings()
-  const modelAliases = { ...current.modelAliases }
-  delete modelAliases[alias]
-  await setGlobalSettings({ ...current, modelAliases })
+  await deleteGlobalSettingKey('modelAliases', alias)
   return c.json({ ok: true })
 })
 
@@ -134,18 +141,13 @@ settings.put('/api/settings/agents/:role', async (c) => {
   const role = c.req.param('role')
   const body = await c.req.json()
   const cfg = AgentConfigSchema.parse(body) as AgentConfig
-  const current = await getGlobalSettings()
-  const agents = { ...current.agents, [role]: cfg }
-  await setGlobalSettings({ ...current, agents })
+  await updateGlobalSetting('agents', role, cfg)
   return c.json(cfg)
 })
 
 settings.delete('/api/settings/agents/:role', async (c) => {
   const role = c.req.param('role')
-  const current = await getGlobalSettings()
-  const agents = { ...current.agents }
-  delete agents[role]
-  await setGlobalSettings({ ...current, agents })
+  await deleteGlobalSettingKey('agents', role)
   return c.json({ ok: true })
 })
 

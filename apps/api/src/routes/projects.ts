@@ -1,24 +1,21 @@
-import type { Dirent } from 'node:fs'
-import { readdir, rm } from 'node:fs/promises'
+import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { getBaseDir } from '@open-scientist/config'
+import { ProjectNameSchema } from '@open-scientist/schema'
 import { CreateProjectRequestSchema } from '@open-scientist/schema'
-import { createProject, deleteProject, getProject } from '@open-scientist/storage'
+import { createProject, deleteProject, getProject, listProjects } from '@open-scientist/storage'
 import { Hono } from 'hono'
 
 export const projects = new Hono()
 
+/** Validate project name from path param — throws ZodError (→ 400) on invalid input. */
+function validateProjectName(raw: string): string {
+  return ProjectNameSchema.parse(raw)
+}
+
 projects.get('/api/projects', async (c) => {
-  const projectsDir = join(getBaseDir(), 'projects')
-  let entries: Dirent[] = []
-  try {
-    entries = await readdir(projectsDir, { withFileTypes: true })
-  } catch {
-    return c.json([])
-  }
-  const result = entries
-    .filter((e) => e.isDirectory())
-    .map((e) => ({ name: e.name, createdAt: null as string | null }))
+  const rows = await listProjects()
+  const result = rows.map((p) => ({ id: p.id, name: p.name, createdAt: p.createdAt }))
   return c.json(result)
 })
 
@@ -30,7 +27,7 @@ projects.post('/api/projects', async (c) => {
 })
 
 projects.get('/api/projects/:project', async (c) => {
-  const name = c.req.param('project')
+  const name = validateProjectName(c.req.param('project'))
   const row = await getProject(name)
   if (!row) {
     return c.json({ error: 'not_found', message: `Project "${name}" not found` }, 404)
@@ -45,7 +42,7 @@ projects.get('/api/projects/:project', async (c) => {
 })
 
 projects.delete('/api/projects/:project', async (c) => {
-  const name = c.req.param('project')
+  const name = validateProjectName(c.req.param('project'))
   await deleteProject(name)
   const dir = join(getBaseDir(), 'projects', name)
   try {

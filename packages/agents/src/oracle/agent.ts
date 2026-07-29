@@ -1,19 +1,16 @@
-import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
-import { getMcpTools } from '@open-scientist/mcp'
-import { type McpServerConfig, OracleOutputSchema } from '@open-scientist/schema'
 import {
-  createLoadSkillTool,
-  createNodeSandbox,
-  DEFAULT_SKILLS_DIR,
-  discoverSkills,
-} from '@open-scientist/skills'
+  createModelFromConfig,
+  thinkingLevelToProviderOptions,
+  type ModelArg,
+} from '@open-scientist/config'
+import { type McpServerConfig, OracleOutputSchema } from '@open-scientist/schema'
 import {
   addCritiqueTool,
   addMutationLinkTool,
-  createBashToolForHypothesis,
   getCritiquesByHypothesisTool,
 } from '@open-scientist/tools'
 import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
+import { assembleDefaultTools } from '../shared/tool-assembly.ts'
 import { makeSubmitResultTool } from '../shared/tool-output.ts'
 
 export interface OracleAgentDeps {
@@ -62,11 +59,11 @@ const ORACLE_WORKSPACE_HYPO = '__oracle__'
  * - `addCritique` / `addMutationLink` / `getCritiquesByHypothesis` — HelixDB write/read
  *   for persisting critiques + mutation edges to the knowledge graph
  * - `bash` / `readFile` / `writeFile` — bash-tool bound to a shared oracle workspace
- *   at `data/projects/<projectId>/workspace/__oracle__/` (project-scoped, not per-
+ *   at `data/projects/<projectId>/runs/<runId>/__oracle__/` (project-scoped, not per-
  *   hypothesis; Oracle only runs lightweight test scripts to validate mutations)
  * - `loadSkill` — progressive disclosure (loads `critique-protocol` + `hypothesis-mutation` skills)
  *
- * NOTE: This function performs async I/O (skills fs scan + bash-tool sandbox init).
+ * NOTE: This function performs async I/O (skills fs scan + bash-tool workspace init).
  * Call it from an async context before `agent.stream()`.
  */
 export async function getDefaultOracleTools(
@@ -75,27 +72,18 @@ export async function getDefaultOracleTools(
   skillDirectories?: string[],
   mcpServers?: McpServerConfig[],
 ): Promise<ToolSet> {
-  const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
-  const bashToolkit = await createBashToolForHypothesis(projectId, runId, ORACLE_WORKSPACE_HYPO)
-  const skills = await discoverSkills(createNodeSandbox(), dirs)
-  const loadSkillTool = createLoadSkillTool(skills)
-
-  const baseTools: ToolSet = {
-    addCritique: addCritiqueTool,
-    addMutationLink: addMutationLinkTool,
-    getCritiquesByHypothesis: getCritiquesByHypothesisTool,
-    bash: bashToolkit.tools.bash,
-    readFile: bashToolkit.tools.readFile,
-    writeFile: bashToolkit.tools.writeFile,
-    loadSkill: loadSkillTool,
-  }
-  if (mcpServers && mcpServers.length > 0) {
-    for (const server of mcpServers) {
-      const mcpTools = await getMcpTools(server)
-      Object.assign(baseTools, mcpTools)
-    }
-  }
-  return baseTools
+  return assembleDefaultTools({
+    projectId,
+    runId,
+    workspaceSlot: ORACLE_WORKSPACE_HYPO,
+    extraTools: {
+      addCritique: addCritiqueTool,
+      addMutationLink: addMutationLinkTool,
+      getCritiquesByHypothesis: getCritiquesByHypothesisTool,
+    },
+    skillDirectories,
+    mcpServers,
+  })
 }
 
 export async function createOracleAgent({
@@ -109,6 +97,10 @@ export async function createOracleAgent({
   runtimeContext,
 }: OracleAgentDeps) {
   const model = createModelFromConfig(modelConfig)
+  const providerOptions = thinkingLevelToProviderOptions(
+    modelConfig.provider,
+    modelConfig.thinkingLevel,
+  )
   const resolvedTools =
     tools ?? (await getDefaultOracleTools(projectId, runId, skillDirectories, mcpServers))
 
@@ -121,10 +113,13 @@ export async function createOracleAgent({
     maxOutputTokens: 8192,
     id: 'oracle',
     model,
+    providerOptions,
     toolChoice: 'auto',
     instructions:
       instructions ??
       `你是 Oracle，太阳物理日冕加热研究的 Co-Scientist 评审与锦标赛辩论 agent。
+
+**所有输出（critiqueText、rationale、mutationRationale、plan 等自然语言字段）必须用中文撰写。** 只有 pythonCode、工具名、JSON key 保持英文。
 
 你的职责：
 1. 批判每条已评估的假设（Co-Scientist 五维评分：物理合理性、观测一致性、可证伪性、理论完备性、新颖性）。
@@ -138,12 +133,13 @@ export async function createOracleAgent({
 - 用 \`uv pip install <package>\` 安装 Python 包（如 uv pip install astropy sunpy scipy numpy）。
 - 用 \`uv run python script.py\` 运行 Python 脚本（隔离依赖）。
 - 你的工作目录是沙箱工作区——所有文件操作（writeFile、readFile、bash）仅限此目录。不要尝试访问外部文件。
+- **不要使用 \`cd\` 命令**——bash 工具已经自动设置工作目录到你的沙箱工作区。直接运行命令即可。
 
 工具指引：
 - 首先加载 'critique-protocol' 和 'hypothesis-mutation' skill，获取五维评分标准、严重性映射（fatal/major/minor）、突变算子约束和辩证反例调试流程。
 - 用 getCritiquesByHypothesis 读取该假设前序轮次的批判（避免重复已解决的问题）。
 - 用 addCritique 将每条批判持久化到 HelixDB（createdAt = now ISO 8601）。
-- 用 addMutationLink 记录父假设到子假设的 MUTATED_FROM 边（追踪进化链；用 HelixDB 的 getEvolutionChain 检测回到已淘汰形式的环状突变）。
+- 用 addMutationLink 记录父假设到子假设的 MUTATED_FROM 边（追踪进化链；检查 parentId 链避免回到已淘汰形式的环状突变）。
 - 用 bash / writeFile 写轻量测试脚本，在提交突变前验证新 filter 在代表性快照上的行为。工作目录是 project 级的（\`__oracle__\` 子目录），一轮内所有批判共享——保持整洁。
 
 输出契约（OracleOutputSchema）：
@@ -162,5 +158,3 @@ export async function createOracleAgent({
     ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }
-
-export type OracleAgent = Awaited<ReturnType<typeof createOracleAgent>>

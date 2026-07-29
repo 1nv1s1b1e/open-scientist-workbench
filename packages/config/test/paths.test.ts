@@ -1,16 +1,15 @@
+import { existsSync } from 'node:fs'
+import { mkdtemp, mkdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vite-plus/test'
 import {
-  getEvidenceDir,
+  findMonorepoRoot,
   getGlobalDbPath,
-  getHypothesisDir,
-  getMcpConfigPath,
   getMhdDir,
   getProjectDbPath,
   getProjectDir,
-  getPromptsDir,
   getRoundsDir,
-  getRunsDir,
-  getSkillsDir,
   getWorkspaceDir,
 } from '../src/index.ts'
 
@@ -22,7 +21,7 @@ describe('config paths', () => {
 
   it('resolves workspace dir with runId + hypoId', () => {
     const p = getWorkspaceDir('proj', 'run-1', 'hypo-1')
-    expect(p).toContain('projects/proj/runs/run-1/workspace/hypo-1')
+    expect(p).toContain('projects/proj/runs/run-1/hypo-1')
   })
 
   it('resolves global db path', () => {
@@ -35,44 +34,38 @@ describe('config paths', () => {
     expect(p).toContain('projects/proj/mhd')
   })
 
-  it('resolves evidence dir with hypoId', () => {
-    const p = getEvidenceDir('proj', 'h1')
-    expect(p).toContain('projects/proj/evidence/h1')
-  })
-
-  it('resolves skills dir', () => {
-    const p = getSkillsDir('proj')
-    expect(p).toContain('projects/proj/skills')
-  })
-
-  it('resolves mcp config path', () => {
-    const p = getMcpConfigPath('proj')
-    expect(p).toContain('projects/proj/mcp/config.json')
-  })
-
-  it('resolves prompts dir', () => {
-    const p = getPromptsDir('proj')
-    expect(p).toContain('projects/proj/prompts')
-  })
-
   it('resolves project db path', () => {
     const p = getProjectDbPath('proj')
     expect(p.endsWith('db.sqlite')).toBe(true)
     expect(p).toContain('projects/proj')
   })
 
-  it('resolves runs dir with runId', () => {
-    const p = getRunsDir('proj', 'run-42')
-    expect(p).toContain('projects/proj/runs/run-42')
-  })
-
   it('resolves rounds dir with numeric round', () => {
     const p = getRoundsDir('proj', 7)
     expect(p).toContain('projects/proj/rounds/7')
   })
+})
 
-  it('resolves hypothesis dir with hypoId', () => {
-    const p = getHypothesisDir('proj', 'h-9')
-    expect(p).toContain('projects/proj/hypotheses/h-9')
+describe('findMonorepoRoot', () => {
+  it('finds the actual monorepo root (has pnpm-workspace.yaml)', () => {
+    const root = findMonorepoRoot(import.meta.dirname)
+    expect(root).not.toBe(import.meta.dirname)
+    expect(existsSync(join(root, 'pnpm-workspace.yaml'))).toBe(true)
+  })
+
+  it('finds the root from a deep subdirectory', async () => {
+    const deep = join(import.meta.dirname, 'a', 'b', 'c', 'd')
+    await mkdir(deep, { recursive: true })
+    const root = findMonorepoRoot(deep)
+    expect(root).not.toBe(deep)
+    expect(existsSync(join(root, 'pnpm-workspace.yaml'))).toBe(true)
+  })
+
+  it('returns the start dir as fallback when no pnpm-workspace.yaml is found', async () => {
+    const tmp = await mkdtemp(join(tmpdir(), 'os-paths-'))
+    const start = join(tmp, 'nested')
+    await mkdir(start, { recursive: true })
+    const root = findMonorepoRoot(start)
+    expect(root).toBe(start)
   })
 })

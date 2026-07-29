@@ -22,7 +22,7 @@ describe('getDefaultXxxTools toolset keys', () => {
   })
 
   it('sisyphus → {review_leading_hypothesis}', async () => {
-    const tools = await getDefaultSisyphusTools()
+    const tools = await getDefaultSisyphusTools(PROJECT)
     expect(Object.keys(tools).sort()).toEqual(['review_leading_hypothesis'])
   })
 

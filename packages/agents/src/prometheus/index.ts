@@ -1,3 +1,2 @@
-export { createPrometheusAgent, getDefaultPrometheusTools, type PrometheusAgent } from './agent.ts'
-export type { ConvergenceEntry } from './workflow.ts'
+export { createPrometheusAgent, getDefaultPrometheusTools } from './agent.ts'
 export { type PrometheusWorkflowInput, prometheusWorkflow } from './workflow.ts'

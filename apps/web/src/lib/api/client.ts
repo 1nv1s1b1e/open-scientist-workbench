@@ -59,17 +59,7 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Health
-// ---------------------------------------------------------------------------
-
-export async function getHealth(
-  fetchFn: typeof fetch = fetch,
-): Promise<{ status: string; timestamp: string; baseDir: string }> {
-  return jsonOrThrow(await fetchFn('/api/health'))
-}
-
-// ---------------------------------------------------------------------------
-// 2. Settings (global)
+// 1. Settings (global)
 // ---------------------------------------------------------------------------
 
 export async function getGlobalSettings(fetchFn: typeof fetch = fetch): Promise<GlobalSettings> {
@@ -89,80 +79,12 @@ export async function putGlobalSettings(
   )
 }
 
-export async function patchGlobalSettings(
-  body: Partial<GlobalSettings>,
-  fetchFn: typeof fetch = fetch,
-): Promise<GlobalSettings> {
-  return jsonOrThrow(
-    await fetchFn('/api/settings', {
-      method: 'PATCH',
-      headers: JSON_HEADERS,
-      body: JSON.stringify(body),
-    }),
-  )
-}
-
-// --- per-role model config ---
-
-export async function getModelConfig(
-  role: string,
-  fetchFn: typeof fetch = fetch,
-): Promise<ModelConfig> {
-  return jsonOrThrow(await fetchFn(`/api/settings/models/${encodeURIComponent(role)}`))
-}
-
-export async function putModelConfig(
-  role: string,
-  body: ModelConfig,
-  fetchFn: typeof fetch = fetch,
-): Promise<ModelConfig> {
-  return jsonOrThrow(
-    await fetchFn(`/api/settings/models/${encodeURIComponent(role)}`, {
-      method: 'PUT',
-      headers: JSON_HEADERS,
-      body: JSON.stringify(body),
-    }),
-  )
-}
-
-export async function deleteModelConfig(
-  role: string,
-  fetchFn: typeof fetch = fetch,
-): Promise<{ ok: true }> {
-  return jsonOrThrow(
-    await fetchFn(`/api/settings/models/${encodeURIComponent(role)}`, { method: 'DELETE' }),
-  )
-}
-
 // --- model aliases ---
 
 export async function listModelAliases(
   fetchFn: typeof fetch = fetch,
 ): Promise<Record<string, ModelConfig>> {
   return jsonOrThrow(await fetchFn('/api/settings/model-aliases'))
-}
-
-export async function putModelAlias(
-  alias: string,
-  body: ModelConfig,
-  fetchFn: typeof fetch = fetch,
-): Promise<ModelConfig> {
-  return jsonOrThrow(
-    await fetchFn(`/api/settings/model-aliases/${encodeURIComponent(alias)}`, {
-      method: 'PUT',
-      headers: JSON_HEADERS,
-      body: JSON.stringify(body),
-    }),
-  )
-}
-
-export async function deleteModelAlias(
-  alias: string,
-  fetchFn: typeof fetch = fetch,
-): Promise<{ ok: true }> {
-  return jsonOrThrow(
-    await fetchFn(`/api/settings/model-aliases/${encodeURIComponent(alias)}`, { method: 'DELETE' }),
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -185,20 +107,6 @@ export async function getProjectSettings(
   fetchFn: typeof fetch = fetch,
 ): Promise<ProjectSettings> {
   return jsonOrThrow(await fetchFn(`/api/projects/${encodeURIComponent(project)}/settings`))
-}
-
-export async function patchProjectSettings(
-  project: string,
-  body: Partial<ProjectSettings>,
-  fetchFn: typeof fetch = fetch,
-): Promise<ProjectSettings> {
-  return jsonOrThrow(
-    await fetchFn(`/api/projects/${encodeURIComponent(project)}/settings`, {
-      method: 'PATCH',
-      headers: JSON_HEADERS,
-      body: JSON.stringify(body),
-    }),
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -229,7 +137,7 @@ export async function addCredential(
     headers: JSON_HEADERS,
     body: JSON.stringify(body),
   })
-  if (!res.ok && res.status !== 201) throw await parseError(res)
+  if (!res.ok) throw await parseError(res)
   return (await res.json()) as CredentialResponse
 }
 
@@ -271,7 +179,7 @@ export async function createProject(
     headers: JSON_HEADERS,
     body: JSON.stringify(body),
   })
-  if (!res.ok && res.status !== 201) throw await parseError(res)
+  if (!res.ok) throw await parseError(res)
   return (await res.json()) as ProjectDetail
 }
 
@@ -399,6 +307,30 @@ export async function getRunStatus(
   )
 }
 
+export async function listRuns(
+  project: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<RunStatusResponse[]> {
+  return jsonOrThrow(await fetchFn(`/api/projects/${encodeURIComponent(project)}/runs`))
+}
+
+export interface RunChunkEntry {
+  seq: number
+  chunk: unknown
+}
+
+export async function getRunChunks(
+  project: string,
+  runId: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<RunChunkEntry[]> {
+  return jsonOrThrow(
+    await fetchFn(
+      `/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/chunks`,
+    ),
+  )
+}
+
 export async function stopRun(
   project: string,
   runId: string,
@@ -419,19 +351,11 @@ export async function stopRun(
 // ---------------------------------------------------------------------------
 
 export const api = {
-  getHealth,
   // settings
   getGlobalSettings,
   putGlobalSettings,
-  patchGlobalSettings,
-  getModelConfig,
-  putModelConfig,
-  deleteModelConfig,
   listModelAliases,
-  putModelAlias,
-  deleteModelAlias,
   getProjectSettings,
-  patchProjectSettings,
   // credentials
   listCredentials,
   addCredential,
@@ -447,6 +371,8 @@ export const api = {
   startRun,
   reconnectRunStream,
   getRunStatus,
+  listRuns,
+  getRunChunks,
   stopRun,
 }
 

@@ -11,8 +11,7 @@ vp check          # format + lint + typecheck 一条命令
 vp run -r typecheck  # 全 11 包 tsc --noEmit
 vp test run       # vitest run（测试文件 *.test.ts）
 vp dev            # 启动 apps/api（tsx watch src/server.ts）
-vp run --filter @open-scientist/storage db:generate    # drizzle-kit generate（storage 包）
-vp run --filter @open-scientist/storage db:migrate     # drizzle-kit migrate（storage 包）
+vp run --filter @open-scientist/storage db:generate    # drizzle-kit generate（storage 包，重新生成 migration SQL）
 ```
 
 - 单包操作：`vp run --filter @open-scientist/agents typecheck`
@@ -42,7 +41,7 @@ packages/
   agents        — 6 ToolLoopAgent（sisyphus/librarian/looker/explore/oracle/prometheus）
   tools         — bash/helix-query/fits-align/mhd-config/load-skill
   skills        — discover + prompt + load-tool（agentskills.io 开放格式）
-  mcp           — MCP server registry + trust + 漂移检测
+  mcp           — MCP server registry + 自动信任
   storage       — 双 SQLite（global + per-project）+ Drizzle + 8 repo
   helix         — HelixDB client + queries DSL
   schema        — Zod schemas（零业务依赖）+ Credential/CredentialRecord/CredentialStore 接口（避免 config→storage 循环依赖）
@@ -61,18 +60,19 @@ packages/
 
 部分 role 还有：
 
-- `logic.ts` — 纯函数（sisyphus/oracle/prometheus）
 - `snapshot.ts` — `snapshotStep` + `RoundSnapshot`（sisyphus 独有）
+
+> 纯函数（sisyphus 的收敛检测 / oracle 的 block 构建等）已内联到各自 `workflow.ts` 中，无单独 `logic.ts` 文件。
 
 **`shared/stream.ts`**：`streamAgentOutput<TOOLS>(fullStream, tools, emitChunk)` 用 `toUIMessageStream({stream, tools})` 把 ToolLoopAgent 的 `result.fullStream`（`AsyncIterableStream<TextStreamPart<TOOLS>>`）转成 `ReadableStream<UIMessageChunk>`，逐 chunk 调 `emitChunk(chunk)`。`EmitChunk = (chunk: UIMessageChunk) => void`。
 
-**`shared/convergence.ts`**：`ConvergenceEntry` 接口（`{round, bestF1, count}`），被 sisyphus/logic.ts + prometheus/workflow.ts 共享。
+**`shared/convergence.ts`**：`ConvergenceEntry` 接口（`{round, bestF1, count}`），被 sisyphus/workflow.ts + prometheus/workflow.ts 共享。
 
 **`shared/tool-output.ts`**：`extractSubmitResult(staticToolCalls, toolName?, fallback?)` — 从 ToolLoopAgent 的 staticToolCalls 提取 submit_result tool 的输入。第三个参数 `fallback?: T`：有 fallback 时未找到 submit_result 返回 fallback（不 throw），无 fallback 时 throw。所有 5 个 workflow 都传 fallback，确保 agent 达到 step limit 未提交结果时不崩溃。
 
-**context 传递**：`ModelArg`（plain object `{provider, model, baseURL?, apiKey, thinkingLevel}`）是跨调用边界的 model 配置载体。workflow 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel`。`runtimeContext` 也是 plain object（`{projectId, runId, round?, hypoId?}`），在构造 ToolLoopAgent 时传入。
+**context 传递**：`ModelArg`（plain object `{provider, model, baseURL?, apiKey, thinkingLevel, apiMode}`）是跨调用边界的 model 配置载体。workflow 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel`。agent 工厂构造时用 `thinkingLevelToProviderOptions(provider, thinkingLevel)` 生成 `providerOptions` 传给 `ToolLoopAgent`，让 SDK 消费 thinkingLevel（openai→`reasoningEffort`，anthropic→`thinking`）。`runtimeContext` 也是 plain object（`{projectId, runId, round?, hypoId?}`），在构造 ToolLoopAgent 时传入。
 
-**ToolLoopAgent.stream 关键点**：返回 `Promise<StreamTextResult>`（**必须 await**，WorkflowAgent.stream 是同步的）。`result.fullStream: AsyncIterableStream<TextStreamPart<TOOLS>>`（是 `AsyncIterable<T> & ReadableStream<T>`，可直接喂给 `toUIMessageStream`）。`result.output: Promise<OUTPUT>`。
+**ToolLoopAgent.stream 关键点**：返回 `Promise<StreamTextResult>`（**必须 await**）。`result.fullStream: AsyncIterableStream<TextStreamPart<TOOLS>>`（是 `AsyncIterable<T> & ReadableStream<T>`，可直接喂给 `toUIMessageStream`）。`result.output: Promise<OUTPUT>`。
 
 **Sisyphus agent 特殊**：`createSisyphusAgent` 构造的 agent **未被 tournamentWorkflow 调用**——tournamentWorkflow 是纯确定性控制流，直接 await 5 个子 workflow。Sisyphus agent 留给 Phase 4 API 层用于 free-form steering + approval（通过 `toolApproval` + `prepareCall`）。
 
@@ -83,8 +83,6 @@ packages/
 - `output: Output.object({ schema: ZodSchema })`（从 `ai` 导入 `Output`），**不是** 裸 Zod schema
 - `tool({ description, inputSchema: z.object(), outputSchema?, execute, needsApproval? })` — AI SDK 7 把 tool-level `needsApproval` **deprecated**，推荐 `ToolLoopAgent` 构造时或 `prepareCall` 返回值里的 `toolApproval`（`ToolApprovalConfiguration`：per-tool map 或 `GenericToolApprovalFunction`）。返回 `'user-approval'` → stream 暂停并 emit `tool-approval-request` chunk。
 - `createMCPClient(config): Promise<MCPClient>` — async，需 await；`client.tools(): Promise<McpToolSet>` 也 async
-- `fingerprintTools(tools: ToolSet): Promise<Record<string,string>>` — async，需 await
-- `detectToolDrift(current, baseline): {added: string[], removed: string[], changed: string[]}` — 同步
 - `createBashTool(options?): Promise<BashToolkit>` — async，options 用 `destination`（非 `cwd`）作 working dir
 - `MCPTransportConfig`（`@ai-sdk/mcp`）只有 'http'|'sse'；stdio 需用 `StdioClientTransport`（`@modelcontextprotocol/sdk/client/stdio.js`）构造 `MCPTransport` 对象传入
 - TS2883 "inferred type cannot be named" → package.json 加 `@ai-sdk/provider-utils` + `@ai-sdk/provider` 依赖
@@ -101,16 +99,16 @@ packages/
 ## 配置层
 
 - **env 极简**（`.env.example`）：`BASE_DIR` / `PORT` / `HELIX_URL` / `LOG_LEVEL`。模型配置走 Web API + SQLite
-- **Credential = Endpoint bundle**：一个 credential = 一个完整 endpoint `{id, provider, apiKey, baseURL?}`。`id` 命名实体（用户指定或 auto `${provider}-${ts}`），**按 id 唯一**（非按 provider），支持「同 provider 不同 baseURL+apiKey」组合。upsert by id（后加覆盖先加）。SQLite 加密（`data/global.sqlite`），串行 modifyLock 防 OAuth 双刷。
-- **ModelConfig 用 credentialId 引用**：`ModelConfig = {model, thinkingLevel, credentialId}`。provider/baseURL/apiKey 全部由 credentialId 引用的 Credential 条目决定。`settings.models.<role>` 和 `settings.modelAliases.<alias>` 都用此形态。
-- **ModelArg 跨边界载体**：`ModelArg = {provider, model, baseURL?, apiKey, thinkingLevel}` 是 plain object。`resolveModelArg(projectName, credentials, {role?, modelAlias?})` 读 settings → ModelConfig（含 credentialId）→ `credentials.get(credentialId)` → 从 credential 拿 provider/apiKey/baseURL → 组装 `ModelArg`。workflow 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel`。
+- **Credential = Endpoint bundle**：一个 credential = 一个完整 endpoint `{id, provider, apiKey, baseURL?}`。`provider` 限 `'openai' | 'anthropic'`。`id` 命名实体（用户指定或 auto `${provider}-${ts}`），**按 id 唯一**（非按 provider），支持「同 provider 不同 baseURL+apiKey」组合。upsert by id（后加覆盖先加）。SQLite 加密（`data/global.sqlite`），串行 modifyLock 防 OAuth 双刷。
+- **ModelConfig 用 credentialId 引用**：`ModelConfig = {model, thinkingLevel, apiMode, credentialId}`。provider/baseURL/apiKey 全部由 credentialId 引用的 Credential 条目决定。`settings.models.<role>` 和 `settings.modelAliases.<alias>` 都用此形态。`apiMode: 'chat' | 'responses'` 仅 openai 用（chat completions vs responses API），anthropic 忽略。
+- **ModelArg 跨边界载体**：`ModelArg = {provider, model, baseURL?, apiKey, thinkingLevel, apiMode}` 是 plain object。`resolveModelArg(projectName, credentials, {role?, modelAlias?})` 读 settings → ModelConfig（含 credentialId）→ `credentials.get(credentialId)` → 从 credential 拿 provider/apiKey/baseURL → 组装 `ModelArg`。workflow 函数内调 `createModelFromConfig(modelConfig)` 重建 `LanguageModel`。`createLanguageModel` 支持 openai（`openai.chat()` / `openai.responses()` 按 apiMode 选择）+ anthropic（`createAnthropic` + 默认 model accessor）。
 - **两层 settings**：global `data/settings.json` + per-project `data/projects/<name>/settings.json` override（deep merge）。`getSettings(projectName?)` 自动 merge 两层。
 
 ## 数据层
 
 双 SQLite：
 
-- `data/global.sqlite` — credentials / settings / mcp_trust / mcp_tool_baselines
+- `data/global.sqlite` — credentials / settings
 - `data/projects/<name>/db.sqlite` — projects / runs / messages / steering_messages / hypotheses / evidence / critiques / mutations / plans / logs
 
 FS 产物在 `data/projects/<name>/` 下：runs/ / rounds/ / hypotheses/ / evidence/ / mhd/ / workspace/ / skills/ / mcp/ / prompts/ / logs/。
@@ -132,7 +130,7 @@ FS 产物在 `data/projects/<name>/` 下：runs/ / rounds/ / hypotheses/ / evide
 
 Round 1: Librarian 生成 → Loop(Explore 并行评估 → Oracle 批判突变 → Prometheus 规划 → 收敛检测) → 最终 Prometheus 输出 MHD cfg + 观测建议书。
 
-终止条件：`TARGET_F1` / `MAX_ROUNDS` / 收敛检测 / 手动。每轮快照写 FS（`snapshotStep` → `data/projects/<projectId>/rounds/<round>/snapshot.json`，可用于 crash 后 resume）。`MAX_ROUNDS=10` / `TARGET_F1=0.9` 内联在 `sisyphus/logic.ts`。
+终止条件：`TARGET_F1` / `MAX_ROUNDS` / 收敛检测 / 手动。每轮快照写 FS（`snapshotStep` → `data/projects/<projectId>/rounds/<round>/snapshot.json`，可用于 crash 后 resume）。`MAX_ROUNDS=10` / `TARGET_F1=0.9` 内联在 `sisyphus/workflow.ts`。
 
 > Looker 在当前 tournamentWorkflow 中**未被调用**（代码就绪但未编排进 round 循环，Phase 5 待补）。
 
@@ -161,7 +159,7 @@ Prometheus 末轮调 `mhdConfigTool` 时传入 `observationProposal` markdown �
 ## 安全约束
 
 - `bash-tool` 无沙箱（host child_process），靠 project name 隔离 working dir
-- MCP server 是远程代码执行，per-project 加载需信任（`mcp_trust` 表 + `fingerprintTools` 漂移检测）
+- MCP server 是远程代码执行，per-project 自动信任（无 trust gate）
 - env 不进 git（`.gitignore` 配 `.env`）
 - HelixDB strict mode
 

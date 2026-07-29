@@ -1,6 +1,5 @@
-export type { TournamentInput, TournamentResult } from '@open-scientist/schema'
-export { createSisyphusAgent, getDefaultSisyphusTools, type SisyphusAgent } from './agent.ts'
-export * from './logic.ts'
+export type { TournamentResult } from '@open-scientist/schema'
+export { createSisyphusAgent, getDefaultSisyphusTools } from './agent.ts'
 export { type RoundSnapshot, readLatestSnapshot, snapshotStep } from './snapshot.ts'
 export {
   type OnReviewLeadingHypothesis,

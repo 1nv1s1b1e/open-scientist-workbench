@@ -20,7 +20,6 @@ const config: NextConfig = {
       },
     ]
   },
-  // react-force-graph-3d / three ship untranspiled ESM; let Next handle it.
   experimental: {
     optimizePackageImports: ['lucide-react', '@xyflow/react'],
   },

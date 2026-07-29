@@ -10,10 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/provider": "^4.0.3",
-    "@ai-sdk/provider-utils": "^5.0.11",
     "@assistant-ui/react": "^0.14.27",
-    "@assistant-ui/react-ai-sdk": "^1.3.41",
     "@open-scientist/schema": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.20",
     "@radix-ui/react-popover": "^1.1.20",
@@ -24,28 +21,21 @@
     "@radix-ui/react-tooltip": "^1.2.13",
     "@tanstack/react-query": "^5.101.2",
     "@xyflow/react": "^12.11.2",
-    "ai": "^7.0.31",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "d3-hierarchy": "^3.1.2",
     "lucide-react": "^1.25.0",
     "motion": "^12.42.2",
     "next": "^16.2.10",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-force-graph-3d": "^1.29.1",
     "tailwind-merge": "^3.6.0",
-    "three": "^0.185.1",
-    "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.185.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   }

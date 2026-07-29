@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { EvolutionTreeData, HypothesisTreeNode } from '@/lib/types/visualizers'
 import { cn } from '@/lib/utils/cn'
-import { DEFAULT_EVOLUTION_TREE } from '@/lib/visualizers/evolution-tree-data'
 
 interface PositionedNode {
   data: HypothesisTreeNode
@@ -24,8 +23,7 @@ interface ConnectionLink {
   isWithered: boolean
 }
 
-export function EvolutionTree({ data = DEFAULT_EVOLUTION_TREE }: { data?: EvolutionTreeData }) {
-  const activeData = data?.root ? data : DEFAULT_EVOLUTION_TREE
+export function EvolutionTree({ data }: { data?: EvolutionTreeData }) {
   const [selectedNode, setSelectedNode] = useState<HypothesisTreeNode | null>(null)
 
   // Canvas Pan & Zoom States
@@ -67,7 +65,7 @@ export function EvolutionTree({ data = DEFAULT_EVOLUTION_TREE }: { data?: Evolut
 
   // 深度优先计算二维 Tree 节点坐标（无重叠，严格横向展开）
   const { nodes, links, bounds } = useMemo(() => {
-    if (!activeData.root) return { nodes: [], links: [], bounds: { width: 800, height: 600 } }
+    if (!data?.root) return { nodes: [], links: [], bounds: { width: 800, height: 600 } }
 
     const nodePositions: PositionedNode[] = []
     const connectionLinks: ConnectionLink[] = []
@@ -101,7 +99,7 @@ export function EvolutionTree({ data = DEFAULT_EVOLUTION_TREE }: { data?: Evolut
       return currentY
     }
 
-    layoutNode(activeData.root, 0, null)
+    layoutNode(data.root!, 0, null)
 
     // 构建 SVG 连接线
     for (const target of nodePositions) {
@@ -131,7 +129,7 @@ export function EvolutionTree({ data = DEFAULT_EVOLUTION_TREE }: { data?: Evolut
       links: connectionLinks,
       bounds: { width: Math.max(maxX, 1200), height: Math.max(maxY, 700) },
     }
-  }, [activeData])
+  }, [data])
 
   return (
     <div
@@ -186,6 +184,18 @@ export function EvolutionTree({ data = DEFAULT_EVOLUTION_TREE }: { data?: Evolut
           重置视图
         </button>
       </div>
+
+      {/* Empty state */}
+      {(!data || !data.root) && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+          <div className="rounded-lg border border-white/10 bg-black/80 px-6 py-4 text-center backdrop-blur-md">
+            <p className="font-mono text-sm text-white/60">暂无假设数据</p>
+            <p className="mt-1 font-mono text-[10px] text-white/40">
+              启动 Tournament Run 后将实时显示演化树
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Interactive 2D Stage with Mouse Pan & Zoom */}
       <div

@@ -20,7 +20,7 @@ packages/
   agents/     — 6 ToolLoopAgent（sisyphus/librarian/looker/explore/oracle/prometheus）
   tools/      — bash/helix-query/fits-align/mhd-config/load-skill
   skills/     — discover + prompt + load-tool（agentskills.io 开放格式）
-  mcp/        — MCP server registry + trust + 漂移检测
+  mcp/        — MCP server registry + 自动信任
   storage/    — 双 SQLite（global + per-project）+ Drizzle + 8 repo
   helix/      — HelixDB client + queries DSL
   schema/     — Zod schemas（零业务依赖）
@@ -82,8 +82,7 @@ vp run -r typecheck       # 全 11 包 tsc --noEmit
 ### 数据库
 
 ```bash
-vp run --filter @open-scientist/storage db:generate    # 生成 migration
-vp run --filter @open-scientist/storage db:migrate     # 执行 migration
+vp run --filter @open-scientist/storage db:generate    # 生成 migration SQL（schema 变更后执行）
 ```
 
 ## Tournament Evolution 工作流

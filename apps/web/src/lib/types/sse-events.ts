@@ -85,4 +85,23 @@ export const CustomEventKind = {
   RoundTransition: 'round-transition',
   Convergence: 'convergence',
   AgentState: 'tournament.agent-state',
+  RoundUpdate: 'tournament.round-update',
+  PhaseStart: 'tournament.phase-start',
 } as const
+
+/** Round-update custom chunk payload (emitted after Explore + Oracle phases) */
+export interface RoundUpdatePayload {
+  type: 'custom'
+  kind: typeof CustomEventKind.RoundUpdate
+  round: number
+  hypotheses: Array<{
+    id: string
+    statement: string
+    parentId: string | null
+    round: number
+    f1: number | null
+    status: string
+    createdAt: string
+  }>
+  convergenceHistory: Array<{ round: number; bestF1: number; count: number }>
+}

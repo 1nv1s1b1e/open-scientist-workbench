@@ -15,9 +15,13 @@ import { useCallback, useMemo, useState } from 'react'
 import { ChatPanel } from '@/components/chat/chat-panel'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ConceptNet3D, DebateTheater, EvolutionTree } from '@/components/visualizers/index'
+import type { RoundUpdateState } from '@/lib/hooks/useRunStream'
+import type { RunMessage } from '@/lib/hooks/useRunStream'
 import type { AgentRole, AgentState, OrchestratorData } from '@/lib/types/visualizers'
 import { cn } from '@/lib/utils/cn'
 import { buildInitialOrchestratorData } from '@/lib/visualizers/index'
+import { buildConceptNet, EMPTY_CONCEPT_NET } from '@/lib/visualizers/concept-net-data'
+import { buildEvolutionTree, EMPTY_EVOLUTION_TREE } from '@/lib/visualizers/evolution-tree-data'
 
 type View = 'debate-theater' | 'concept-net' | 'evolution-tree'
 
@@ -40,11 +44,33 @@ export default function ProjectRunPage() {
   const [chatCollapsed, setChatCollapsed] = useState(false)
   const [agentStates, setAgentStates] = useState<Partial<Record<AgentRole, AgentState>>>({})
   const [selectedAgent, setSelectedAgent] = useState<AgentRole | null>(null)
+  const [roundUpdate, setRoundUpdate] = useState<RoundUpdateState>(null)
+  const [messages, setMessages] = useState<RunMessage[]>([])
+  const [selectedRound, setSelectedRound] = useState<number | null>(null)
+  const [selectedHypoId, setSelectedHypoId] = useState<string | null>(null)
 
   const handleAgentStatesChange = useCallback(
     (states: Partial<Record<AgentRole, AgentState>>) => setAgentStates(states),
     [],
   )
+  const handleRoundUpdateChange = useCallback((update: RoundUpdateState) => {
+    setRoundUpdate(update)
+  }, [])
+  const handleMessagesChange = useCallback((msgs: RunMessage[]) => setMessages(msgs), [])
+
+  // 从消息中提取可用轮次和假设（供轮次-假设选择器使用）
+  const { availableRounds, availableHypos } = useMemo(() => {
+    const roundSet = new Set<number>()
+    const hypoMap = new Map<string, number>()
+    for (const msg of messages) {
+      if (msg.round != null) roundSet.add(msg.round)
+      if (msg.hypoId && msg.round != null) hypoMap.set(msg.hypoId, msg.round)
+    }
+    return {
+      availableRounds: Array.from(roundSet).sort((a, b) => a - b),
+      availableHypos: Array.from(hypoMap.entries()).map(([id, round]) => ({ id, round })),
+    }
+  }, [messages])
 
   // Build live orchestrator data from agent states
   const orchestratorData: OrchestratorData = useMemo(() => {
@@ -57,6 +83,37 @@ export default function ProjectRunPage() {
       })),
     }
   }, [agentStates])
+
+  // Build evolution tree from real run data
+  const evolutionTreeData = useMemo(() => {
+    if (roundUpdate) return buildEvolutionTree(roundUpdate)
+    return EMPTY_EVOLUTION_TREE
+  }, [roundUpdate])
+
+  // Build concept net from real run data
+  const conceptNetData = useMemo(() => {
+    if (roundUpdate) return buildConceptNet(roundUpdate)
+    return EMPTY_CONCEPT_NET
+  }, [roundUpdate])
+
+  // Extract latest text snippet from the currently-running agent for the speech bubble
+  const activeSpeech = useMemo(() => {
+    const activeAgent = Object.entries(agentStates).find(([, s]) => s !== 'idle')
+    if (!activeAgent) return null
+    const [role] = activeAgent as [AgentRole, AgentState]
+    // Find the latest message from this agent that has text content
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]!
+      if (msg.agentRole !== role) continue
+      const textPart = msg.parts.find((p) => p.kind === 'text' && p.text)
+      if (textPart?.text) {
+        const snippet =
+          textPart.text.length > 80 ? textPart.text.slice(0, 77) + '...' : textPart.text
+        return { role, text: snippet }
+      }
+    }
+    return { role, text: '正在思考中...' }
+  }, [agentStates, messages])
 
   return (
     <div className="flex h-screen flex-col bg-[var(--color-bg)]">
@@ -160,10 +217,11 @@ export default function ProjectRunPage() {
                   data={orchestratorData}
                   selectedAgent={selectedAgent}
                   onSelectAgent={setSelectedAgent}
+                  activeSpeech={activeSpeech}
                 />
               )}
-              {view === 'concept-net' && <ConceptNet3D />}
-              {view === 'evolution-tree' && <EvolutionTree />}
+              {view === 'concept-net' && <ConceptNet3D data={conceptNetData} />}
+              {view === 'evolution-tree' && <EvolutionTree data={evolutionTreeData} />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -184,6 +242,16 @@ export default function ProjectRunPage() {
                   selectedAgent={selectedAgent}
                   onSelectAgent={setSelectedAgent}
                   onAgentStatesChange={handleAgentStatesChange}
+                  onRoundUpdateChange={handleRoundUpdateChange}
+                  onMessagesChange={handleMessagesChange}
+                  selectedRound={selectedRound}
+                  selectedHypoId={selectedHypoId}
+                  onSelectRoundHypo={(r, h) => {
+                    setSelectedRound(r)
+                    setSelectedHypoId(h)
+                  }}
+                  availableRounds={availableRounds}
+                  availableHypos={availableHypos}
                 />
               </div>
             </motion.aside>

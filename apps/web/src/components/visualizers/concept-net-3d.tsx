@@ -1,10 +1,9 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ConceptCategory, ConceptNetData, ConceptNode } from '@/lib/types/visualizers'
 import { CONCEPT_COLORS } from '@/lib/visualizers/colorTheme'
-import { DEFAULT_CONCEPT_NET } from '@/lib/visualizers/concept-net-data'
 
 interface Node2D extends ConceptNode {
   x: number
@@ -22,7 +21,7 @@ const CATEGORY_LABELS: Record<ConceptCategory, string> = {
   other: '其他物理机制',
 }
 
-export function ConceptNet3D({ data = DEFAULT_CONCEPT_NET }: { data?: ConceptNetData }) {
+export function ConceptNet3D({ data }: { data?: ConceptNetData }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [selectedNode, setSelectedNode] = useState<ConceptNode | null>(null)
@@ -32,14 +31,16 @@ export function ConceptNet3D({ data = DEFAULT_CONCEPT_NET }: { data?: ConceptNet
   const nodesRef = useRef<Node2D[]>([])
   const animFrameRef = useRef<number | null>(null)
 
+  const nodes = useMemo(() => data?.nodes ?? [], [data])
+  const links = useMemo(() => data?.links ?? [], [data])
+
   // Initialize node positions
   useEffect(() => {
-    const rawNodes = data.nodes.length > 0 ? data.nodes : DEFAULT_CONCEPT_NET.nodes
     const width = containerRef.current?.clientWidth || 800
     const height = containerRef.current?.clientHeight || 600
 
-    nodesRef.current = rawNodes.map((n, i) => {
-      const angle = (i / rawNodes.length) * Math.PI * 2
+    nodesRef.current = nodes.map((n, i) => {
+      const angle = (i / nodes.length) * Math.PI * 2
       const radius = 180 + (i % 2) * 50
       return {
         ...n,
@@ -50,7 +51,7 @@ export function ConceptNet3D({ data = DEFAULT_CONCEPT_NET }: { data?: ConceptNet
         radius: 22,
       }
     })
-  }, [data])
+  }, [nodes])
 
   // Canvas Force & High-DPI Render Loop
   useEffect(() => {
@@ -81,7 +82,7 @@ export function ConceptNet3D({ data = DEFAULT_CONCEPT_NET }: { data?: ConceptNet
       const width = rect.width
       const height = rect.height
       const nodes = nodesRef.current
-      const rawLinks = data.links.length > 0 ? data.links : DEFAULT_CONCEPT_NET.links
+      const rawLinks = links
 
       // Force simulation calculations
       const cx = width / 2
@@ -219,7 +220,7 @@ export function ConceptNet3D({ data = DEFAULT_CONCEPT_NET }: { data?: ConceptNet
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
     }
-  }, [data, activeCategory, hoveredNode, selectedNode])
+  }, [data, links, activeCategory, hoveredNode, selectedNode])
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const container = containerRef.current
@@ -264,6 +265,18 @@ export function ConceptNet3D({ data = DEFAULT_CONCEPT_NET }: { data?: ConceptNet
         onMouseMove={handleCanvasMouseMove}
         className="h-full w-full cursor-pointer"
       />
+
+      {/* Empty state */}
+      {nodes.length === 0 && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+          <div className="rounded-lg border border-white/10 bg-black/80 px-6 py-4 text-center backdrop-blur-md">
+            <p className="font-mono text-sm text-white/60">暂无知识图谱数据</p>
+            <p className="mt-1 font-mono text-[10px] text-white/40">
+              启动 Tournament Run 后将实时显示概念网络
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Category Filters */}
       <div className="absolute left-4 top-4 z-10 flex flex-wrap items-center gap-1.5 rounded-full border border-white/10 bg-black/70 p-1.5 backdrop-blur-md">

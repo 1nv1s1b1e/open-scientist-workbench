@@ -59,7 +59,7 @@ describe('credential store', () => {
     expect(await store.get('ghost-id')).toBeNull()
   })
 
-  it('list returns all credentials without exposing plaintext keys', async () => {
+  it('list returns all credentials with decrypted keys', async () => {
     await store.add({
       id: 'openai-prod',
       provider: 'openai',
@@ -78,10 +78,10 @@ describe('credential store', () => {
     expect(rows).toHaveLength(2)
     expect(rows.map((r) => r.id).sort()).toEqual(['openai-prod', 'qwen-gw'])
     for (const r of rows) {
-      // encryptedKey must never equal the plaintext, and must be the iv:hex format.
-      expect(r.encryptedKey).not.toBe('sk-1')
-      expect(r.encryptedKey).not.toBe('sk-2')
-      expect(r.encryptedKey).toMatch(/^[0-9a-f]+:[0-9a-f]+$/)
+      // list() now returns decrypted credentials (same shape as get()).
+      // No encryptedKey field — encryption is a storage-internal detail.
+      expect(r.apiKey).toMatch(/^sk-[12]$/)
+      expect((r as unknown as Record<string, unknown>).encryptedKey).toBeUndefined()
     }
   })
 
@@ -134,7 +134,7 @@ describe('credential store', () => {
   it('get decrypts correctly for oauth-token type', async () => {
     await store.add({
       id: 'github',
-      provider: 'github',
+      provider: 'anthropic',
       type: 'oauth-token',
       key: 'gho_tok-xyz',
     })

@@ -1,8 +1,8 @@
 import { type AgentRuntimeConfig, getDatasetDir, type ModelArg } from '@open-scientist/config'
 import type { EvalResult } from '@open-scientist/schema'
-import { persistAgentRun } from '../shared/persist.ts'
-import { type EmitChunk, streamAgentOutput } from '../shared/stream.ts'
-import { extractSubmitResult } from '../shared/tool-output.ts'
+import type { UIMessageChunk } from 'ai'
+import { type EmitChunk } from '../shared/stream.ts'
+import { resolveAgentConfigArgs, runAgentWorkflow } from '../shared/run-workflow.ts'
 import { createExploreAgent } from './agent.ts'
 
 export interface ExploreWorkflowInput {
@@ -28,7 +28,7 @@ export interface ExploreWorkflowInput {
    * Per-agent runtime config override (instructions / skillDirectories /
    * mcpServers). When present, its `modelConfig` takes priority over the
    * `modelConfig` field above and its non-model fields override the factory
-   * defaults. Undefined → fully default behaviour (backward compat).
+   * defaults. Undefined → fully default behaviour.
    */
   agentConfig?: AgentRuntimeConfig
   /**
@@ -47,7 +47,7 @@ export interface ExploreWorkflowInput {
  * Explore workflow: AlphaEvolve deterministic evaluation of one hypothesis.
  *
  * Spawns a fresh ExploreAgent bound to a per-hypothesis bash workspace, runs
- * the hypothesis' Python filter against the 1.75M snapshot dataset, and
+ * the hypothesis' Python filter against the 21,578-snapshot dataset, and
  * returns the EvalResult (F1 + counterexamples). The orchestrator
  * parallelizes this across the hypothesis pool via `Promise.all`.
  *
@@ -57,8 +57,8 @@ export interface ExploreWorkflowInput {
 export async function exploreWorkflow(input: ExploreWorkflowInput): Promise<EvalResult> {
   const datasetDir = getDatasetDir()
   const agent = await createExploreAgent({
-    modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
-    project: input.projectId,
+    ...resolveAgentConfigArgs(input.modelConfig, input.agentConfig),
+    projectId: input.projectId,
     runId: input.runId,
     hypoId: input.hypoId,
     runtimeContext: {
@@ -67,15 +67,6 @@ export async function exploreWorkflow(input: ExploreWorkflowInput): Promise<Eval
       round: input.round,
       hypoId: input.hypoId,
     },
-    ...(input.agentConfig?.instructions !== undefined
-      ? { instructions: input.agentConfig.instructions }
-      : {}),
-    ...(input.agentConfig?.skillDirectories !== undefined
-      ? { skillDirectories: input.agentConfig.skillDirectories }
-      : {}),
-    ...(input.agentConfig?.mcpServers !== undefined
-      ? { mcpServers: input.agentConfig.mcpServers }
-      : {}),
   })
 
   const prompt = `在真实 SDO/HMI SHARP 磁场数据集（21,578 条快照）上评估此假设。
@@ -101,23 +92,36 @@ ${input.hypothesis.pythonCode}
 5. 共享 venv（含 numpy/scipy）在 ${datasetDir}/.venv。如需额外包：uv pip install --python ${datasetDir}/.venv/bin/python <package>
 6. 返回 EvalResult，含 hypoId=${input.hypoId}、f1、truePositives、falsePositives、falseNegatives、counterexamples[]（物理具体）、logs（命令 + 关键 stdout）、executionMs。`
 
-  const result = await agent.stream({
-    messages: [{ role: 'user', content: prompt }],
-    ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
-  })
-
-  await streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)
-  await persistAgentRun(input.projectId, input.runId, 'explore', prompt, result)
-  const staticToolCalls = await result.staticToolCalls
-  const fallback: EvalResult = {
-    hypoId: input.hypoId,
-    f1: 0,
-    truePositives: 0,
-    falsePositives: 0,
-    falseNegatives: 0,
-    counterexamples: [],
-    logs: 'Explore agent reached step limit without calling submit_result',
-    executionMs: 0,
+  // Emit phase-start right before streaming begins (not in the .map() caller)
+  // so each hypothesis's phase-start fires when that workflow is actually ready,
+  // not all at once before any Explore agent starts.
+  if (input.emitChunk) {
+    input.emitChunk({
+      type: 'custom',
+      kind: 'tournament.phase-start',
+      role: 'explore',
+      round: input.round,
+      hypoId: input.hypoId,
+    } as unknown as UIMessageChunk)
   }
-  return extractSubmitResult(staticToolCalls, 'submit_result', fallback) as EvalResult
+
+  return runAgentWorkflow<EvalResult>({
+    agent,
+    projectId: input.projectId,
+    runId: input.runId,
+    role: 'explore',
+    prompt,
+    fallback: {
+      hypoId: input.hypoId,
+      f1: 0,
+      truePositives: 0,
+      falsePositives: 0,
+      falseNegatives: 0,
+      counterexamples: [],
+      logs: 'Explore agent reached step limit without calling submit_result',
+      executionMs: 0,
+    },
+    emitChunk: input.emitChunk,
+    abortSignal: input.abortSignal,
+  })
 }

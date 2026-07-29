@@ -436,7 +436,7 @@ describe('schema', () => {
 
   it('accepts oauth-token type', () => {
     const r = AddCredentialRequestSchema.parse({
-      provider: 'google',
+      provider: 'anthropic',
       type: 'oauth-token',
       key: 'ya29.x',
     })

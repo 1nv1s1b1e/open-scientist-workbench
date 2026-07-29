@@ -1,7 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createLogger } from '@open-scientist/logger'
-import type { Sandbox } from './sandbox.ts'
 
 const logger = createLogger('skills')
 
@@ -11,10 +10,7 @@ export interface DiscoveredSkill {
   directory: string
 }
 
-export async function discoverSkills(
-  _sandbox: Sandbox,
-  directories: string[],
-): Promise<DiscoveredSkill[]> {
+export async function discoverSkills(directories: string[]): Promise<DiscoveredSkill[]> {
   logger.info({ dirCount: directories.length, directories }, 'discoverSkills: start')
   const skills: DiscoveredSkill[] = []
   const seen = new Set<string>()
@@ -38,13 +34,23 @@ export async function discoverSkills(
       try {
         const content = await readFile(skillMdPath, 'utf-8')
         const { name, description } = parseFrontmatter(content)
+        if (name === 'unknown') {
+          logger.warn(
+            { dir: skillDir },
+            'discoverSkills: SKILL.md has no valid name frontmatter, skipping',
+          )
+          continue
+        }
         if (!seen.has(name)) {
           seen.add(name)
           skills.push({ name, description, directory: skillDir })
           logger.debug({ dir, name }, 'discoverSkills: skill discovered')
         }
-      } catch {
-        // not a skill directory
+      } catch (err) {
+        logger.debug(
+          { dir: skillDir, error: (err as Error).message },
+          'discoverSkills: SKILL.md read failed, skipping (not a skill directory)',
+        )
       }
     }
   }
@@ -56,8 +62,10 @@ export async function discoverSkills(
   return skills
 }
 
+const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---/
+
 function parseFrontmatter(content: string): { name: string; description: string } {
-  const match = content.match(/^---\n([\s\S]*?)\n---/)
+  const match = content.match(FRONTMATTER_RE)
   if (!match?.[1]) return { name: 'unknown', description: '' }
   const frontmatter = match[1]
   const nameMatch = frontmatter.match(/^name:\s*(.+)$/m)

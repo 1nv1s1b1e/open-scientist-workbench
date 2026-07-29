@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // 模型配置（settings per role / model alias）。
-// 一个 ModelConfig 只描述模型行为（model + thinkingLevel），endpoint 的
+// 一个 ModelConfig 只描述模型行为（model + thinkingLevel + apiMode），endpoint 的
 // provider/baseURL/apiKey 全部由 credentialId 引用的 Credential 条目决定。
 // 这样「同 provider 不同 url+key」组合就是不同的 credential 条目。
 export const ModelConfigSchema = z.object({
@@ -9,6 +9,9 @@ export const ModelConfigSchema = z.object({
   thinkingLevel: z
     .enum(['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
     .default('medium'),
+  // OpenAI 兼容网关用 chat completions（/v1/chat/completions），官方 OpenAI 可选
+  // responses API（/v1/responses）。Anthropic 忽略此字段。
+  apiMode: z.enum(['chat', 'responses']).default('chat'),
   credentialId: z.string().min(1),
 })
 export type ModelConfig = z.infer<typeof ModelConfigSchema>
@@ -53,7 +56,7 @@ export const GlobalSettingsSchema = z.object({
   models: z.record(z.string(), ModelConfigSchema).default({}),
   modelAliases: z.record(z.string(), ModelConfigSchema).optional(),
   agents: z.record(z.string(), AgentConfigSchema).default({}),
-  tournament: TournamentSettingsSchema,
+  tournament: TournamentSettingsSchema.default(TournamentSettingsSchema.parse({})),
   concurrency: ConcurrencySettingsSchema,
   steering: SteeringSettingsSchema,
 })
@@ -76,11 +79,11 @@ export const SetAgentConfigRequestSchema = AgentConfigSchema
 export type SetAgentConfigRequest = z.infer<typeof SetAgentConfigRequestSchema>
 
 // 凭证管理 —— endpoint bundle 形态：一个 credential = {id, provider, apiKey, baseURL?}。
-// id 是命名实体（可用户指定，如 "qwen-gateway"），不再按 provider 唯一。
+// id 是命名实体（可用户指定，如 "qwen-gateway"），按 id 唯一。
 // 同 provider 不同 url+key = 不同 credential 条目。metadata 保留给 OAuth 后期用。
 export const AddCredentialRequestSchema = z.object({
   id: z.string().min(1).optional(),
-  provider: z.string().min(1),
+  provider: z.enum(['openai', 'anthropic']),
   type: z.enum(['api-key', 'oauth-token']).default('api-key'),
   key: z.string().min(1),
   baseURL: z.string().url().optional(),
@@ -90,7 +93,7 @@ export type AddCredentialRequest = z.infer<typeof AddCredentialRequestSchema>
 
 export const CredentialResponseSchema = z.object({
   id: z.string(),
-  provider: z.string(),
+  provider: z.enum(['openai', 'anthropic']),
   type: z.enum(['api-key', 'oauth-token']),
   hasKey: z.boolean(),
   baseURL: z.string().optional(),
@@ -130,20 +133,14 @@ export type TestLlmResponse = z.infer<typeof TestLlmResponseSchema>
 // 放在 schema（零依赖）避免 config → storage 的循环依赖
 // （storage → config 是运行时依赖，方向不可逆）。
 
-/** 存储层内部记录（含加密的 key）。 */
-export interface CredentialRecord {
-  id: string
-  provider: string
-  type: 'api-key' | 'oauth-token'
-  encryptedKey: string
-  baseURL?: string
-  metadata?: Record<string, unknown>
-}
-
-/** 解密后的 credential，供 config 层构造 ModelArg 用。 */
+/**
+ * 解密后的 credential，供 config 层构造 ModelArg 用。
+ * `list()` 和 `get()` 都返回此类型 —— 加密的 `encryptedKey` 是 storage
+ * 内部细节，不泄漏到零依赖 schema 包。
+ */
 export interface Credential {
   id: string
-  provider: string
+  provider: 'openai' | 'anthropic'
   type: 'api-key' | 'oauth-token'
   apiKey: string
   baseURL?: string
@@ -158,10 +155,10 @@ export interface Credential {
 export interface CredentialStore {
   /** Resolve a credential by its id. Returns null if not found. */
   get(id: string): Promise<Credential | null>
-  list(): Promise<CredentialRecord[]>
+  list(): Promise<Credential[]>
   add(params: {
     id?: string
-    provider: string
+    provider: 'openai' | 'anthropic'
     type: 'api-key' | 'oauth-token'
     key: string
     baseURL?: string

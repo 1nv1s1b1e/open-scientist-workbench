@@ -1,10 +1,59 @@
 import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
 import type { EvalResult, Hypothesis, OracleOutput } from '@open-scientist/schema'
-import { persistAgentRun } from '../shared/persist.ts'
-import { type EmitChunk, streamAgentOutput } from '../shared/stream.ts'
-import { extractSubmitResult } from '../shared/tool-output.ts'
+import { type EmitChunk } from '../shared/stream.ts'
+import { resolveAgentConfigArgs, runAgentWorkflow } from '../shared/run-workflow.ts'
 import { createOracleAgent } from './agent.ts'
-import { buildEvalSummaryBlock, buildHypothesesBlock } from './logic.ts'
+
+/**
+ * Build the "Hypotheses + counterexamples" prompt block for the Oracle user
+ * message. Each hypothesis is rendered with its id, round, status, F1 (pulled
+ * from the matching EvalResult when available, else the hypothesis' own f1),
+ * parentId, statement, pythonCode, and Explore counterexamples.
+ *
+ * Empty hypotheses list → empty string (the workflow substitutes a placeholder
+ * in the surrounding message body).
+ */
+export function buildHypothesesBlock(hypotheses: Hypothesis[], evalResults: EvalResult[]): string {
+  return hypotheses
+    .map((h) => {
+      const evalMatch = evalResults.find((e) => e.hypoId === h.id)
+      const f1 = evalMatch?.f1 ?? h.f1
+      const counterexamples = evalMatch?.counterexamples ?? []
+      const counterexamplesBlock =
+        counterexamples.length === 0
+          ? '  (no counterexamples reported)'
+          : counterexamples
+              .map(
+                (c) =>
+                  `    - snapshotId=${c.snapshotId} | expected=${c.expected} | actual=${c.actual} | reason=${c.reason}`,
+              )
+              .join('\n')
+      return `Hypothesis ${h.id} (round ${h.round}, status=${h.status}, f1=${f1 ?? 'n/a'}, parentId=${h.parentId ?? 'null'}):
+  statement: ${h.statement}
+  pythonCode:
+\`\`\`python
+${h.pythonCode}
+\`\`\`
+  counterexamples (${counterexamples.length}):
+${counterexamplesBlock}`
+    })
+    .join('\n\n')
+}
+
+/**
+ * Build the "Eval summary" prompt block: one line per EvalResult with its
+ * hypoId, F1, TP/FP/FN counts, and execution time in ms.
+ *
+ * Empty evalResults → empty string (the workflow substitutes a placeholder).
+ */
+export function buildEvalSummaryBlock(evalResults: EvalResult[]): string {
+  return evalResults
+    .map(
+      (e) =>
+        `  - ${e.hypoId}: F1=${e.f1} TP=${e.truePositives} FP=${e.falsePositives} FN=${e.falseNegatives} (${e.executionMs}ms)`,
+    )
+    .join('\n')
+}
 
 export interface OracleWorkflowInput {
   /** Project name — drives workspace dir + HelixDB scoping. */
@@ -26,7 +75,7 @@ export interface OracleWorkflowInput {
    * Per-agent runtime config override (instructions / skillDirectories /
    * mcpServers). When present, its `modelConfig` takes priority over the
    * `modelConfig` field above and its non-model fields override the factory
-   * defaults. Undefined → fully default behaviour (backward compat).
+   * defaults. Undefined → fully default behaviour.
    */
   agentConfig?: AgentRuntimeConfig
   /**
@@ -49,23 +98,10 @@ export interface OracleWorkflowInput {
  */
 export async function oracleWorkflow(input: OracleWorkflowInput): Promise<OracleOutput> {
   const agent = await createOracleAgent({
-    modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
+    ...resolveAgentConfigArgs(input.modelConfig, input.agentConfig),
     projectId: input.projectId,
     runId: input.runId,
-    runtimeContext: {
-      projectId: input.projectId,
-      runId: input.runId,
-      round: input.round,
-    },
-    ...(input.agentConfig?.instructions !== undefined
-      ? { instructions: input.agentConfig.instructions }
-      : {}),
-    ...(input.agentConfig?.skillDirectories !== undefined
-      ? { skillDirectories: input.agentConfig.skillDirectories }
-      : {}),
-    ...(input.agentConfig?.mcpServers !== undefined
-      ? { mcpServers: input.agentConfig.mcpServers }
-      : {}),
+    runtimeContext: { projectId: input.projectId, runId: input.runId, round: input.round },
   })
 
   const hypothesesBlock = buildHypothesesBlock(input.hypotheses, input.evalResults)
@@ -86,25 +122,20 @@ ${hypothesesBlock}
 2. 对每条假设：发出一条 Critique，severity（fatal/major/minor）基于具体 Explore 反例或物理守恒定律。用 getCritiquesByHypothesis 避免重复前序轮次的问题。
 3. 用 addCritique 将每条批判持久化到 HelixDB（createdAt = now ISO 8601）。
 4. 对高潜力父假设（major 批判但可修复）：按 4 种 AlphaEvolve 算子生成突变。每个 mutatedHypothesis 必须是完整 Hypothesis，含新 id、parentId = parentHypoId、round = ${input.round}、status = 'mutated'、与 statement 一致的 pythonCode。可用 bash/writeFile 在代表性快照上验证突变 filter。
-5. 用 addMutationLink(parentHypoId, childHypoId, mutationType) 记录 MUTATED_FROM 边。用 getEvolutionChain（HelixDB）避免回到已淘汰形式的环状突变。
+5. 用 addMutationLink(parentHypoId, childHypoId, mutationType) 记录 MUTATED_FROM 边。避免回到已淘汰形式的环状突变（检查 parentId 链）。
 6. 将本轮淘汰的假设 id 填入 eliminatedIds（fatal 批判或持续低 F1）。
 7. 仅当本轮收敛时设置 winningHypoId 为获胜假设 id；否则留 null。
 
 返回 OracleOutput（critiques[]、mutations[]、eliminatedIds[]、winningHypoId）。每条 major/fatal 批判必须配对一个突变或一次淘汰。`
 
-  const result = await agent.stream({
-    messages: [{ role: 'user', content: prompt }],
-    ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
+  return runAgentWorkflow<OracleOutput>({
+    agent,
+    projectId: input.projectId,
+    runId: input.runId,
+    role: 'oracle',
+    prompt,
+    fallback: { critiques: [], mutations: [], eliminatedIds: [], winningHypoId: null },
+    emitChunk: input.emitChunk,
+    abortSignal: input.abortSignal,
   })
-
-  await streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)
-  await persistAgentRun(input.projectId, input.runId, 'oracle', prompt, result)
-  const staticToolCalls = await result.staticToolCalls
-  const fallback: OracleOutput = {
-    critiques: [],
-    mutations: [],
-    eliminatedIds: [],
-    winningHypoId: null,
-  }
-  return extractSubmitResult(staticToolCalls, 'submit_result', fallback) as OracleOutput
 }

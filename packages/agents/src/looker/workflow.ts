@@ -1,8 +1,7 @@
 import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
 import type { EvidenceAlignment } from '@open-scientist/schema'
-import { persistAgentRun } from '../shared/persist.ts'
-import { type EmitChunk, streamAgentOutput } from '../shared/stream.ts'
-import { extractSubmitResult } from '../shared/tool-output.ts'
+import { type EmitChunk } from '../shared/stream.ts'
+import { resolveAgentConfigArgs, runAgentWorkflow } from '../shared/run-workflow.ts'
 import { createLookerAgent } from './agent.ts'
 
 export interface LookerWorkflowInput {
@@ -27,7 +26,7 @@ export interface LookerWorkflowInput {
    * Per-agent runtime config override (instructions / skillDirectories /
    * mcpServers). When present, its `modelConfig` takes priority over the
    * `modelConfig` field above and its non-model fields override the factory
-   * defaults. Undefined → fully default behaviour (backward compat).
+   * defaults. Undefined → fully default behaviour.
    */
   agentConfig?: AgentRuntimeConfig
   /**
@@ -50,24 +49,11 @@ export interface LookerWorkflowInput {
  */
 export async function lookerWorkflow(input: LookerWorkflowInput): Promise<EvidenceAlignment> {
   const agent = await createLookerAgent({
-    modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
-    project: input.projectId,
+    ...resolveAgentConfigArgs(input.modelConfig, input.agentConfig),
+    projectId: input.projectId,
     runId: input.runId,
     hypoId: input.hypoId,
-    runtimeContext: {
-      projectId: input.projectId,
-      runId: input.runId,
-      hypoId: input.hypoId,
-    },
-    ...(input.agentConfig?.instructions !== undefined
-      ? { instructions: input.agentConfig.instructions }
-      : {}),
-    ...(input.agentConfig?.skillDirectories !== undefined
-      ? { skillDirectories: input.agentConfig.skillDirectories }
-      : {}),
-    ...(input.agentConfig?.mcpServers !== undefined
-      ? { mcpServers: input.agentConfig.mcpServers }
-      : {}),
+    runtimeContext: { projectId: input.projectId, runId: input.runId, hypoId: input.hypoId },
   })
 
   const prompt = `将假设 ${input.hypoId} 的高分候选案例对齐到原始 FITS 图像 + MP4 视频片段。
@@ -89,13 +75,24 @@ export async function lookerWorkflow(input: LookerWorkflowInput): Promise<Eviden
 5. 用 addEvidence 持久化证据：hypoId=${input.hypoId}、type='support' 或 'contradict'（根据图像与假设预言是否一致）、content（物理摘要）、f1Score（透传）、fitsPaths、videoPath、createdAt=now ISO 8601。
 6. 返回 EvidenceAlignment，含 hypoId=${input.hypoId}、fitsPaths[]、videoClipPath（可 null）、metadata {activeRegion, timestamp, wavelength, spatialIndex}。`
 
-  const result = await agent.stream({
-    messages: [{ role: 'user', content: prompt }],
-    ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
+  return runAgentWorkflow<EvidenceAlignment>({
+    agent,
+    projectId: input.projectId,
+    runId: input.runId,
+    role: 'looker',
+    prompt,
+    fallback: {
+      hypoId: input.hypoId,
+      fitsPaths: [],
+      videoClipPath: null,
+      metadata: {
+        activeRegion: input.candidateCase.activeRegion,
+        timestamp: input.candidateCase.timestamp,
+        wavelength: input.candidateCase.wavelength,
+        spatialIndex: '',
+      },
+    },
+    emitChunk: input.emitChunk,
+    abortSignal: input.abortSignal,
   })
-
-  await streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)
-  await persistAgentRun(input.projectId, input.runId, 'looker', prompt, result)
-  const staticToolCalls = await result.staticToolCalls
-  return extractSubmitResult(staticToolCalls) as EvidenceAlignment
 }

@@ -28,7 +28,7 @@ export interface RoundSnapshot {
  *
  * Plain async fn — fs failures bubble to the caller, which can wrap retry if
  * desired. Imports `node:fs/promises` + `@open-scientist/config` statically
- * (no VM sandbox anymore).
+ * (no VM sandbox; uses host fs directly).
  */
 export async function snapshotStep(snapshot: RoundSnapshot): Promise<{ path: string }> {
   const dir = getRoundsDir(snapshot.projectId, snapshot.round)

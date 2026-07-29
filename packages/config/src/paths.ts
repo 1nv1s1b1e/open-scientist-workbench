@@ -5,11 +5,10 @@ import { env } from './env.ts'
 // Detect monorepo root by walking up from this source file looking for
 // pnpm-workspace.yaml. This makes `BASE_DIR` (and thus `data/`, `global.sqlite`,
 // per-project dirs) resolve consistently to `<monorepo-root>/data` regardless
-// of which workspace package's cwd the process started from (e.g. `nitro dev`
+// of which workspace package's cwd the process started from (e.g. `tsx watch`
 // runs from `apps/api`, but data must live at the repo root).
-function findMonorepoRoot(start: string): string {
+export function findMonorepoRoot(start: string): string {
   let dir = start
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     if (existsSync(resolve(dir, 'pnpm-workspace.yaml'))) return dir
     const parent = dirname(dir)
@@ -31,27 +30,11 @@ export function getProjectDir(name: string): string {
 }
 
 export function getWorkspaceDir(project: string, runId: string, hypoId: string): string {
-  return resolve(getProjectDir(project), 'runs', runId, 'workspace', hypoId)
-}
-
-export function getEvidenceDir(project: string, hypoId: string): string {
-  return resolve(getProjectDir(project), 'evidence', hypoId)
+  return resolve(getProjectDir(project), 'runs', runId, hypoId)
 }
 
 export function getMhdDir(project: string): string {
   return resolve(getProjectDir(project), 'mhd')
-}
-
-export function getSkillsDir(project: string): string {
-  return resolve(getProjectDir(project), 'skills')
-}
-
-export function getMcpConfigPath(project: string): string {
-  return resolve(getProjectDir(project), 'mcp', 'config.json')
-}
-
-export function getPromptsDir(project: string): string {
-  return resolve(getProjectDir(project), 'prompts')
 }
 
 export function getGlobalDbPath(): string {
@@ -62,16 +45,8 @@ export function getProjectDbPath(project: string): string {
   return resolve(getProjectDir(project), 'db.sqlite')
 }
 
-export function getRunsDir(project: string, runId: string): string {
-  return resolve(getProjectDir(project), 'runs', runId)
-}
-
 export function getRoundsDir(project: string, round: number): string {
   return resolve(getProjectDir(project), 'rounds', String(round))
-}
-
-export function getHypothesisDir(project: string, hypoId: string): string {
-  return resolve(getProjectDir(project), 'hypotheses', hypoId)
 }
 
 /**

@@ -29,14 +29,6 @@ CREATE TABLE `hypotheses` (
 	`created_at` text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `logs` (
-	`id` text PRIMARY KEY NOT NULL,
-	`run_id` text,
-	`level` text NOT NULL,
-	`message_json` text NOT NULL,
-	`timestamp` text NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `messages` (
 	`id` text PRIMARY KEY NOT NULL,
 	`run_id` text NOT NULL,
@@ -72,22 +64,19 @@ CREATE TABLE `projects` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `projects_name_unique` ON `projects` (`name`);--> statement-breakpoint
+CREATE TABLE `run_chunks` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`run_id` text NOT NULL,
+	`seq` integer NOT NULL,
+	`chunk_json` text NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `runs` (
 	`id` text PRIMARY KEY NOT NULL,
 	`project_id` text NOT NULL,
 	`status` text NOT NULL,
 	`started_at` text NOT NULL,
 	`ended_at` text,
-	`resume_state_blob` text,
 	`current_round` integer DEFAULT 0 NOT NULL,
 	`best_f1` real DEFAULT 0 NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE `steering_messages` (
-	`id` text PRIMARY KEY NOT NULL,
-	`run_id` text NOT NULL,
-	`content` text NOT NULL,
-	`mode` text NOT NULL,
-	`injected_at` text,
-	`status` text NOT NULL
 );

@@ -1,10 +1,11 @@
 import { mkdirSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { getBaseDir, getProjectDbPath } from '@open-scientist/config'
 import { createLogger } from '@open-scientist/logger'
 import Database from 'better-sqlite3'
 import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3'
-import { migrateDb } from './migrations.ts'
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import * as projectSchema from './schema/project.ts'
 import { enableWal } from './wal.ts'
 
@@ -15,6 +16,8 @@ export type ProjectDb = {
 }
 
 const logger = createLogger('storage')
+
+const migrationsFolder = join(dirname(fileURLToPath(import.meta.url)), '..', 'drizzle', 'project')
 
 // Cache key combines the current BASE_DIR with projectName, so tests that
 // point BASE_DIR at a fresh temp dir get a fresh ProjectDb without needing
@@ -39,16 +42,11 @@ export function createProjectDb(projectName: string): ProjectDb {
   enableWal(sqlite)
 
   const db = drizzle(sqlite, { schema: projectSchema })
-  migrateDb(db, 'project')
-  logger.info('project db migrated OK', { project: projectName })
+  migrate(db, { migrationsFolder })
 
   const result: ProjectDb = { db, sqlite, schema: projectSchema }
   cache.set(key, result)
   return result
-}
-
-export async function ensureProjectDb(projectName: string) {
-  return createProjectDb(projectName)
 }
 
 export function closeProjectDb(projectName: string) {

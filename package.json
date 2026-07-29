@@ -11,7 +11,6 @@
     "typecheck": "vp run -r typecheck",
     "test": "vp test run",
     "db:generate": "vp run --filter @open-scientist/storage db:generate",
-    "db:migrate": "vp run --filter @open-scientist/storage db:migrate",
     "prepare": "vp config"
   },
   "dependencies": {

@@ -6,8 +6,6 @@
  * - `inline code` → <code>
  * - **bold** → <strong>
  * - 段落 + 换行
- *
- * 如果未来需要完整 markdown，可换成 react-markdown + rehype。
  */
 
 'use client'

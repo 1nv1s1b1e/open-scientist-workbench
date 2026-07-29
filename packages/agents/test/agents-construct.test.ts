@@ -26,6 +26,7 @@ function fakeModelConfig(): ModelArg {
     baseURL: 'http://test.invalid',
     apiKey: 'sk-test',
     thinkingLevel: 'medium',
+    apiMode: 'chat',
   }
 }
 
@@ -43,7 +44,7 @@ describe('agent construction', () => {
   })
 
   it('constructs sisyphus agent with id + tools', async () => {
-    const agent = await createSisyphusAgent({ modelConfig: fakeModelConfig() })
+    const agent = await createSisyphusAgent({ projectId: PROJECT, modelConfig: fakeModelConfig() })
     expect(agent.id).toBe('sisyphus')
     expect(Object.keys(agent.tools).sort()).toEqual(['review_leading_hypothesis', 'submit_result'])
   })
@@ -72,7 +73,7 @@ describe('agent construction', () => {
   it('constructs explore agent with id + tools', async () => {
     const agent = await createExploreAgent({
       modelConfig: fakeModelConfig(),
-      project: PROJECT,
+      projectId: PROJECT,
       runId: RUN,
       hypoId: HYPO,
     })
@@ -110,7 +111,7 @@ describe('agent construction', () => {
   it('constructs looker agent with id + tools', async () => {
     const agent = await createLookerAgent({
       modelConfig: fakeModelConfig(),
-      project: PROJECT,
+      projectId: PROJECT,
       runId: RUN,
       hypoId: HYPO,
     })
@@ -147,7 +148,7 @@ describe('agent construction', () => {
   })
 
   it('sisyphus tool keys are exactly the orchestrator-only set', async () => {
-    const agent = await createSisyphusAgent({ modelConfig: fakeModelConfig() })
+    const agent = await createSisyphusAgent({ projectId: PROJECT, modelConfig: fakeModelConfig() })
     // Sisyphus is a pure orchestrator — no bash / helix / file tools.
     expect(agent.tools).not.toHaveProperty('bash')
     expect(agent.tools).not.toHaveProperty('loadSkill')
@@ -156,6 +157,7 @@ describe('agent construction', () => {
   it('override tools replace default toolset', async () => {
     const custom = { customTool: { description: 'x', inputSchema: { _type: 'object' } } }
     const agent = await createSisyphusAgent({
+      projectId: PROJECT,
       modelConfig: fakeModelConfig(),
       tools: custom as never,
     })

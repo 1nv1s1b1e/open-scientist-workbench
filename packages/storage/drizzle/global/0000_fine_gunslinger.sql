@@ -9,14 +9,6 @@ CREATE TABLE `credentials` (
 	`updated_at` text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `mcp_tool_baselines` (
-	`id` text PRIMARY KEY NOT NULL,
-	`trust_id` text NOT NULL,
-	`tool_name` text NOT NULL,
-	`digest` text NOT NULL,
-	`recorded_at` text NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `mcp_trust` (
 	`id` text PRIMARY KEY NOT NULL,
 	`project_name` text NOT NULL,
@@ -25,11 +17,4 @@ CREATE TABLE `mcp_trust` (
 	`trusted` integer NOT NULL,
 	`first_seen` text NOT NULL,
 	`last_checked` text NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE `settings` (
-	`scope` text NOT NULL,
-	`name` text NOT NULL,
-	`value_json` text NOT NULL,
-	`updated_at` text NOT NULL
 );

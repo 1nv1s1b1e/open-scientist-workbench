@@ -7,30 +7,52 @@ import {
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import type { McpServerConfig } from '@open-scientist/schema'
 
-export type { McpServerConfig }
-
+/**
+ * MCP client cache keyed by `projectName:serverName`. Using the composite key
+ * (not just `server.name`) ensures that two projects sharing a server name
+ * get distinct clients, and that reconfiguring a server within a project
+ * invalidates the stale entry.
+ */
 const clients = new Map<string, MCPClient>()
+
+function cacheKey(projectName: string, serverName: string): string {
+  return `${projectName}:${serverName}`
+}
 
 export function resolveTransport(server: McpServerConfig): MCPClientConfig['transport'] {
   if (server.transport === 'http') {
-    return { type: 'http', url: server.url!, headers: server.headers }
+    if (!server.url) throw new Error(`MCP server "${server.name}": transport 'http' requires a url`)
+    return { type: 'http', url: server.url, headers: server.headers }
   }
   if (server.transport === 'sse') {
-    return { type: 'sse', url: server.url!, headers: server.headers }
+    if (!server.url) throw new Error(`MCP server "${server.name}": transport 'sse' requires a url`)
+    return { type: 'sse', url: server.url, headers: server.headers }
   }
+  if (!server.command)
+    throw new Error(`MCP server "${server.name}": transport 'stdio' requires a command`)
   const stdio: MCPTransport = new StdioClientTransport({
-    command: server.command!,
+    command: server.command,
     args: server.args ?? [],
   })
   return stdio
 }
 
-export async function getMcpTools(server: McpServerConfig) {
-  const existing = clients.get(server.name)
-  if (existing) return existing.tools()
+/**
+ * Connect to an MCP server (or return cached tools). MCP servers are trusted
+ * automatically — no trust gate, fingerprint, or drift detection is performed.
+ */
+export async function getMcpTools(
+  projectName: string,
+  server: McpServerConfig,
+): Promise<Awaited<ReturnType<MCPClient['tools']>>> {
+  const key = cacheKey(projectName, server.name)
+  const existing = clients.get(key)
+  if (existing) {
+    return existing.tools()
+  }
 
   const client = await createMCPClient({ transport: resolveTransport(server) })
-  clients.set(server.name, client)
+  clients.set(key, client)
   return client.tools()
 }
 

@@ -2,14 +2,11 @@ import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
 import { ensureIndexes } from '@open-scientist/helix'
 import { createLogger } from '@open-scientist/logger'
 import type { HypothesisPool } from '@open-scientist/schema'
-import { persistAgentRun } from '../shared/persist.ts'
-import { type EmitChunk, streamAgentOutput } from '../shared/stream.ts'
-import { extractSubmitResult } from '../shared/tool-output.ts'
+import { type EmitChunk } from '../shared/stream.ts'
+import { resolveAgentConfigArgs, runAgentWorkflow } from '../shared/run-workflow.ts'
 import { createLibrarianAgent } from './agent.ts'
 
 const logger = createLogger('agents')
-
-export type { TournamentInput, TournamentResult } from '@open-scientist/schema'
 
 export interface LibrarianWorkflowInput {
   /** Seed hypothesis text from the user / Sisyphus. */
@@ -27,7 +24,7 @@ export interface LibrarianWorkflowInput {
    * Per-agent runtime config override (instructions / skillDirectories /
    * mcpServers). When present, its `modelConfig` takes priority over the
    * `modelConfig` field above and its non-model fields override the factory
-   * defaults. Undefined → fully default behaviour (backward compat).
+   * defaults. Undefined → fully default behaviour.
    */
   agentConfig?: AgentRuntimeConfig
   /**
@@ -47,7 +44,7 @@ export interface LibrarianWorkflowInput {
 /**
  * Librarian workflow: RAG retrieval → hypothesis pool generation.
  *
- * Round 1 of Tournament Evolution. Outputs a HypothesisPool (3-6 candidate
+ * Round 1 of Tournament Evolution. Outputs a HypothesisPool (2 candidate
  * hypotheses, each with statement + pythonCode) and persists each hypothesis
  * to HelixDB + the local workspace via the agent's tools.
  *
@@ -60,27 +57,7 @@ export async function librarianWorkflow(input: LibrarianWorkflowInput): Promise<
     { seed: input.seed, projectId: input.projectId, runId: input.runId },
     'librarian workflow start',
   )
-  const agent = await createLibrarianAgent({
-    modelConfig: input.agentConfig?.modelConfig ?? input.modelConfig,
-    projectId: input.projectId,
-    runId: input.runId,
-    runtimeContext: {
-      projectId: input.projectId,
-      runId: input.runId,
-      round: 1,
-    },
-    ...(input.agentConfig?.instructions !== undefined
-      ? { instructions: input.agentConfig.instructions }
-      : {}),
-    ...(input.agentConfig?.skillDirectories !== undefined
-      ? { skillDirectories: input.agentConfig.skillDirectories }
-      : {}),
-    ...(input.agentConfig?.mcpServers !== undefined
-      ? { mcpServers: input.agentConfig.mcpServers }
-      : {}),
-  })
   await ensureIndexes()
-  logger.info('librarian workflow: starting agent.stream')
 
   const prompt = `种子假设：${input.seed}
 
@@ -90,21 +67,28 @@ export async function librarianWorkflow(input: LibrarianWorkflowInput): Promise<
 3. 给出可证伪条件（预言失效的场景）。
 4. 写纯 Python filter(snapshot: dict) -> bool 函数，阈值从物理推导。
 
-先加载 'solar-physics-rag' skill 获取检索指引和 Python filter 模板。用 searchPapers 和 searchHypotheses 检索已有文献和假设，避免重复。用 addHypothesis 将每条假设持久化到 HelixDB（roundId=0, f1Score=0, runId=${input.runId}, createdAt=now ISO 8601），用 writeFile 将 Python filter 写入工作区。
+先加载 'solar-physics-rag' skill 获取检索指引和 Python filter 模板。用 searchPapers 和 searchHypotheses 检索已有文献和假设，避免重复。用 addHypothesis 将每条假设持久化到 HelixDB（roundId=1, f1Score=0, runId=${input.runId}, createdAt=now ISO 8601），用 writeFile 将 Python filter 写入工作区。
 
 返回 HypothesisPool，rationale 说明覆盖策略。`
 
-  const result = await agent.stream({
-    messages: [{ role: 'user', content: prompt }],
-    ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
+  const agent = await createLibrarianAgent({
+    ...resolveAgentConfigArgs(input.modelConfig, input.agentConfig),
+    projectId: input.projectId,
+    runId: input.runId,
+    runtimeContext: { projectId: input.projectId, runId: input.runId, round: 1 },
   })
 
-  await streamAgentOutput(result.fullStream, agent.tools, input.emitChunk)
-  await persistAgentRun(input.projectId, input.runId, 'librarian', prompt, result)
-  const staticToolCalls = await result.staticToolCalls
-  const fallback: HypothesisPool = {
-    hypotheses: [],
-    rationale: 'Librarian agent reached step limit without calling submit_result',
-  }
-  return extractSubmitResult(staticToolCalls, 'submit_result', fallback) as HypothesisPool
+  return runAgentWorkflow<HypothesisPool>({
+    agent,
+    projectId: input.projectId,
+    runId: input.runId,
+    role: 'librarian',
+    prompt,
+    fallback: {
+      hypotheses: [],
+      rationale: 'Librarian agent reached step limit without calling submit_result',
+    },
+    emitChunk: input.emitChunk,
+    abortSignal: input.abortSignal,
+  })
 }

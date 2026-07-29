@@ -21,6 +21,7 @@ import { ApiError } from '@/lib/api/client'
 import { useCredentials, useGlobalSettings, useUpdateGlobalSettings } from '@/lib/hooks/useApi'
 
 const THINKING_LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const
+const API_MODES = ['chat', 'responses'] as const
 const STEERING_MODES = ['one-at-a-time', 'all'] as const
 
 type Status = { type: 'success' | 'error'; msg: string } | null
@@ -168,7 +169,7 @@ export function SettingsPanel() {
     if (!role || models[role]) return
     setModels((prev) => ({
       ...prev,
-      [role]: { model: '', thinkingLevel: 'medium', credentialId: '' },
+      [role]: { model: '', thinkingLevel: 'medium', apiMode: 'chat', credentialId: '' },
     }))
     setNewRole('')
   }
@@ -309,6 +310,23 @@ export function SettingsPanel() {
                         </SelectContent>
                       </Select>
                     </FieldGroup>
+                    <FieldGroup label="API Mode">
+                      <Select
+                        value={cfg.apiMode}
+                        onValueChange={(v) => updateModelField(role, 'apiMode', v)}
+                      >
+                        <SelectTrigger className="font-mono text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {API_MODES.map((m) => (
+                            <SelectItem key={m} value={m}>
+                              {m}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FieldGroup>
                   </div>
                 </motion.div>
               ))}
@@ -357,6 +375,9 @@ export function SettingsPanel() {
                     <span className="truncate font-mono text-xs text-muted">{cfg.model}</span>
                     <span className="ml-auto rounded-full border border-[var(--color-border)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-muted">
                       {cfg.thinkingLevel}
+                    </span>
+                    <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-muted">
+                      {cfg.apiMode}
                     </span>
                   </div>
                 ))}

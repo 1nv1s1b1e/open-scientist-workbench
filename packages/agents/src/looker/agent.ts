@@ -1,19 +1,12 @@
-import { createModelFromConfig, type ModelArg } from '@open-scientist/config'
-import { getMcpTools } from '@open-scientist/mcp'
+import {
+  createModelFromConfig,
+  thinkingLevelToProviderOptions,
+  type ModelArg,
+} from '@open-scientist/config'
 import { EvidenceAlignmentSchema, type McpServerConfig } from '@open-scientist/schema'
-import {
-  createLoadSkillTool,
-  createNodeSandbox,
-  DEFAULT_SKILLS_DIR,
-  discoverSkills,
-} from '@open-scientist/skills'
-import {
-  addEvidenceTool,
-  createBashToolForHypothesis,
-  fitsAlignTool,
-  getEvidenceByHypothesisTool,
-} from '@open-scientist/tools'
+import { addEvidenceTool, fitsAlignTool, getEvidenceByHypothesisTool } from '@open-scientist/tools'
 import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
+import { assembleDefaultTools } from '../shared/tool-assembly.ts'
 import { makeSubmitResultTool } from '../shared/tool-output.ts'
 
 export interface LookerAgentDeps {
@@ -25,7 +18,7 @@ export interface LookerAgentDeps {
    */
   modelConfig: ModelArg
   /** Project name — drives workspace dir isolation + HelixDB scoping. */
-  project: string
+  projectId: string
   /** Run identifier — used for workspace dir isolation. */
   runId: string
   /** Hypothesis id — each hypothesis gets its own isolated bash workspace. */
@@ -66,52 +59,43 @@ export interface LookerAgentDeps {
  * - `getEvidenceByHypothesis` / `addEvidence` — HelixDB evidence read/write
  *   (retrieve prior evidence linked to the hypothesis; persist new evidence)
  * - `bash` / `readFile` / `writeFile` — bash-tool bound to
- *   `data/projects/<project>/workspace/<hypoId>/` (project + hypothesis isolation,
+ *   `data/projects/<project>/runs/<runId>/<hypoId>/` (project + hypothesis isolation,
  *   no sandbox — runs Python directly on host per AGENTS.md decision; used to
  *   query local FITS library or remote SDO data center via astropy/sunpy)
  * - `loadSkill` — progressive disclosure (loads `fits-snapshot-search` SKILL.md,
  *   which documents the SDO/AIA wavelength set + snapshot field structure that
  *   the Looker reuses for alignment keying)
  *
- * NOTE: createBashTool + discoverSkills are async, so this whole factory is async.
- * Call it before `agent.stream()`.
+ * NOTE: This factory is async because `assembleDefaultTools` performs async I/O
+ * (bash workspace dir creation + skills discovery). Call it before `agent.stream()`.
  *
  * Each hypothesis alignment gets a FRESH agent instance + FRESH bash workspace, so
- * parallel alignments (Sisyphus spawns N looker runs) don't share working dirs.
+ * parallel alignments (when wired in, the orchestrator would spawn N looker runs) don't share working dirs.
  */
 export async function getDefaultLookerTools(
-  project: string,
+  projectId: string,
   runId: string,
   hypoId: string,
   skillDirectories?: string[],
   mcpServers?: McpServerConfig[],
 ): Promise<ToolSet> {
-  const dirs = skillDirectories ?? [DEFAULT_SKILLS_DIR]
-  const bashToolkit = await createBashToolForHypothesis(project, runId, hypoId)
-  const skills = await discoverSkills(createNodeSandbox(), dirs)
-  const loadSkillTool = createLoadSkillTool(skills)
-
-  const baseTools: ToolSet = {
-    fitsAlign: fitsAlignTool,
-    getEvidenceByHypothesis: getEvidenceByHypothesisTool,
-    addEvidence: addEvidenceTool,
-    bash: bashToolkit.tools.bash,
-    readFile: bashToolkit.tools.readFile,
-    writeFile: bashToolkit.tools.writeFile,
-    loadSkill: loadSkillTool,
-  }
-  if (mcpServers && mcpServers.length > 0) {
-    for (const server of mcpServers) {
-      const mcpTools = await getMcpTools(server)
-      Object.assign(baseTools, mcpTools)
-    }
-  }
-  return baseTools
+  return assembleDefaultTools({
+    projectId,
+    runId,
+    workspaceSlot: hypoId,
+    extraTools: {
+      fitsAlign: fitsAlignTool,
+      getEvidenceByHypothesis: getEvidenceByHypothesisTool,
+      addEvidence: addEvidenceTool,
+    },
+    skillDirectories,
+    mcpServers,
+  })
 }
 
 export async function createLookerAgent({
   modelConfig,
-  project,
+  projectId,
   runId,
   hypoId,
   tools,
@@ -121,8 +105,12 @@ export async function createLookerAgent({
   runtimeContext,
 }: LookerAgentDeps) {
   const model = createModelFromConfig(modelConfig)
+  const providerOptions = thinkingLevelToProviderOptions(
+    modelConfig.provider,
+    modelConfig.thinkingLevel,
+  )
   const resolvedTools =
-    tools ?? (await getDefaultLookerTools(project, runId, hypoId, skillDirectories, mcpServers))
+    tools ?? (await getDefaultLookerTools(projectId, runId, hypoId, skillDirectories, mcpServers))
 
   const toolsWithSubmit: ToolSet = {
     ...resolvedTools,
@@ -133,10 +121,13 @@ export async function createLookerAgent({
     maxOutputTokens: 8192,
     id: 'looker',
     model,
+    providerOptions,
     toolChoice: 'auto',
     instructions:
       instructions ??
       `你是 Multimodal Looker，太阳物理日冕加热研究的跨模态时空数据对齐 agent。
+
+**所有输出（metadata 描述、alignment 说明等自然语言字段）必须用中文撰写。** 只有工具名、JSON key 保持英文。
 
 你的职责：
 1. 从 Explore 获取高分候选案例（活动区 + 时间戳 + 波长），针对某条假设。
@@ -155,6 +146,7 @@ export async function createLookerAgent({
 - 用 \`uv pip install <package>\` 安装 Python 包（如 uv pip install astropy sunpy scipy numpy）。
 - 用 \`uv run python script.py\` 运行 Python 脚本（隔离依赖）。
 - 你的工作目录是沙箱工作区——所有文件操作（writeFile、readFile、bash）仅限此目录。不要尝试访问外部文件。
+- **不要使用 \`cd\` 命令**——bash 工具已经自动设置工作目录到你的沙箱工作区。直接运行命令即可。
 
 工具指引：
 - 首先调用 \`fitsAlign\` 工具，传入 (hypoId, activeRegion, timestamp, wavelength)。返回 EvidenceAlignment（fitsPaths + videoClipPath + metadata）。注意：当前环境 fitsAlign 是一个信息性 stub，会抛出安装提示（astropy/sunpy 未安装）——发生时在日志中展示安装指引，回退到通过 \`bash\` 工具直接运行 astropy/sunpy（用 writeFile 写 Python 脚本，运行 \`python3 align.py\`，读取 stdout）。
@@ -169,5 +161,3 @@ export async function createLookerAgent({
     ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }
-
-export type LookerAgent = Awaited<ReturnType<typeof createLookerAgent>>

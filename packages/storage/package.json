@@ -11,8 +11,7 @@
     "build": "tsc",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts && drizzle-kit generate --config drizzle.project.config.ts",
     "db:generate:global": "drizzle-kit generate --config drizzle.config.ts",
-    "db:generate:project": "drizzle-kit generate --config drizzle.project.config.ts",
-    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts"
+    "db:generate:project": "drizzle-kit generate --config drizzle.project.config.ts"
   },
   "dependencies": {
     "@open-scientist/config": "workspace:*",
@@ -22,7 +21,6 @@
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
-    "@libsql/client": "^0.17.4",
     "@types/better-sqlite3": "^7.6.13",
     "drizzle-kit": "^0.31.10",
     "typescript": "^6.0.3"

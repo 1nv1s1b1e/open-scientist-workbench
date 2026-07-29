@@ -17,15 +17,9 @@
   },
   "dependencies": {
     "@ai-sdk/mcp": "^2.0.15",
-    "@ai-sdk/provider": "^4.0.3",
-    "@ai-sdk/provider-utils": "^5.0.11",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@open-scientist/config": "workspace:*",
     "@open-scientist/helix": "workspace:*",
-    "@open-scientist/schema": "workspace:*",
-    "@open-scientist/storage": "workspace:*",
-    "ai": "^7.0.31",
-    "zod": "^4.4.3"
+    "@open-scientist/schema": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3"

@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { AgentRole, AgentState, OrchestratorData } from '@/lib/types/visualizers'
 import { cn } from '@/lib/utils/cn'
 
@@ -86,9 +86,16 @@ interface DebateTheaterProps {
   data?: OrchestratorData
   selectedAgent?: AgentRole | null
   onSelectAgent?: (role: AgentRole | null) => void
+  /** Live speech bubble text for the currently-active agent (from real messages) */
+  activeSpeech?: { role: AgentRole; text: string } | null
 }
 
-export function DebateTheater({ data, selectedAgent, onSelectAgent }: DebateTheaterProps) {
+export function DebateTheater({
+  data,
+  selectedAgent,
+  onSelectAgent,
+  activeSpeech,
+}: DebateTheaterProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [scale, setScale] = useState(1)
@@ -96,7 +103,6 @@ export function DebateTheater({ data, selectedAgent, onSelectAgent }: DebateThea
   const dragStartRef = useRef({ x: 0, y: 0 })
 
   const [hoveredAgent, setHoveredAgent] = useState<AgentRole | null>(null)
-  const [activeSpeech, setActiveSpeech] = useState<{ role: AgentRole; text: string } | null>(null)
 
   // 鼠标拖动 (Pan)
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -129,24 +135,6 @@ export function DebateTheater({ data, selectedAgent, onSelectAgent }: DebateThea
     setPan({ x: 0, y: 0 })
     setScale(1)
   }
-
-  // 模拟活动 Agent 的 Live 对话气泡
-  useEffect(() => {
-    if (!data) return
-    const activeAgent = data.agents.find((a) => a.state !== 'idle')
-    if (activeAgent) {
-      const role = activeAgent.role as AgentRole
-      const speeches: Record<AgentRole, string> = {
-        sisyphus: '正在调度 Round 2 假说演化锦标赛控制流...',
-        librarian: '已检索到 14 篇 SDO/AIA 日冕波阻尼文献，提取关键词...',
-        explore: '正在运行 Python MHD 迭代，当前 F1Score = 0.89...',
-        oracle: '已识别出模型在磁重联极化角上的偏差，提交突变策略...',
-        prometheus: '构建 final MHD .cfg 仿真参数，生成卫星观测建议书...',
-        looker: '对齐 SOHO/UVCS 图像与 MP4 演化视频特征...',
-      }
-      setActiveSpeech({ role, text: speeches[role] ?? '智能体协作思考中...' })
-    }
-  }, [data])
 
   return (
     <div

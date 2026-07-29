@@ -1,7 +1,18 @@
 import { z } from 'zod'
 
+export const PROJECT_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9-_]*$/
+
+export const ProjectNameSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(
+    PROJECT_NAME_REGEX,
+    'Project name may only contain letters, digits, hyphens, and underscores',
+  )
+
 export const CreateProjectRequestSchema = z.object({
-  name: z.string().min(1).max(64),
+  name: ProjectNameSchema,
   config: z
     .object({
       mcp: z.record(z.string(), z.unknown()).optional(),

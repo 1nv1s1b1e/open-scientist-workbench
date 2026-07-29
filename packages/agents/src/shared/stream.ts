@@ -1,6 +1,6 @@
 /**
  * Shared helpers for forwarding agent `fullStream` events to an orchestrator
- * chunk sink. Used by all 6 agent workflow wrappers.
+ * chunk sink. Used by the 5 specialist agent workflows (via `runAgentWorkflow`).
  */
 import { type TextStreamPart, type ToolSet, toUIMessageStream, type UIMessageChunk } from 'ai'
 
@@ -20,21 +20,22 @@ export type EmitChunk = (chunk: UIMessageChunk) => void
  * `ReadableStream<UIMessageChunk>` → drained chunk-by-chunk into `emitChunk`.
  *
  * When `emitChunk` is undefined this function still drains the stream (so the
- * agent's tool loop runs to completion and `result.output` resolves), it just
- * discards the chunks.
+ * agent's tool loop runs to completion and `result.staticToolCalls` resolves),
+ * it just discards the chunks.
  *
- * The drain is awaited so that by the time the caller reads `result.output`,
- * all stream events have been forwarded — preserving causal ordering across
- * sequential sub-agent invocations in the tournament orchestrator.
+ * The drain is awaited so that by the time the caller reads
+ * `result.staticToolCalls`, all stream events have been forwarded — preserving
+ * causal ordering across sequential sub-agent invocations in the tournament
+ * orchestrator.
  */
 export async function streamAgentOutput<TOOLS extends ToolSet>(
   fullStream: ReadableStream<TextStreamPart<TOOLS>>,
-  tools: ToolSet | undefined,
+  tools: ToolSet,
   emitChunk: EmitChunk | undefined,
 ): Promise<void> {
   const uiStream = toUIMessageStream({
     stream: fullStream,
-    ...(tools !== undefined ? { tools } : {}),
+    tools,
   })
   const reader = uiStream.getReader()
   for (;;) {

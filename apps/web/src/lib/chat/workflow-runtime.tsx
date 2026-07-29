@@ -21,28 +21,40 @@ import {
 } from '@assistant-ui/react'
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { useRunStream } from '@/lib/hooks/useRunStream'
+import type { RoundUpdateState } from '@/lib/hooks/useRunStream'
+import type { RunMessage } from '@/lib/hooks/useRunStream'
 import type { AgentRole, AgentState } from '@/lib/types/visualizers'
 import { toThreadMessages } from './to-thread-messages'
 
 interface WorkflowRuntimeProviderProps {
   project: string
   modelAlias?: string
+  selectedAgent?: string | null
+  selectedRound?: number | null
+  selectedHypoId?: string | null
   onRunIdChange?: (runId: string | null) => void
   onStateChange?: (state: string) => void
   onAgentStatesChange?: (states: Partial<Record<AgentRole, AgentState>>) => void
+  onRoundUpdateChange?: (update: RoundUpdateState) => void
+  onMessagesChange?: (messages: RunMessage[]) => void
   children: ReactNode
 }
 
 export function WorkflowRuntimeProvider({
   project,
   modelAlias,
+  selectedAgent,
+  selectedRound,
+  selectedHypoId,
   onRunIdChange,
   onStateChange,
   onAgentStatesChange,
+  onRoundUpdateChange,
+  onMessagesChange,
   children,
 }: WorkflowRuntimeProviderProps) {
   const [seed, setSeed] = useState<string | null>(null)
-  const { messages, state, runId, agentStates, start, stop, reset } = useRunStream({
+  const { messages, state, runId, agentStates, roundUpdate, start, stop, reset } = useRunStream({
     project,
     onFinish: () => console.log('[workflow] run finished'),
     onError: (e) => console.error('[workflow] run error', e),
@@ -71,14 +83,29 @@ export function WorkflowRuntimeProvider({
     notifyAgentStates(agentStates)
   }, [agentStates, notifyAgentStates])
 
-  // RunMessage[] + seed → ThreadMessageLike[]
-  const threadMessages = useMemo<ThreadMessageLike[]>(
-    () => toThreadMessages(seed, messages, state),
-    [seed, messages, state],
+  // 通知父组件 roundUpdate 变化（hypotheses + convergence for visualizers）
+  const notifyRoundUpdate = useCallback(
+    (u: RoundUpdateState) => onRoundUpdateChange?.(u),
+    [onRoundUpdateChange],
+  )
+  useEffect(() => {
+    notifyRoundUpdate(roundUpdate)
+  }, [roundUpdate, notifyRoundUpdate])
+
+  // 通知父组件 messages 变化（for debate theater speech bubbles）
+  const notifyMessages = useCallback((m: RunMessage[]) => onMessagesChange?.(m), [onMessagesChange])
+  useEffect(() => {
+    notifyMessages(messages)
+  }, [messages, notifyMessages])
+
+  // RunMessage[] + seed → ThreadMessageLike[] (filtered by selectedAgent / selectedRound / selectedHypoId)
+  const threadMessages = useMemo(
+    () => toThreadMessages(seed, messages, state, selectedAgent, selectedRound, selectedHypoId),
+    [seed, messages, state, selectedAgent, selectedRound, selectedHypoId],
   )
 
   const isRunning = state === 'connecting' || state === 'streaming' || state === 'reconnecting'
-  const hasStarted = seed !== null
+  const hasStarted = seed !== null || messages.length > 0
 
   // onNew: 用户提交 seed → 启动 workflow run
   const onNew = useCallback(

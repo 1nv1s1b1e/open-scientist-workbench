@@ -80,13 +80,3 @@ export const MCP_PRESETS: Record<
     recommendedFor: ['librarian'],
   },
 }
-
-/**
- * 按 agent role 拿推荐的 preset name 列表（基于 preset 的 recommendedFor）。
- * 调用方用它构造 DEFAULT_GLOBAL.agents[role].mcpServers。
- */
-export function getRecommendedPresetsForRole(role: string): McpServerConfig[] {
-  return Object.values(MCP_PRESETS)
-    .filter((p) => p.recommendedFor.includes(role))
-    .map(({ description: _d, recommendedFor: _r, ...config }) => config)
-}

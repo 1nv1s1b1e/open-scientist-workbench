@@ -93,12 +93,12 @@ function ThreadEmpty() {
   const handleSelectSeed = (seedText: string) => {
     const textarea = document.querySelector('textarea')
     if (textarea) {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      const descriptor = Object.getOwnPropertyDescriptor(
         window.HTMLTextAreaElement.prototype,
         'value',
-      )?.set
-      if (nativeInputValueSetter) {
-        nativeInputValueSetter.call(textarea, seedText)
+      )
+      if (descriptor?.set) {
+        descriptor.set.call(textarea, seedText)
       } else {
         textarea.value = seedText
       }

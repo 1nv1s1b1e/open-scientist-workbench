@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { readLatestSnapshot, tournamentWorkflow } from '@open-scientist/agents'
+import { readLatestSnapshot } from '@open-scientist/agents'
 import {
   type AgentRuntimeConfig,
   ModelAliasNotFoundError,
@@ -8,16 +8,17 @@ import {
   resolveModelArg,
 } from '@open-scientist/config'
 import {
-  completeRun,
   createCredentialStore,
   createRun,
   getProject,
   getRun as getStorageRun,
+  getRunChunks,
+  listRuns,
   updateRunStatus,
 } from '@open-scientist/storage'
-import { createUIMessageStreamResponse, type UIMessageChunk } from 'ai'
 import { Hono } from 'hono'
 
+import { attachRunCompletion, respondWithRunStream } from '../lib/run-helpers'
 import { getRun as getRegistryRun, start as startRun } from '../lib/run-stream'
 
 export const runs = new Hono()
@@ -49,8 +50,7 @@ async function resolveRunModelArg(projectName: string, modelAlias?: string): Pro
  * `settings.agents[role]`.
  *
  * If `modelAlias` is supplied it overrides the `sisyphus` role's modelConfig
- * only (sub-agents still resolve via `settings.models[role]`); this mirrors
- * the single-model `resolveRunModelArg` behaviour for backward compat.
+ * only (sub-agents still resolve via `settings.models[role]`).
  */
 async function resolveRunAgentConfigs(
   projectName: string,
@@ -124,8 +124,8 @@ runs.post('/api/projects/:name/runs', async (c) => {
     // Suffix a short random UUID to avoid same-millisecond collisions when
     // two POST /runs land in the same Date.now() tick.
     runId: `run-${Date.now()}-${randomUUID().slice(0, 8)}`,
-    // Default model — kept for backward compat (sub-agents without an
-    // explicit agentConfigs entry fall back to this).
+    // Default model — sub-agents without an explicit agentConfigs entry
+    // fall back to this.
     modelConfig,
     // Per-agent runtime config map: each role gets its own resolved
     // modelConfig + any non-model overrides (instructions / skillDirectories
@@ -139,30 +139,9 @@ runs.post('/api/projects/:name/runs', async (c) => {
   // project.id is the projects-table UUID (foreign reference).
   await createRun(projectName, project.id, { id: run.runId, status: 'running' })
 
-  // When the tournament settles, update the SQLite row with final status +
-  // metrics so GET /runs/:id returns accurate data after the SSE stream ends.
-  void run.result.then(
-    (output) => {
-      void completeRun(projectName, run.runId, 'completed', {
-        bestF1: output?.bestF1,
-        currentRound: output?.totalRounds,
-      })
-    },
-    () => {
-      void completeRun(projectName, run.runId, 'failed')
-    },
-  )
+  attachRunCompletion(projectName, run)
 
-  return createUIMessageStreamResponse({
-    stream: run.getReadable({ startIndex: 0 }).pipeThrough(
-      new TransformStream<UIMessageChunk, UIMessageChunk>({
-        transform(chunk, controller) {
-          controller.enqueue(chunk)
-        },
-      }),
-    ),
-    headers: { 'x-workflow-run-id': run.runId },
-  })
+  return respondWithRunStream(c, run, 0)
 })
 
 /**
@@ -192,24 +171,7 @@ runs.get('/api/projects/:name/runs/:runId/stream', async (c) => {
     )
   }
 
-  const headers: Record<string, string> = { 'x-workflow-run-id': runId }
-  const readable = run.getReadable({ startIndex })
-
-  if (startIndex < 0) {
-    const tailIndex = await readable.getTailIndex()
-    headers['x-workflow-stream-tail-index'] = String(tailIndex)
-  }
-
-  return createUIMessageStreamResponse({
-    stream: readable.pipeThrough(
-      new TransformStream<UIMessageChunk, UIMessageChunk>({
-        transform(chunk, controller) {
-          controller.enqueue(chunk)
-        },
-      }),
-    ),
-    headers,
-  })
+  return respondWithRunStream(c, run, startIndex)
 })
 
 /**
@@ -237,6 +199,41 @@ runs.get('/api/projects/:name/runs/:runId', async (c) => {
     currentRound: row.currentRound,
     bestF1: row.bestF1,
   })
+})
+
+/**
+ * GET /api/projects/:name/runs/:runId/chunks — fetch all persisted chunks for a run.
+ *
+ * Returns an array of `{ seq, chunk }` objects (chunk = parsed UIMessageChunk).
+ * Used by the frontend to restore message history after page refresh.
+ */
+runs.get('/api/projects/:name/runs/:runId/chunks', async (c) => {
+  const projectName = c.req.param('name')
+  const runId = c.req.param('runId')
+  const rows = await getRunChunks(projectName, runId)
+  return c.json(rows.map((r) => ({ seq: r.seq, chunk: JSON.parse(r.chunkJson) as unknown })))
+})
+
+/**
+ * GET /api/projects/:name/runs — list all runs for a project.
+ */
+runs.get('/api/projects/:name/runs', async (c) => {
+  const projectName = c.req.param('name')
+  const rows = await listRuns(projectName)
+  return c.json(
+    rows
+      .slice()
+      .reverse()
+      .map((r) => ({
+        runId: r.id,
+        projectId: r.projectId,
+        status: r.status,
+        startedAt: r.startedAt,
+        endedAt: r.endedAt,
+        currentRound: r.currentRound,
+        bestF1: r.bestF1,
+      })),
+  )
 })
 
 /**
@@ -337,32 +334,7 @@ runs.post('/api/projects/:name/runs/:runId/resume', async (c) => {
   // stuck in 'running' from the crash).
   await updateRunStatus(projectName, runId, 'running')
 
-  // When the resumed tournament settles, update the SQLite row with final
-  // status + metrics (same pattern as POST /runs).
-  void run.result.then(
-    (output) => {
-      void completeRun(projectName, run.runId, 'completed', {
-        bestF1: output?.bestF1,
-        currentRound: output?.totalRounds,
-      })
-    },
-    () => {
-      void completeRun(projectName, run.runId, 'failed')
-    },
-  )
+  attachRunCompletion(projectName, run)
 
-  return createUIMessageStreamResponse({
-    stream: run.getReadable({ startIndex: 0 }).pipeThrough(
-      new TransformStream<UIMessageChunk, UIMessageChunk>({
-        transform(chunk, controller) {
-          controller.enqueue(chunk)
-        },
-      }),
-    ),
-    headers: { 'x-workflow-run-id': run.runId },
-  })
+  return respondWithRunStream(c, run, 0)
 })
-
-// Re-export tournamentWorkflow for tests that assert on the workflow function
-// passed to the registry (previously asserted via workflow/api's start()).
-export { tournamentWorkflow }

@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn as realSpawn, type SpawnOptions } from 'node:child_process'
 import { readFile as fsReadFile, writeFile as fsWriteFile, mkdir } from 'node:fs/promises'
 import nodePath from 'node:path'
 import type { Tool } from '@ai-sdk/provider-utils'
@@ -8,6 +8,42 @@ import { tool } from 'ai'
 import { z } from 'zod'
 
 const logger = createLogger('tools')
+
+// ─── spawn injection seam ────────────────────────────────────────────────────
+
+/**
+ * Minimal view of `child_process.ChildProcess` used by `execCommand`.
+ *
+ * Tests can provide a fake implementing this interface to drive stdout/stderr
+ * data events and exit/error events deterministically.
+ */
+export interface SpawnedProcess {
+  pid?: number | undefined
+  stdout: NodeJS.ReadableStream | null
+  stderr: NodeJS.ReadableStream | null
+  on(event: 'exit', listener: (code: number | null, signal: NodeJS.Signals | null) => void): this
+  on(event: 'error', listener: (err: Error) => void): this
+  on(event: string, listener: (...args: unknown[]) => void): this
+  kill(signal?: NodeJS.Signals | number): boolean
+}
+
+/**
+ * Spawn function signature matching the subset of `child_process.spawn` used by
+ * `execCommand` — `command`, `args`, `options` → a `SpawnedProcess`.
+ *
+ * The default is the real `spawn` from `node:child_process`; tests inject a
+ * fake to avoid spawning real processes.
+ */
+export type SpawnFn = (
+  command: string,
+  args: readonly string[],
+  options: SpawnOptions,
+) => SpawnedProcess
+
+const defaultSpawnFn: SpawnFn = (command, args, options) => {
+  const child = realSpawn(command, args as string[], options)
+  return child as unknown as SpawnedProcess
+}
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -46,25 +82,24 @@ function killProcessTree(pid: number): void {
       // Negative PID kills the entire process group (detached: true)
       process.kill(-pid, 'SIGKILL')
     } else {
-      spawn('taskkill', ['/F', '/T', '/PID', String(pid)], { stdio: 'ignore' })
+      realSpawn('taskkill', ['/F', '/T', '/PID', String(pid)], { stdio: 'ignore' })
     }
   } catch {
     // Process may have already exited
   }
 }
 
-// ─── output accumulator (tail-truncation + temp file overflow) ────────────────
+// ─── output accumulator (tail-truncation) ────────────────────────────────────
 
-const MAX_BYTES = 50_000
-const MAX_LINES = 2000
+export const MAX_BYTES = 50_000
+export const MAX_LINES = 2000
 
 interface TruncationResult {
   content: string
   truncated: boolean
-  tempFilePath?: string
 }
 
-function truncateTail(text: string): TruncationResult {
+export function truncateTail(text: string): TruncationResult {
   const bytes = Buffer.byteLength(text, 'utf-8')
   if (bytes <= MAX_BYTES && text.split('\n').length <= MAX_LINES) {
     return { content: text, truncated: false }
@@ -76,9 +111,12 @@ function truncateTail(text: string): TruncationResult {
   let tail = tailLines.join('\n')
 
   if (Buffer.byteLength(tail, 'utf-8') > MAX_BYTES) {
-    // Still too large — cut from the front
     const buf = Buffer.from(tail, 'utf-8')
-    tail = buf.subarray(buf.length - MAX_BYTES).toString('utf-8')
+    let start = buf.length - MAX_BYTES
+    while (start < buf.length && (buf[start]! & 0xc0) === 0x80) {
+      start++
+    }
+    tail = buf.subarray(start).toString('utf-8')
   }
 
   return { content: tail, truncated: true }
@@ -86,13 +124,17 @@ function truncateTail(text: string): TruncationResult {
 
 // ─── core execution (spawn-based, pi-style) ───────────────────────────────────
 
-interface ExecOptions {
+export interface ExecOptions {
   cwd: string
   timeoutMs?: number
   signal?: AbortSignal
 }
 
-async function execCommand(command: string, opts: ExecOptions): Promise<BashToolResult> {
+export async function execCommand(
+  command: string,
+  opts: ExecOptions,
+  spawnFn: SpawnFn,
+): Promise<BashToolResult> {
   const { shell, args } = detectShell()
   const timeoutMs = opts.timeoutMs ?? 120_000
 
@@ -103,7 +145,7 @@ async function execCommand(command: string, opts: ExecOptions): Promise<BashTool
     let aborted = false
     let settled = false
 
-    const child = spawn(shell, [...args, command], {
+    const child = spawnFn(shell, [...args, command], {
       cwd: opts.cwd,
       detached: process.platform !== 'win32',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -181,7 +223,7 @@ async function execCommand(command: string, opts: ExecOptions): Promise<BashTool
  * Rejects absolute paths and `..` traversal that would escape the workspace
  * directory, preventing arbitrary file read/write on the host.
  */
-function resolveWithinWorkspace(cwd: string, userPath: string): string {
+export function resolveWithinWorkspace(cwd: string, userPath: string): string {
   const resolved = nodePath.resolve(cwd, userPath)
   const normalizedCwd = nodePath.resolve(cwd)
   // Ensure the resolved path is the cwd itself or a descendant of it.
@@ -200,7 +242,7 @@ function resolveWithinWorkspace(cwd: string, userPath: string): string {
  *
  * Uses `node:child_process` spawn (real host shell) — supports Python,
  * Node.js, and any system binary. Files persist to disk under
- * `data/projects/<project>/runs/<runId>/workspace/<hypoId>/`.
+ * `data/projects/<project>/runs/<runId>/<hypoId>/`.
  *
  * Features borrowed from pi (github.com/earendil-works/pi):
  * - spawn-based streaming output (not exec buffering)
@@ -208,12 +250,18 @@ function resolveWithinWorkspace(cwd: string, userPath: string): string {
  * - AbortSignal + timeout support
  * - Tail-truncation (50KB / 2000 lines, keep newest output)
  * - Workspace boundary enforcement for readFile/writeFile (no path traversal)
+ *
+ * @param spawnFn Optional spawn function for testing. Defaults to the real
+ *   `child_process.spawn`. Tests inject a fake to drive stdout/stderr/exit
+ *   events deterministically without spawning real processes.
  */
 export async function createBashToolForHypothesis(
   project: string,
   runId: string,
   hypoId: string,
+  spawnFn?: SpawnFn,
 ): Promise<BashToolkit> {
+  const spawnImpl: SpawnFn = spawnFn ?? defaultSpawnFn
   const cwd = getWorkspaceDir(project, runId, hypoId)
   logger.info({ project, runId, hypoId, cwd }, 'createBashToolForHypothesis: creating workspace')
   await mkdir(cwd, { recursive: true })
@@ -227,11 +275,15 @@ export async function createBashToolForHypothesis(
     }),
     execute: async ({ command }, { abortSignal }) => {
       logger.debug({ project, runId, hypoId, command: command.slice(0, 200) }, 'bash execute')
-      const result = await execCommand(command, {
-        cwd,
-        timeoutMs: 60_000,
-        signal: abortSignal,
-      })
+      const result = await execCommand(
+        command,
+        {
+          cwd,
+          timeoutMs: 60_000,
+          signal: abortSignal,
+        },
+        spawnImpl,
+      )
       logger.debug(
         { project, runId, hypoId, exitCode: result.exitCode, stdoutLen: result.stdout.length },
         'bash result',
