@@ -105,6 +105,15 @@ ${input.hypothesis.pythonCode}
     } as unknown as UIMessageChunk)
   }
 
+  // Tag every agent-stream chunk with `_exploreHypoId` so the frontend can
+  // route chunks from parallel Explore runs to independent message contexts
+  // (see useRunStream.ts — StreamContext keyed by _exploreHypoId).
+  const taggedEmitChunk: EmitChunk | undefined = input.emitChunk
+    ? (chunk: UIMessageChunk) => {
+        input.emitChunk!({ ...chunk, _exploreHypoId: input.hypoId } as unknown as UIMessageChunk)
+      }
+    : undefined
+
   return runAgentWorkflow<EvalResult>({
     agent,
     projectId: input.projectId,
@@ -121,7 +130,7 @@ ${input.hypothesis.pythonCode}
       logs: 'Explore agent reached step limit without calling submit_result',
       executionMs: 0,
     },
-    emitChunk: input.emitChunk,
+    emitChunk: taggedEmitChunk,
     abortSignal: input.abortSignal,
   })
 }

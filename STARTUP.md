@@ -39,7 +39,7 @@ helix start
 ## 4. 启动 API 服务（Hono + tsx watch）
 
 ```bash
-vp dev
+vp run --filter @open-scientist/api dev
 ```
 
 - URL：http://localhost:3000
@@ -68,11 +68,11 @@ cd apps/web && npx next dev -p 5173
 
 ## 7. 一键启动顺序（三个终端）
 
-| 终端 | 命令                                  | 作用             |
-| ---- | ------------------------------------- | ---------------- |
-| T1   | `helix start`                         | 启动 HelixDB     |
-| T2   | `vp dev`                              | 启动 API (:3000) |
-| T3   | `cd apps/web && npx next dev -p 5173` | 启动 Web (:5173) |
+| 终端 | 命令                                      | 作用             |
+| ---- | ----------------------------------------- | ---------------- |
+| T1   | `helix start`                             | 启动 HelixDB     |
+| T2   | `vp run --filter @open-scientist/api dev` | 启动 API (:3000) |
+| T3   | `cd apps/web && npx next dev -p 5173`     | 启动 Web (:5173) |
 
 ## 验证命令
 

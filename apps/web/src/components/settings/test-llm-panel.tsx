@@ -1,6 +1,10 @@
 'use client'
 
-import type { TestLlmRequest, TestLlmResponse } from '@open-scientist/schema'
+import type {
+  TestLlmByCredentialRequest,
+  TestLlmRequest,
+  TestLlmResponse,
+} from '@open-scientist/schema'
 import { CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
@@ -18,7 +22,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { ApiError } from '@/lib/api/client'
-import { useCredentials, useTestLlm } from '@/lib/hooks/useApi'
+import { useCredentials, useTestLlm, useTestLlmByCredential } from '@/lib/hooks/useApi'
 
 const PRESET_MODELS = [
   'llab/DeepSeek-V4-Flash-FP8',
@@ -47,6 +51,7 @@ function UsageStat({ label, value }: { label: string; value?: number }) {
 
 export function TestLlmPanel() {
   const testMutation = useTestLlm()
+  const testByCredMutation = useTestLlmByCredential()
   const credsQuery = useCredentials()
 
   const [provider, setProvider] = useState<'openai' | 'anthropic'>('openai')
@@ -57,14 +62,25 @@ export function TestLlmPanel() {
   const [maxTokens, setMaxTokens] = useState(50)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<TestLlmResponse | null>(null)
+  // 选中已存凭证测试时，apiKey/provider/baseURL 全由后端从存储取，
+  // 前端无需传 key；null 表示手动模式。
+  const [selectedCredId, setSelectedCredId] = useState<string | null>(null)
 
-  // Quick fill from existing credential
+  const isPending = testMutation.isPending || testByCredMutation.isPending
+
+  // Quick fill from existing credential — 切换到「用凭证测试」模式
   const handleSelectCredential = (credId: string) => {
     const cred = credsQuery.data?.find((c) => c.id === credId)
-    if (cred) {
-      setProvider(cred.provider as 'openai' | 'anthropic')
-      if (cred.baseURL) setBaseURL(cred.baseURL)
-    }
+    if (!cred) return
+    setSelectedCredId(cred.id)
+    setProvider(cred.provider as 'openai' | 'anthropic')
+    if (cred.baseURL) setBaseURL(cred.baseURL)
+  }
+
+  // 退出凭证模式，回到手动输入 key
+  const handleClearCredential = () => {
+    setSelectedCredId(null)
+    setApiKey('')
   }
 
   const handleTest = async (e: React.FormEvent) => {
@@ -72,7 +88,32 @@ export function TestLlmPanel() {
     setError(null)
     setResult(null)
 
-    if (!model.trim() || !apiKey.trim()) {
+    if (!model.trim()) {
+      setError('Model 必填')
+      return
+    }
+
+    // 凭证模式：不传 apiKey，走 /api/test-llm/credential/:id
+    if (selectedCredId) {
+      const body: TestLlmByCredentialRequest = {
+        model: model.trim(),
+        prompt,
+        maxTokens: Number(maxTokens),
+      }
+      try {
+        const res = await testByCredMutation.mutateAsync({
+          credentialId: selectedCredId,
+          body,
+        })
+        setResult(res)
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : String(err))
+      }
+      return
+    }
+
+    // 手动模式：前端直接传 apiKey
+    if (!apiKey.trim()) {
       setError('Model 与 API Key 必填')
       return
     }
@@ -110,19 +151,32 @@ export function TestLlmPanel() {
       {credsQuery.data && credsQuery.data.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-3">
           <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
-            快速填充凭证:
+            {selectedCredId ? '使用凭证:' : '快速填充凭证:'}
           </span>
           {credsQuery.data.map((c) => (
             <button
               key={c.id}
               type="button"
               onClick={() => handleSelectCredential(c.id)}
-              className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 font-mono text-[11px] text-muted transition-colors hover:border-white/40 hover:text-white"
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] transition-colors ${
+                selectedCredId === c.id
+                  ? 'border-emerald-400/60 bg-emerald-500/[0.08] text-emerald-300'
+                  : 'border-[var(--color-border)] bg-[var(--color-surface)] text-muted hover:border-white/40 hover:text-white'
+              }`}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
               {c.id}
             </button>
           ))}
+          {selectedCredId && (
+            <button
+              type="button"
+              onClick={handleClearCredential}
+              className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 font-mono text-[11px] text-muted transition-colors hover:border-red-400/40 hover:text-red-300"
+            >
+              ✕ 取消凭证（回到手动输入 Key）
+            </button>
+          )}
         </div>
       )}
 
@@ -134,6 +188,7 @@ export function TestLlmPanel() {
               <Select
                 value={provider}
                 onValueChange={(v: 'openai' | 'anthropic') => setProvider(v)}
+                disabled={selectedCredId !== null}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -179,6 +234,7 @@ export function TestLlmPanel() {
                 value={baseURL}
                 onChange={(e) => setBaseURL(e.target.value)}
                 placeholder="http://10.191.80.76:8084/v1"
+                disabled={selectedCredId !== null}
                 className="font-mono text-xs"
               />
             </FieldGroup>
@@ -194,16 +250,29 @@ export function TestLlmPanel() {
             </FieldGroup>
           </div>
 
-          <FieldGroup label="API Key">
-            <Input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-..."
-              required
-              className="font-mono text-xs"
-            />
-          </FieldGroup>
+          {/* API Key —— 凭证模式下隐藏，后端从存储取 */}
+          {!selectedCredId && (
+            <FieldGroup label="API Key">
+              <Input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="sk-..."
+                required
+                className="font-mono text-xs"
+              />
+            </FieldGroup>
+          )}
+
+          {/* 凭证模式提示 */}
+          {selectedCredId && (
+            <div className="rounded-sm border border-emerald-500/30 bg-emerald-500/[0.06] px-4 py-3">
+              <p className="font-mono text-[11px] text-emerald-300">
+                ✓ 使用已存凭证「{selectedCredId}」测试 — API Key
+                由后端从加密存储读取，无需手动输入。
+              </p>
+            </div>
+          )}
 
           <FieldGroup label="Prompt">
             <Textarea
@@ -214,9 +283,9 @@ export function TestLlmPanel() {
           </FieldGroup>
 
           <div className="flex items-center gap-4 pt-2">
-            <Button type="submit" disabled={testMutation.isPending} variant="default">
-              {testMutation.isPending && <Spinner className="mr-1" />}
-              测试连接
+            <Button type="submit" disabled={isPending} variant="default">
+              {isPending && <Spinner className="mr-1" />}
+              {selectedCredId ? '用凭证测试' : '测试连接'}
             </Button>
             {error && (
               <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-red-400">

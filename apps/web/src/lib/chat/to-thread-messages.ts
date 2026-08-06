@@ -64,20 +64,13 @@ function toMessageStatus(state: StreamState): ThreadMessageLike['status'] {
   }
 }
 
-/** 逻辑顺序：0 = reasoning, 1 = tool-call / custom, 2 = text */
-function getPartPriority(part: ContentPart): number {
-  if (part.type === 'reasoning') return 0
-  if (part.type === 'tool-call' || part.type.startsWith('data-')) return 1
-  if (part.type === 'text') return 2
-  return 3
-}
-
 /**
  * 把 seed + RunMessage[] 转成 ThreadMessageLike[]。
  *
  * - seed 作为第一条 user 消息
- * - 每个 RunMessage 成为一条 assistant 消息（按 reasoning → tools → text 优先次序排列）
+ * - 每个 RunMessage 成为一条 assistant 消息（按 parts 在流中的原始时间序排列）
  * - 自动过滤内部 submit_result 工具与纯空完成消息，防止产生空卡片框
+ * - 当 hideTools 为 true 时，过滤所有 tool-call parts
  * - 当 selectedAgent 非空时，仅显示该 agent 的消息（未到达的 agent 显示提示）
  * - 当 selectedRound 非空时，仅显示该轮次的消息
  * - 当 selectedHypoId 非空时，仅显示该假设的消息（Explore 并行多假设时区分）
@@ -89,6 +82,7 @@ export function toThreadMessages(
   selectedAgent?: string | null,
   selectedRound?: number | null,
   selectedHypoId?: string | null,
+  hideTools?: boolean,
 ): ThreadMessageLike[] {
   const msgs: ThreadMessageLike[] = []
 
@@ -146,12 +140,16 @@ export function toThreadMessages(
         ) {
           continue
         }
+        // hideTools 模式下跳过所有 tool-call
+        if (hideTools && converted.type === 'tool-call') {
+          continue
+        }
         parts.push(converted)
       }
     }
 
-    // 按 reasoning → tool-call / data-* → text 排序
-    parts.sort((a, b) => getPartPriority(a) - getPartPriority(b))
+    // 保留原始时间序（流中的产出顺序），不重排
+    // — 之前的 sort(reasoning→tool→text) 会把所有 tool 提到文本前面，不符合实际对话流
 
     // 过滤多余的纯空 text parts
     const validParts = parts.filter((p) => {

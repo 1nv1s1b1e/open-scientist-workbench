@@ -32,6 +32,7 @@ interface WorkflowRuntimeProviderProps {
   selectedAgent?: string | null
   selectedRound?: number | null
   selectedHypoId?: string | null
+  hideTools?: boolean
   onRunIdChange?: (runId: string | null) => void
   onStateChange?: (state: string) => void
   onAgentStatesChange?: (states: Partial<Record<AgentRole, AgentState>>) => void
@@ -46,6 +47,7 @@ export function WorkflowRuntimeProvider({
   selectedAgent,
   selectedRound,
   selectedHypoId,
+  hideTools,
   onRunIdChange,
   onStateChange,
   onAgentStatesChange,
@@ -100,8 +102,17 @@ export function WorkflowRuntimeProvider({
 
   // RunMessage[] + seed → ThreadMessageLike[] (filtered by selectedAgent / selectedRound / selectedHypoId)
   const threadMessages = useMemo(
-    () => toThreadMessages(seed, messages, state, selectedAgent, selectedRound, selectedHypoId),
-    [seed, messages, state, selectedAgent, selectedRound, selectedHypoId],
+    () =>
+      toThreadMessages(
+        seed,
+        messages,
+        state,
+        selectedAgent,
+        selectedRound,
+        selectedHypoId,
+        hideTools,
+      ),
+    [seed, messages, state, selectedAgent, selectedRound, selectedHypoId, hideTools],
   )
 
   const isRunning = state === 'connecting' || state === 'streaming' || state === 'reconnecting'
@@ -126,6 +137,12 @@ export function WorkflowRuntimeProvider({
     await stop()
   }, [stop])
 
+  // convertMessage: identity — ThreadMessageLike is already the correct shape.
+  // MUST be memoized: a new function reference every render causes
+  // useExternalStoreRuntime to rebuild its internal converter → state update
+  // → re-render → new reference → infinite loop ("Maximum update depth exceeded").
+  const convertMessage = useCallback((msg: ThreadMessageLike) => msg, [])
+
   // reset: 重置整个会话（外部按钮调用）
   const handleReset = useCallback(() => {
     setSeed(null)
@@ -138,8 +155,7 @@ export function WorkflowRuntimeProvider({
     isSendDisabled: hasStarted && !isRunning,
     onNew,
     onCancel,
-    // ThreadMessageLike 不 extends ThreadMessage，需提供 convertMessage
-    convertMessage: (msg: ThreadMessageLike) => msg,
+    convertMessage,
   })
 
   // 暴露 reset 给子组件（通过 context-like prop）

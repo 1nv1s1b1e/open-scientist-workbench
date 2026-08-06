@@ -54,6 +54,22 @@ export interface RunMessage {
   hypoId?: string
 }
 
+/**
+ * Per-stream bookkeeping. The tournament runs Explore hypotheses in parallel
+ * via `Promise.all`, so multiple agent streams' chunks interleave in the SSE
+ * feed. Each tagged Explore chunk carries `_exploreHypoId`; we key the
+ * message context by that id so parallel runs don't clobber each other.
+ *
+ * For non-Explore streams (Librarian/Oracle/Prometheus) there is no
+ * `_exploreHypoId`, so the key falls back to `'__main__'` (single context).
+ */
+interface StreamContext {
+  message: RunMessage | null
+  partMap: Map<string, MessagePart>
+}
+
+const MAIN_STREAM_KEY = '__main__'
+
 export type StreamState =
   | 'idle'
   | 'connecting'
@@ -113,8 +129,8 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
   const runIdRef = useRef<string | null>(null)
   const reconnectErrorsRef = useRef(0)
   const userStoppedRef = useRef(false)
-  const partMapRef = useRef<Map<string, MessagePart>>(new Map())
-  const currentMessageRef = useRef<RunMessage | null>(null)
+  /** Per-stream message contexts keyed by `_exploreHypoId` (or `'__main__'`). */
+  const contextsRef = useRef<Map<string, StreamContext>>(new Map())
   const msgCounterRef = useRef(0)
   const currentAgentRef = useRef<string | null>(null)
   const currentRoundRef = useRef<number | null>(null)
@@ -131,8 +147,7 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     runIdRef.current = null
     reconnectErrorsRef.current = 0
     userStoppedRef.current = false
-    partMapRef.current = new Map()
-    currentMessageRef.current = null
+    contextsRef.current = new Map()
     msgCounterRef.current = 0
     currentAgentRef.current = null
     currentRoundRef.current = null
@@ -145,22 +160,29 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     setRoundUpdate(null)
   }, [])
 
-  const pushPart = useCallback((part: MessagePart) => {
-    partMapRef.current.set(part.id, part)
-    if (currentMessageRef.current) {
-      // 重建 parts 数组触发 React 更新
-      currentMessageRef.current = {
-        ...currentMessageRef.current,
-        parts: Array.from(partMapRef.current.values()),
+  /**
+   * Push a part into the StreamContext identified by `ctxKey`.
+   * `ctxKey` must match the key used for the originating chunk.
+   */
+  const pushPart = useCallback((part: MessagePart, ctxKey: string = MAIN_STREAM_KEY) => {
+    const ctx = contextsRef.current.get(ctxKey) ?? contextsRef.current.get(MAIN_STREAM_KEY)
+    if (!ctx) return
+    ctx.partMap.set(part.id, part)
+    if (ctx.message) {
+      ctx.message = {
+        ...ctx.message,
+        parts: Array.from(ctx.partMap.values()),
       }
       if (batchModeRef.current) {
-        // In batch mode, update the last message in the local array
         const arr = batchMessagesRef.current
-        arr[arr.length - 1] = currentMessageRef.current
+        const idx = arr.findIndex((m) => m.id === ctx.message!.id)
+        if (idx >= 0) arr[idx] = ctx.message
       } else {
         setMessages((prev) => {
+          const idx = prev.findIndex((m) => m.id === ctx.message!.id)
+          if (idx < 0) return prev
           const next = [...prev]
-          next[next.length - 1] = currentMessageRef.current!
+          next[idx] = ctx.message!
           return next
         })
       }
@@ -169,24 +191,82 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
 
   const handleChunk = useCallback(
     (chunk: UIMessageChunk): 'done' | 'continue' => {
+      // Custom chunks (agent-state / phase-start / round-update) carry no
+      // _exploreHypoId tag and drive global refs — handle them before the
+      // per-stream context dispatch.
+      if (chunk.type === 'custom') {
+        // Agent-state custom chunk: update agentStates for live UI
+        if (chunk.kind === CustomEventKind.AgentState) {
+          const role = (chunk as Record<string, unknown>).role as AgentRole
+          const agentState = (chunk as Record<string, unknown>).state as AgentState
+          if (role && agentState) {
+            setAgentStates((prev) => ({ ...prev, [role]: agentState }))
+            // Track current agent — when an agent enters 'thinking', it becomes
+            // the active agent for subsequent messages.
+            if (agentState === 'thinking') {
+              currentAgentRef.current = role
+            }
+          }
+        }
+        // Round-update custom chunk: accumulate hypotheses + convergence for visualizers
+        if (chunk.kind === CustomEventKind.RoundUpdate) {
+          setRoundUpdate(chunk as unknown as RoundUpdatePayload)
+        }
+        // Phase-start custom chunk: track current round + hypoId for message tagging
+        if (chunk.kind === CustomEventKind.PhaseStart) {
+          const payload = chunk as Record<string, unknown>
+          const round = payload.round as number | undefined
+          const hypoId = payload.hypoId as string | null | undefined
+          if (round != null) {
+            currentRoundRef.current = round
+          }
+          currentHypoIdRef.current = hypoId ?? null
+        }
+        // Custom events are NOT pushed as message parts (they'd render as
+        // empty cards). They are state-only. (Previously pushPart was called
+        // here, but to-thread-messages.ts filtered custom parts out anyway.)
+        return 'continue'
+      }
+
+      // Resolve the per-stream context for this chunk. Explore chunks carry
+      // `_exploreHypoId` (injected by exploreWorkflow); all other streams
+      // share the `'__main__'` context.
+      const ctxKey =
+        ((chunk as Record<string, unknown>)._exploreHypoId as string | undefined) ?? MAIN_STREAM_KEY
+      let ctx = contextsRef.current.get(ctxKey)
+      if (!ctx) {
+        ctx = { message: null, partMap: new Map() }
+        contextsRef.current.set(ctxKey, ctx)
+      }
+
       switch (chunk.type) {
         case 'start': {
           msgCounterRef.current += 1
           const msgId = chunk.messageId ?? `msg-${msgCounterRef.current}`
           // 确保唯一：即使后端多个 start chunk 带相同 messageId 也不冲突
           const uniqueId = `${msgId}-${msgCounterRef.current}`
-          currentMessageRef.current = {
+          // For tagged Explore chunks, use the tag as hypoId (not the global
+          // currentHypoIdRef, which may have been overwritten by a parallel
+          // Explore's phase-start).
+          const exploreHypoId = (chunk as Record<string, unknown>)._exploreHypoId as
+            | string
+            | undefined
+          ctx.message = {
             id: uniqueId,
             parts: [],
             ...(currentAgentRef.current ? { agentRole: currentAgentRef.current } : {}),
             ...(currentRoundRef.current != null ? { round: currentRoundRef.current } : {}),
-            ...(currentHypoIdRef.current ? { hypoId: currentHypoIdRef.current } : {}),
+            ...(exploreHypoId
+              ? { hypoId: exploreHypoId }
+              : currentHypoIdRef.current
+                ? { hypoId: currentHypoIdRef.current }
+                : {}),
           }
-          partMapRef.current = new Map()
+          ctx.partMap = new Map()
           if (batchModeRef.current) {
-            batchMessagesRef.current.push(currentMessageRef.current)
+            batchMessagesRef.current.push(ctx.message)
           } else {
-            setMessages((prev) => [...prev, currentMessageRef.current!])
+            setMessages((prev) => [...prev, ctx!.message!])
           }
           break
         }
@@ -195,68 +275,73 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
           // step 边界，当前不特殊处理
           break
         case 'text-start': {
-          pushPart({ id: chunk.id, kind: 'text', text: '' })
+          ctx.partMap.set(chunk.id, { id: chunk.id, kind: 'text', text: '' })
+          pushPart(ctx.partMap.get(chunk.id)!, ctxKey)
           break
         }
         case 'text-delta': {
-          const existing = partMapRef.current.get(chunk.id)
+          const existing = ctx.partMap.get(chunk.id)
           if (existing) {
-            pushPart({ ...existing, text: (existing.text ?? '') + chunk.delta })
+            existing.text = (existing.text ?? '') + chunk.delta
+            pushPart(existing, ctxKey)
           }
           break
         }
         case 'text-end':
           break
         case 'reasoning-start': {
-          pushPart({ id: chunk.id, kind: 'reasoning', text: '' })
+          ctx.partMap.set(chunk.id, { id: chunk.id, kind: 'reasoning', text: '' })
+          pushPart(ctx.partMap.get(chunk.id)!, ctxKey)
           break
         }
         case 'reasoning-delta': {
-          const existing = partMapRef.current.get(chunk.id)
+          const existing = ctx.partMap.get(chunk.id)
           if (existing) {
-            pushPart({ ...existing, text: (existing.text ?? '') + chunk.delta })
+            existing.text = (existing.text ?? '') + chunk.delta
+            pushPart(existing, ctxKey)
           }
           break
         }
         case 'reasoning-end':
           break
         case 'tool-input-start': {
-          pushPart({
+          ctx.partMap.set(chunk.toolCallId, {
             id: chunk.toolCallId,
             kind: 'tool',
             toolName: chunk.toolName,
             toolCallId: chunk.toolCallId,
           })
+          pushPart(ctx.partMap.get(chunk.toolCallId)!, ctxKey)
           break
         }
         case 'tool-input-delta':
           // 增量 input，暂不累积（等 tool-input-available 拿完整 input）
           break
         case 'tool-input-available': {
-          const existing = partMapRef.current.get(chunk.toolCallId)
-          pushPart({
-            ...(existing ?? {
-              id: chunk.toolCallId,
-              kind: 'tool' as const,
-              toolCallId: chunk.toolCallId,
-              toolName: chunk.toolName,
-            }),
-            input: chunk.input,
-          })
+          const existing = ctx.partMap.get(chunk.toolCallId) ?? {
+            id: chunk.toolCallId,
+            kind: 'tool' as const,
+            toolCallId: chunk.toolCallId,
+            toolName: chunk.toolName,
+          }
+          existing.input = chunk.input
+          pushPart(existing, ctxKey)
           break
         }
         case 'tool-output-available': {
-          const existing = partMapRef.current.get(chunk.toolCallId)
+          const existing = ctx.partMap.get(chunk.toolCallId)
           if (existing) {
-            pushPart({ ...existing, output: chunk.output })
+            existing.output = chunk.output
+            pushPart(existing, ctxKey)
           }
           break
         }
         case 'tool-input-error':
         case 'tool-output-error': {
-          const existing = partMapRef.current.get(chunk.toolCallId)
+          const existing = ctx.partMap.get(chunk.toolCallId)
           if (existing) {
-            pushPart({ ...existing, errorText: chunk.errorText })
+            existing.errorText = chunk.errorText
+            pushPart(existing, ctxKey)
           }
           break
         }
@@ -270,42 +355,6 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
           // error/abort = agent-level failure. Don't stop the stream —
           // the tournament may continue with the next agent.
           break
-        case 'custom': {
-          // Agent-state custom chunk: update agentStates for live UI
-          if (chunk.kind === CustomEventKind.AgentState) {
-            const role = (chunk as Record<string, unknown>).role as AgentRole
-            const agentState = (chunk as Record<string, unknown>).state as AgentState
-            if (role && agentState) {
-              setAgentStates((prev) => ({ ...prev, [role]: agentState }))
-              // Track current agent — when an agent enters 'thinking', it becomes
-              // the active agent for subsequent messages.
-              if (agentState === 'thinking') {
-                currentAgentRef.current = role
-              }
-            }
-          }
-          // Round-update custom chunk: accumulate hypotheses + convergence for visualizers
-          if (chunk.kind === CustomEventKind.RoundUpdate) {
-            setRoundUpdate(chunk as unknown as RoundUpdatePayload)
-          }
-          // Phase-start custom chunk: track current round + hypoId for message tagging
-          if (chunk.kind === CustomEventKind.PhaseStart) {
-            const payload = chunk as Record<string, unknown>
-            const round = payload.round as number | undefined
-            const hypoId = payload.hypoId as string | null | undefined
-            if (round != null) {
-              currentRoundRef.current = round
-            }
-            currentHypoIdRef.current = hypoId ?? null
-          }
-          // 自定义事件（steering-injected / round-transition 等）
-          pushPart({
-            id: `custom-${Date.now()}-${Math.random()}`,
-            kind: 'custom',
-            customKind: chunk.kind,
-          })
-          break
-        }
         default:
           // 未处理的事件类型（source-url / file / message-metadata 等）暂忽略
           break

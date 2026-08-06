@@ -67,7 +67,7 @@ cp .env.example .env
 ### 开发
 
 ```bash
-vp dev                    # 启动 API（tsx watch，默认 :3000）
+vp run --filter @open-scientist/api dev  # 启动 API（tsx watch，默认 :3000）
 cd apps/web && npx next dev -p 5173   # 启动 Web 前端
 ```
 

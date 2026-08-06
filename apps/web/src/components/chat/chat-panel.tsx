@@ -1,6 +1,7 @@
 'use client'
 
-import { RotateCcw, X } from 'lucide-react'
+import { RotateCcw, Wrench, X } from 'lucide-react'
+import { useState } from 'react'
 import { Thread } from '@/components/assistant-ui/thread'
 import { Button } from '@/components/ui/button'
 import type { RoundUpdateState } from '@/lib/hooks/useRunStream'
@@ -43,6 +44,8 @@ function ChatToolbar({
   onSelectRoundHypo,
   availableRounds,
   availableHypos,
+  hideTools,
+  onToggleHideTools,
 }: {
   selectedAgent?: AgentRole | null
   onSelectAgent?: (role: AgentRole | null) => void
@@ -51,6 +54,8 @@ function ChatToolbar({
   onSelectRoundHypo?: (round: number | null, hypoId: string | null) => void
   availableRounds?: number[]
   availableHypos?: Array<{ id: string; round: number }>
+  hideTools: boolean
+  onToggleHideTools: () => void
 }) {
   const reset = useWorkflowReset()
   // 当选择了某个 round 时，过滤出该 round 的 hypotheses
@@ -75,12 +80,27 @@ function ChatToolbar({
             </button>
           )}
         </div>
-        {reset && (
-          <Button variant="ghost" size="sm" onClick={reset} className="gap-1.5">
-            <RotateCcw className="h-3 w-3" />
-            <span className="font-mono text-[10px] uppercase tracking-[1px]">new run</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleHideTools}
+            title={hideTools ? '显示工具调用' : '隐藏工具调用'}
+            className={`flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.8px] transition-colors ${
+              hideTools
+                ? 'bg-white/10 text-muted hover:text-white'
+                : 'bg-[var(--color-sunset)]/15 text-[var(--color-sunset-soft)] hover:bg-[var(--color-sunset)]/25'
+            }`}
+          >
+            <Wrench className="h-3 w-3" />
+            <span>{hideTools ? 'Tools Off' : 'Tools On'}</span>
+          </button>
+          {reset && (
+            <Button variant="ghost" size="sm" onClick={reset} className="gap-1.5">
+              <RotateCcw className="h-3 w-3" />
+              <span className="font-mono text-[10px] uppercase tracking-[1px]">new run</span>
+            </Button>
+          )}
+        </div>
       </div>
       {/* 轮次-假设选择器 */}
       {(availableRounds?.length ?? 0) > 0 && (
@@ -149,6 +169,7 @@ export function ChatPanel({
   onRoundUpdateChange,
   onMessagesChange,
 }: ChatPanelProps) {
+  const [hideTools, setHideTools] = useState(false)
   return (
     <WorkflowRuntimeProvider
       project={project}
@@ -156,6 +177,7 @@ export function ChatPanel({
       selectedAgent={selectedAgent}
       selectedRound={selectedRound}
       selectedHypoId={selectedHypoId}
+      hideTools={hideTools}
       onRunIdChange={onRunIdChange}
       onStateChange={onStateChange}
       onAgentStatesChange={onAgentStatesChange}
@@ -174,6 +196,8 @@ export function ChatPanel({
           onSelectRoundHypo={onSelectRoundHypo}
           availableRounds={availableRounds}
           availableHypos={availableHypos}
+          hideTools={hideTools}
+          onToggleHideTools={() => setHideTools((v) => !v)}
         />
         <div className="flex-1 overflow-hidden">
           <Thread />

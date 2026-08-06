@@ -2,21 +2,20 @@
 
 ## Transport 流（核心）
 
-前后端通过 `WorkflowChatTransport` 通信，自带断线重连：
+前后端通过 `useRunStream`（自实现 SSE hook）通信，自带断线重连：
 
 ```
 assistant-ui Thread
-    └─ useChatRuntime
-        └─ AssistantChatTransport（assistant-ui，自动转发 system msg + frontend tools）
-            └─ WorkflowChatTransport（@ai-sdk/workflow，断线重连）
-                ├─ POST /api/runs/:id/messages   → SSE 流 + x-workflow-run-id header
-                ├─ GET  /api/runs/:id/stream?startIndex=-50  → 页面刷新时自动重连（只取最后 50 chunks）
-                └─ POST /api/runs/:id/stop       → 真正停止（持久化 partial + cancel work）
+    └─ ExternalStoreRuntime
+        └─ useRunStream（自实现 SSE hook，断线重连）
+            ├─ POST /api/runs/:id/messages   → SSE 流 + x-workflow-run-id header
+            ├─ GET  /api/runs/:id/stream?startIndex=-50  → 页面刷新时自动重连（只取最后 50 chunks）
+            └─ POST /api/runs/:id/stop       → 真正停止（持久化 partial + cancel work）
 ```
 
 ### 断线重连机制
 
-- `WorkflowChatTransport` 检测到中断流（无 finish 事件）→ 自动 GET `/{runId}/stream` 重连
+- `useRunStream` 检测到中断流（无 finish 事件）→ 自动 GET `/{runId}/stream` 重连
 - `initialStartIndex: -50` — 页面刷新时只取最后 50 chunks，不重放全部
 - `maxConsecutiveErrors: 5` — 连续重连失败上限
 - 后端 POST 必须返回 `x-workflow-run-id` header，前端存 runId 用于重连
@@ -123,7 +122,7 @@ useChatRuntime({
 
 ### 后端配合
 
-- 后端 tool 定义 `needsApproval: true`（WorkflowAgent 一等属性）
+- 后端 tool 审批用 `ToolLoopAgent` 构造时的 `toolApproval`（per-tool map 或 `GenericToolApprovalFunction`）
 - 审批时 workflow 暂停，persist opaque resume state 到 SQLite
 - 前端 `respondToApproval` → 下一个 POST 携带 approval response → 后端 `continueStream` 续跑
 
