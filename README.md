@@ -107,7 +107,7 @@ HELIX_URL=http://127.0.0.1:6969
 LOG_LEVEL=info
 API_BASE_URL=http://127.0.0.1:3000
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:3000
-CREDENTIAL_ENCRYPTION_KEY=__REPLACE_WITH_A_STABLE_LOCAL_SECRET__
+CREDENTIAL_ENCRYPTION_KEY=__SET_A_STABLE_LOCAL_SECRET__
 ```
 
 必须替换 `CREDENTIAL_ENCRYPTION_KEY`。它用于加密 `data/global.sqlite` 中的模型凭据：
@@ -365,6 +365,7 @@ output/
 
 ## 开发文档
 
+- [NEW_USER_COMMANDS.md](NEW_USER_COMMANDS.md)：全新 Windows 环境的完整执行命令。
 - [SPEC.md](SPEC.md)：完整技术规格。
 - [DESIGN.md](DESIGN.md)：系统设计。
 - [AGENTS.md](AGENTS.md)：Agent 开发指南。
