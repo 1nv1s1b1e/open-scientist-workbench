@@ -5,7 +5,8 @@
   "bin": {
     "open-scientist-fits-mcp": "./bin/fits-server.ts",
     "open-scientist-helix-mcp": "./bin/helix-server.ts",
-    "open-scientist-sandbox-mcp": "./bin/sandbox-server.ts"
+    "open-scientist-sandbox-mcp": "./bin/sandbox-server.ts",
+    "open-scientist-solar-data-mcp": "./bin/solar-data-server.ts"
   },
   "type": "module",
   "exports": {
@@ -19,7 +20,8 @@
     "@ai-sdk/mcp": "^2.0.15",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@open-scientist/helix": "workspace:*",
-    "@open-scientist/schema": "workspace:*"
+    "@open-scientist/schema": "workspace:*",
+    "@open-scientist/tools": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3"

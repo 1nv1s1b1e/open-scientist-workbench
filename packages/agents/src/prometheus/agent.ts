@@ -8,6 +8,7 @@ import { createMhdConfigTool } from '@open-scientist/tools'
 import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
 import { assembleDefaultTools } from '../shared/tool-assembly.ts'
 import { makeSubmitResultTool } from '../shared/tool-output.ts'
+import { AGENT_EXECUTION_BUDGETS, createSubmitResultPrepareStep } from '../shared/output-policy.ts'
 
 export interface PrometheusAgentDeps {
   /**
@@ -109,11 +110,12 @@ export async function createPrometheusAgent({
   }
 
   return new ToolLoopAgent({
-    maxOutputTokens: 8192,
+    maxOutputTokens: AGENT_EXECUTION_BUDGETS.prometheus.maxOutputTokens,
     id: 'prometheus',
     model,
     providerOptions,
     toolChoice: 'auto',
+    prepareStep: createSubmitResultPrepareStep(AGENT_EXECUTION_BUDGETS.prometheus.submitAtStep),
     instructions:
       instructions ??
       `你是 Prometheus，太阳物理日冕加热研究的多轮规划 agent（Scaling Test-time Compute）。
@@ -150,7 +152,7 @@ mhdConfig 工具会把观测建议书写入文件，返回 { cfgPath, proposalPa
 
 非末轮 mhdConfig 必须为 null；末轮 mhdConfig 必须非 null 且由 mhdConfig 工具产出。`,
     tools: toolsWithSubmit,
-    stopWhen: [isStepCount(60), hasToolCall('submit_result')],
+    stopWhen: [isStepCount(AGENT_EXECUTION_BUDGETS.prometheus.maxSteps), hasToolCall('submit_result')],
     ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }

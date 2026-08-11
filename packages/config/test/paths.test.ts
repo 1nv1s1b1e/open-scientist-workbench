@@ -1,9 +1,11 @@
 import { existsSync } from 'node:fs'
 import { mkdtemp, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vite-plus/test'
 import {
+  env,
+  getBaseDir,
   findMonorepoRoot,
   getGlobalDbPath,
   getMhdDir,
@@ -14,14 +16,21 @@ import {
 } from '../src/index.ts'
 
 describe('config paths', () => {
+  it('resolves the monorepo root from a Windows file URL without duplicating the drive', () => {
+    const expected = resolve(findMonorepoRoot(import.meta.dirname), env.BASE_DIR)
+
+    expect(getBaseDir()).toBe(expected)
+    expect(getBaseDir()).not.toMatch(/^[A-Za-z]:\\[A-Za-z]:\\/)
+  })
+
   it('resolves project dir', () => {
     const p = getProjectDir('test-proj')
-    expect(p).toContain('projects/test-proj')
+    expect(p).toContain(join('projects', 'test-proj'))
   })
 
   it('resolves workspace dir with runId + hypoId', () => {
     const p = getWorkspaceDir('proj', 'run-1', 'hypo-1')
-    expect(p).toContain('projects/proj/runs/run-1/hypo-1')
+    expect(p).toContain(join('projects', 'proj', 'runs', 'run-1', 'hypo-1'))
   })
 
   it('resolves global db path', () => {
@@ -31,18 +40,18 @@ describe('config paths', () => {
 
   it('resolves mhd dir', () => {
     const p = getMhdDir('proj')
-    expect(p).toContain('projects/proj/mhd')
+    expect(p).toContain(join('projects', 'proj', 'mhd'))
   })
 
   it('resolves project db path', () => {
     const p = getProjectDbPath('proj')
     expect(p.endsWith('db.sqlite')).toBe(true)
-    expect(p).toContain('projects/proj')
+    expect(p).toContain(join('projects', 'proj'))
   })
 
   it('resolves rounds dir with numeric round', () => {
     const p = getRoundsDir('proj', 7)
-    expect(p).toContain('projects/proj/rounds/7')
+    expect(p).toContain(join('projects', 'proj', 'rounds', '7'))
   })
 })
 

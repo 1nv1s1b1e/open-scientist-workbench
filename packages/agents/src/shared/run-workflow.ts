@@ -26,6 +26,7 @@
 import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
 import type { ModelMessage, TextStreamPart, ToolSet } from 'ai'
 import { persistAgentRun } from './persist.ts'
+import { withChineseOutputRequirement } from './output-policy.ts'
 import { type EmitChunk, streamAgentOutput } from './stream.ts'
 import { extractSubmitResult } from './tool-output.ts'
 
@@ -112,13 +113,22 @@ export interface RunAgentWorkflowOptions<TOutput> {
   runId: string
   /** Agent role name (e.g. `'librarian'`) — used as the persistence key. */
   role: string
+  /** Scientific-loop stage used only for the public audit event. */
+  stage?: 'A' | 'B' | 'C' | 'D'
+  /** Stable agent id shown in the scientific trace. Defaults to `role`. */
+  agentId?: string
+  /**
+   * Model metadata for the public audit event. The API key/base URL are never
+   * emitted; only provider/model/mode/thinking level are exposed.
+   */
+  modelConfig?: ModelArg
   /** The user prompt sent to the agent. */
   prompt: string
   /**
    * Zero-valued result returned when the agent hits its step limit without
    * calling `submit_result`. Keeps the tournament resilient.
    */
-  fallback: TOutput
+  fallback?: TOutput
   /** Optional SSE chunk sink. */
   emitChunk?: EmitChunk
   /** Optional abort signal threaded into `agent.stream({abortSignal})`. */
@@ -140,18 +150,57 @@ export async function runAgentWorkflow<TOutput>({
   projectId,
   runId,
   role,
+  stage,
+  agentId,
+  modelConfig,
   prompt,
   fallback,
   emitChunk,
   abortSignal,
 }: RunAgentWorkflowOptions<TOutput>): Promise<TOutput> {
+  const modelPrompt = withChineseOutputRequirement(prompt)
   const result = await agent.stream({
-    messages: [{ role: 'user', content: prompt }],
+    messages: [{ role: 'user', content: modelPrompt }],
     ...(abortSignal ? { abortSignal } : {}),
   })
 
   await streamAgentOutput(result.fullStream, agent.tools, emitChunk)
-  await persistAgentRun(projectId, runId, role, prompt, result)
+  const telemetry = await persistAgentRun(projectId, runId, role, modelPrompt, result)
+  if (telemetry && modelConfig && emitChunk) {
+    const usage = telemetry.usage && typeof telemetry.usage === 'object'
+      ? telemetry.usage as Record<string, unknown>
+      : {}
+    const outputDetails = usage.outputTokenDetails && typeof usage.outputTokenDetails === 'object'
+      ? usage.outputTokenDetails as Record<string, unknown>
+      : {}
+    const inputDetails = usage.inputTokenDetails && typeof usage.inputTokenDetails === 'object'
+      ? usage.inputTokenDetails as Record<string, unknown>
+      : {}
+    emitChunk({
+      type: 'custom',
+      kind: 'scientific.model-run',
+      ...(stage ? { stage } : {}),
+      agentId: agentId ?? role,
+      role,
+      provider: modelConfig.provider,
+      model: modelConfig.model,
+      apiMode: modelConfig.apiMode,
+      thinkingLevel: modelConfig.thinkingLevel,
+      thinkingEnabled: modelConfig.thinkingLevel !== 'off',
+      steps: telemetry.steps,
+      finishReason: typeof telemetry.finishReason === 'string'
+        ? telemetry.finishReason
+        : String(telemetry.finishReason ?? ''),
+      usage: {
+        inputTokens: Number(usage.inputTokens ?? 0),
+        outputTokens: Number(usage.outputTokens ?? 0),
+        totalTokens: Number(usage.totalTokens ?? 0),
+        reasoningTokens: Number(outputDetails.reasoningTokens ?? 0),
+        cacheReadTokens: Number(inputDetails.cacheReadTokens ?? 0),
+      },
+      submittedAt: telemetry.submittedAt,
+    } as never)
+  }
   const staticToolCalls = await result.staticToolCalls
   return extractSubmitResult(staticToolCalls, 'submit_result', fallback)
 }

@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ApiError,
   getRunChunks,
+  getRunStatus,
   listRuns,
   reconnectRunStream,
   startRun,
@@ -24,6 +25,12 @@ import {
 import type { RoundUpdatePayload, UIMessageChunk } from '@/lib/types/sse-events'
 import { CustomEventKind } from '@/lib/types/sse-events'
 import type { AgentRole, AgentState } from '@/lib/types/visualizers'
+import {
+  emptyScientificWorkbenchState,
+  reduceScientificChunk,
+  type ScientificWorkbenchState,
+} from '@/lib/workbench/state'
+import type { PhenomenonInput } from '@open-scientist/schema'
 
 /** 累积后的消息 part（一个 tool call / 一段 text / 一段 reasoning） */
 export interface MessagePart {
@@ -57,6 +64,7 @@ export interface RunMessage {
 export type StreamState =
   | 'idle'
   | 'connecting'
+  | 'loading'
   | 'streaming'
   | 'reconnecting'
   | 'done'
@@ -83,7 +91,19 @@ interface UseRunStreamReturn {
   agentStates: Partial<Record<AgentRole, AgentState>>
   /** Latest round-update from the tournament (hypotheses + convergence history) */
   roundUpdate: RoundUpdateState
-  start: (seed: string, modelAlias?: string) => Promise<void>
+  /** Scientific A-B-C-D state replayed from custom SSE chunks. */
+  scientificState: ScientificWorkbenchState
+  /** Raw persisted/live stream events used by the auditable execution trace. */
+  chunks: UIMessageChunk[]
+  start: (
+    seed: string | undefined,
+    modelAlias?: string,
+    options?: {
+      phenomenon?: PhenomenonInput
+      maxRounds?: number
+      executionMode?: 'model-assisted' | 'local-grounded'
+    },
+  ) => Promise<void>
   stop: () => Promise<void>
   /** 重置（离开页面时） */
   reset: () => void
@@ -94,6 +114,18 @@ interface UseRunStreamReturn {
 const DONE_MARKER = '[DONE]'
 const MAX_RECONNECT_ERRORS = 15
 
+function roleFromScientificAgent(agentId: unknown, stage?: unknown): AgentRole | undefined {
+  const id = typeof agentId === 'string' ? agentId.toLowerCase() : ''
+  if (id.includes('librarian')) return 'librarian'
+  if (id.includes('looker')) return 'looker'
+  if (id.includes('explore')) return 'explore'
+  if (id.includes('oracle')) return 'oracle'
+  if (id.includes('prometheus')) return 'prometheus'
+  if (stage === 'C') return 'sisyphus'
+  if (stage === 'D') return 'prometheus'
+  return undefined
+}
+
 export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
   const { project, maxConsecutiveErrors = MAX_RECONNECT_ERRORS } = opts
   const [runId, setRunId] = useState<string | null>(null)
@@ -102,6 +134,8 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
   const [error, setError] = useState<Error | null>(null)
   const [agentStates, setAgentStates] = useState<Partial<Record<AgentRole, AgentState>>>({})
   const [roundUpdate, setRoundUpdate] = useState<RoundUpdateState>(null)
+  const [scientificState, setScientificState] = useState(emptyScientificWorkbenchState)
+  const [chunks, setChunks] = useState<UIMessageChunk[]>([])
 
   // Stable refs for callbacks that would otherwise break useCallback memoization
   const onFinishRef = useRef(opts.onFinish)
@@ -119,13 +153,20 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
   const currentAgentRef = useRef<string | null>(null)
   const currentRoundRef = useRef<number | null>(null)
   const currentHypoIdRef = useRef<string | null>(null)
+  const nextChunkIndexRef = useRef(0)
+  const historyGenerationRef = useRef(0)
 
   // Batch mode: when replaying history, accumulate messages locally to avoid
   // O(n²) array growth from repeated setMessages calls.
   const batchModeRef = useRef(false)
   const batchMessagesRef = useRef<RunMessage[]>([])
+  const batchChunksRef = useRef<UIMessageChunk[]>([])
+  const batchScientificStateRef = useRef<ScientificWorkbenchState>(emptyScientificWorkbenchState())
+  const batchAgentStatesRef = useRef<Partial<Record<AgentRole, AgentState>>>({})
+  const batchRoundUpdateRef = useRef<RoundUpdateState>(null)
 
   const reset = useCallback(() => {
+    historyGenerationRef.current += 1
     abortRef.current?.abort()
     abortRef.current = null
     runIdRef.current = null
@@ -137,12 +178,21 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     currentAgentRef.current = null
     currentRoundRef.current = null
     currentHypoIdRef.current = null
+    nextChunkIndexRef.current = 0
+    batchModeRef.current = false
+    batchMessagesRef.current = []
+    batchChunksRef.current = []
+    batchScientificStateRef.current = emptyScientificWorkbenchState()
+    batchAgentStatesRef.current = {}
+    batchRoundUpdateRef.current = null
     setRunId(null)
     setMessages([])
     setState('idle')
     setError(null)
     setAgentStates({})
     setRoundUpdate(null)
+    setScientificState(emptyScientificWorkbenchState())
+    setChunks([])
   }, [])
 
   const pushPart = useCallback((part: MessagePart) => {
@@ -167,8 +217,26 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     }
   }, [])
 
+  const recordChunk = useCallback((chunk: UIMessageChunk) => {
+    nextChunkIndexRef.current += 1
+    if (batchModeRef.current) {
+      batchChunksRef.current.push(chunk)
+      return
+    }
+    setChunks((previous) => [...previous, chunk])
+  }, [])
+
+  const appendStandaloneMessage = useCallback((message: RunMessage) => {
+    if (batchModeRef.current) {
+      batchMessagesRef.current.push(message)
+      return
+    }
+    setMessages((previous) => [...previous, message])
+  }, [])
+
   const handleChunk = useCallback(
     (chunk: UIMessageChunk): 'done' | 'continue' => {
+      recordChunk(chunk)
       switch (chunk.type) {
         case 'start': {
           msgCounterRef.current += 1
@@ -271,12 +339,25 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
           // the tournament may continue with the next agent.
           break
         case 'custom': {
+          if (batchModeRef.current) {
+            batchScientificStateRef.current = reduceScientificChunk(
+              batchScientificStateRef.current,
+              chunk,
+            )
+          } else {
+            setScientificState((prev) => reduceScientificChunk(prev, chunk))
+          }
+          const customPayload = chunk as Record<string, unknown>
           // Agent-state custom chunk: update agentStates for live UI
           if (chunk.kind === CustomEventKind.AgentState) {
             const role = (chunk as Record<string, unknown>).role as AgentRole
             const agentState = (chunk as Record<string, unknown>).state as AgentState
             if (role && agentState) {
-              setAgentStates((prev) => ({ ...prev, [role]: agentState }))
+              if (batchModeRef.current) {
+                batchAgentStatesRef.current = { ...batchAgentStatesRef.current, [role]: agentState }
+              } else {
+                setAgentStates((prev) => ({ ...prev, [role]: agentState }))
+              }
               // Track current agent — when an agent enters 'thinking', it becomes
               // the active agent for subsequent messages.
               if (agentState === 'thinking') {
@@ -284,13 +365,38 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
               }
             }
           }
+          if (chunk.kind === CustomEventKind.ScientificAgentState) {
+            const role = roleFromScientificAgent(customPayload.agentId, customPayload.stage)
+            const scientificState = customPayload.state
+            const mappedState: AgentState =
+              scientificState === 'running'
+                ? 'thinking'
+                : scientificState === 'failed'
+                  ? 'error'
+                  : 'idle'
+            if (role) {
+              if (batchModeRef.current) {
+                batchAgentStatesRef.current = {
+                  ...batchAgentStatesRef.current,
+                  [role]: mappedState,
+                }
+              } else {
+                setAgentStates((previous) => ({ ...previous, [role]: mappedState }))
+              }
+              if (scientificState === 'running') currentAgentRef.current = role
+            }
+          }
           // Round-update custom chunk: accumulate hypotheses + convergence for visualizers
           if (chunk.kind === CustomEventKind.RoundUpdate) {
-            setRoundUpdate(chunk as unknown as RoundUpdatePayload)
+            if (batchModeRef.current) {
+              batchRoundUpdateRef.current = chunk as unknown as RoundUpdatePayload
+            } else {
+              setRoundUpdate(chunk as unknown as RoundUpdatePayload)
+            }
           }
           // Phase-start custom chunk: track current round + hypoId for message tagging
           if (chunk.kind === CustomEventKind.PhaseStart) {
-            const payload = chunk as Record<string, unknown>
+            const payload = customPayload
             const round = payload.round as number | undefined
             const hypoId = payload.hypoId as string | null | undefined
             if (round != null) {
@@ -298,12 +404,41 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
             }
             currentHypoIdRef.current = hypoId ?? null
           }
-          // 自定义事件（steering-injected / round-transition 等）
-          pushPart({
-            id: `custom-${Date.now()}-${Math.random()}`,
-            kind: 'custom',
-            customKind: chunk.kind,
-          })
+          if (chunk.kind === CustomEventKind.ScientificReasoningSummary) {
+            const summary =
+              typeof customPayload.summary === 'string' ? customPayload.summary.trim() : ''
+            if (summary) {
+              const title =
+                typeof customPayload.title === 'string' && customPayload.title.trim()
+                  ? customPayload.title.trim()
+                  : '本阶段工作依据'
+              const role = roleFromScientificAgent(customPayload.agentId, customPayload.stage)
+              const round =
+                typeof customPayload.round === 'number'
+                  ? customPayload.round
+                  : (currentRoundRef.current ?? undefined)
+              const hypoId =
+                typeof customPayload.hypothesisId === 'string'
+                  ? customPayload.hypothesisId
+                  : typeof customPayload.hypoId === 'string'
+                    ? customPayload.hypoId
+                    : undefined
+              msgCounterRef.current += 1
+              appendStandaloneMessage({
+                id: `model-summary-${msgCounterRef.current}`,
+                parts: [
+                  {
+                    id: `model-summary-part-${msgCounterRef.current}`,
+                    kind: 'reasoning',
+                    text: `### ${title}\n\n${summary}`,
+                  },
+                ],
+                ...(role ? { agentRole: role } : {}),
+                ...(round != null ? { round } : {}),
+                ...(hypoId ? { hypoId } : {}),
+              })
+            }
+          }
           break
         }
         default:
@@ -312,11 +447,11 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
       }
       return 'continue'
     },
-    [pushPart],
+    [appendStandaloneMessage, pushPart, recordChunk],
   )
 
   const consumeStream = useCallback(
-    async (response: Response, isReconnect: boolean): Promise<void> => {
+    async (response: Response): Promise<void> => {
       if (!response.body) throw new Error('SSE response has no body')
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
@@ -358,9 +493,10 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
             idx = buffer.indexOf('\n\n')
           }
         }
-        // 流自然结束但没收到 [DONE] / finish → 可能中断，触发重连
-        if (!isReconnect && !userStoppedRef.current) {
-          // 原始流中断，需要重连
+        // Any stream that ends without [DONE] is incomplete.  Reconnect from
+        // the absolute client cursor instead of silently freezing a restored
+        // running page.
+        if (!userStoppedRef.current) {
           throw new Error('stream ended without finish')
         }
       } finally {
@@ -382,62 +518,145 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
 
     setState('reconnecting')
     reconnectErrorsRef.current += 1
+    let controller = abortRef.current
+    if (!controller || controller.signal.aborted) {
+      controller = new AbortController()
+      abortRef.current = controller
+    }
     try {
-      // Replay all chunks from the beginning (persisted chunks may have been lost on refresh)
-      const { response } = await reconnectRunStream(project, id, 0)
+      const { response } = await reconnectRunStream(
+        project,
+        id,
+        nextChunkIndexRef.current,
+        fetch,
+        controller.signal,
+      )
       reconnectErrorsRef.current = 0
       setState('streaming')
-      await consumeStream(response, true)
-    } catch {
+      await consumeStream(response)
+    } catch (reconnectError) {
+      if (userStoppedRef.current || controller.signal.aborted) return
+      // A run may finish while the transport is reconnecting.  Hydrate any
+      // persisted tail once, then stop reconnecting when storage is terminal.
+      try {
+        const status = await getRunStatus(project, id)
+        if (
+          status.status === 'completed' ||
+          status.status === 'failed' ||
+          status.status === 'stopped'
+        ) {
+          const entries = await getRunChunks(project, id)
+          const cursor = nextChunkIndexRef.current
+          for (const entry of entries) {
+            if (entry.seq >= cursor) handleChunk(entry.chunk as UIMessageChunk)
+          }
+          if (entries.length > 0) {
+            nextChunkIndexRef.current = Math.max(
+              nextChunkIndexRef.current,
+              entries[entries.length - 1]!.seq + 1,
+            )
+          }
+          setState(
+            status.status === 'completed'
+              ? 'done'
+              : status.status === 'stopped'
+                ? 'stopped'
+                : 'error',
+          )
+          if (status.status === 'completed') onFinishRef.current?.()
+          return
+        }
+      } catch {
+        // Status may be temporarily unavailable; use the normal backoff.
+      }
       // 重连失败，指数退避后重试（1s, 2s, 4s, 8s, 16s...）
       const delay = Math.min(1000 * 2 ** (reconnectErrorsRef.current - 1), 30000)
       setTimeout(() => void reconnect(), delay)
     }
-  }, [project, maxConsecutiveErrors, consumeStream])
+  }, [project, maxConsecutiveErrors, consumeStream, handleChunk])
 
   const loadHistory = useCallback(async (): Promise<void> => {
+    reset()
+    const generation = historyGenerationRef.current
+    setState('loading')
     try {
       const runs = await listRuns(project)
-      if (runs.length === 0) return
+      if (generation !== historyGenerationRef.current) return
+      if (runs.length === 0) {
+        setState('idle')
+        return
+      }
       const latest = runs[0]!
       const entries = await getRunChunks(project, latest.runId)
+      if (generation !== historyGenerationRef.current) return
       runIdRef.current = latest.runId
       setRunId(latest.runId)
       // Batch mode: accumulate messages in a local array to avoid O(n²)
       // array growth from repeated setMessages calls during replay.
       batchModeRef.current = true
       batchMessagesRef.current = []
+      batchChunksRef.current = []
+      batchScientificStateRef.current = emptyScientificWorkbenchState()
+      batchAgentStatesRef.current = {}
+      batchRoundUpdateRef.current = null
       for (const entry of entries) {
         handleChunk(entry.chunk as UIMessageChunk)
       }
       batchModeRef.current = false
+      nextChunkIndexRef.current = entries.length > 0 ? entries[entries.length - 1]!.seq + 1 : 0
       setMessages(batchMessagesRef.current)
+      setChunks(batchChunksRef.current)
+      setScientificState(batchScientificStateRef.current)
+      setAgentStates(batchAgentStatesRef.current)
+      setRoundUpdate(batchRoundUpdateRef.current)
       if (latest.status === 'running' || latest.status === 'awaiting_approval') {
-        setState('streaming')
-        const startIndex = entries.length
-        void reconnectRunStream(project, latest.runId, startIndex)
-          .then(({ response }) => void consumeStream(response, true))
-          .catch(() => {})
-      } else {
-        setState('done')
-      }
-    } catch {
-      // First visit — no runs yet
+        void reconnect()
+      } else if (latest.status === 'stopped') setState('stopped')
+      else if (latest.status === 'failed') setState('error')
+      else setState('done')
+    } catch (historyError) {
+      if (generation !== historyGenerationRef.current) return
+      batchModeRef.current = false
+      const nextError =
+        historyError instanceof Error ? historyError : new Error(String(historyError))
+      console.warn('[workflow] unable to load persisted run', nextError)
+      setError(nextError)
+      setState('error')
+      onErrorRef.current?.(nextError)
     }
-  }, [project, handleChunk, consumeStream])
+  }, [project, handleChunk, reconnect, reset])
 
   const start = useCallback(
-    async (seed: string, modelAlias?: string): Promise<void> => {
+    async (
+      seed: string | undefined,
+      modelAlias?: string,
+      options?: {
+        phenomenon?: PhenomenonInput
+        maxRounds?: number
+        executionMode?: 'model-assisted' | 'local-grounded'
+      },
+    ): Promise<void> => {
       reset()
       setState('connecting')
       const controller = new AbortController()
       abortRef.current = controller
       try {
-        const { response, runId: id } = await startRun(project, { seed, modelAlias })
+        const { response, runId: id } = await startRun(
+          project,
+          {
+            ...(seed ? { seed } : {}),
+            modelAlias,
+            ...(options?.phenomenon ? { phenomenon: options.phenomenon } : {}),
+            ...(options?.maxRounds !== undefined ? { maxRounds: options.maxRounds } : {}),
+            ...(options?.executionMode ? { executionMode: options.executionMode } : {}),
+          },
+          fetch,
+          controller.signal,
+        )
         runIdRef.current = id
         setRunId(id)
         setState('streaming')
-        await consumeStream(response, false)
+        await consumeStream(response)
       } catch (err) {
         const e = err instanceof Error ? err : new Error(String(err))
         if (e instanceof ApiError) {
@@ -460,17 +679,24 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     if (id) {
       try {
         await stopRun(project, id)
-      } catch {
-        // 停止失败不阻塞 UI
+      } catch (stopError) {
+        const nextError = stopError instanceof Error ? stopError : new Error(String(stopError))
+        userStoppedRef.current = false
+        setError(nextError)
+        setState('error')
+        onErrorRef.current?.(nextError)
+        void reconnect()
+        return
       }
     }
     setState('stopped')
-  }, [project])
+  }, [project, reconnect])
 
   // Load persisted history on mount, then abort on unmount
   useEffect(() => {
     void loadHistory()
     return () => {
+      historyGenerationRef.current += 1
       abortRef.current?.abort()
     }
   }, [loadHistory])
@@ -478,10 +704,12 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
   return {
     runId,
     messages,
+    chunks,
     state,
     error,
     agentStates,
     roundUpdate,
+    scientificState,
     start,
     stop,
     reset,

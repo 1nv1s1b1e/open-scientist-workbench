@@ -1,9 +1,78 @@
 import * as helix from '@open-scientist/helix'
+import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import { createLogger } from '@open-scientist/logger'
 import { tool } from 'ai'
 import { z } from 'zod'
 
 const logger = createLogger('tools')
+interface LocalLiteratureRecord {
+  id: string
+  title: string
+  authors: string[]
+  year: number
+  doi?: string
+  source_url: string
+  kind: string
+  topics: string[]
+  annotation: string
+  evidence_boundary: string
+}
+
+let localLiteraturePromise: Promise<LocalLiteratureRecord[]> | null = null
+
+function localLiterature(): Promise<LocalLiteratureRecord[]> {
+  if (!localLiteraturePromise) {
+    const path = fileURLToPath(
+      new URL('../../../sources/coronal-heating-corpus-v1.json', import.meta.url),
+    )
+    localLiteraturePromise = readFile(path, 'utf8').then((text) => {
+      const parsed = JSON.parse(text) as { records?: LocalLiteratureRecord[] }
+      return Array.isArray(parsed.records) ? parsed.records : []
+    })
+  }
+  return localLiteraturePromise
+}
+
+function queryTerms(query: string): string[] {
+  return [...new Set(
+    query.toLowerCase().split(/[^a-z0-9\u4e00-\u9fff]+/).filter((term) => term.length > 1),
+  )]
+}
+
+export async function searchVerifiedCoronalLiterature(query: string, k = 10): Promise<helix.PaperNode[]> {
+  const terms = queryTerms(query)
+  const records = await localLiterature()
+  return records
+    .map((record, index) => {
+      const title = record.title.toLowerCase()
+      const topics = record.topics.join(' ').toLowerCase()
+      const annotation = record.annotation.toLowerCase()
+      const score = terms.reduce(
+        (total, term) => total
+          + (title.includes(term) ? 4 : 0)
+          + (topics.includes(term) ? 2 : 0)
+          + (annotation.includes(term) ? 1 : 0),
+        0,
+      )
+      return { record, index, score }
+    })
+    .sort((left, right) => right.score - left.score || right.record.year - left.record.year)
+    .slice(0, k)
+    .map(({ record, index }) => ({
+      id: 900_001 + index,
+      title: record.title,
+      abstract: [
+        record.annotation,
+        `证据边界：${record.evidence_boundary}`,
+        `元数据来源：${record.source_url}`,
+      ].join('\n'),
+      authors: record.authors,
+      year: record.year,
+      ...(record.doi ? { doi: record.doi } : {}),
+    }))
+}
+
 
 // Shared id input schema — helix accepts string | number | bigint and converts
 // via BigInt() internally. We expose string | number to avoid zod bigint
@@ -35,7 +104,16 @@ export const searchPapersTool = tool({
   }),
   execute: async ({ query, k }) => {
     logger.info({ query, k }, 'searchPapersTool: execute start')
-    const papers = await helix.searchPapers(query, k)
+    let papers: helix.PaperNode[]
+    try {
+      papers = await helix.searchPapers(query, k)
+    } catch (error) {
+      logger.warn({ query, error: error instanceof Error ? error.message : String(error) }, 'searchPapersTool: Helix unavailable; using verified local corpus')
+      papers = []
+    }
+    if (papers.length === 0) {
+      papers = await searchVerifiedCoronalLiterature(query, k)
+    }
     logger.info(
       { query, k, count: papers.length, firstTitle: papers[0]?.title?.slice(0, 60) },
       'searchPapersTool: execute done',
@@ -58,13 +136,20 @@ export const searchHypothesesTool = tool({
         roundId: z.number(),
         runId: z.string(),
         f1Score: z.number(),
+        contextJson: z.string().optional(),
         createdAt: z.string(),
       }),
     ),
   }),
   execute: async ({ query, k }) => {
     logger.info({ query, k }, 'searchHypothesesTool: execute start')
-    const hypotheses = await helix.searchHypotheses(query, k)
+    let hypotheses: helix.HypothesisNode[]
+    try {
+      hypotheses = await helix.searchHypotheses(query, k)
+    } catch (error) {
+      logger.warn({ query, error: error instanceof Error ? error.message : String(error) }, 'searchHypothesesTool: Helix unavailable; returning empty history')
+      hypotheses = []
+    }
     logger.info({ query, k, count: hypotheses.length }, 'searchHypothesesTool: execute done')
     return { hypotheses }
   },
@@ -127,9 +212,16 @@ export const getCritiquesByHypothesisTool = tool({
 const successOutput = z.object({ success: z.boolean() })
 
 export const addHypothesisTool = tool({
-  description: 'Add a new hypothesis node to the HelixDB knowledge graph.',
+  description:
+    'Add a complete scientific hypothesis node to the HelixDB knowledge graph, including its mechanism, observable predictions, falsification conditions, source IDs, and executable filter context.',
   inputSchema: z.object({
     statement: z.string(),
+    mechanism: z.string().min(1),
+    predictions: z.array(z.string().min(1)).min(1),
+    falsificationConditions: z.array(z.string().min(1)).min(1),
+    sourceIds: z.array(z.string().min(1)),
+    pythonCode: z.string(),
+    parentId: z.string().nullable(),
     roundId: z.number().int().nonnegative(),
     runId: z.string(),
     f1Score: z.number(),
@@ -146,7 +238,21 @@ export const addHypothesisTool = tool({
       },
       'addHypothesisTool: execute start',
     )
-    await helix.addHypothesis(input)
+    await helix.addHypothesis({
+      statement: input.statement,
+      roundId: input.roundId,
+      runId: input.runId,
+      f1Score: input.f1Score,
+      createdAt: input.createdAt,
+      contextJson: JSON.stringify({
+        mechanism: input.mechanism,
+        predictions: input.predictions,
+        falsificationConditions: input.falsificationConditions,
+        sourceIds: input.sourceIds,
+        pythonCode: input.pythonCode,
+        parentId: input.parentId,
+      }),
+    })
     logger.info({ roundId: input.roundId, runId: input.runId }, 'addHypothesisTool: execute done')
     return { success: true }
   },

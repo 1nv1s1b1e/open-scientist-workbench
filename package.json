@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "local:start": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start-local.ps1",
+    "local:start:helix": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start-local.ps1 -WithHelix",
+    "local:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/stop-local.ps1",
     "dev": "vp run --filter @open-scientist/api dev",
     "build": "vp run -r build",
     "lint": "vp lint",

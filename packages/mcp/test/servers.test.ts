@@ -3,7 +3,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolResultSchema, ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
-import { createFitsServer, createHelixServer, createSandboxServer } from '../src/index.ts'
+import { createFitsServer, createHelixServer, createSandboxServer, createSolarDataServer } from '../src/index.ts'
 
 // ------------------------------------------------------------
 // Helpers：用 in-memory transport 连 client ↔ server，避免 stdio
@@ -134,6 +134,63 @@ describe('fits-mcp server', () => {
     expect(parsed.message).toContain('astropy')
     await client.close()
   })
+})
+
+// ------------------------------------------------------------
+// solar-data-server：只暴露有界的本地 manifest 查询，不接收路径或下载请求
+// ------------------------------------------------------------
+
+describe('solar-data-mcp server', () => {
+  it('exposes four bounded read-only tools', async () => {
+    const server = createSolarDataServer()
+    const client = await connect(server)
+    expect(await listToolNames(client)).toEqual([
+      'list_local_observation_cases',
+      'check_local_observation_coverage',
+      'get_local_observation_asset',
+      'verify_local_observation_pack',
+    ])
+    await client.close()
+  })
+
+  it('rejects an unsupported diagnostic before reading any pack', async () => {
+    const server = createSolarDataServer()
+    const client = await connect(server)
+    const res = await callTool(client, 'check_local_observation_coverage', {
+      requirements: ['arbitrary-path'],
+    })
+    expect(res.isError).toBe(true)
+    expect(textContent(res)).toContain('unsupported diagnostic')
+    await client.close()
+  })
+
+  it.runIf(process.env.RUN_LOCAL_CORONAL_MCP_TEST === '1')(
+    'reads the verified local observation pack without network access',
+    async () => {
+      const server = createSolarDataServer()
+      const client = await connect(server)
+      const verify = await callTool(client, 'verify_local_observation_pack', {})
+      expect(verify.isError).toBeFalsy()
+      const pack = JSON.parse(textContent(verify) || '{}')
+      expect(pack.status).toBe('ready')
+      expect(pack.verifiedAssetCount).toBeGreaterThan(0)
+
+      const coverage = await callTool(client, 'check_local_observation_coverage', {
+        activeRegion: '11158',
+        requirements: ['thermal-evolution', 'magnetic-context', 'wave-timescale', 'spectroscopy'],
+      })
+      expect(coverage.isError).toBeFalsy()
+      const parsed = JSON.parse(textContent(coverage) || '{}')
+      expect(parsed.status).toBe('ready')
+      expect(parsed.satisfied).toEqual(expect.arrayContaining([
+        'thermal-evolution',
+        'magnetic-context',
+        'wave-timescale',
+      ]))
+      expect(parsed.unavailable).toContain('spectroscopy')
+      await client.close()
+    },
+  )
 })
 
 // ------------------------------------------------------------

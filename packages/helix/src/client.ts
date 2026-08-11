@@ -100,11 +100,25 @@ function first<T>(arr: T[] | undefined): T | null {
 
 export async function searchPapers(query: string, k = 10): Promise<PaperNode[]> {
   logger.info({ query, k }, 'searchPapers: sending query')
-  const res = await getHelixClient()
-    .query<PapersResult>()
-    .dynamic(queries.call.searchPapers({ queryText: query, k: BigInt(k) }))
-    .send()
-  const papers = unwrap(res.papers)
+  const client = getHelixClient()
+  const [titleRes, abstractRes] = await Promise.all([
+    client
+      .query<PapersResult>()
+      .dynamic(queries.call.searchPapers({ queryText: query, k: BigInt(k) }))
+      .send(),
+    client
+      .query<PapersResult>()
+      .dynamic(queries.call.searchPapersByAbstract({ queryText: query, k: BigInt(k) }))
+      .send(),
+  ])
+  const seen = new Set<number>()
+  const papers: PaperNode[] = []
+  for (const paper of [...unwrap(titleRes.papers), ...unwrap(abstractRes.papers)]) {
+    if (seen.has(paper.id)) continue
+    seen.add(paper.id)
+    papers.push(paper)
+    if (papers.length === k) break
+  }
   logger.info({ query, k, count: papers.length }, 'searchPapers: query done')
   return papers
 }
@@ -258,6 +272,8 @@ export interface AddHypothesisInput {
   f1Score: number
   embedding?: number[] | null
   createdAt: string
+  /** JSON-encoded mechanism/predictions/falsification/source/code context. */
+  contextJson?: string
   // 可选 CITES 边的目标 Paper id；提供则在 addHypothesis 后连边。
   // 注意：SDK 写查询不返回新节点 id，因此 addHypothesis 必须分两步：
   //   1. addHypothesis 建节点（不连边）
@@ -286,8 +302,16 @@ export async function addHypothesis(input: AddHypothesisInput): Promise<void> {
   }
   const req =
     input.embedding && input.embedding.length > 0
-      ? queries.call.addHypothesisWithEmbedding({ ...base, embedding: input.embedding })
-      : queries.call.addHypothesis(base)
+      ? input.contextJson
+        ? queries.call.addHypothesisWithEmbeddingContext({
+            ...base,
+            embedding: input.embedding,
+            contextJson: input.contextJson,
+          })
+        : queries.call.addHypothesisWithEmbedding({ ...base, embedding: input.embedding })
+      : input.contextJson
+        ? queries.call.addHypothesisWithContext({ ...base, contextJson: input.contextJson })
+        : queries.call.addHypothesis(base)
   await getHelixClient().query().dynamic(req).send()
   logger.info({ roundId: input.roundId, runId: input.runId }, 'addHypothesis: write done')
 }

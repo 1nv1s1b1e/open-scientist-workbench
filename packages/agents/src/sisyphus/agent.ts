@@ -186,7 +186,7 @@ export async function createSisyphusAgent({
 
 锦标赛协议：
 - 第 1 轮：Librarian 生成假设池（覆盖 AC/DC/湍流机制）。
-- 第 2..MAX_ROUNDS(10) 轮：Explore 并行评估每条假设（在 21,578 条快照上算 F1）；Oracle 批判 + 突变 + 淘汰；Prometheus 重新规划搜索参数 + 计算预算。
+- 第 2..MAX_ROUNDS(10) 轮：Explore 并行评估每条假设（以 dataset_manifest.json 的当前快照为准）；Oracle 批判 + 突变 + 淘汰；Prometheus 重新规划搜索参数 + 计算预算。
 - 收敛：best F1 >= 0.9 或 round >= 10 或 Prometheus 判定 shouldContinue=false 时停止。
 - 末轮：Prometheus 将获胜假设翻译为 MHD .cfg + 卫星观测建议书。
 

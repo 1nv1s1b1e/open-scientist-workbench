@@ -1,12 +1,65 @@
-import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
+import { getDatasetDir, type AgentRuntimeConfig, type ModelArg } from '@open-scientist/config'
 import { ensureIndexes } from '@open-scientist/helix'
 import { createLogger } from '@open-scientist/logger'
-import type { HypothesisPool } from '@open-scientist/schema'
+import type { HypothesisPool, ScientificHypothesisPool } from '@open-scientist/schema'
+import { join } from 'node:path'
 import { type EmitChunk } from '../shared/stream.ts'
 import { resolveAgentConfigArgs, runAgentWorkflow } from '../shared/run-workflow.ts'
 import { createLibrarianAgent } from './agent.ts'
 
 const logger = createLogger('agents')
+
+
+export function buildLibrarianPrompt({
+  seed,
+  runId,
+  datasetDir = getDatasetDir(),
+  scientific = false,
+}: {
+  seed: string
+  runId: string
+  datasetDir?: string
+  scientific?: boolean
+}): string {
+  if (scientific) {
+    return `科学现象输入：${seed}
+
+你正在执行日冕加热的科学现象闭环。所有自然语言字段必须使用中文。
+
+先调用 loadSkill('solar-physics-rag')，再依次调用 searchPapers、
+searchHypotheses、searchLocalSolarData 和 checkLocalSolarCoverage。
+用户只提供自然语言现象；不得要求用户提供 sourceId、文件路径或固定表格。
+
+候选假设必须由本轮现象和实际检索结果动态产生，数量为 2–4 条；不得套用
+预写的阿尔芬波、磁重联或耦合模板。每条必须包含中文 statement、mechanism、
+mechanismComposition、predictions、falsificationConditions、sourceIds、
+parentId=null、round=1、status=candidate 和 createdAt。
+
+文献来源只能写为 searchPapers 实际返回的 paper:<id>；本地来源只能使用
+工具实际返回的 sourceId。历史假设只用于避免重复和寻找反例，不能当作新证据。
+若贡献比例没有数据依据，mechanismComposition 中不得填写 contribution。
+
+若必要检索未完成，或文献与本地观测均未返回可复核资料，提交 hypotheses=[]
+和中文 rationale，并停止候选生成。不得编造论文、数值、诊断、反例或观测结论。
+本地 AIA/HMI 覆盖仅代表可执行诊断范围；WCS、标定、物理派生指标、光谱或
+MHD 产物缺失时，必须在 rationale 中明确说明。
+不要因为 HelixDB 不可用而编造检索结果。最后必须调用 submit_result，提交
+完整 HypothesisPool 和中文 rationale。运行标识：${runId}。`
+  }
+
+  return `种子问题：${seed}
+
+所有自然语言输出必须使用中文。生成恰好 2 条机制多样的候选假设，并先使用
+searchPapers 和 searchHypotheses 检索已有结果。每条假设必须包含 id、
+statement、mechanism、predictions、falsificationConditions、sourceIds、
+pythonCode、parentId=null、round=1、f1=null、status=candidate 和 createdAt。
+pythonCode 必须是纯 Python filter(snapshot: dict) -> bool，并且只能使用
+${join(datasetDir, 'dataset_manifest.json')} 中登记的 featureColumns；不得读取
+targets.jsonl 或任何目标/标签字段。不得编造论文、DOI、来源、字段、观测值、
+指标或反例。最后调用 submit_result，提交完整 HypothesisPool 和中文 rationale。
+运行标识：${runId}。`
+}
+
 
 export interface LibrarianWorkflowInput {
   /** Seed hypothesis text from the user / Sisyphus. */
@@ -20,6 +73,8 @@ export interface LibrarianWorkflowInput {
    * `createLibrarianAgent` via `createModelFromConfig`.
    */
   modelConfig: ModelArg
+  /** Select the natural-language phenomenon path backed by the local observation pack. */
+  scientific?: boolean
   /**
    * Per-agent runtime config override (instructions / skillDirectories /
    * mcpServers). When present, its `modelConfig` takes priority over the
@@ -52,41 +107,56 @@ export interface LibrarianWorkflowInput {
  * `fullStream` is forwarded to it (after conversion via `toUIMessageStream`).
  * The orchestrator (RunRegistry) buffers these for SSE replay / reconnect.
  */
-export async function librarianWorkflow(input: LibrarianWorkflowInput): Promise<HypothesisPool> {
+export function librarianWorkflow(
+  input: LibrarianWorkflowInput & { scientific: true },
+): Promise<ScientificHypothesisPool>
+export function librarianWorkflow(
+  input: LibrarianWorkflowInput & { scientific?: false },
+): Promise<HypothesisPool>
+export async function librarianWorkflow(
+  input: LibrarianWorkflowInput,
+): Promise<HypothesisPool | ScientificHypothesisPool> {
   logger.info(
     { seed: input.seed, projectId: input.projectId, runId: input.runId },
     'librarian workflow start',
   )
-  await ensureIndexes()
+    try {
+      await ensureIndexes()
+    } catch (error) {
+      logger.warn(
+        { error: error instanceof Error ? error.message : String(error) },
+        'librarian workflow: Helix unavailable; continuing without index initialization',
+      )
+    }
 
-  const prompt = `种子假设：${input.seed}
-
-为日冕加热之谜生成多样化的候选假设池。每条假设：
-1. 陈述物理机制（AC/DC/湍流/组合），能量传输路径，耗散位置。
-2. 给出可观测预言（哪些 SDO/AIA/HMI/IRIS 通带或磁场特征应出现）。
-3. 给出可证伪条件（预言失效的场景）。
-4. 写纯 Python filter(snapshot: dict) -> bool 函数，阈值从物理推导。
-
-先加载 'solar-physics-rag' skill 获取检索指引和 Python filter 模板。用 searchPapers 和 searchHypotheses 检索已有文献和假设，避免重复。用 addHypothesis 将每条假设持久化到 HelixDB（roundId=1, f1Score=0, runId=${input.runId}, createdAt=now ISO 8601），用 writeFile 将 Python filter 写入工作区。
-
-返回 HypothesisPool，rationale 说明覆盖策略。`
+  const prompt = buildLibrarianPrompt({
+    seed: input.seed,
+    runId: input.runId,
+    scientific: input.scientific,
+    datasetDir: getDatasetDir(),
+  })
 
   const agent = await createLibrarianAgent({
     ...resolveAgentConfigArgs(input.modelConfig, input.agentConfig),
     projectId: input.projectId,
     runId: input.runId,
     runtimeContext: { projectId: input.projectId, runId: input.runId, round: 1 },
+    allowEmptyHypothesisPool: Boolean(input.scientific),
   })
+  const resolvedModelConfig = input.agentConfig?.modelConfig ?? input.modelConfig
 
-  return runAgentWorkflow<HypothesisPool>({
+  return runAgentWorkflow<HypothesisPool | ScientificHypothesisPool>({
     agent,
     projectId: input.projectId,
     runId: input.runId,
     role: 'librarian',
+    stage: 'A',
+    agentId: 'librarian',
+    modelConfig: resolvedModelConfig,
     prompt,
     fallback: {
       hypotheses: [],
-      rationale: 'Librarian agent reached step limit without calling submit_result',
+      rationale: 'Librarian 未在步数上限前调用 submit_result。',
     },
     emitChunk: input.emitChunk,
     abortSignal: input.abortSignal,

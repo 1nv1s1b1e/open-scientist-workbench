@@ -1,6 +1,6 @@
 // HelixDB DSL 查询定义（运行时 generate 生成 queries.json）
 //
-// 23 个查询（12 read + 11 write），覆盖太阳物理多智能体假设生成系统的
+// 24 个查询（13 read + 11 write），覆盖太阳物理多智能体假设生成系统的
 // RAG 检索 + 关系遍历 + 演化链 + 快照写回。其中 21 个对应 spec 必需项，
 // 5 个为拆分/辅助查询（addCitesEdge / addSupportingEvidence / addContradictingEvidence /
 // addCaptureInEdge / getConceptByName / updateConceptDescription），用于规避静态 builder
@@ -28,6 +28,7 @@ import {
   sub,
   writeBatch,
 } from '@helix-db/helix-db'
+import { fileURLToPath } from 'node:url'
 
 // ------------------------------------------------------------
 // 节点投影（project(...) 的 PropertyProjection，按 types.ts 字段顺序）
@@ -50,6 +51,7 @@ const HYPOTHESIS_PROJ = [
   Projection.property('roundId', 'roundId'),
   Projection.property('runId', 'runId'),
   Projection.property('f1Score', 'f1Score'),
+  Projection.property('contextJson', 'contextJson'),
   Projection.property('embedding', 'embedding'),
   Projection.property('createdAt', 'createdAt'),
 ]
@@ -105,6 +107,21 @@ const searchPapers = registerRead(
         'papers',
         g()
           .textSearchNodesWith('Paper', 'title', p.queryText, p.k ?? 10)
+          .project(PAPER_PROJ),
+      )
+      .returning(['papers']),
+  searchPapersParams,
+)
+
+// 1b. searchPapersByAbstract — 受控注释含中英文主题、证据边界和来源信息。
+// 标题检索保留精确论文名召回；摘要检索让日冕加热工作台能够按机制和诊断词检索。
+const searchPapersByAbstract = registerRead(
+  (p) =>
+    readBatch()
+      .varAs(
+        'papers',
+        g()
+          .textSearchNodesWith('Paper', 'abstract', p.queryText, p.k ?? 10)
           .project(PAPER_PROJ),
       )
       .returning(['papers']),
@@ -431,6 +448,31 @@ const addHypothesis = registerWrite(
   addHypothesisParams,
 )
 
+const addHypothesisWithContextParams = defineParams({
+  statement: param.string(),
+  roundId: param.i64(),
+  runId: param.string(),
+  f1Score: param.f64(),
+  contextJson: param.string(),
+  createdAt: param.string(),
+})
+
+const addHypothesisWithContext = registerWrite(
+  (p) =>
+    writeBatch().varAs(
+      'hypo',
+      g().addN('Hypothesis', [
+        ['statement', p.statement],
+        ['roundId', p.roundId],
+        ['runId', p.runId],
+        ['f1Score', p.f1Score],
+        ['contextJson', p.contextJson],
+        ['createdAt', p.createdAt],
+      ]),
+    ),
+  addHypothesisWithContextParams,
+)
+
 const addHypothesisWithEmbeddingParams = defineParams({
   statement: param.string(),
   roundId: param.i64(),
@@ -454,6 +496,33 @@ const addHypothesisWithEmbedding = registerWrite(
       ]),
     ),
   addHypothesisWithEmbeddingParams,
+)
+
+const addHypothesisWithEmbeddingContextParams = defineParams({
+  statement: param.string(),
+  roundId: param.i64(),
+  runId: param.string(),
+  f1Score: param.f64(),
+  embedding: param.array(param.f32()),
+  contextJson: param.string(),
+  createdAt: param.string(),
+})
+
+const addHypothesisWithEmbeddingContext = registerWrite(
+  (p) =>
+    writeBatch().varAs(
+      'hypo',
+      g().addN('Hypothesis', [
+        ['statement', p.statement],
+        ['roundId', p.roundId],
+        ['runId', p.runId],
+        ['f1Score', p.f1Score],
+        ['embedding', p.embedding],
+        ['contextJson', p.contextJson],
+        ['createdAt', p.createdAt],
+      ]),
+    ),
+  addHypothesisWithEmbeddingContextParams,
 )
 
 // 16b. addCitesEdge — 从 Hypothesis 加 CITES 边到 Paper（配合 addHypothesis 可选调用）
@@ -633,9 +702,10 @@ const ensureIndexes = registerWrite(
   () =>
     writeBatch()
       .varAs('i1', g().createTextIndexNodes('Paper', 'title'))
-      .varAs('i2', g().createVectorIndexNodes('Paper', 'embedding'))
-      .varAs('i3', g().createTextIndexNodes('Hypothesis', 'statement'))
-      .varAs('i4', g().createVectorIndexNodes('Hypothesis', 'embedding')),
+      .varAs('i2', g().createTextIndexNodes('Paper', 'abstract'))
+      .varAs('i3', g().createVectorIndexNodes('Paper', 'embedding'))
+      .varAs('i4', g().createTextIndexNodes('Hypothesis', 'statement'))
+      .varAs('i5', g().createVectorIndexNodes('Hypothesis', 'embedding')),
   defineParams({}),
 )
 
@@ -646,6 +716,7 @@ const ensureIndexes = registerWrite(
 export const queries = defineQueries({
   read: {
     searchPapers,
+    searchPapersByAbstract,
     searchHypotheses,
     getPaper,
     getHypothesis,
@@ -662,7 +733,9 @@ export const queries = defineQueries({
     addPaper,
     addPaperWithEmbedding,
     addHypothesis,
+    addHypothesisWithContext,
     addHypothesisWithEmbedding,
+    addHypothesisWithEmbeddingContext,
     addCitesEdge,
     addSupportingEvidence,
     addContradictingEvidence,
@@ -679,6 +752,8 @@ export const queries = defineQueries({
 // 编译：vp run --filter @open-scientist/helix generate-queries
 // （运行时 queries.generate 在模块 import 时即写入 src/queries.json；
 //   失败不阻塞 import —— 动态查询路径仍可用。）
-void queries.generate(new URL('./queries.json', import.meta.url).pathname).catch((err: unknown) => {
+void queries.generate(fileURLToPath(new URL('./queries.json', import.meta.url))).catch(
+  (err: unknown) => {
   console.warn('[helix] queries.generate failed:', err)
-})
+  },
+)

@@ -56,6 +56,10 @@ export function buildEvolutionTree(update: RoundUpdatePayload): EvolutionTreeDat
       hypothesis: {
         id: h.id,
         statement: h.statement,
+        mechanism: h.mechanism ?? 'unspecified',
+        predictions: h.predictions ?? [],
+        falsificationConditions: h.falsificationConditions ?? [],
+        sourceIds: h.sourceIds ?? [],
         pythonCode: '',
         parentId: h.parentId,
         round: h.round,
@@ -82,6 +86,10 @@ export function buildEvolutionTree(update: RoundUpdatePayload): EvolutionTreeDat
       hypothesis: {
         id: '__root__',
         statement: 'Tournament Seed Pool',
+        mechanism: 'synthetic-root',
+        predictions: [],
+        falsificationConditions: [],
+        sourceIds: [],
         pythonCode: '',
         parentId: null,
         round: 1,

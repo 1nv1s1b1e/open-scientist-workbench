@@ -1,263 +1,333 @@
 'use client'
-
+import type { PhenomenonInput } from '@open-scientist/schema'
 import {
   ArrowLeft,
   GitBranch,
-  Network,
+  MessageSquare,
   PanelRightClose,
   PanelRightOpen,
+  ScrollText,
   Sparkles,
+  Network,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChatPanel } from '@/components/chat/chat-panel'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ConceptNet3D, DebateTheater, EvolutionTree } from '@/components/visualizers/index'
-import type { RoundUpdateState } from '@/lib/hooks/useRunStream'
-import type { RunMessage } from '@/lib/hooks/useRunStream'
-import type { AgentRole, AgentState, OrchestratorData } from '@/lib/types/visualizers'
-import { cn } from '@/lib/utils/cn'
-import { buildInitialOrchestratorData } from '@/lib/visualizers/index'
-import { buildConceptNet, EMPTY_CONCEPT_NET } from '@/lib/visualizers/concept-net-data'
-import { buildEvolutionTree, EMPTY_EVOLUTION_TREE } from '@/lib/visualizers/evolution-tree-data'
+import { ScientificWorkbench } from '@/components/workbench/scientific-workbench'
+import {
+  EvolutionTree,
+  ScientificOrchestration,
+  ScientificRelationMap,
+  ScientificTrace,
+} from '@/components/visualizers'
+import type { RoundUpdateState, RunMessage } from '@/lib/hooks/useRunStream'
+import type { UIMessageChunk } from '@/lib/types/sse-events'
+import type { AgentRole, AgentState } from '@/lib/types/visualizers'
+import { WorkflowRuntimeProvider, type ExecutionMode } from '@/lib/chat/workflow-runtime'
+import { emptyScientificWorkbenchState, type ScientificWorkbenchState } from '@/lib/workbench/state'
+import { DEMO_PHENOMENON } from '@/lib/workbench/demo-data'
 
-type View = 'debate-theater' | 'concept-net' | 'evolution-tree'
-
-const VIEWS: { id: View; label: string; icon: typeof Sparkles }[] = [
-  { id: 'debate-theater', label: '辩论剧场', icon: Sparkles },
-  { id: 'concept-net', label: '知识图谱', icon: Network },
-  { id: 'evolution-tree', label: '演化树', icon: GitBranch },
-]
-
-const viewVariants = {
-  initial: { opacity: 0, scale: 0.98 },
-  animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 1.02 },
-}
+type View = 'workbench' | 'orchestration' | 'trace' | 'concept-net' | 'evolution'
 
 export default function ProjectRunPage() {
   const params = useParams<{ project: string }>()
   const project = decodeURIComponent(params.project)
-  const [view, setView] = useState<View>('debate-theater')
-  const [chatCollapsed, setChatCollapsed] = useState(false)
+  const demoProject = project === 'coronal-heating-demo'
+  const [view, setView] = useState<View>('workbench')
+  const [chatCollapsed, setChatCollapsed] = useState(true)
+  const [phenomenon, setPhenomenon] = useState<PhenomenonInput | undefined>(() =>
+    demoProject ? DEMO_PHENOMENON : undefined,
+  )
+  const [maxRounds, setMaxRounds] = useState(2)
+  const [executionMode, setExecutionMode] = useState<ExecutionMode>('model-assisted')
+  const [scientificState, setScientificState] = useState<ScientificWorkbenchState>(() =>
+    emptyScientificWorkbenchState(),
+  )
+  const [streamState, setStreamState] = useState('idle')
+  const [runId, setRunId] = useState<string | null>(null)
   const [agentStates, setAgentStates] = useState<Partial<Record<AgentRole, AgentState>>>({})
-  const [selectedAgent, setSelectedAgent] = useState<AgentRole | null>(null)
   const [roundUpdate, setRoundUpdate] = useState<RoundUpdateState>(null)
   const [messages, setMessages] = useState<RunMessage[]>([])
+  const [runChunks, setRunChunks] = useState<UIMessageChunk[]>([])
+  const [selectedAgent, setSelectedAgent] = useState<AgentRole | null>(null)
   const [selectedRound, setSelectedRound] = useState<number | null>(null)
   const [selectedHypoId, setSelectedHypoId] = useState<string | null>(null)
 
-  const handleAgentStatesChange = useCallback(
-    (states: Partial<Record<AgentRole, AgentState>>) => setAgentStates(states),
-    [],
-  )
-  const handleRoundUpdateChange = useCallback((update: RoundUpdateState) => {
-    setRoundUpdate(update)
-  }, [])
-  const handleMessagesChange = useCallback((msgs: RunMessage[]) => setMessages(msgs), [])
+  useEffect(() => {
+    setView('workbench')
+    setChatCollapsed(true)
+    setPhenomenon(demoProject ? DEMO_PHENOMENON : undefined)
+    setScientificState(emptyScientificWorkbenchState())
+    setStreamState('idle')
+    setRunId(null)
+    setAgentStates({})
+    setRoundUpdate(null)
+    setMessages([])
+    setRunChunks([])
+    setSelectedAgent(null)
+    setSelectedRound(null)
+    setSelectedHypoId(null)
+  }, [project, demoProject])
 
-  // 从消息中提取可用轮次和假设（供轮次-假设选择器使用）
-  const { availableRounds, availableHypos } = useMemo(() => {
-    const roundSet = new Set<number>()
-    const hypoMap = new Map<string, number>()
-    for (const msg of messages) {
-      if (msg.round != null) roundSet.add(msg.round)
-      if (msg.hypoId && msg.round != null) hypoMap.set(msg.hypoId, msg.round)
+  const available = useMemo(() => {
+    const rounds = new Set<number>()
+    const hypos = new Map<string, number>()
+    for (const message of messages) {
+      if (message.round != null) rounds.add(message.round)
+      if (message.hypoId && message.round != null) hypos.set(message.hypoId, message.round)
     }
     return {
-      availableRounds: Array.from(roundSet).sort((a, b) => a - b),
-      availableHypos: Array.from(hypoMap.entries()).map(([id, round]) => ({ id, round })),
+      rounds: [...rounds].sort((a, b) => a - b),
+      hypos: [...hypos].map(([id, round]) => ({ id, round })),
     }
   }, [messages])
 
-  // Build live orchestrator data from agent states
-  const orchestratorData: OrchestratorData = useMemo(() => {
-    const base = buildInitialOrchestratorData()
-    return {
-      ...base,
-      agents: base.agents.map((agent) => ({
-        ...agent,
-        state: agentStates[agent.role] ?? 'idle',
-      })),
-    }
-  }, [agentStates])
+  const onRoundUpdate = useCallback((value: RoundUpdateState) => setRoundUpdate(value), [])
+  const onMessages = useCallback((value: RunMessage[]) => setMessages(value), [])
+  const onChunks = useCallback((value: UIMessageChunk[]) => setRunChunks(value), [])
+  const onAgents = useCallback((value: Partial<Record<AgentRole, AgentState>>) => {
+    setAgentStates(value)
+  }, [])
+  const onScientific = useCallback((value: ScientificWorkbenchState) => {
+    setScientificState(value)
+  }, [])
 
-  // Build evolution tree from real run data
-  const evolutionTreeData = useMemo(() => {
-    if (roundUpdate) return buildEvolutionTree(roundUpdate)
-    return EMPTY_EVOLUTION_TREE
-  }, [roundUpdate])
+  const onRunIdChange = useCallback((value: string | null) => {
+    setRunId(value)
+  }, [])
 
-  // Build concept net from real run data
-  const conceptNetData = useMemo(() => {
-    if (roundUpdate) return buildConceptNet(roundUpdate)
-    return EMPTY_CONCEPT_NET
-  }, [roundUpdate])
+  const onStreamStateChange = useCallback((value: string) => {
+    setStreamState(value)
+    if (['connecting', 'running', 'streaming', 'reconnecting'].includes(value))
+      setChatCollapsed(false)
+  }, [])
 
-  // Extract latest text snippet from the currently-running agent for the speech bubble
-  const activeSpeech = useMemo(() => {
-    const activeAgent = Object.entries(agentStates).find(([, s]) => s !== 'idle')
-    if (!activeAgent) return null
-    const [role] = activeAgent as [AgentRole, AgentState]
-    // Find the latest message from this agent that has text content
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]!
-      if (msg.agentRole !== role) continue
-      const textPart = msg.parts.find((p) => p.kind === 'text' && p.text)
-      if (textPart?.text) {
-        const snippet =
-          textPart.text.length > 80 ? textPart.text.slice(0, 77) + '...' : textPart.text
-        return { role, text: snippet }
-      }
-    }
-    return { role, text: '正在思考中...' }
-  }, [agentStates, messages])
+  const consoleStatus = ['connecting', 'running', 'streaming', 'reconnecting'].includes(streamState)
+    ? '运行中'
+    : messages.length > 0 || runId
+      ? `第 ${Math.max(roundUpdate?.round ?? scientificState.round ?? 1, 1)} 轮`
+      : '待命'
 
   return (
-    <div className="flex h-screen flex-col bg-[var(--color-bg)]">
-      {/* ── Top banner — slim, with project label + view switch ──────────────── */}
-      <header className="relative shrink-0 overflow-hidden border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
-        {/* Top hairline */}
-        <div className="accent-line-top pointer-events-none absolute inset-x-0 top-0" />
-
-        <div className="relative z-10 flex items-center justify-between px-4 py-2.5">
-          {/* Left — breadcrumb */}
-          <div className="flex items-center gap-3">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/"
-                  className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-[1.2px] text-muted transition-colors hover:text-white"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Projects
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent>返回项目列表</TooltipContent>
-            </Tooltip>
-            <span className="text-muted">/</span>
-            <motion.span
-              key={project}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="font-mono text-[12px] uppercase tracking-[1.4px] text-white"
+    <WorkflowRuntimeProvider
+      key={project}
+      project={project}
+      phenomenon={phenomenon}
+      maxRounds={maxRounds}
+      executionMode={executionMode}
+      selectedAgent={selectedAgent}
+      selectedRound={selectedRound}
+      selectedHypoId={selectedHypoId}
+      onRunIdChange={onRunIdChange}
+      onStateChange={onStreamStateChange}
+      onAgentStatesChange={onAgents}
+      onRoundUpdateChange={onRoundUpdate}
+      onMessagesChange={onMessages}
+      onChunksChange={onChunks}
+      onScientificStateChange={onScientific}
+    >
+      <div className="project-page flex h-screen flex-col overflow-hidden bg-[var(--color-bg)] text-white">
+        <header className="project-header flex shrink-0 items-center justify-between gap-3 border-b border-white/[0.08] bg-[#0d1116]/90 px-4 py-2.5 backdrop-blur-xl md:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] transition-colors hover:text-white"
             >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              项目
+            </Link>
+            <span className="text-white/20">/</span>
+            <span className="truncate font-mono text-[11px] uppercase tracking-[0.12em] text-white">
               {project}
-            </motion.span>
+            </span>
           </div>
-
-          {/* Center — view switch pills */}
-          <div className="flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] p-1">
-            {VIEWS.map((v) => {
-              const Icon = v.icon
-              const active = view === v.id
+          <nav
+            className="project-view-nav flex items-center gap-1 overflow-x-auto rounded-full border border-white/[0.08] bg-black/20 p-1"
+            aria-label="科学视图"
+          >
+            {[
+              { id: 'workbench' as const, label: '科学工作台', icon: Sparkles },
+              { id: 'orchestration' as const, label: '智能体编排', icon: GitBranch },
+              { id: 'trace' as const, label: '\u6267\u884c\u8f68\u8ff9', icon: ScrollText },
+              { id: 'concept-net' as const, label: '概念网络', icon: Network },
+              { id: 'evolution' as const, label: '假设演化树', icon: GitBranch },
+            ].map((item) => {
+              const Icon = item.icon
               return (
                 <button
-                  key={v.id}
+                  key={item.id}
                   type="button"
-                  onClick={() => setView(v.id)}
-                  className={cn(
-                    'relative flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[12px] font-medium transition-colors',
-                    active ? 'text-[#0a0a0a]' : 'text-muted hover:text-white',
-                  )}
+                  onClick={() => setView(item.id)}
+                  className={`relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition-colors ${view === item.id ? 'text-[#0a0a0a]' : 'text-[var(--color-text-muted)] hover:text-white'}`}
                 >
-                  {active && (
+                  {view === item.id && (
                     <motion.span
-                      layoutId="view-pill"
-                      className="absolute inset-0 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.4)]"
-                      transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                      layoutId="project-view-pill"
+                      className="absolute inset-0 rounded-full bg-white"
                     />
                   )}
                   <Icon className="relative z-10 h-3.5 w-3.5" />
-                  <span className="relative z-10">{v.label}</span>
+                  <span className="relative z-10">{item.label}</span>
                 </button>
               )
             })}
-          </div>
+          </nav>
+          <button
+            type="button"
+            onClick={() => setChatCollapsed((value) => !value)}
+            className={`console-toggle ${!chatCollapsed ? 'console-toggle-open' : ''}`}
+            aria-expanded={!chatCollapsed}
+            aria-controls="project-run-console"
+          >
+            <span
+              className={`console-toggle-dot ${consoleStatus === '运行中' ? 'console-toggle-dot-live' : ''}`}
+            />
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span className="console-toggle-label">运行控制台</span>
+            <span className="console-toggle-status">{consoleStatus}</span>
+            {chatCollapsed ? (
+              <PanelRightOpen className="h-3.5 w-3.5" />
+            ) : (
+              <PanelRightClose className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </header>
 
-          {/* Right — collapse toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setChatCollapsed((c) => !c)}
-                className="rounded-full border border-[var(--color-border)] p-2 text-muted transition-colors hover:border-white/30 hover:text-white"
-              >
-                {chatCollapsed ? (
-                  <PanelRightOpen className="h-4 w-4" />
-                ) : (
-                  <PanelRightClose className="h-4 w-4" />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{chatCollapsed ? '展开对话面板' : '收起对话面板'}</TooltipContent>
-          </Tooltip>
-        </div>
-      </header>
-
-      {/* ── Main split — visualizer + chat ──────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
-        <main className="relative flex-1 overflow-hidden p-4">
-          {/* Subtle grid background for visualizers */}
-          <div className="bg-grid pointer-events-none absolute inset-0 opacity-30" />
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              variants={viewVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="relative h-full w-full"
-            >
-              {view === 'debate-theater' && (
-                <DebateTheater
-                  data={orchestratorData}
-                  selectedAgent={selectedAgent}
-                  onSelectAgent={setSelectedAgent}
-                  activeSpeech={activeSpeech}
-                />
+        <div className="relative min-h-0 flex-1">
+          <main className="h-full min-h-0 min-w-0 overflow-hidden">
+            <AnimatePresence initial={false}>
+              {view === 'workbench' && (
+                <motion.div
+                  key="workbench"
+                  className="h-full"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <ScientificWorkbench
+                    state={scientificState}
+                    phenomenon={phenomenon}
+                    onPhenomenonChange={setPhenomenon}
+                    streamState={streamState}
+                    agentStates={agentStates}
+                    runId={runId}
+                    maxRounds={maxRounds}
+                    onMaxRoundsChange={setMaxRounds}
+                    executionMode={executionMode}
+                    onExecutionModeChange={setExecutionMode}
+                  />
+                </motion.div>
               )}
-              {view === 'concept-net' && <ConceptNet3D data={conceptNetData} />}
-              {view === 'evolution-tree' && <EvolutionTree data={evolutionTreeData} />}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+              {view === 'orchestration' && (
+                <motion.div
+                  key="orchestration"
+                  className="h-full overflow-y-auto p-4 md:p-5"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <ScientificOrchestration
+                    state={scientificState.orchestration}
+                    selectedAgent={selectedAgent}
+                    onSelectAgent={(role) => {
+                      setSelectedAgent(role)
+                      if (role) setChatCollapsed(false)
+                    }}
+                  />
+                </motion.div>
+              )}
+              {view === 'trace' && (
+                <motion.div
+                  key="trace"
+                  className="h-full overflow-y-auto p-4 md:p-5"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <ScientificTrace
+                    chunks={runChunks}
+                    state={scientificState}
+                    runId={runId}
+                    streamState={streamState}
+                  />
+                </motion.div>
+              )}
+              {view === 'evolution' && (
+                <motion.div
+                  key="evolution"
+                  className="h-full overflow-y-auto p-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <EvolutionTree state={scientificState} />
+                </motion.div>
+              )}
+              {view === 'concept-net' && (
+                <motion.div
+                  key="concept-net"
+                  className="h-full overflow-y-auto p-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <ScientificRelationMap state={scientificState} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </main>
 
-        <AnimatePresence initial={false}>
-          {!chatCollapsed && (
-            <motion.aside
-              key="chat-panel"
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 420, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="shrink-0 overflow-hidden border-l border-[var(--color-border)] bg-[var(--color-bg-elevated)]"
-            >
-              <div className="h-full w-[420px]">
-                <ChatPanel
-                  project={project}
-                  selectedAgent={selectedAgent}
-                  onSelectAgent={setSelectedAgent}
-                  onAgentStatesChange={handleAgentStatesChange}
-                  onRoundUpdateChange={handleRoundUpdateChange}
-                  onMessagesChange={handleMessagesChange}
-                  selectedRound={selectedRound}
-                  selectedHypoId={selectedHypoId}
-                  onSelectRoundHypo={(r, h) => {
-                    setSelectedRound(r)
-                    setSelectedHypoId(h)
-                  }}
-                  availableRounds={availableRounds}
-                  availableHypos={availableHypos}
-                />
-              </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
+          <AnimatePresence initial={false}>
+            {!chatCollapsed && (
+              <motion.button
+                type="button"
+                aria-label="关闭运行控制台"
+                onClick={() => setChatCollapsed(true)}
+                className="console-backdrop md:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              />
+            )}
+          </AnimatePresence>
+
+          <motion.aside
+            id="project-run-console"
+            aria-hidden={chatCollapsed}
+            initial={false}
+            animate={{ x: chatCollapsed ? 'calc(100% + 1rem)' : 0, opacity: chatCollapsed ? 0 : 1 }}
+            transition={{ duration: 0.26, ease: 'easeInOut' }}
+            className="project-console"
+            style={{ pointerEvents: chatCollapsed ? 'none' : 'auto' }}
+          >
+            <ChatPanel
+              project={project}
+              phenomenon={phenomenon}
+              maxRounds={maxRounds}
+              executionMode={executionMode}
+              selectedAgent={selectedAgent}
+              onSelectAgent={setSelectedAgent}
+              onRunIdChange={onRunIdChange}
+              onStateChange={onStreamStateChange}
+              onAgentStatesChange={onAgents}
+              onRoundUpdateChange={onRoundUpdate}
+              onMessagesChange={onMessages}
+              onScientificStateChange={onScientific}
+              selectedRound={selectedRound}
+              selectedHypoId={selectedHypoId}
+              onSelectRoundHypo={(round, hypoId) => {
+                setSelectedRound(round)
+                setSelectedHypoId(hypoId)
+              }}
+              availableRounds={available.rounds}
+              availableHypos={available.hypos}
+              runtimeProvided
+            />
+          </motion.aside>
+        </div>
       </div>
-    </div>
+    </WorkflowRuntimeProvider>
   )
 }

@@ -16,6 +16,7 @@ import {
   listRuns,
   updateRunStatus,
 } from '@open-scientist/storage'
+import { StartRunRequestSchema } from '@open-scientist/schema'
 import { Hono } from 'hono'
 
 import { attachRunCompletion, respondWithRunStream } from '../lib/run-helpers'
@@ -85,12 +86,17 @@ async function resolveRunAgentConfigs(
 runs.post('/api/projects/:name/runs', async (c) => {
   const projectName = c.req.param('name')
   const body = await c.req.json().catch(() => ({}))
-  const seed = body?.seed
-  if (typeof seed !== 'string' || seed.length === 0) {
-    return c.json({ error: 'bad_request', message: 'body.seed is required' }, 400)
+  const parsedBody = StartRunRequestSchema.safeParse(body)
+  if (!parsedBody.success) {
+    return c.json(
+      { error: 'bad_request', message: parsedBody.error.issues[0]?.message ?? 'Invalid run request' },
+      400,
+    )
   }
-  const modelAlias =
-    typeof body?.modelAlias === 'string' && body.modelAlias.length > 0 ? body.modelAlias : undefined
+  const { seed, phenomenon, maxRounds } = parsedBody.data
+  const localGrounded = parsedBody.data.executionMode === 'local-grounded' && Boolean(phenomenon)
+  const runSeed = seed ?? phenomenon?.requestedQuestion ?? phenomenon?.title ?? 'structured-phenomenon'
+  const modelAlias = parsedBody.data.modelAlias
 
   const project = await getProject(projectName)
   if (!project) {
@@ -99,21 +105,33 @@ runs.post('/api/projects/:name/runs', async (c) => {
 
   let modelConfig: ModelArg
   let agentConfigs: Record<string, AgentRuntimeConfig>
-  try {
-    modelConfig = await resolveRunModelArg(projectName, modelAlias)
-    agentConfigs = await resolveRunAgentConfigs(projectName, modelAlias)
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    // Unknown alias is a client error (400); missing model config / credential
-    // is a server misconfiguration (500).
-    const status = err instanceof ModelAliasNotFoundError ? 400 : 500
-    const error = err instanceof ModelAliasNotFoundError ? 'bad_request' : 'model_config_error'
-    return c.json({ error, message }, status)
+  if (localGrounded) {
+    modelConfig = {
+      provider: 'openai',
+      model: 'local-grounded',
+      thinkingLevel: 'off',
+      apiMode: 'chat',
+      apiKey: '',
+    }
+    agentConfigs = {}
+  } else {
+    try {
+      modelConfig = await resolveRunModelArg(projectName, modelAlias)
+      agentConfigs = await resolveRunAgentConfigs(projectName, modelAlias)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      const status = err instanceof ModelAliasNotFoundError ? 400 : 500
+      const error = err instanceof ModelAliasNotFoundError ? 'bad_request' : 'model_config_error'
+      return c.json({ error, message }, status)
+    }
   }
 
   const run = startRun({
-    seed,
+    seed: runSeed,
+    ...(phenomenon ? { phenomenon } : {}),
+    ...(maxRounds !== undefined ? { maxRounds } : {}),
     // The workflow's `projectId` is the project name/slug — it drives the
+    ...(localGrounded ? { localGrounded: true } : {}),
     // workspace dir + HelixDB scoping via getProjectDir(name).
     projectId: projectName,
     // A business-level run label threaded through runtimeContext for the
@@ -295,6 +313,34 @@ runs.post('/api/projects/:name/runs/:runId/resume', async (c) => {
   const project = await getProject(projectName)
   if (!project) {
     return c.json({ error: 'not_found', message: `Project "${projectName}" not found` }, 404)
+  }
+
+  // Scientific resume is explicit and reads the LangGraph checkpoint. The
+  // legacy snapshot recovery path below remains unchanged.
+  if (body?.scientific === true) {
+    let modelConfig: ModelArg
+    let agentConfigs: Record<string, AgentRuntimeConfig>
+    try {
+      modelConfig = await resolveRunModelArg(projectName, modelAlias)
+      agentConfigs = await resolveRunAgentConfigs(projectName, modelAlias)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      const status = err instanceof ModelAliasNotFoundError ? 400 : 500
+      const error = err instanceof ModelAliasNotFoundError ? 'bad_request' : 'model_config_error'
+      return c.json({ error, message }, status)
+    }
+
+    const run = startRun({
+      seed: '(scientific-resumed)',
+      projectId: projectName,
+      runId,
+      modelConfig,
+      agentConfigs,
+      scientificResume: true,
+    })
+    await updateRunStatus(projectName, runId, 'running')
+    attachRunCompletion(projectName, run)
+    return respondWithRunStream(c, run, 0)
   }
 
   // Find the latest snapshot for this run.

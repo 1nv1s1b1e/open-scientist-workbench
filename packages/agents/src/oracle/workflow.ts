@@ -30,6 +30,10 @@ export function buildHypothesesBlock(hypotheses: Hypothesis[], evalResults: Eval
               .join('\n')
       return `Hypothesis ${h.id} (round ${h.round}, status=${h.status}, f1=${f1 ?? 'n/a'}, parentId=${h.parentId ?? 'null'}):
   statement: ${h.statement}
+  mechanism: ${h.mechanism}
+  predictions: ${h.predictions.join(' | ')}
+  falsificationConditions: ${h.falsificationConditions.join(' | ')}
+  sourceIds: ${h.sourceIds.join(' | ') || '(none)'}
   pythonCode:
 \`\`\`python
 ${h.pythonCode}

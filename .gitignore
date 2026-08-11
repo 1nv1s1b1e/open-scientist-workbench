@@ -13,6 +13,7 @@ data/
 .DS_Store
 queries.json
 .workflow-data/
+.runtime/
 .helix/
 helix.toml
 target/

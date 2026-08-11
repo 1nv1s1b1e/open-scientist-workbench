@@ -1,5 +1,5 @@
 import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'
-import type { ConvergenceEntry, PrometheusOutput } from '@open-scientist/schema'
+import type { ConvergenceEntry, Hypothesis, PrometheusOutput } from '@open-scientist/schema'
 import { type EmitChunk } from '../shared/stream.ts'
 import { resolveAgentConfigArgs, runAgentWorkflow } from '../shared/run-workflow.ts'
 import { createPrometheusAgent } from './agent.ts'
@@ -21,6 +21,10 @@ export interface PrometheusWorkflowInput {
   winningHypothesis?: {
     hypoId: string
     statement: string
+    mechanism: string
+    predictions: string[]
+    falsificationConditions: string[]
+    sourceIds: string[]
   }
   /**
    * Serializable model descriptor — reconstructed into a `LanguageModel` inside
@@ -52,6 +56,21 @@ export interface PrometheusWorkflowInput {
    * Optional abort signal threaded into `agent.stream({abortSignal})`.
    */
   abortSignal?: AbortSignal
+}
+
+type WinningHypothesisInput = PrometheusWorkflowInput['winningHypothesis'] | Hypothesis
+
+export function formatWinningHypothesis(hypothesis: WinningHypothesisInput | undefined): string {
+  if (!hypothesis) return '(no winning hypothesis)'
+  const hypoId = 'hypoId' in hypothesis ? hypothesis.hypoId : hypothesis.id
+  return [
+    `id: ${hypoId}`,
+    `statement: ${hypothesis.statement}`,
+    `mechanism: ${hypothesis.mechanism}`,
+    `predictions: ${hypothesis.predictions.join(' | ')}`,
+    `falsificationConditions: ${hypothesis.falsificationConditions.join(' | ')}`,
+    `sourceIds: ${hypothesis.sourceIds.join(' | ') || '(none)'}`,
+  ].join('\n  ')
 }
 
 /**
@@ -98,8 +117,7 @@ ${historyBlock}
 当前最佳 F1：${input.currentBestF1.toFixed(4)}
 
 获胜假设：
-  id: ${input.winningHypothesis?.hypoId ?? '<无>'}
-  statement: ${input.winningHypothesis?.statement ?? '<无>'}
+  ${formatWinningHypothesis(input.winningHypothesis)}
 
 步骤：
 1. 先加载 'mhd-config-gen' skill，获取 MHD .cfg 字段布局、从获胜 filter 阈值推导参数（加热率 vs 宁静太阳 ~300 W/m²、Lundquist number >> 1 快重联、plasma_beta ~ 0.01）、观测建议书格式 + 推荐卫星/仪器表。
@@ -130,7 +148,7 @@ ${input.userFeedback ? `\n人类审稿反馈（来自 review_leading_hypothesis 
         round: input.round,
         searchParams: { paramRange: {}, populationSize: 0, mutationRate: 0 },
         computeBudget: { maxEvals: 0, parallelWorkers: 0 },
-        rationale: 'Prometheus agent reached step limit without calling submit_result',
+        rationale: 'Prometheus 未在步数上限前调用 submit_result。',
       },
       mhdConfig: null,
       shouldContinue: false,

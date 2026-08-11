@@ -6,15 +6,25 @@ import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
 import {
   appendMessage,
   closeProjectDb,
+  createArtifact,
+  createDataSnapshot,
+  createMemoryEntry,
+  createProcessingRun,
   createHypothesis,
   createProject,
   createProjectDb,
   createRun,
+  createValidationTask,
   deleteProject,
   getHypothesis,
   getProject,
   getRun,
   listHypothesesByRun,
+  listArtifacts,
+  listDataSnapshots,
+  listMemoryEntries,
+  listProcessingRuns,
+  updateValidationTask,
   updateHypothesisStatus,
   updateRunStatus,
 } from '../src/index.ts'
@@ -283,6 +293,165 @@ describe('hypothesis repo', () => {
     await updateHypothesisStatus('proj-a', h.id, 'eliminated')
     const got = await getHypothesis('proj-a', h.id)
     expect((got as { status: string }).status).toBe('eliminated')
+  })
+})
+
+describe('scientific loop memory and validation task repos', () => {
+  let baseDir: string
+  let projectId: string
+  let runId: string
+
+  beforeEach(async () => {
+    baseDir = makeBaseDir('scientific-loop')
+    process.env.BASE_DIR = baseDir
+    projectId = (await createProject('proj-a')).id as string
+    runId = (await createRun('proj-a', projectId)).id
+  })
+
+  afterEach(() => {
+    closeProjectDb('proj-a')
+    rmSync(baseDir, { recursive: true, force: true })
+    delete process.env.BASE_DIR
+  })
+
+  it('persists structured memory and returns it by round', async () => {
+    await createMemoryEntry('proj-a', {
+      memoryId: 'mem-1',
+      layer: 'procedural-data',
+      kind: 'processing-run',
+      summary: '缺少高 cadence 磁场序列，不能判断高频功率谱',
+      namespace: [projectId, runId, 'procedural-data'],
+      tags: ['data-gap'],
+      sourceIds: ['aia-171'],
+      hypothesisIds: [],
+      evidenceIds: [],
+      taskIds: ['task-audit'],
+      artifactIds: ['artifact-audit'],
+      processingRunIds: ['processing-audit'],
+      triggeredBy: ['task-audit'],
+      verificationStatus: 'verified',
+      agentId: 'source-audit',
+      phenomenonId: 'phenomenon-1',
+      projectId,
+      runId,
+      round: 1,
+      fingerprint: 'mem-fingerprint-1',
+      utility: 0.9,
+      createdAt: new Date().toISOString(),
+    })
+
+    const entries = await listMemoryEntries('proj-a', { runId, limit: 5 })
+    expect(entries).toHaveLength(1)
+    expect(entries[0]?.layer).toBe('procedural-data')
+    expect(entries[0]?.kind).toBe('processing-run')
+    expect(entries[0]?.sourceIds).toEqual(['aia-171'])
+    expect(entries[0]?.namespace).toEqual([projectId, runId, 'procedural-data'])
+    expect(entries[0]?.artifactIds).toEqual(['artifact-audit'])
+    expect(entries[0]?.processingRunIds).toEqual(['processing-audit'])
+    expect(entries[0]?.triggeredBy).toEqual(['task-audit'])
+    expect(entries[0]?.verificationStatus).toBe('verified')
+    expect(entries[0]?.agentId).toBe('source-audit')
+    expect(entries[0]?.phenomenonId).toBe('phenomenon-1')
+  })
+
+  it('persists immutable data snapshots, processing runs, and artifacts', async () => {
+    await createDataSnapshot('proj-a', projectId, runId, {
+      snapshotId: 'snapshot-1',
+      sourceIds: ['aia-171'],
+      manifestPath: 'runs/run-1/data/snapshot-1.json',
+      checksums: { 'aia-171': 'sha256:abc' },
+      selection: { activeRegion: 'AR-1' },
+      createdAt: '2026-08-08T00:00:00.000Z',
+    })
+    await createArtifact('proj-a', projectId, runId, {
+      artifactId: 'artifact-1',
+      kind: 'metrics',
+      path: 'runs/run-1/artifacts/metrics.json',
+      checksum: 'sha256:def',
+      generatedBy: 'timeseries-analysis',
+      processingRunId: 'processing-1',
+      sourceIds: ['aia-171'],
+      createdAt: '2026-08-08T00:00:01.000Z',
+    })
+    await createProcessingRun('proj-a', {
+      processingRunId: 'processing-1',
+      projectId,
+      runId,
+      round: 1,
+      agentId: 'timeseries-analysis',
+      taskId: 'task-1',
+      triggeredBy: 'task-1',
+      snapshotIds: ['snapshot-1'],
+      steps: [{
+        stepId: 'align-1',
+        name: '多波段时间对齐',
+        tool: 'alignment-pipeline',
+        toolVersion: '1.0.0',
+        parameters: { interpolation: 'nearest' },
+        inputArtifactIds: [],
+        outputArtifactIds: ['artifact-1'],
+        deterministic: true,
+      }],
+      deterministic: true,
+      status: 'completed',
+      outputArtifactIds: ['artifact-1'],
+      metricsArtifactId: 'artifact-1',
+      limitations: [],
+      fingerprint: 'processing-fingerprint-1',
+      startedAt: '2026-08-08T00:00:00.000Z',
+      completedAt: '2026-08-08T00:00:01.000Z',
+    })
+
+    expect(await listDataSnapshots('proj-a', { runId })).toEqual([
+      expect.objectContaining({
+        snapshotId: 'snapshot-1',
+        sourceIds: ['aia-171'],
+      }),
+    ])
+    expect(await listArtifacts('proj-a', { runId })).toEqual([
+      expect.objectContaining({
+        artifactId: 'artifact-1',
+        processingRunId: 'processing-1',
+      }),
+    ])
+    expect(await listProcessingRuns('proj-a', { runId })).toEqual([
+      expect.objectContaining({
+        processingRunId: 'processing-1',
+        snapshotIds: ['snapshot-1'],
+        outputArtifactIds: ['artifact-1'],
+      }),
+    ])
+  })
+
+  it('deduplicates validation tasks by fingerprint and records result evidence', async () => {
+    const task = {
+      taskId: 'task-1',
+      route: 'B' as const,
+      type: 'analysis' as const,
+      objective: '比较活动区的高频功率谱',
+      requiredSourceIds: ['aia-171'],
+      discriminatingOutcomes: ['连续谱衰减', '间歇性突发'],
+      triggeredBy: 'mem-1',
+      status: 'planned' as const,
+      resultEvidenceIds: [],
+      round: 1,
+      fingerprint: 'task-fingerprint-1',
+    }
+    const first = await createValidationTask('proj-a', { ...task, projectId, runId })
+    const second = await createValidationTask('proj-a', {
+      ...task,
+      taskId: 'task-duplicate',
+      projectId,
+      runId,
+    })
+
+    expect(second.taskId).toBe(first.taskId)
+    const updated = await updateValidationTask('proj-a', first.taskId, {
+      status: 'completed',
+      resultEvidenceIds: ['e-1'],
+    })
+    expect(updated?.status).toBe('completed')
+    expect(updated?.resultEvidenceIds).toEqual(['e-1'])
   })
 })
 

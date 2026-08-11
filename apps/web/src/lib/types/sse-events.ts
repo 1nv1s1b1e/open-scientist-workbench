@@ -87,6 +87,20 @@ export const CustomEventKind = {
   AgentState: 'tournament.agent-state',
   RoundUpdate: 'tournament.round-update',
   PhaseStart: 'tournament.phase-start',
+  ScientificPhenomenon: 'scientific.phenomenon',
+  ScientificRetrieval: 'scientific.retrieval',
+  ScientificHypothesis: 'scientific.hypothesis',
+  ScientificEvidence: 'scientific.evidence',
+  ScientificNodeState: 'scientific.node-state',
+  ScientificAgentState: 'scientific.agent-state',
+  ScientificRoute: 'scientific.route',
+  ScientificProcessingResult: 'scientific.processing-result',
+  ScientificModelRun: 'scientific.model-run',
+  ScientificReasoningSummary: 'scientific.reasoning-summary',
+  ScientificSelfCorrection: 'scientific.self-correction',
+  ScientificRoundSummary: 'scientific.round-summary',
+  ScientificValidationTask: 'scientific.validation-task',
+  ScientificLoopComplete: 'scientific.loop-complete',
 } as const
 
 /** Round-update custom chunk payload (emitted after Explore + Oracle phases) */
@@ -97,6 +111,10 @@ export interface RoundUpdatePayload {
   hypotheses: Array<{
     id: string
     statement: string
+    mechanism?: string
+    predictions?: string[]
+    falsificationConditions?: string[]
+    sourceIds?: string[]
     parentId: string | null
     round: number
     f1: number | null

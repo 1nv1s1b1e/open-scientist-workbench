@@ -9,6 +9,16 @@ import { z } from 'zod'
 
 const logger = createLogger('tools')
 
+const FORBIDDEN_GROUND_TRUTH_FILE = /\btargets\.jsonl\b/i
+
+function assertNoDirectGroundTruthAccess(command: string): void {
+  if (FORBIDDEN_GROUND_TRUTH_FILE.test(command)) {
+    throw new Error(
+      '禁止通过 bash 直接访问 targets.jsonl；真实标签只能由确定性 eval.py 在内部使用。',
+    )
+  }
+}
+
 // ─── spawn injection seam ────────────────────────────────────────────────────
 
 /**
@@ -274,6 +284,7 @@ export async function createBashToolForHypothesis(
       command: z.string().describe('The bash command to execute'),
     }),
     execute: async ({ command }, { abortSignal }) => {
+      assertNoDirectGroundTruthAccess(command)
       logger.debug({ project, runId, hypoId, command: command.slice(0, 200) }, 'bash execute')
       const result = await execCommand(
         command,

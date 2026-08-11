@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto'
+import { createLogger } from '@open-scientist/logger'
 import type { Credential, CredentialStore } from '@open-scientist/schema'
 import { eq } from 'drizzle-orm'
 import { getGlobalDb } from '../global-db.ts'
@@ -6,11 +7,20 @@ import { credentials } from '../schema/global.ts'
 
 export type { Credential, CredentialStore }
 
-const ENCRYPTION_KEY =
-  process.env.CREDENTIAL_ENCRYPTION_KEY ?? 'open-scientist-default-key-change-me'
+const logger = createLogger('storage')
+
+function getEncryptionKey(): string {
+  const key = process.env.CREDENTIAL_ENCRYPTION_KEY
+  if (!key) {
+    throw new Error(
+      'CREDENTIAL_ENCRYPTION_KEY must be set before storing or reading credentials',
+    )
+  }
+  return key
+}
 
 function deriveKey(): Buffer {
-  return scryptSync(ENCRYPTION_KEY, 'open-scientist-salt', 32)
+  return scryptSync(getEncryptionKey(), 'open-scientist-salt', 32)
 }
 
 export function encrypt(text: string): string {
@@ -55,16 +65,29 @@ export async function createCredentialStore(): Promise<CredentialStore> {
 
     async list() {
       const rows = db.select().from(credentials).all()
-      return rows.map((r) => ({
-        id: r.id,
-        provider: r.provider,
-        type: r.type,
-        apiKey: decrypt(r.encryptedKey),
-        ...(r.baseURL ? { baseURL: r.baseURL } : {}),
-        ...(r.metadataJson
-          ? { metadata: JSON.parse(r.metadataJson) as Record<string, unknown> }
-          : {}),
-      }))
+      return rows.flatMap((r) => {
+        try {
+          return [{
+            id: r.id,
+            provider: r.provider,
+            type: r.type,
+            apiKey: decrypt(r.encryptedKey),
+            ...(r.baseURL ? { baseURL: r.baseURL } : {}),
+            ...(r.metadataJson
+              ? { metadata: JSON.parse(r.metadataJson) as Record<string, unknown> }
+              : {}),
+          }]
+        } catch (error) {
+          // A credential encrypted with a retired master key must not break
+          // the whole settings page. Keep the row untouched so it can be
+          // recovered or replaced explicitly, but omit it from usable entries.
+          logger.warn({
+            credentialId: r.id,
+            error: error instanceof Error ? error.message : String(error),
+          }, 'credential list: skipped unreadable entry')
+          return []
+        }
+      })
     },
 
     async add({ id, provider, type, key, baseURL, metadata }) {

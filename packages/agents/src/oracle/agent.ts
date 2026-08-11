@@ -12,6 +12,7 @@ import {
 import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
 import { assembleDefaultTools } from '../shared/tool-assembly.ts'
 import { makeSubmitResultTool } from '../shared/tool-output.ts'
+import { AGENT_EXECUTION_BUDGETS, createSubmitResultPrepareStep } from '../shared/output-policy.ts'
 
 export interface OracleAgentDeps {
   /**
@@ -110,11 +111,12 @@ export async function createOracleAgent({
   }
 
   return new ToolLoopAgent({
-    maxOutputTokens: 8192,
+    maxOutputTokens: AGENT_EXECUTION_BUDGETS.oracle.maxOutputTokens,
     id: 'oracle',
     model,
     providerOptions,
     toolChoice: 'auto',
+    prepareStep: createSubmitResultPrepareStep(AGENT_EXECUTION_BUDGETS.oracle.submitAtStep),
     instructions:
       instructions ??
       `你是 Oracle，太阳物理日冕加热研究的 Co-Scientist 评审与锦标赛辩论 agent。
@@ -144,7 +146,7 @@ export async function createOracleAgent({
 
 输出契约（OracleOutputSchema）：
 - critiques[]：每条已评估假设一条 Critique——{ hypoId, critiqueText（具体，如"在静态强剪切区失效"）, rationale（引用 Explore 反例或守恒定律）, severity（fatal/major/minor）, round }。
-- mutations[]：零或多条高潜力父假设的突变——{ parentHypoId, mutatedHypothesis（完整 HypothesisSchema，含新 id + parentId + round + status 'mutated' + 与 statement 一致的新 pythonCode）, mutationRationale（算子类型 + 改了什么 + 为什么，引用反例）, round }。
+- mutations[]：零或多条高潜力父假设的突变——{ parentHypoId, mutatedHypothesis（完整 HypothesisSchema，含新 id + parentId + round + status 'mutated' + mechanism + predictions + falsificationConditions + sourceIds + 与 statement 一致的新 pythonCode）, mutationRationale（算子类型 + 改了什么 + 为什么，引用反例）, round }。除非通过真实检索获得新来源，否则保留可核查 sourceIds；不得用占位引用。
 - eliminatedIds[]：本轮淘汰的假设 id（fatal 批判或低 F1）。
 - winningHypoId：string | null——仅当本轮收敛时设置，否则 null。
 
@@ -154,7 +156,7 @@ export async function createOracleAgent({
 
 重要：完成任务的唯一方式是调用 submit_result 工具。你必须在步数上限之前调用它。不要只输出文本——始终调用 submit_result 提交你的 OracleOutput。`,
     tools: toolsWithSubmit,
-    stopWhen: [isStepCount(60), hasToolCall('submit_result')],
+    stopWhen: [isStepCount(AGENT_EXECUTION_BUDGETS.oracle.maxSteps), hasToolCall('submit_result')],
     ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }

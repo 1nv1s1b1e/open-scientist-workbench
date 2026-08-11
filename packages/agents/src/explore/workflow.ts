@@ -4,56 +4,21 @@ import type { UIMessageChunk } from 'ai'
 import { type EmitChunk } from '../shared/stream.ts'
 import { resolveAgentConfigArgs, runAgentWorkflow } from '../shared/run-workflow.ts'
 import { createExploreAgent } from './agent.ts'
+import { evaluatePythonFilter } from './evaluate.ts'
 
 export interface ExploreWorkflowInput {
-  /** Hypothesis id — drives per-hypothesis workspace isolation. */
   hypoId: string
-  /** Project name — drives workspace dir + HelixDB scoping. */
   projectId: string
-  /** Run identifier — passed through runtimeContext for persistence + lineage. */
   runId: string
-  /** Tournament round (1-based). Round 1 = initial Librarian pool evaluation. */
   round: number
-  /** The hypothesis to evaluate. */
-  hypothesis: {
-    statement: string
-    pythonCode: string
-  }
-  /**
-   * Serializable model descriptor — reconstructed into a `LanguageModel` inside
-   * `createExploreAgent` via `createModelFromConfig`.
-   */
+  hypothesis: { statement: string; pythonCode: string }
   modelConfig: ModelArg
-  /**
-   * Per-agent runtime config override (instructions / skillDirectories /
-   * mcpServers). When present, its `modelConfig` takes priority over the
-   * `modelConfig` field above and its non-model fields override the factory
-   * defaults. Undefined → fully default behaviour.
-   */
   agentConfig?: AgentRuntimeConfig
-  /**
-   * Optional SSE chunk sink. When provided, each `UIMessageChunk` produced by
-   * the agent's `fullStream` is forwarded to this callback. The orchestrator
-   * uses it to buffer chunks for SSE replay / reconnect.
-   */
   emitChunk?: EmitChunk
-  /**
-   * Optional abort signal threaded into `agent.stream({abortSignal})`.
-   */
   abortSignal?: AbortSignal
 }
 
-/**
- * Explore workflow: AlphaEvolve deterministic evaluation of one hypothesis.
- *
- * Spawns a fresh ExploreAgent bound to a per-hypothesis bash workspace, runs
- * the hypothesis' Python filter against the 21,578-snapshot dataset, and
- * returns the EvalResult (F1 + counterexamples). The orchestrator
- * parallelizes this across the hypothesis pool via `Promise.all`.
- *
- * When `emitChunk` is supplied, every `UIMessageChunk` produced by the agent's
- * `fullStream` is forwarded to it (after conversion via `toUIMessageStream`).
- */
+/** Run Explore, then recompute its metrics from the configured dataset. */
 export async function exploreWorkflow(input: ExploreWorkflowInput): Promise<EvalResult> {
   const datasetDir = getDatasetDir()
   const agent = await createExploreAgent({
@@ -69,32 +34,28 @@ export async function exploreWorkflow(input: ExploreWorkflowInput): Promise<Eval
     },
   })
 
-  const prompt = `在真实 SDO/HMI SHARP 磁场数据集（21,578 条快照）上评估此假设。
+  const prompt = `请在已配置的数据集上评估以下假设。
+首先读取 ${datasetDir}/dataset_manifest.json。filter() 只能使用其中列出的特征列，严禁读取 targets.jsonl 或使用任何真实标签列。
 
 假设 id：${input.hypoId}
 运行 id：${input.runId}
 轮次：${input.round}
 数据集目录：${datasetDir}
 
-假设陈述：
+假设：
 ${input.hypothesis.statement}
 
-Python filter 代码：
-\`\`\`python
+Python 过滤代码：
 ${input.hypothesis.pythonCode}
-\`\`\`
 
 步骤：
-1. 先加载 'fits-snapshot-search' skill 获取数据集结构 + 评估契约。
-2. 将 filter 写入工作目录的 filter.py。
-3. 运行：source ${datasetDir}/.venv/bin/activate && python3 ${datasetDir}/eval.py filter.py
-4. 读取 JSON 输出（F1、TP/FP/FN、反例）。如果 F1 低，调试反例，修改 filter.py，重新运行。
-5. 共享 venv（含 numpy/scipy）在 ${datasetDir}/.venv。如需额外包：uv pip install --python ${datasetDir}/.venv/bin/python <package>
-6. 返回 EvalResult，含 hypoId=${input.hypoId}、f1、truePositives、falsePositives、falseNegatives、counterexamples[]（物理具体）、logs（命令 + 关键 stdout）、executionMs。`
+1. 加载 fits-snapshot-search skill 并读取 manifest。
+2. 在工作区写入 filter.py，然后运行：python ${datasetDir}/eval.py filter.py
+3. 检查 JSON 输出和反例；不得编造或修改任何指标。
+4. 如果评估器返回 candidateSnapshots，必须原样传递；它们是后续 FITS/视频对齐唯一允许使用的输入。
+5. 调用 submit_result。服务端会独立重跑假设代码，并以确定性结果为准。
+`
 
-  // Emit phase-start right before streaming begins (not in the .map() caller)
-  // so each hypothesis's phase-start fires when that workflow is actually ready,
-  // not all at once before any Explore agent starts.
   if (input.emitChunk) {
     input.emitChunk({
       type: 'custom',
@@ -105,7 +66,7 @@ ${input.hypothesis.pythonCode}
     } as unknown as UIMessageChunk)
   }
 
-  return runAgentWorkflow<EvalResult>({
+  const modelResult = await runAgentWorkflow<EvalResult>({
     agent,
     projectId: input.projectId,
     runId: input.runId,
@@ -118,10 +79,22 @@ ${input.hypothesis.pythonCode}
       falsePositives: 0,
       falseNegatives: 0,
       counterexamples: [],
-      logs: 'Explore agent reached step limit without calling submit_result',
+      candidateSnapshots: [],
+      logs: 'Explore 未在步数上限前调用 submit_result。',
       executionMs: 0,
     },
     emitChunk: input.emitChunk,
     abortSignal: input.abortSignal,
   })
+
+  const deterministicResult = await evaluatePythonFilter({
+    datasetDir,
+    filterCode: input.hypothesis.pythonCode,
+    hypoId: input.hypoId,
+  })
+
+  return {
+    ...deterministicResult,
+    logs: `${modelResult.logs}\n${deterministicResult.logs}`,
+  }
 }

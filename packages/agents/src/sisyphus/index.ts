@@ -8,3 +8,9 @@ export {
   type TournamentWorkflowInput,
   tournamentWorkflow,
 } from './workflow.ts'
+export {
+  applyEvaluationResults,
+  applyOracleRevision,
+  getActiveHypotheses,
+  getRevisionTriggers,
+} from './loop-logic.ts'

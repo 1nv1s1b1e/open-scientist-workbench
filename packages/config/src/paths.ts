@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { env } from './env.ts'
 
 // Detect monorepo root by walking up from this source file looking for
@@ -17,7 +18,7 @@ export function findMonorepoRoot(start: string): string {
   }
 }
 
-const MONOREPO_ROOT = findMonorepoRoot(dirname(new URL(import.meta.url).pathname))
+const MONOREPO_ROOT = findMonorepoRoot(dirname(fileURLToPath(import.meta.url)))
 
 export function getBaseDir(): string {
   // Resolve BASE_DIR relative to the monorepo root so that `./data` always

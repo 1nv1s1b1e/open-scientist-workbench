@@ -196,12 +196,12 @@ describe('resolveWithinWorkspace', () => {
 
   it('accepts a simple relative path', () => {
     const resolved = resolveWithinWorkspace(cwd, 'script.py')
-    expect(resolved).toBe(join(cwd, 'script.py'))
+    expect(resolved).toBe(resolve(cwd, 'script.py'))
   })
 
   it('accepts a nested relative path within the workspace', () => {
     const resolved = resolveWithinWorkspace(cwd, 'subdir/deep/file.txt')
-    expect(resolved).toBe(join(cwd, 'subdir', 'deep', 'file.txt'))
+    expect(resolved).toBe(resolve(cwd, 'subdir', 'deep', 'file.txt'))
   })
 
   it('accepts a path that normalizes to the cwd itself', () => {
@@ -211,7 +211,7 @@ describe('resolveWithinWorkspace', () => {
 
   it('accepts a path with redundant ./ segments', () => {
     const resolved = resolveWithinWorkspace(cwd, './subdir/./file.txt')
-    expect(resolved).toBe(join(cwd, 'subdir', 'file.txt'))
+    expect(resolved).toBe(resolve(cwd, 'subdir', 'file.txt'))
   })
 
   it('rejects an absolute path outside the workspace', () => {
@@ -223,7 +223,7 @@ describe('resolveWithinWorkspace', () => {
   it('accepts an absolute path that is inside the workspace', () => {
     const abs = join(cwd, 'file.txt')
     const resolved = resolveWithinWorkspace(cwd, abs)
-    expect(resolved).toBe(abs)
+    expect(resolved).toBe(resolve(abs))
   })
 
   it('rejects .. traversal escaping the workspace', () => {
@@ -244,7 +244,7 @@ describe('resolveWithinWorkspace', () => {
 
   it('accepts .. that stays within the workspace via re-entry', () => {
     const resolved = resolveWithinWorkspace(cwd, 'subdir/../file.txt')
-    expect(resolved).toBe(join(cwd, 'file.txt'))
+    expect(resolved).toBe(resolve(cwd, 'file.txt'))
   })
 })
 
@@ -325,7 +325,9 @@ describe('execCommand', () => {
 
     vi.advanceTimersByTime(5000)
 
-    expect(killSpy).toHaveBeenCalledWith(-FAKE_PID, 'SIGKILL')
+    if (process.platform !== 'win32') {
+      expect(killSpy).toHaveBeenCalledWith(-FAKE_PID, 'SIGKILL')
+    }
 
     lastChild()?.emitExit(null, 'SIGKILL')
 
@@ -368,7 +370,9 @@ describe('execCommand', () => {
 
     controller.abort()
 
-    expect(killSpy).toHaveBeenCalledWith(-FAKE_PID, 'SIGKILL')
+    if (process.platform !== 'win32') {
+      expect(killSpy).toHaveBeenCalledWith(-FAKE_PID, 'SIGKILL')
+    }
 
     lastChild()?.emitExit(null, 'SIGKILL')
 
@@ -502,5 +506,25 @@ describe('createBashToolForHypothesis with fake spawn', () => {
     expect(result.exitCode).toBe(0)
     expect(calls).toHaveLength(1)
     expect(calls[0]!.options.cwd).toContain('test-proj')
+  })
+
+  it('blocks direct command-line access to evaluator ground-truth targets', async () => {
+    const { spawnFn, calls } = createFakeSpawn({
+      onSpawn: (child) => child.emitExit(0),
+    })
+
+    const { createBashToolForHypothesis } = await import('../src/bash.ts')
+    const toolkit = await createBashToolForHypothesis('test-proj', 'run-1', 'h-1', spawnFn)
+    const bashTool = toolkit.tools.bash as unknown as {
+      execute: (args: { command: string }, options?: { abortSignal?: AbortSignal }) => Promise<unknown>
+    }
+
+    await expect(
+      bashTool.execute(
+        { command: 'python -c "print(open(\'C:/dataset/targets.jsonl\').read())"' },
+        { abortSignal: undefined },
+      ),
+    ).rejects.toThrow('targets.jsonl')
+    expect(calls).toHaveLength(0)
   })
 })

@@ -1,8 +1,8 @@
 /**
- * Reasoning — 推理过程 part 渲染器（可折叠）。
+ * Reasoning — 面向用户的模型工作摘要渲染器（可折叠）。
  *
  * 接收 reasoning part 的 text + status（running/complete）。
- * running 时自动展开并显示「思考中…」指示。
+ * 这里只展示模型提交的公开依据摘要，不把内部隐藏思维链冒充为可审计结论。
  */
 
 'use client'
@@ -17,9 +17,9 @@ interface ReasoningProps {
 }
 
 export function Reasoning({ text, isRunning = false }: ReasoningProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(Boolean(text))
   return (
-    <div className="my-1.5 rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)]">
+    <div className="model-work-summary my-1.5 overflow-hidden rounded-lg border border-cyan-200/15 bg-cyan-200/[0.035]">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -28,12 +28,12 @@ export function Reasoning({ text, isRunning = false }: ReasoningProps) {
         <ChevronRight
           className={`h-3 w-3 text-muted transition-transform ${open ? 'rotate-90' : ''}`}
         />
-        <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
-          reasoning
+        <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-cyan-100/70">
+          模型工作摘要
         </span>
         {isRunning && (
           <span className="ml-auto font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-sunset)]">
-            thinking…
+            生成中…
           </span>
         )}
       </button>

@@ -214,6 +214,59 @@ describe('POST /api/projects/:name/runs', () => {
     expect(storageCreateRunResult?.status).toBe('running')
   })
 
+  it('forwards a structured phenomenon to the scientific workflow path', async () => {
+    const phenomenon = {
+      phenomenonId: 'ar-1-brightening',
+      title: '活动区多波段短时增亮',
+      description: '同一活动区在两个 EUV 波段出现时序不同的增亮。',
+      activeRegion: 'AR-1',
+      observations: [
+        {
+          sourceId: 'obs-171',
+          kind: 'image',
+          label: 'AIA 171',
+          uri: 'fixture://ar-1/aia-171.fits',
+          instrument: 'AIA',
+          wavelengthOrBand: '171 Å',
+        },
+      ],
+      requestedQuestion: '区分波动耗散和纳耀斑重联。',
+    }
+    const res = await app.request('/api/projects/my-proj/runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ seed: '请分析该现象', phenomenon, maxRounds: 2 }),
+    })
+
+    expect(res.status).toBe(200)
+    const input = startCalls[0]![0] as {
+      phenomenon?: { phenomenonId: string }
+      maxRounds?: number
+    }
+    expect(input.phenomenon?.phenomenonId).toBe('ar-1-brightening')
+    expect(input.maxRounds).toBe(2)
+  })
+
+  it('allows scientific mode to start without a seed field', async () => {
+    const res = await app.request('/api/projects/my-proj/runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        phenomenon: {
+          phenomenonId: 'ar-2',
+          title: '活动区 EUV 增亮',
+          description: '一个活动区在 EUV 图像中出现短时增亮。',
+          observations: [{ sourceId: 'obs-193', kind: 'image', label: 'AIA 193', uri: 'fixture://ar-2/aia-193.fits' }],
+        },
+      }),
+    })
+
+    expect(res.status).toBe(200)
+    const input = startCalls[0]![0] as { seed: string; phenomenon?: { phenomenonId: string } }
+    expect(input.phenomenon?.phenomenonId).toBe('ar-2')
+    expect(input.seed).toBe('活动区 EUV 增亮')
+  })
+
   it('returns 400 when seed is missing', async () => {
     const res = await app.request('/api/projects/my-proj/runs', {
       method: 'POST',

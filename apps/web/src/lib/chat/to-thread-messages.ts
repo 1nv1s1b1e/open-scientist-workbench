@@ -15,6 +15,19 @@ type ContentPart = ContentArray[number]
 /** tool-call part 成员的 args 类型 */
 type ToolCallArgs = NonNullable<Extract<ContentPart, { type: 'tool-call' }>['args']>
 
+const INTERNAL_TOOL_NAMES = new Set([
+  'bash',
+  'bashtool',
+  'readfile',
+  'writefile',
+  'loadskill',
+  'submitresult',
+])
+
+function isInternalTool(toolName: string): boolean {
+  return INTERNAL_TOOL_NAMES.has(toolName.toLowerCase().replace(/[-_]/g, ''))
+}
+
 /**
  * 单个 MessagePart → ThreadMessageLike content part。
  */
@@ -75,7 +88,7 @@ function getPartPriority(part: ContentPart): number {
 /**
  * 把 seed + RunMessage[] 转成 ThreadMessageLike[]。
  *
- * - seed 作为第一条 user 消息
+ * - 用户说明作为第一条 user 消息；科学模式的现象内容由工作台单独展示
  * - 每个 RunMessage 成为一条 assistant 消息（按 reasoning → tools → text 优先次序排列）
  * - 自动过滤内部 submit_result 工具与纯空完成消息，防止产生空卡片框
  * - 当 selectedAgent 非空时，仅显示该 agent 的消息（未到达的 agent 显示提示）
@@ -83,7 +96,7 @@ function getPartPriority(part: ContentPart): number {
  * - 当 selectedHypoId 非空时，仅显示该假设的消息（Explore 并行多假设时区分）
  */
 export function toThreadMessages(
-  seed: string | null,
+  inputText: string | null,
   runMessages: RunMessage[],
   state: StreamState,
   selectedAgent?: string | null,
@@ -92,12 +105,12 @@ export function toThreadMessages(
 ): ThreadMessageLike[] {
   const msgs: ThreadMessageLike[] = []
 
-  // 用户消息（seed）
-  if (seed) {
+  // 用户说明（不是科学模式的 phenomenon payload）
+  if (inputText) {
     msgs.push({
-      id: 'user-seed',
+      id: 'user-input',
       role: 'user',
-      content: [{ type: 'text', text: seed }],
+      content: [{ type: 'text', text: inputText }],
     })
   }
 
@@ -117,17 +130,6 @@ export function toThreadMessages(
     )
   }
 
-  // selectedAgent 非空且该 agent 还没有任何消息 → 显示占位提示
-  if (selectedAgent && filteredMessages.length === 0) {
-    msgs.push({
-      id: 'agent-placeholder',
-      role: 'assistant',
-      content: [{ type: 'text', text: `等待 ${selectedAgent} agent 启动…` }],
-      status: { type: 'running' },
-    })
-    return msgs
-  }
-
   // assistant 消息
   for (let i = 0; i < filteredMessages.length; i++) {
     const runMsg = filteredMessages[i]!
@@ -139,11 +141,8 @@ export function toThreadMessages(
     for (const part of runMsg.parts) {
       const converted = toMessagePart(part)
       if (converted) {
-        // 过滤内部的 submit_result 结果提交工具
-        if (
-          converted.type === 'tool-call' &&
-          (converted.toolName === 'submit_result' || converted.toolName === 'submit-result')
-        ) {
+        // 低层文件、shell 与 schema 提交事件保留在“执行轨迹”，不挤占模型摘要侧栏。
+        if (converted.type === 'tool-call' && isInternalTool(converted.toolName)) {
           continue
         }
         parts.push(converted)
@@ -162,7 +161,7 @@ export function toThreadMessages(
     })
 
     // 已完成且未包含任何可显示内容的消息，跳过，不渲染空卡片框
-    if (validParts.length === 0 && !isRunning) {
+    if (validParts.length === 0) {
       continue
     }
 

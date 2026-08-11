@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { getBaseDir } from '@open-scientist/config'
+import { getBaseDir, getProjectDbPath } from '@open-scientist/config'
 import { eq } from 'drizzle-orm'
 import { createProjectDb } from '../db.ts'
 import { projects } from '../schema/project.ts'
@@ -17,12 +18,14 @@ export async function createProject(name: string, config?: Record<string, unknow
 }
 
 export async function getProject(name: string) {
+  if (!existsSync(getProjectDbPath(name))) return null
   const { db } = createProjectDb(name)
   const rows = db.select().from(projects).where(eq(projects.name, name)).all()
   return rows[0] ?? null
 }
 
 export async function deleteProject(name: string) {
+  if (!existsSync(getProjectDbPath(name))) return
   const { db } = createProjectDb(name)
   db.delete(projects).where(eq(projects.name, name)).run()
 }

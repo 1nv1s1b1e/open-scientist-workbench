@@ -96,7 +96,7 @@ function ProjectCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.06, ease: 'easeOut' }}
       whileHover={{ y: -2 }}
-      className="group relative overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] transition-colors hover:border-white/25"
+      className="project-card group relative overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] transition-colors hover:border-white/25"
     >
       {/* Hover glow */}
       <div
@@ -108,7 +108,7 @@ function ProjectCard({
         {/* Top — index + delete */}
         <div className="flex items-start justify-between">
           <span className="font-mono text-[10px] uppercase tracking-[1.4px] text-muted">
-            {String(index + 1).padStart(2, '0')} / project
+            项目 {String(index + 1).padStart(2, '0')}
           </span>
           <button
             type="button"
@@ -132,21 +132,21 @@ function ProjectCard({
             {name}
           </h3>
           <p className="mt-1 font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
-            click to enter workspace
+            进入工作台
           </p>
         </button>
 
         {/* Bottom — enter pill */}
         <div className="mt-6 flex items-center justify-between border-t border-[var(--color-border)] pt-4">
           <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
-            Workspace
+            独立记录
           </span>
           <button
             type="button"
             onClick={onOpen}
             className="group/btn flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[1.2px] text-muted transition-colors hover:text-white"
           >
-            Enter
+            打开
             <ArrowRight className="h-3 w-3 transition-transform group-hover/btn:translate-x-0.5" />
           </button>
         </div>
@@ -200,9 +200,9 @@ export function ProjectList({ onOpen }: ProjectListProps) {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-6 py-5">
         <div>
-          <Eyebrow>Projects · Tournament Workspaces</Eyebrow>
-          <h3 className="mt-2 text-xl font-normal text-white">项目工作区</h3>
-          <p className="mt-1 text-sm text-muted">每个项目独立存储 run、假设、证据与 MHD 产物。</p>
+          <Eyebrow>PROJECTS</Eyebrow>
+          <h3 className="mt-2 text-xl font-normal text-white">选择一个项目</h3>
+          <p className="mt-1 text-sm text-muted">每个项目独立保存现象、分析记录与下一步任务。</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -215,7 +215,7 @@ export function ProjectList({ onOpen }: ProjectListProps) {
             <DialogHeader>
               <DialogTitle>新建项目</DialogTitle>
               <DialogDescription>
-                创建一个新的 tournament 项目工作目录，后续所有 run 与产物均隔离于此。
+                创建一个独立项目，用于保存后续的现象、分析记录和验证任务。
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-5 pt-2">
@@ -229,32 +229,38 @@ export function ProjectList({ onOpen }: ProjectListProps) {
                 />
               </FieldGroup>
 
-              <FieldGroup label="MCP 配置（JSON，可选）">
-                <Textarea
-                  value={form.mcpJson}
-                  onChange={(e) => setForm({ ...form, mcpJson: e.target.value })}
-                  placeholder='{"server-name": {"command": "..."}}'
-                  className="min-h-[90px] font-mono text-xs"
-                />
-              </FieldGroup>
+              <details className="project-advanced-options">
+                <summary>高级配置（可选）</summary>
+                <p>只有需要接入额外工具或自定义提示词时才需要填写；普通分析项目可直接创建。</p>
+                <div className="mt-4 space-y-4">
+                  <FieldGroup label="工具连接配置（JSON，可选）">
+                    <Textarea
+                      value={form.mcpJson}
+                      onChange={(e) => setForm({ ...form, mcpJson: e.target.value })}
+                      placeholder='{"server-name": {"command": "..."}}'
+                      className="min-h-[90px] font-mono text-xs"
+                    />
+                  </FieldGroup>
 
-              <FieldGroup label="Skills 目录（逗号分隔，可选）">
-                <Input
-                  value={form.skillsDirs}
-                  onChange={(e) => setForm({ ...form, skillsDirs: e.target.value })}
-                  placeholder="path/to/skills, another/path"
-                  className="font-mono text-xs"
-                />
-              </FieldGroup>
+                  <FieldGroup label="技能目录（逗号分隔，可选）">
+                    <Input
+                      value={form.skillsDirs}
+                      onChange={(e) => setForm({ ...form, skillsDirs: e.target.value })}
+                      placeholder="path/to/skills, another/path"
+                      className="font-mono text-xs"
+                    />
+                  </FieldGroup>
 
-              <FieldGroup label="Prompts 目录（可选）">
-                <Input
-                  value={form.promptsDir}
-                  onChange={(e) => setForm({ ...form, promptsDir: e.target.value })}
-                  placeholder="path/to/prompts"
-                  className="font-mono text-xs"
-                />
-              </FieldGroup>
+                  <FieldGroup label="提示词目录（可选）">
+                    <Input
+                      value={form.promptsDir}
+                      onChange={(e) => setForm({ ...form, promptsDir: e.target.value })}
+                      placeholder="path/to/prompts"
+                      className="font-mono text-xs"
+                    />
+                  </FieldGroup>
+                </div>
+              </details>
 
               {error && <p className="text-sm text-red-400">{error}</p>}
 
@@ -295,7 +301,7 @@ export function ProjectList({ onOpen }: ProjectListProps) {
               <FolderOpen className="h-5 w-5 text-muted" />
             </div>
             <p className="mt-4 font-mono text-[11px] uppercase tracking-[1.4px] text-muted">
-              No projects yet
+              还没有项目
             </p>
             <p className="mt-1.5 text-xs text-muted">点击右上角「新建项目」开始</p>
           </div>

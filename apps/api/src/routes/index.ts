@@ -1,4 +1,5 @@
 import type { Hono } from 'hono'
+import { artifacts } from './artifacts'
 import { credentials } from './credentials'
 import { devProbe } from './dev-probe'
 import { health } from './health'
@@ -13,8 +14,9 @@ export function registerRoutes(app: Hono): void {
   app.route('/', credentials)
   app.route('/', projects)
   app.route('/', testLlm)
+  app.route('/', artifacts)
   app.route('/', runs)
   app.route('/', devProbe)
 }
 
-export { credentials, devProbe, health, projects, runs, settings, testLlm }
+export { artifacts, credentials, devProbe, health, projects, runs, settings, testLlm }

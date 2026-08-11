@@ -7,17 +7,32 @@ import {
 import type {
   ConvergenceEntry,
   EvalResult,
+  EvidenceAlignment,
   Hypothesis,
+  PhenomenonInput,
   TournamentResult,
 } from '@open-scientist/schema'
 import type { UIMessageChunk } from 'ai'
 import { exploreWorkflow } from '../explore/workflow.ts'
 import { librarianWorkflow } from '../librarian/workflow.ts'
+import { lookerWorkflow } from '../looker/workflow.ts'
 import { oracleWorkflow } from '../oracle/workflow.ts'
 import { prometheusWorkflow } from '../prometheus/workflow.ts'
 import type { EmitChunk } from '../shared/stream.ts'
+import {
+  createTournamentScienceLoopRecorder,
+  type ScienceLoopRecorder,
+} from '../harness/recorder.ts'
+import { selectLeadingHypothesis } from './leader.ts'
 import type { RoundSnapshot } from './snapshot.ts'
 import { snapshotStep } from './snapshot.ts'
+import { buildEvidenceAlignmentJobs } from './evidence.ts'
+import {
+  applyEvaluationResults,
+  applyOracleRevision,
+  getActiveHypotheses,
+  getRevisionTriggers,
+} from './loop-logic.ts'
 
 /**
  * Context passed to the `onReviewLeadingHypothesis` callback. Contains
@@ -74,6 +89,16 @@ export type OnReviewLeadingHypothesis = (
 export interface TournamentWorkflowInput {
   /** Seed hypothesis text from the user / API layer. */
   seed: string
+  /** Structured solar-physics phenomenon selects the scientific-loop path. */
+  phenomenon?: PhenomenonInput
+  /** Scientific mode may resume from its LangGraph checkpoint without resending phenomenon. */
+  resume?: boolean
+  /** Explicit API marker; legacy tournament resume must not enter scientific mode. */
+  scientificResume?: boolean
+  /** Hard cap for the scientific loop; legacy tournament keeps its own cap. */
+  maxRounds?: number
+  /** Use verified local literature and observation metadata without constructing a model client. */
+  localGrounded?: boolean
   /** Project name — drives workspace dir + HelixDB scoping. */
   projectId: string
   /** Run identifier — passed through runtimeContext for persistence + lineage. */
@@ -177,6 +202,32 @@ export interface TournamentWorkflowInput {
 export async function tournamentWorkflow(
   input: TournamentWorkflowInput,
 ): Promise<TournamentResult> {
+  const loopRecorder = await createTournamentScienceLoopRecorder({
+    projectId: input.projectId,
+    runId: input.runId,
+    question: input.seed,
+  })
+
+  try {
+    return await runTournamentWorkflow(input, loopRecorder)
+  } catch (error) {
+    const phase = loopRecorder.getState().phase
+    if (phase !== 'completed' && phase !== 'failed') {
+      await loopRecorder
+        .transition('failed', {
+          round: input.resumeFrom?.round ?? 0,
+          reason: error instanceof Error ? error.message : String(error),
+        })
+        .catch(() => undefined)
+    }
+    throw error
+  }
+}
+
+async function runTournamentWorkflow(
+  input: TournamentWorkflowInput,
+  loopRecorder: ScienceLoopRecorder,
+): Promise<TournamentResult> {
   const {
     seed,
     projectId,
@@ -234,6 +285,10 @@ export async function tournamentWorkflow(
         hypotheses: hypos.map((h) => ({
           id: h.id,
           statement: h.statement,
+          mechanism: h.mechanism,
+          predictions: h.predictions,
+          falsificationConditions: h.falsificationConditions,
+          sourceIds: h.sourceIds,
           parentId: h.parentId,
           round: h.round,
           f1: h.f1,
@@ -256,14 +311,16 @@ export async function tournamentWorkflow(
   let convergenceHistory: ConvergenceEntry[]
 
   if (resumeFrom) {
-    // Restore hypotheses + convergence history from the snapshot. The snapshot
-    // doesn't persist `pythonCode` or `createdAt` (they're not needed for
-    // resume — Explore re-derives pythonCode from the statement if the
-    // hypothesis is re-evaluated). Provide sensible defaults.
+    // Restore the complete executable/scientific hypothesis context from the
+    // snapshot. `createdAt` is reconstructed from the capture timestamp.
     hypotheses = resumeFrom.hypotheses.map((h) => ({
       id: h.id,
       statement: h.statement,
-      pythonCode: '', // not persisted in snapshot; Explore re-derives if needed
+      mechanism: h.mechanism,
+      predictions: h.predictions,
+      falsificationConditions: h.falsificationConditions,
+      sourceIds: h.sourceIds,
+      pythonCode: h.pythonCode,
       parentId: h.parentId,
       round: h.round,
       f1: h.f1,
@@ -273,6 +330,10 @@ export async function tournamentWorkflow(
     bestF1 = resumeFrom.bestF1
     leadingHypoId = resumeFrom.leadingHypoId
     convergenceHistory = [...resumeFrom.convergenceHistory]
+    await loopRecorder.transition('hypothesis', {
+      resumedFromRound: resumeFrom.round,
+      hypothesisIds: hypotheses.map((hypothesis) => hypothesis.id),
+    })
   } else {
     emitPhaseStart('librarian', 1)
     emitAgentState('librarian', 'thinking')
@@ -290,8 +351,22 @@ export async function tournamentWorkflow(
     bestF1 = 0
     leadingHypoId = null
     convergenceHistory = []
+    await loopRecorder.transition('hypothesis', {
+      round: 1,
+      hypothesisIds: hypotheses.map((hypothesis) => hypothesis.id),
+    })
     // Emit initial hypotheses from Librarian (Round 1)
     emitRoundUpdate(1, hypotheses, convergenceHistory)
+  }
+
+  if (getActiveHypotheses(hypotheses).length === 0) {
+    const failureReason = 'hypothesis pool is empty after structured validation or resume'
+    await loopRecorder.transition('failed', {
+      round: resumeFrom?.round ?? 1,
+      reason: failureReason,
+      hypothesisIds: hypotheses.map((hypothesis) => hypothesis.id),
+    })
+    throw new Error(failureReason)
   }
 
   // Final-round outputs (filled by Prometheus when the tournament converges).
@@ -308,6 +383,29 @@ export async function tournamentWorkflow(
   for (let round = startRound; round <= MAX_ROUNDS; round++) {
     totalRounds = round
 
+    const activeHypotheses = getActiveHypotheses(hypotheses)
+    if (activeHypotheses.length === 0) {
+      await loopRecorder.transition('failed', {
+        round,
+        reason: 'Oracle left no active hypothesis for the next evaluation pass',
+        hypothesisIds: hypotheses.map((hypothesis) => hypothesis.id),
+      })
+      break
+    }
+
+    if (loopRecorder.getState().phase === 'validation_plan') {
+      await loopRecorder.transition('hypothesis', {
+        round,
+        hypothesisIds: activeHypotheses.map((hypothesis) => hypothesis.id),
+      })
+    }
+
+    await loopRecorder.transition('evidence', {
+      round,
+      source: 'configured dataset manifest and snapshot index',
+      hypothesisIds: activeHypotheses.map((hypothesis) => hypothesis.id),
+    })
+
     // ── Explore: parallel evaluation of every hypothesis ──
     //
     // Each hypothesis gets its own Explore workflow run with an isolated
@@ -316,7 +414,7 @@ export async function tournamentWorkflow(
     // (JS is single-threaded, so the push is safe; chunks may interleave).
     emitAgentState('explore', 'thinking')
     const evalResults: EvalResult[] = await Promise.all(
-      hypotheses.map((h) =>
+      activeHypotheses.map((h) =>
         exploreWorkflow({
           hypoId: h.id,
           projectId,
@@ -332,16 +430,82 @@ export async function tournamentWorkflow(
     )
     emitAgentState('explore', 'idle')
 
-    // ── Update hypotheses with F1 + status from this round's evaluations ──
-    hypotheses = hypotheses.map((h) => {
-      const evalMatch = evalResults.find((e) => e.hypoId === h.id)
-      return evalMatch ? { ...h, f1: evalMatch.f1, status: 'evaluated' as const } : h
+    // ── Looker: align only deterministic, manifest-backed candidates ──
+    //
+    // The demo JW-FD manifest has no active-region/time/wavelength fields, so
+    // this job list is empty there. A real dataset can opt in by declaring the
+    // three fields in featureColumns; no astronomical metadata is fabricated.
+    const evidenceJobs = buildEvidenceAlignmentJobs(evalResults, 1)
+    let evidenceAlignments: Array<{
+      hypoId: string
+      snapshotId: string
+      alignment: EvidenceAlignment
+    }> = []
+    if (evidenceJobs.length > 0) {
+      emitAgentState('looker', 'thinking')
+      evidenceAlignments = await Promise.all(
+        evidenceJobs.map(async (job) => {
+          emitPhaseStart('looker', round, job.hypoId)
+          const alignment = await lookerWorkflow({
+            hypoId: job.hypoId,
+            projectId,
+            runId,
+            candidateCase: job.candidateCase,
+            modelConfig,
+            ...(agentConfigFor('looker') ? { agentConfig: agentConfigFor('looker') } : {}),
+            ...(emitChunk ? { emitChunk } : {}),
+            ...(abortSignal ? { abortSignal } : {}),
+          })
+          return { hypoId: job.hypoId, snapshotId: job.snapshotId, alignment }
+        }),
+      )
+      emitAgentState('looker', 'idle')
+    }
+
+    await loopRecorder.transition('evaluation', {
+      round,
+      results: evalResults.map((result) => ({
+        hypoId: result.hypoId,
+        f1: result.f1,
+        truePositives: result.truePositives,
+        falsePositives: result.falsePositives,
+        falseNegatives: result.falseNegatives,
+        executionMs: result.executionMs,
+      })),
+      evidenceAlignmentJobs: evidenceJobs.map((job) => ({
+        hypoId: job.hypoId,
+        snapshotId: job.snapshotId,
+      })),
+      evidenceAlignments: evidenceAlignments.map(({ hypoId, snapshotId, alignment }) => ({
+        hypoId,
+        snapshotId,
+        fitsPaths: alignment.fitsPaths,
+        videoClipPath: alignment.videoClipPath,
+        metadata: alignment.metadata,
+      })),
+    })
+    await loopRecorder.transition('counterexample', {
+      round,
+      counterexamples: evalResults.flatMap((result) =>
+        result.counterexamples.map((counterexample) => ({
+          hypoId: result.hypoId,
+          snapshotId: counterexample.snapshotId,
+          reason: counterexample.reason,
+        })),
+      ),
     })
 
-    bestF1 = hypotheses.reduce((max, h) => Math.max(max, h.f1 ?? 0), 0)
-    leadingHypoId = hypotheses.find((h) => h.f1 === bestF1)?.id ?? null
+    // ── Update hypotheses with F1 + status from this round's evaluations ──
+    hypotheses = applyEvaluationResults(hypotheses, evalResults)
 
-    convergenceHistory.push({ round, bestF1, count: hypotheses.length })
+    const roundBestF1 = activeHypotheses.reduce((max, h) => {
+      const current = hypotheses.find((candidate) => candidate.id === h.id)
+      return Math.max(max, current?.f1 ?? 0)
+    }, 0)
+    bestF1 = Math.max(bestF1, roundBestF1)
+    leadingHypoId = selectLeadingHypothesis(getActiveHypotheses(hypotheses)).hypoId
+
+    convergenceHistory.push({ round, bestF1, count: activeHypotheses.length })
 
     // Emit evaluated hypotheses with F1 scores (visualizer can show the tree)
     emitRoundUpdate(round, hypotheses, convergenceHistory)
@@ -353,10 +517,15 @@ export async function tournamentWorkflow(
       projectId,
       bestF1,
       leadingHypoId,
-      survivingCount: hypotheses.length,
+      survivingCount: getActiveHypotheses(hypotheses).length,
       hypotheses: hypotheses.map((h) => ({
         id: h.id,
         statement: h.statement,
+        mechanism: h.mechanism,
+        predictions: h.predictions,
+        falsificationConditions: h.falsificationConditions,
+        sourceIds: h.sourceIds,
+        pythonCode: h.pythonCode,
         f1: h.f1,
         status: h.status,
         parentId: h.parentId,
@@ -368,6 +537,11 @@ export async function tournamentWorkflow(
 
     // ── Convergence check #1: F1 target hit → skip Oracle/Prometheus, go to final ──
     if (bestF1 >= TARGET_F1) {
+      await loopRecorder.transition('revision', {
+        round,
+        triggeredBy: 'deterministic evaluation reached the configured target',
+        mutations: [],
+      })
       break
     }
 
@@ -378,7 +552,7 @@ export async function tournamentWorkflow(
       projectId,
       runId,
       round,
-      hypotheses,
+      hypotheses: getActiveHypotheses(hypotheses),
       evalResults,
       modelConfig,
       ...(agentConfigFor('oracle') ? { agentConfig: agentConfigFor('oracle') } : {}),
@@ -388,21 +562,41 @@ export async function tournamentWorkflow(
     emitAgentState('oracle', 'idle')
 
     // Apply Oracle's pruning + mutations to the pool.
-    hypotheses = hypotheses
-      .filter((h) => !oracleOutput.eliminatedIds.includes(h.id))
-      .concat(oracleOutput.mutations.map((m) => m.mutatedHypothesis))
+    hypotheses = applyOracleRevision(hypotheses, oracleOutput)
+    leadingHypoId = selectLeadingHypothesis(getActiveHypotheses(hypotheses)).hypoId
+
+    await loopRecorder.transition('revision', {
+      round,
+      triggeredBy: getRevisionTriggers(evalResults, oracleOutput),
+      mutations: oracleOutput.mutations.map((mutation) => ({
+        parentHypoId: mutation.parentHypoId,
+        childHypoId: mutation.mutatedHypothesis.id,
+        rationale: mutation.mutationRationale,
+      })),
+    })
 
     // Emit mutated/eliminated hypothesis pool (visualizer shows new branches)
     emitRoundUpdate(round, hypotheses, convergenceHistory)
 
     // Oracle may declare a winner early (clear convergence this round).
     if (oracleOutput.winningHypoId) {
+      if (!getActiveHypotheses(hypotheses).some((h) => h.id === oracleOutput.winningHypoId)) {
+        throw new Error(
+          `Oracle winner is not an active hypothesis: ${oracleOutput.winningHypoId}`,
+        )
+      }
       leadingHypoId = oracleOutput.winningHypoId
       break
     }
 
     // Guard against an empty pool (over-aggressive elimination).
-    if (hypotheses.length === 0) {
+    if (getActiveHypotheses(hypotheses).length === 0) {
+      await loopRecorder.transition('failed', {
+        round,
+        reason: 'Oracle eliminated every active hypothesis without a mutation',
+        hypothesisIds: hypotheses.map((hypothesis) => hypothesis.id),
+        triggeredBy: getRevisionTriggers(evalResults, oracleOutput),
+      })
       break
     }
 
@@ -426,7 +620,7 @@ export async function tournamentWorkflow(
         leadingHypoId,
         leadingStatement: leaderHypo?.statement ?? '',
         bestF1,
-        survivingCount: hypotheses.length,
+        survivingCount: getActiveHypotheses(hypotheses).length,
       })
       reviewFeedback = reviewResult.feedback
     }
@@ -451,15 +645,40 @@ export async function tournamentWorkflow(
 
     // ── Convergence check #2: Prometheus says stop OR round cap hit ──
     if (!prometheusOutput.shouldContinue || round >= MAX_ROUNDS) {
+      await loopRecorder.transition('validation_plan', {
+        round,
+        plan: prometheusOutput.plan,
+        shouldContinue: prometheusOutput.shouldContinue,
+      })
       break
     }
+
+    await loopRecorder.transition('validation_plan', {
+      round,
+      plan: prometheusOutput.plan,
+      shouldContinue: true,
+    })
+  }
+
+  if (loopRecorder.getState().phase === 'failed') {
+    throw new Error(`Science loop failed during round ${totalRounds}`)
+  }
+
+  if (leadingHypoId === null) {
+    const failureReason = 'no evaluated active hypothesis is available for final validation'
+    await loopRecorder.transition('failed', {
+      round: totalRounds,
+      reason: failureReason,
+      hypothesisIds: hypotheses.map((hypothesis) => hypothesis.id),
+    })
+    throw new Error(failureReason)
   }
 
   // ─── Final round: Prometheus generates MHD cfg + observation proposal ───
   emitPhaseStart('prometheus', totalRounds)
   emitAgentState('prometheus', 'thinking')
-  const winningStatement =
-    leadingHypoId !== null ? (hypotheses.find((h) => h.id === leadingHypoId)?.statement ?? '') : ''
+  const winningHypothesis =
+    leadingHypoId !== null ? hypotheses.find((h) => h.id === leadingHypoId) : undefined
 
   const finalPrometheus = await prometheusWorkflow({
     projectId,
@@ -468,14 +687,56 @@ export async function tournamentWorkflow(
     convergenceHistory,
     currentBestF1: bestF1,
     isFinalRound: true,
-    winningHypothesis:
-      leadingHypoId !== null ? { hypoId: leadingHypoId, statement: winningStatement } : undefined,
+    winningHypothesis: winningHypothesis
+      ? {
+          hypoId: winningHypothesis.id,
+          statement: winningHypothesis.statement,
+          mechanism: winningHypothesis.mechanism,
+          predictions: winningHypothesis.predictions,
+          falsificationConditions: winningHypothesis.falsificationConditions,
+          sourceIds: winningHypothesis.sourceIds,
+        }
+      : undefined,
     modelConfig,
     ...(agentConfigFor('prometheus') ? { agentConfig: agentConfigFor('prometheus') } : {}),
     ...(emitChunk ? { emitChunk } : {}),
     ...(abortSignal ? { abortSignal } : {}),
   })
   emitAgentState('prometheus', 'idle')
+
+  if (finalPrometheus.mhdConfig === null) {
+    const failureReason = 'final Prometheus output did not contain an MHD configuration artifact'
+    if (loopRecorder.getState().phase !== 'failed') {
+      await loopRecorder.transition('failed', {
+        round: totalRounds,
+        reason: failureReason,
+        winningHypoId: leadingHypoId,
+      })
+    }
+    throw new Error(failureReason)
+  }
+
+  if (loopRecorder.getState().phase === 'counterexample') {
+    await loopRecorder.transition('revision', {
+      round: totalRounds,
+      triggeredBy: 'final planning requested before convergence',
+      mutations: [],
+    })
+  }
+  if (loopRecorder.getState().phase === 'revision') {
+    await loopRecorder.transition('validation_plan', {
+      round: totalRounds,
+      plan: finalPrometheus.plan,
+      shouldContinue: false,
+    })
+  }
+  if (loopRecorder.getState().phase === 'validation_plan') {
+    await loopRecorder.transition('completed', {
+      round: totalRounds,
+      winningHypoId: leadingHypoId,
+      bestF1,
+    })
+  }
 
   if (finalPrometheus.mhdConfig) {
     mhdConfigPath = finalPrometheus.mhdConfig.cfgPath

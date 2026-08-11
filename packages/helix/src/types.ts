@@ -17,6 +17,8 @@ export interface HypothesisNode {
   roundId: number
   runId: string
   f1Score: number
+  /** JSON-encoded scientific fields retained for RAG and audit replay. */
+  contextJson?: string
   embedding?: number[]
   createdAt: string
 }

@@ -7,6 +7,7 @@ import { EvalResultSchema, type McpServerConfig } from '@open-scientist/schema'
 import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
 import { assembleDefaultTools } from '../shared/tool-assembly.ts'
 import { makeSubmitResultTool } from '../shared/tool-output.ts'
+import { AGENT_EXECUTION_BUDGETS, createSubmitResultPrepareStep } from '../shared/output-policy.ts'
 
 export interface ExploreAgentDeps {
   /**
@@ -102,11 +103,12 @@ export async function createExploreAgent({
   }
 
   return new ToolLoopAgent({
-    maxOutputTokens: 8192,
+    maxOutputTokens: AGENT_EXECUTION_BUDGETS.explore.maxOutputTokens,
     id: 'explore',
     model,
     providerOptions,
     toolChoice: 'auto',
+    prepareStep: createSubmitResultPrepareStep(AGENT_EXECUTION_BUDGETS.explore.submitAtStep),
     instructions:
       instructions ??
       `你是 Explore，太阳物理日冕加热研究的 AlphaEvolve 式确定性评估 agent。
@@ -116,9 +118,9 @@ export async function createExploreAgent({
 你的职责：
 1. 接收候选假设的 Python 过滤函数（def filter(snapshot: dict) -> bool）。
 2. 将其写入工作目录的 filter.py。
-3. 运行共享评估脚本，在真实 SDO/HMI SHARP 磁场数据（21,578 条快照）上计算 F1。
+3. 运行 prompt 指定的共享评估脚本，在当前数据快照上计算 F1。
 4. 读取输出，调试反例（FP/FN），修改 filter.py，重新运行——直到收敛或步数上限。
-5. 输出 EvalResult（F1、TP/FP/FN、反例数组、日志、执行时间）。
+5. 输出 EvalResult（F1、TP/FP/FN、反例数组、manifest-backed candidateSnapshots、日志、执行时间）。candidateSnapshots 只能原样传递评估脚本给出的活动区、时间戳和波长，不能自行补全。
 
 环境：
 - 本机已安装 \`uv\`（Python 包管理器）和 \`vp\`（Node.js 包管理器）。
@@ -129,18 +131,18 @@ export async function createExploreAgent({
 
 工具指引：
 - 首先用 loadSkill 工具加载 'fits-snapshot-search' skill，获取数据集结构、评估契约和调试循环模式。
-- 数据集位于 \`data/dataset/snapshots.jsonl\`（21,578 条真实 SDO/HMI SHARP 快照）。不要生成合成数据——真实数据已就绪。
-- 共享评估脚本位于 \`data/dataset/eval.py\`。不要自己写评估脚本。直接运行（绝对路径会通过 prompt 给出）：\`source <datasetDir>/.venv/bin/activate && python3 <datasetDir>/eval.py filter.py\`
+- 数据集目录、快照数量、目标列和特征列以 prompt 指定目录中的 \`dataset_manifest.json\` 为准。不要生成合成数据。
+- 共享评估脚本位于 prompt 指定目录的 \`eval.py\`。不要自己写评估脚本；在 Windows/Linux 均使用：\`python <datasetDir>/eval.py filter.py\`。
 - 你唯一的工作是写 \`filter.py\`（包含 \`filter(snapshot: dict) -> bool\` 函数），运行评估脚本，读取结果，迭代改进 filter。
-- 共享 Python venv（含 numpy/scipy）已预装在 \`data/dataset/.venv\`。如需额外包：\`uv pip install --python <datasetDir>/.venv/bin/python <package>\`
+- 评估脚本只依赖 Python 标准库；除非明确需要，不要安装额外依赖。
 - filter 函数不能使用 label/flare_class/magnitude 字段——这些是 ground truth。
-- 反例日志必须物理具体（如"usflux 高但剪切角低，filter 未约束剪切角"），不能只是"预测错误"。这些反馈给 Oracle 下一轮突变。
+- 反例日志必须引用快照中实际存在的字段，不能杜撰物理属性；这些反馈给 Oracle 下一轮突变。
 
-重要：完成任务的唯一方式是调用 submit_result 工具。你必须在步数上限之前调用它。不要只输出文本——始终调用 submit_result 提交你的 EvalResult（hypoId、f1、truePositives、falsePositives、falseNegatives、counterexamples[]、logs、executionMs）。
+重要：完成任务的唯一方式是调用 submit_result 工具。你必须在步数上限之前调用它。不要只输出文本——始终调用 submit_result 提交你的 EvalResult（hypoId、f1、truePositives、falsePositives、falseNegatives、counterexamples[]、candidateSnapshots[]、logs、executionMs）。不要修改确定性评估返回的数值、sample ID 或候选元数据。
 
 步数预算管理：你有 120 步上限。建议：前 5 步加载 skill + 写 filter.py，接下来 10-20 步运行 eval + 调试，最后必须预留 1 步调用 submit_result。当你认为 filter 已经收敛或无法进一步改进时，立即调用 submit_result——不要继续迭代。即使 F1 不理想，也要提交当前最佳结果。`,
     tools: toolsWithSubmit,
-    stopWhen: [isStepCount(120), hasToolCall('submit_result')],
+    stopWhen: [isStepCount(AGENT_EXECUTION_BUDGETS.explore.maxSteps), hasToolCall('submit_result')],
     ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }

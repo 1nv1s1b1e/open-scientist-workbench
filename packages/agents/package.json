@@ -11,6 +11,9 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@langchain/core": "^1.2.5",
+    "@langchain/langgraph": "^1.4.9",
+    "@langchain/langgraph-checkpoint-sqlite": "^1.0.3",
     "@open-scientist/config": "workspace:*",
     "@open-scientist/helix": "workspace:*",
     "@open-scientist/logger": "workspace:*",

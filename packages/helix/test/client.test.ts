@@ -185,6 +185,22 @@ describe('helix client pure logic (no live DB)', () => {
 
       expect(getCaptured()?.queryName).toBe('addHypothesis')
     })
+
+    it('uses the context query when scientific hypothesis metadata is provided', async () => {
+      const { client, getCaptured } = createCapturingClient()
+      setHelixClient(client)
+
+      await addHypothesis({
+        statement: 'Wave heating',
+        roundId: 1,
+        runId: 'run-1',
+        f1Score: 0.3,
+        createdAt: '2024-01-01T00:00:00Z',
+        contextJson: '{"mechanism":"alfven-wave-dissipation"}',
+      })
+
+      expect(getCaptured()?.queryName).toBe('addHypothesisWithContext')
+    })
   })
 
   describe('addEvidence', () => {
@@ -237,14 +253,23 @@ describe('helix client pure logic (no live DB)', () => {
   })
 
   describe('read functions via injected client', () => {
-    it('searchPapers unwraps the papers container', async () => {
-      const fake = createFakeClient({
-        papers: { properties: [{ id: 1, title: 'Paper', authors: [], year: 2024 }] },
-      })
+    it('searchPapers combines title and annotation matches without duplicates', async () => {
+      const fake = createFakeClient([
+        { papers: { properties: [{ id: 1, title: 'Title match', authors: [], year: 2024 }] } },
+        {
+          papers: {
+            properties: [
+              { id: 1, title: 'Title match', authors: [], year: 2024 },
+              { id: 2, title: 'Annotation match', authors: [], year: 2023 },
+            ],
+          },
+        },
+      ])
       setHelixClient(fake)
       const papers = await searchPapers('reconnection', 5)
-      expect(papers).toHaveLength(1)
-      expect(papers[0]?.title).toBe('Paper')
+      expect(papers).toHaveLength(2)
+      expect(papers.map((paper) => paper.title)).toEqual(['Title match', 'Annotation match'])
+      expect(fake.__calls).toHaveLength(2)
     })
 
     it('getPaper returns null for non-numeric id (safeBigInt guard)', async () => {

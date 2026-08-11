@@ -1,5 +1,10 @@
-import { tournamentWorkflow } from '@open-scientist/agents'
-import type { TournamentWorkflowInput, TournamentResult } from '@open-scientist/agents'
+import { scientificLoopWorkflow, tournamentWorkflow } from '@open-scientist/agents'
+import type {
+  ScientificLoopWorkflowInput,
+  TournamentWorkflowInput,
+  TournamentResult,
+} from '@open-scientist/agents'
+import type { ScientificLoopResult } from '@open-scientist/schema'
 import { appendRunChunk } from '@open-scientist/storage'
 import type { UIMessageChunk } from 'ai'
 
@@ -32,7 +37,7 @@ export interface Run {
   /** Buffered `UIMessageChunk`s emitted so far, in order. */
   chunks: UIMessageChunk[]
   /** Resolves to the tournament result once the workflow completes. */
-  result: Promise<TournamentResult>
+  result: Promise<TournamentResult | ScientificLoopResult | undefined>
   /** Aborts the underlying tournament (signals tool exec / LLM calls). */
   cancel: () => Promise<void>
   /**
@@ -59,7 +64,8 @@ export interface RunReadable {
  * Production binds this to `tournamentWorkflow`; tests bind it to a fake that
  * emits deterministic chunks.
  */
-export type WorkflowFn = (input: TournamentWorkflowInput) => Promise<TournamentResult>
+export type WorkflowResult = TournamentResult | ScientificLoopResult
+export type WorkflowFn = (input: TournamentWorkflowInput) => Promise<WorkflowResult>
 
 /**
  * Run registry interface — the contract `runs.ts` depends on.
@@ -154,7 +160,7 @@ export class RunRegistryImpl implements RunRegistry {
       (output) => output,
       (err) => {
         if (abortController.signal.aborted) {
-          return undefined as unknown as TournamentResult
+          return undefined
         }
         // Emit an error chunk so the client sees the failure on the SSE feed
         // rather than the stream just silently ending.
@@ -270,7 +276,15 @@ function makeReadable(
  * this singleton), not the singleton directly, so the registry's deep logic
  * is testable via dependency injection while production uses the real workflow.
  */
-const runRegistry: RunRegistry = new RunRegistryImpl(tournamentWorkflow)
+const productionWorkflow: WorkflowFn = (input) =>
+  input.phenomenon || input.scientificResume
+    ? scientificLoopWorkflow({
+      ...(input as ScientificLoopWorkflowInput),
+      resume: input.scientificResume,
+    })
+    : tournamentWorkflow(input)
+
+const runRegistry: RunRegistry = new RunRegistryImpl(productionWorkflow)
 
 /**
  * Convenience functions wrapping the singleton, preserving the old

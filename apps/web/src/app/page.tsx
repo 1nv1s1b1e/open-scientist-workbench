@@ -1,166 +1,61 @@
 'use client'
 
-import { ArrowRight, Flame, Sparkles } from 'lucide-react'
+import { Activity, ArrowRight, FileCheck2, Settings2, SunMedium, Waves } from 'lucide-react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { ProjectList } from '@/components/projects/project-list'
-import { Banner, Eyebrow, SiteFooter, SiteHeader } from '@/components/site'
+
+const RESEARCH_FOCUS = [
+  { label: '研究对象', title: '不同活动区的多波段升温与结构响应', note: '关注 EUV、软 X 射线、磁场诊断和数值模拟中出现的时空差异。', icon: Activity },
+  { label: '待比较机制', title: '阿尔芬波耗散、磁重联纳耀斑及其耦合', note: '不预设唯一答案；允许不同机制在不同活动区具有不同贡献。', icon: Waves },
+  { label: '项目产出', title: '候选机制、可复核证据与下一步验证计划', note: '把支持、反例和未知部分留在同一个项目中，供下一轮继续检验。', icon: FileCheck2 },
+]
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen">
-      <SiteHeader />
+    <div className="home-shell">
+      <header className="home-header">
+        <Link href="/" className="home-brand">
+          <span className="home-brand-mark"><SunMedium className="h-4 w-4" /></span>
+          <span><span className="home-brand-kicker">SCIENCE WORKSPACE</span><span className="home-brand-name">太阳物理分析台</span></span>
+        </Link>
+        <Link href="/settings" className="home-settings"><Settings2 className="h-3.5 w-3.5" />设置</Link>
+      </header>
 
-      {/* ── Hero banner ─────────────────────────────────────────────────────── */}
-      <Banner
-        eyebrow="Solar Physics · Multi-Agent Reasoning"
-        title="日冕加热之谜"
-        description="基于 Co-Scientist + AlphaEvolve 的太阳物理多智能体假设生成与证据推理系统。六位 AI 协作者——Sisyphus、Librarian、Looker、Explore、Oracle、Prometheus——围绕日冕高温悖论展开锦标赛演化。"
-        size="xl"
-        accent="sunset"
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="#projects" className="pill-primary group">
-            <Sparkles className="h-4 w-4" />
-            开始推理
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-          <Link href="/settings" className="pill-outline">
-            配置模型
-          </Link>
-        </div>
-      </Banner>
-
-      {/* ── Agent strip — six mono-eyebrow cells with hairline grid ────────── */}
-      <section className="border-b border-[var(--color-border)] bg-[var(--color-bg)]">
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <Eyebrow size="lg">Six Agents · One Tournament</Eyebrow>
-
-          <div className="mt-8 grid grid-cols-1 gap-px overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2 lg:grid-cols-3">
-            {AGENTS.map((agent, i) => (
-              <motion.div
-                key={agent.role}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 + i * 0.05 }}
-                className="group relative bg-[var(--color-bg)] p-6 transition-colors hover:bg-[var(--color-surface-soft)]"
-              >
-                {/* Agent index */}
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] uppercase tracking-[1.4px] text-muted">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: agent.color }}
-                  />
-                </div>
-                {/* Role name — display scale */}
-                <h3 className="mt-5 text-2xl font-normal tracking-tight text-white">
-                  {agent.role}
-                </h3>
-                {/* Tag — mono colored */}
-                <p
-                  className="mt-1 font-mono text-[11px] uppercase tracking-[1.4px]"
-                  style={{ color: agent.color }}
-                >
-                  {agent.tag}
-                </p>
-                {/* Desc */}
-                <p className="mt-3 text-[13px] leading-relaxed text-muted">{agent.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Projects ────────────────────────────────────────────────────────── */}
-      <section id="projects" className="bg-[var(--color-bg)]">
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <ProjectList onOpen={(name) => (window.location.href = `/projects/${name}`)} />
+      <main>
+        <section className="home-hero">
+          <motion.div className="home-hero-copy" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .5, ease: 'easeOut' }}>
+            <span className="home-hero-kicker">日冕加热之谜</span>
+            <h1 className="home-title">日冕加热<span className="home-title-accent">机制辨析</span></h1>
+            <p className="home-lede">面向不同活动区的多波段观测与数值模拟，比较阿尔芬波耗散、磁重联纳耀斑及其耦合，寻找能够区分不同加热机制的观测证据。</p>
+            <div className="home-actions">
+              <a href="#projects" className="home-primary-action">进入项目<ArrowRight className="h-3.5 w-3.5" /></a>
+              <Link href="/projects/coronal-heating-demo" className="home-secondary-action">查看研究示例</Link>
+            </div>
           </motion.div>
-        </div>
-      </section>
 
-      {/* ── Solar disk decorative band ──────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-y border-[var(--color-border)] bg-[var(--color-bg)]">
-        <div className="bg-radial-dusk pointer-events-none absolute inset-0" />
-        <div className="bg-grid pointer-events-none absolute inset-0 opacity-30" />
-        <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-12 px-6 py-24 text-center md:flex-row md:justify-between md:text-left">
-          <div className="max-w-xl">
-            <Eyebrow size="lg">The Mystery</Eyebrow>
-            <h3 className="mt-4 text-display-sm font-normal text-white">
-              为什么日冕比光球还要热？
-            </h3>
-            <p className="mt-5 text-base leading-relaxed text-body">
-              光球温度约 5,800 K，而日冕却高达 1–3 MK——温度反向跃升违背直觉。Alfvén
-              波耗散、纳耀斑磁重联、等离子体不稳定性……六位智能体将围绕候选假设演化辩论。
-            </p>
-          </div>
-
-          {/* Animated corona disk */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="relative flex h-52 w-52 shrink-0 items-center justify-center"
-          >
-            {/* Outer rotating ring — conic gradient */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 30, repeat: Number.POSITIVE_INFINITY, ease: 'linear' }}
-              className="absolute inset-0 rounded-full border border-white/10"
-              style={{
-                background:
-                  'conic-gradient(from 0deg, transparent 0%, rgba(255,122,23,0.18) 25%, transparent 50%, rgba(124,58,237,0.14) 75%, transparent 100%)',
-              }}
-            />
-            {/* Middle counter-rotating ring */}
-            <motion.div
-              animate={{ rotate: -360 }}
-              transition={{ duration: 45, repeat: Number.POSITIVE_INFINITY, ease: 'linear' }}
-              className="absolute inset-5 rounded-full border border-white/[0.08]"
-            />
-            {/* Outer hairline */}
-            <div className="absolute -inset-3 rounded-full border border-[var(--color-border)]" />
-            {/* Inner glow */}
-            <motion.div
-              animate={{
-                scale: [1, 1.08, 1],
-                opacity: [0.6, 0.85, 0.6],
-              }}
-              transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
-              className="flex h-24 w-24 items-center justify-center rounded-full"
-              style={{
-                background:
-                  'radial-gradient(circle, rgba(255,122,23,0.5) 0%, rgba(255,122,23,0.15) 50%, transparent 80%)',
-              }}
-            >
-              <Flame className="h-9 w-9 text-[var(--color-sunset-soft)]" />
-            </motion.div>
-            {/* Bottom label */}
-            <span className="absolute -bottom-10 font-mono text-[10px] uppercase tracking-[1.4px] text-muted">
-              Corona · 1–3 MK
-            </span>
+          <motion.div className="home-hero-art" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: .6, delay: .08, ease: 'easeOut' }}>
+            <div className="home-research-panel" aria-label="日冕加热研究内容">
+              <div className="home-research-panel-header"><div><span>研究任务</span><h2>不同活动区为何呈现不同的加热特征？</h2></div><SunMedium className="h-5 w-5" /></div>
+              <p className="home-research-question">从一个具体活动区的现象出发，判断现有观测是否更支持某一种机制、机制组合，或仍然不足以区分。</p>
+              <div className="home-research-list">
+                {RESEARCH_FOCUS.map((item) => { const Icon = item.icon; return <article key={item.label}><span className="home-research-icon"><Icon className="h-3.5 w-3.5" /></span><div><small>{item.label}</small><strong>{item.title}</strong><p>{item.note}</p></div></article> })}
+              </div>
+              <div className="home-research-panel-footer"><span>资料不足时，系统保留为未知，而不是给出确定结论。</span><span>查看项目 <ArrowRight className="h-3 w-3" /></span></div>
+            </div>
           </motion.div>
-        </div>
-      </section>
+        </section>
 
-      <SiteFooter />
+        <section className="home-scope-strip" aria-label="项目内容">
+          <div className="home-scope-item"><span className="home-scope-index">输入</span><strong>活动区现象</strong><p>输入带有观测或模拟背景的活动区变化，不要求预先整理成固定数据格式。</p></div>
+          <div className="home-scope-item"><span className="home-scope-index">比较</span><strong>加热机制组合</strong><p>比较波动耗散、磁重联及其耦合在不同活动区中的可能贡献。</p></div>
+          <div className="home-scope-item"><span className="home-scope-index">产出</span><strong>证据与验证计划</strong><p>形成候选解释、反例与未知边界，并给出下一步观测或模拟任务。</p></div>
+        </section>
+
+        <section id="projects" className="home-projects-section">
+          <ProjectList onOpen={(name) => { window.location.href = `/projects/${name}` }} />
+        </section>
+      </main>
     </div>
   )
 }
-
-const AGENTS = [
-  { role: 'Sisyphus', tag: 'Orchestrator', desc: '编排锦标赛演化', color: '#3b82f6' },
-  { role: 'Librarian', tag: 'RAG', desc: '检索 + 初始假设', color: '#10b981' },
-  { role: 'Looker', tag: 'Multimodal', desc: 'FITS 图像对齐', color: '#06b6d4' },
-  { role: 'Explore', tag: 'Evaluator', desc: 'Python 搜索 + F1', color: '#8b5cf6' },
-  { role: 'Oracle', tag: 'Critic', desc: '批判 + 突变', color: '#ef4444' },
-  { role: 'Prometheus', tag: 'Planner', desc: 'MHD 配置 + 观测', color: '#f59e0b' },
-]

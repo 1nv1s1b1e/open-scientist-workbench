@@ -1,7 +1,21 @@
-import { describe, expect, it } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
 import { decrypt, encrypt } from '../src/repo/credential.ts'
 
 describe('credential crypto (encrypt/decrypt)', () => {
+  beforeEach(() => {
+    process.env.CREDENTIAL_ENCRYPTION_KEY = 'test-only-encryption-key'
+  })
+
+  afterEach(() => {
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY
+  })
+
+  it('refuses to encrypt when the credential encryption key is missing', () => {
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY
+
+    expect(() => encrypt('secret')).toThrow(/CREDENTIAL_ENCRYPTION_KEY/)
+  })
+
   it('round-trips a plaintext string', () => {
     const plaintext = 'sk-openai-abc-123-very-secret'
     const ciphertext = encrypt(plaintext)

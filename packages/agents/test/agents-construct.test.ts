@@ -60,9 +60,11 @@ describe('agent construction', () => {
       [
         'addHypothesis',
         'bash',
+        'checkLocalSolarCoverage',
         'loadSkill',
         'readFile',
         'searchHypotheses',
+        'searchLocalSolarData',
         'searchPapers',
         'submit_result',
         'writeFile',

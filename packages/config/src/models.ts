@@ -1,6 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createOpenAI } from '@ai-sdk/openai'
-import type { ProviderOptions } from '@ai-sdk/provider-utils'
+import type { FetchFunction, ProviderOptions } from '@ai-sdk/provider-utils'
 import { createLogger } from '@open-scientist/logger'
 import type { CredentialStore } from '@open-scientist/schema'
 import type { LanguageModel } from 'ai'
@@ -47,12 +47,66 @@ export interface ModelArg {
   apiKey: string
 }
 
+export function applyQwenChatRequestCompatibility(
+  config: Pick<ModelArg, 'provider' | 'model' | 'apiMode' | 'thinkingLevel'>,
+  requestBody: Record<string, unknown>,
+): Record<string, unknown> {
+  if (
+    config.provider !== 'openai'
+    || config.apiMode !== 'chat'
+    || !/^qwen/i.test(config.model)
+  ) return requestBody
+  const body = { ...requestBody }
+  const thinkingBudget: Record<string, number> = {
+    minimal: 512,
+    low: 1024,
+    medium: 2048,
+    high: 4096,
+    xhigh: 8192,
+    max: 16384,
+  }
+  delete body.reasoning_effort
+  const enabled = config.thinkingLevel !== 'off'
+  body.enable_thinking = enabled
+  if (enabled) {
+    body.thinking_budget = thinkingBudget[config.thinkingLevel] ?? thinkingBudget.medium
+  } else {
+    delete body.thinking_budget
+  }
+  return body
+}
+
+function qwenCompatibilityFetch(config: ModelArg): FetchFunction | undefined {
+  if (
+    config.provider !== 'openai'
+    || config.apiMode !== 'chat'
+    || !/^qwen/i.test(config.model)
+  ) {
+    return undefined
+  }
+  return async (input, init) => {
+    if (typeof init?.body !== 'string') return globalThis.fetch(input, init)
+    try {
+      const parsedBody = JSON.parse(init.body) as Record<string, unknown>
+      // Qwen hybrid models use native Chat-Completions fields rather than the
+      // OpenAI provider's generic `reasoning_effort` option.  Always make the
+      // mode explicit so a gateway default cannot silently turn reasoning on
+      // or off.  A bounded budget keeps tool-using scientific workers from
+      // spending an unbounded number of tokens before `submit_result`.
+      const body = applyQwenChatRequestCompatibility(config, parsedBody)
+      return globalThis.fetch(input, { ...init, body: JSON.stringify(body) })
+    } catch {
+      return globalThis.fetch(input, init)
+    }
+  }
+}
+
 /**
  * Provider-specific options derived from `thinkingLevel`. Passed to the
  * `ToolLoopAgent` constructor as `providerOptions` so every `streamText` /
  * `generateText` call inside the agent loop applies them.
  *
- * - **openai**: `reasoningEffort` ('none'..'max'). 'off' maps to 'none'.
+ * - **openai**: `reasoningEffort` ('minimal'..'max'). 'off' omits the optional field.
  * - **anthropic**: `thinking` (adaptive for newer models; 'off' omits the key).
  */
 export function thinkingLevelToProviderOptions(
@@ -60,8 +114,11 @@ export function thinkingLevelToProviderOptions(
   thinkingLevel: string,
 ): ProviderOptions {
   if (provider === 'openai') {
+    // OpenAI-compatible third-party gateways often reject the optional
+    // reasoning_effort field. Omitting it for "off" is semantically exact
+    // and keeps standard chat-completions endpoints interoperable.
+    if (thinkingLevel === 'off') return {}
     const effortMap: Record<string, string> = {
-      off: 'none',
       minimal: 'minimal',
       low: 'low',
       medium: 'medium',
@@ -102,7 +159,6 @@ function createLanguageModel(config: ModelArg): LanguageModel {
       provider: config.provider,
       model: config.model,
       baseURL: config.baseURL,
-      apiKeyPrefix: config.apiKey?.slice(0, 8),
       thinkingLevel: config.thinkingLevel,
       apiMode: config.apiMode,
     },
@@ -123,7 +179,12 @@ function createLanguageModel(config: ModelArg): LanguageModel {
   }
 
   // openai
-  const openai = createOpenAI({ apiKey: config.apiKey, baseURL: config.baseURL })
+  const compatibilityFetch = qwenCompatibilityFetch(config)
+  const openai = createOpenAI({
+    apiKey: config.apiKey,
+    baseURL: config.baseURL,
+    ...(compatibilityFetch ? { fetch: compatibilityFetch } : {}),
+  })
   const model =
     config.apiMode === 'responses' ? openai.responses(config.model) : openai.chat(config.model)
   logger.info(

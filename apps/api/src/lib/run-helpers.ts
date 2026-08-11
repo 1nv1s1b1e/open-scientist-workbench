@@ -47,8 +47,12 @@ export async function respondWithRunStream(
 export function attachRunCompletion(projectName: string, run: Run): void {
   void run.result.then(
     (output) => {
+      // Cancellation resolves without a workflow result. The stop endpoint is
+      // the single owner of the persisted `stopped` status, so do not race it
+      // with a late `completed` update.
+      if (!output) return
       void completeRun(projectName, run.runId, 'completed', {
-        bestF1: output?.bestF1,
+        bestF1: 'bestF1' in output ? output.bestF1 : undefined,
         currentRound: output?.totalRounds,
       })
     },

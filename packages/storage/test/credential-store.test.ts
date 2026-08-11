@@ -28,6 +28,7 @@ describe('credential store', () => {
   beforeEach(async () => {
     baseDir = makeBaseDir('store')
     process.env.BASE_DIR = baseDir
+    process.env.CREDENTIAL_ENCRYPTION_KEY = 'test-only-encryption-key'
     store = await createCredentialStore()
     await getGlobalDb()
   })
@@ -36,6 +37,7 @@ describe('credential store', () => {
     closeGlobalDb()
     rmSync(baseDir, { recursive: true, force: true })
     delete process.env.BASE_DIR
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY
   })
 
   it('add → get round-trips the plaintext key + baseURL', async () => {

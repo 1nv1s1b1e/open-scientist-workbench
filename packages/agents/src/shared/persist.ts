@@ -3,6 +3,13 @@ import { appendMessage } from '@open-scientist/storage'
 
 const logger = createLogger('agents')
 
+export interface AgentRunTelemetry {
+  steps: number
+  usage: unknown
+  finishReason: unknown
+  submittedAt: string
+}
+
 /**
  * Persist an agent run's conversation history to the project SQLite `messages`
  * table. Called from each sub-workflow after `agent.stream()` completes.
@@ -32,7 +39,7 @@ export async function persistAgentRun(
     usage: PromiseLike<unknown>
     finishReason: PromiseLike<unknown>
   },
-): Promise<void> {
+): Promise<AgentRunTelemetry | null> {
   try {
     const [responseMessages, steps, usage, finishReason] = await Promise.all([
       result.responseMessages,
@@ -54,24 +61,24 @@ export async function persistAgentRun(
     }
 
     // Store a summary record
-    await appendMessage(projectId, runId, 'system', [
-      {
-        agent: agentName,
-        steps: (steps as Array<unknown>).length,
-        usage,
-        finishReason,
-        submittedAt: new Date().toISOString(),
-      },
-    ])
+    const telemetry: AgentRunTelemetry = {
+      steps: (steps as Array<unknown>).length,
+      usage,
+      finishReason,
+      submittedAt: new Date().toISOString(),
+    }
+    await appendMessage(projectId, runId, 'system', [{ agent: agentName, ...telemetry }])
 
     logger.debug(
       { projectId, runId, agentName, messageCount: responseMessages.length + 2 },
       'persistAgentRun: persisted agent conversation',
     )
+    return telemetry
   } catch (err) {
     logger.error(
       { projectId, runId, agentName, error: (err as Error).message },
       'persistAgentRun: failed to persist (non-fatal)',
     )
+    return null
   }
 }

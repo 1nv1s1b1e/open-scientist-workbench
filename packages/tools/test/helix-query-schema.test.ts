@@ -53,12 +53,30 @@ describe('helix-query tool input schemas — happy paths', () => {
   it('addHypothesis accepts a full hypothesis payload', () => {
     const r = inputs(addHypothesisTool).parse({
       statement: 'AC heating dominates',
+      mechanism: 'alfven-wave-dissipation',
+      predictions: ['propagating EUV disturbances'],
+      falsificationConditions: ['no propagating disturbance'],
+      sourceIds: ['paper:example'],
+      pythonCode: 'def filter(snapshot): return True',
+      parentId: null,
       roundId: 2,
       runId: 'run-1',
       f1Score: 0.83,
       createdAt: ISO,
     }) as { statement: string }
     expect(r.statement).toBe('AC heating dominates')
+  })
+
+  it('requires scientific fields before a hypothesis can be persisted', () => {
+    expect(() =>
+      inputs(addHypothesisTool).parse({
+        statement: 'AC heating dominates',
+        roundId: 2,
+        runId: 'run-1',
+        f1Score: 0.83,
+        createdAt: ISO,
+      }),
+    ).toThrow()
   })
 
   it('addEvidence accepts support type with optional videoPath', () => {

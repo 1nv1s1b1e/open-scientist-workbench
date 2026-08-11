@@ -1,355 +1,562 @@
 'use client'
 
-import { AnimatePresence, motion } from 'motion/react'
-import { useCallback, useMemo, useRef, useState } from 'react'
-import type { EvolutionTreeData, HypothesisTreeNode } from '@/lib/types/visualizers'
-import { cn } from '@/lib/utils/cn'
+import {
+  ArrowLeft,
+  BookOpenCheck,
+  Database,
+  GitBranch,
+  ShieldCheck,
+  Wrench,
+  X,
+} from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { RefObject } from 'react'
+import type { ScientificWorkbenchState, WorkbenchHypothesis } from '@/lib/workbench/state'
+import { evidenceCounts, scientificRounds, taskExecutionRound } from '@/lib/workbench/scientific-rounds'
 
-interface PositionedNode {
-  data: HypothesisTreeNode
+type EvidenceCounts = ReturnType<typeof evidenceCounts>
+type Verdict = 'support' | 'contradict' | 'unknown'
+
+interface EvolutionNode extends EvidenceCounts {
+  id: string
+  hypothesis: WorkbenchHypothesis
+  hypothesisIndex: number
+  round: number
   x: number
   y: number
-  depth: number
-  parentId: string | null
+  verdict: Verdict
+  action: string
+  change: string
+  evidence: ScientificWorkbenchState['evidence']
+  executedTaskCount: number
 }
 
-interface ConnectionLink {
+interface EvolutionEdge {
   id: string
-  sourceX: number
-  sourceY: number
-  targetX: number
-  targetY: number
-  isWinner: boolean
-  isWithered: boolean
+  hypothesisIndex: number
+  path: string
 }
 
-export function EvolutionTree({ data }: { data?: EvolutionTreeData }) {
-  const [selectedNode, setSelectedNode] = useState<HypothesisTreeNode | null>(null)
+interface RoundProcess {
+  round: number
+  y: number
+  evidenceCount: number
+  processingCount: number
+  correctionCount: number
+  executedTaskCount: number
+  newHypothesisCount: number
+  continuedHypothesisCount: number
+  judgmentChangedCount: number
+}
 
-  // Canvas Pan & Zoom States
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [pan, setPan] = useState({ x: 0, y: 0 })
-  const [scale, setScale] = useState(1)
-  const [isDragging, setIsDragging] = useState(false)
-  const dragStartRef = useRef({ x: 0, y: 0 })
+interface LineageDetailSelection {
+  id: string
+  round: number
+  kind: 'snapshot' | 'evidence' | 'verdict' | 'processing' | 'correction' | 'task'
+  title: string
+  summary: string
+  meta: string[]
+}
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return
-    setIsDragging(true)
-    dragStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y }
-  }
+function hypothesisX(index: number, total: number): number {
+  if (total <= 1) return 500
+  return 160 + index * (680 / (total - 1))
+}
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isDragging) return
-      setPan({
-        x: e.clientX - dragStartRef.current.x,
-        y: e.clientY - dragStartRef.current.y,
-      })
-    },
-    [isDragging],
+function compact(text: string, maximum = 34): string {
+  return text.length > maximum ? `${text.slice(0, maximum)}…` : text
+}
+
+function verdictFrom(counts: EvidenceCounts): Verdict {
+  if (counts.contradict > 0) return 'contradict'
+  if (counts.support > 0) return 'support'
+  return 'unknown'
+}
+
+function verdictLabel(verdict: Verdict): string {
+  if (verdict === 'support') return '支持'
+  if (verdict === 'contradict') return '反例'
+  return '证据不足'
+}
+
+function evolutionChange(current: EvidenceCounts, previous: EvidenceCounts | null): string {
+  const total = current.support + current.contradict + current.unknown
+  const currentVerdict = verdictFrom(current)
+  if (!previous) return `首轮登记 ${total} 条证据 · ${verdictLabel(currentVerdict)}`
+  const previousVerdict = verdictFrom(previous)
+  if (currentVerdict !== previousVerdict) return `新增 ${total} 条证据 · ${verdictLabel(previousVerdict)} → ${verdictLabel(currentVerdict)}`
+  return `新增 ${total} 条证据 · 保持${verdictLabel(currentVerdict)}`
+}
+
+function taskBelongsToHypothesis(
+  task: ScientificWorkbenchState['validationTasks'][number],
+  hypothesisEvidence: ScientificWorkbenchState['evidence'],
+): boolean {
+  const evidenceIds = new Set(hypothesisEvidence.map((item) => item.evidenceId))
+  return (
+    (task.triggeredBy ? evidenceIds.has(task.triggeredBy) : false) ||
+    (task.resultEvidenceIds ?? []).some((id) => evidenceIds.has(id)) ||
+    hypothesisEvidence.some((item) => item.taskId === task.taskId)
+  )
+}
+
+function EvolutionRoundSelector({
+  rounds,
+  value,
+  onChange,
+}: {
+  rounds: number[]
+  value: number
+  onChange: (round: number) => void
+}) {
+  return (
+    <div className="evolution-round-selector" aria-label="切换演化轮次">
+      <span>查看轮次</span>
+      {rounds.map((round) => (
+        <button key={round} type="button" aria-pressed={value === round} onClick={() => onChange(round)}>第 {round} 轮</button>
+      ))}
+    </div>
+  )
+}
+
+function HypothesisLineageDetail({
+  state,
+  hypothesis,
+  hypothesisIndex,
+  rounds,
+  playbackRound,
+  onRoundChange,
+  onBack,
+  rootRef,
+}: {
+  state: ScientificWorkbenchState
+  hypothesis: WorkbenchHypothesis
+  hypothesisIndex: number
+  rounds: number[]
+  playbackRound: number
+  onRoundChange: (round: number) => void
+  onBack: () => void
+  rootRef: RefObject<HTMLElement | null>
+}) {
+  const reduceMotion = useReducedMotion()
+  const [selected, setSelected] = useState<LineageDetailSelection | null>(null)
+  const visibleRounds = useMemo(() => rounds.filter((round) => round <= playbackRound), [playbackRound, rounds])
+  const hypothesisEvidence = useMemo(
+    () => state.evidence.filter((item) => item.hypothesisId === hypothesis.id),
+    [hypothesis.id, state.evidence],
+  )
+  const relatedTasks = useMemo(
+    () => state.validationTasks.filter((task) => taskBelongsToHypothesis(task, hypothesisEvidence)),
+    [hypothesisEvidence, state.validationTasks],
   )
 
-  const handleMouseUp = () => setIsDragging(false)
+  useEffect(() => {
+    if (selected && selected.round > playbackRound) setSelected(null)
+  }, [playbackRound, selected])
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault()
-    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92
-    setScale((prev) => Math.min(2.5, Math.max(0.4, prev * zoomFactor)))
+  const selectDetail = (value: LineageDetailSelection) => {
+    setSelected((current) => current?.id === value.id ? null : value)
   }
-
-  const handleReset = () => {
-    setPan({ x: 0, y: 0 })
-    setScale(1)
-  }
-
-  // 深度优先计算二维 Tree 节点坐标（无重叠，严格横向展开）
-  const { nodes, links, bounds } = useMemo(() => {
-    if (!data?.root) return { nodes: [], links: [], bounds: { width: 800, height: 600 } }
-
-    const nodePositions: PositionedNode[] = []
-    const connectionLinks: ConnectionLink[] = []
-
-    let leafYCounter = 0
-    const LEVEL_WIDTH = 320 // 轮次层级横向间距
-    const NODE_HEIGHT = 120 // 纵向分布间距
-
-    function layoutNode(node: HypothesisTreeNode, depth: number, parentId: string | null): number {
-      const children = node.children || []
-      let currentY: number
-
-      if (children.length === 0) {
-        currentY = leafYCounter * NODE_HEIGHT + 60
-        leafYCounter += 1
-      } else {
-        const childYs = children.map((child) => layoutNode(child, depth + 1, node.hypothesis.id))
-        currentY = (childYs[0]! + childYs[childYs.length - 1]!) / 2
-      }
-
-      const currentX = depth * LEVEL_WIDTH + 80
-
-      nodePositions.push({
-        data: node,
-        x: currentX,
-        y: currentY,
-        depth,
-        parentId,
-      })
-
-      return currentY
-    }
-
-    layoutNode(data.root!, 0, null)
-
-    // 构建 SVG 连接线
-    for (const target of nodePositions) {
-      if (!target.parentId) continue
-      const parent = nodePositions.find((n) => n.data.hypothesis.id === target.parentId)
-      if (!parent) continue
-
-      const isWinnerEdge = target.data.status === 'winner'
-      const isWitheredEdge = target.data.status === 'withered'
-
-      connectionLinks.push({
-        id: `${parent.data.hypothesis.id}->${target.data.hypothesis.id}`,
-        sourceX: parent.x + 240,
-        sourceY: parent.y + 45,
-        targetX: target.x,
-        targetY: target.y + 45,
-        isWinner: isWinnerEdge,
-        isWithered: isWitheredEdge,
-      })
-    }
-
-    const maxX = Math.max(...nodePositions.map((n) => n.x)) + 320
-    const maxY = Math.max(...nodePositions.map((n) => n.y)) + 160
-
-    return {
-      nodes: nodePositions,
-      links: connectionLinks,
-      bounds: { width: Math.max(maxX, 1200), height: Math.max(maxY, 700) },
-    }
-  }, [data])
 
   return (
-    <div
-      ref={containerRef}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onWheel={handleWheel}
-      className={cn(
-        'relative h-full w-full select-none overflow-hidden rounded-lg border border-[var(--color-border)] bg-[#090a0f]',
-        isDragging ? 'cursor-grabbing' : 'cursor-grab',
-      )}
-    >
-      {/* Dynamic Grid Background */}
-      <div
-        className="bg-grid pointer-events-none absolute inset-0 opacity-30 transition-transform duration-75"
-        style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-          transformOrigin: 'center center',
-        }}
-      />
+    <section ref={rootRef} className="evolution-shell evolution-detail-shell" aria-label={`H${hypothesisIndex + 1} 假说系谱`}>
+      <header className="evolution-header evolution-detail-header">
+        <div>
+          <button type="button" className="lineage-back" onClick={onBack}><ArrowLeft />返回假说总览</button>
+          <div className="eyebrow-mono text-emerald-200/70">H{hypothesisIndex + 1} / HYPOTHESIS LINEAGE</div>
+          <h1>H{hypothesisIndex + 1} 单假说系谱</h1>
+          <p>{hypothesis.statement}</p>
+        </div>
+        <EvolutionRoundSelector rounds={rounds} value={playbackRound} onChange={onRoundChange} />
+      </header>
 
-      {/* Legend & Header Toolbar */}
-      <div className="absolute left-4 top-4 z-20 flex items-center justify-between gap-4 rounded-full border border-white/10 bg-black/70 px-4 py-2 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs font-semibold uppercase tracking-[1.4px] text-white">
-            假说演化树 Topology
-          </span>
+      <div className={`lineage-detail-body ${selected ? 'has-selection' : ''}`}>
+        <div className="lineage-detail-legend">
+          <span><i className="is-snapshot" />假说版本</span>
+          <span><i className="is-evidence" />证据记录</span>
+          <span><i className="is-verdict" />轮次判断</span>
+          <span><i className="is-operation" />处理 / 校正 / 任务</span>
         </div>
-        <div className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[1px]">
-          <span className="flex items-center gap-1.5 text-emerald-400">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" /> 存活
-          </span>
-          <span className="flex items-center gap-1.5 text-amber-400">
-            <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]" /> 胜出
-            (Winner 🏆)
-          </span>
-          <span className="flex items-center gap-1.5 text-slate-400">
-            <span className="h-2 w-2 rounded-full bg-slate-500" /> 淘汰
-          </span>
+
+        <div className="lineage-round-stack">
+          <AnimatePresence initial={false}>
+            {visibleRounds.map((round, roundIndex) => {
+              const evidence = hypothesisEvidence.filter((item) => item.round === round)
+              const counts = evidenceCounts(evidence)
+              const verdict = verdictFrom(counts)
+              const previousRound = visibleRounds[roundIndex - 1]
+              const previousCounts = previousRound == null
+                ? null
+                : evidenceCounts(hypothesisEvidence.filter((item) => item.round === previousRound))
+              const action = (hypothesis.round ?? 1) === round
+                ? '本轮提出假说'
+                : previousCounts && verdictFrom(previousCounts) !== verdict
+                  ? '证据判断发生变化'
+                  : '假说表述未变，继续检验'
+              const processing = state.processingResults.filter((item) => item.round === round)
+              const corrections = state.corrections.filter((item) => item.round === round)
+              const tasks = relatedTasks.filter(
+                (task) => task.round === round || taskExecutionRound(task, state.evidence) === round,
+              )
+              const snapshotId = `snapshot:${round}`
+              const verdictId = `verdict:${round}`
+
+              return (
+                <motion.section
+                  key={round}
+                  className="lineage-round-section"
+                  data-round={round}
+                  initial={reduceMotion ? false : { opacity: 0, y: -18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: reduceMotion ? .01 : .34, ease: 'easeOut' }}
+                >
+                  <header><span>ROUND {round}</span><strong>{action}</strong><small>{evolutionChange(counts, previousCounts)}</small></header>
+
+                  <button
+                    type="button"
+                    className={`lineage-detail-node lineage-snapshot-node ${selected?.id === snapshotId ? 'is-selected' : ''}`}
+                    onClick={() => selectDetail({
+                      id: snapshotId,
+                      round,
+                      kind: 'snapshot',
+                      title: `H${hypothesisIndex + 1} · 第 ${round} 轮假说版本`,
+                      summary: hypothesis.statement,
+                      meta: [action, `提出于第 ${hypothesis.round ?? 1} 轮`, (hypothesis.round ?? 1) === round ? '本轮登记了该假说文本' : '本轮没有登记新的假说文本版本'],
+                    })}
+                  >
+                    <span>H{hypothesisIndex + 1}</span><strong>第 {round} 轮版本</strong><small>{(hypothesis.round ?? 1) === round ? '新版本' : '沿用上一轮'}</small>
+                  </button>
+
+                  <div className="lineage-vertical-connector"><i /></div>
+                  <div className="lineage-layer-title"><BookOpenCheck />本轮证据层 · {evidence.length} 条</div>
+                  <div className="lineage-fan lineage-evidence-fan">
+                    {evidence.map((item, index) => {
+                      const id = `evidence:${item.evidenceId}`
+                      const status = item.status === 'support' ? 'support' : item.status === 'contradict' ? 'contradict' : 'unknown'
+                      return (
+                        <button
+                          key={item.evidenceId}
+                          type="button"
+                          className={`lineage-detail-node lineage-small-node is-${status} ${selected?.id === id ? 'is-selected' : ''}`}
+                          onClick={() => selectDetail({
+                            id,
+                            round,
+                            kind: 'evidence',
+                            title: `E${index + 1} · ${status === 'support' ? '支持证据' : status === 'contradict' ? '反例证据' : '证据不足'}`,
+                            summary: item.claim,
+                            meta: [item.observed ?? '未登记观测摘要', `方法：${item.method ?? '未登记'}`, `来源：${item.sourceIds?.length ?? 0} 个`, item.provenance?.deterministic ? '具有确定性处理溯源' : '模型审阅或外部来源'],
+                          })}
+                        >
+                          <span>E{index + 1}</span><strong>{status === 'support' ? '支持' : status === 'contradict' ? '反例' : '不足'}</strong><small>{compact(item.claim, 18)}</small>
+                        </button>
+                      )
+                    })}
+                    {evidence.length === 0 && <div className="lineage-empty-node">本轮没有登记关联证据</div>}
+                  </div>
+
+                  <div className="lineage-merge-connector"><i /></div>
+                  <button
+                    type="button"
+                    className={`lineage-detail-node lineage-verdict-node is-${verdict} ${selected?.id === verdictId ? 'is-selected' : ''}`}
+                    onClick={() => selectDetail({
+                      id: verdictId,
+                      round,
+                      kind: 'verdict',
+                      title: `第 ${round} 轮判断 · ${verdictLabel(verdict)}`,
+                      summary: evolutionChange(counts, previousCounts),
+                      meta: [`${counts.support} 支持`, `${counts.contradict} 反例`, `${counts.unknown} 证据不足`, `${counts.deterministic} 条确定性溯源`],
+                    })}
+                  >
+                    <span>{verdict === 'support' ? 'S' : verdict === 'contradict' ? 'C' : '?'}</span><strong>{verdictLabel(verdict)}</strong><small>{counts.support}/{counts.contradict}/{counts.unknown}</small>
+                  </button>
+
+                  <div className="lineage-vertical-connector"><i /></div>
+                  <div className="lineage-layer-title"><Wrench />本轮操作层</div>
+                  <div className="lineage-fan lineage-operation-fan">
+                    {processing.map((item, index) => {
+                      const id = `processing:${item.processingRunId}`
+                      return <button key={id} type="button" className={`lineage-detail-node lineage-small-node is-processing ${selected?.id === id ? 'is-selected' : ''}`} onClick={() => selectDetail({ id, round, kind: 'processing', title: `P${index + 1} · 共享确定性处理`, summary: `${item.caseLabel}；读取 ${item.usedObservationCount} 条观测。`, meta: [`处理运行：${item.processingRunId}`, `数据快照：${item.snapshotId}`, `登记产物：${item.metricsArtifactId} / ${item.figureArtifactId}`, '这是本轮共享处理，不声明为该假说专属实验'] })}><span>P{index + 1}</span><strong>共享处理</strong><small>{item.usedObservationCount} 条观测</small></button>
+                    })}
+                    {corrections.length > 0 && (
+                      <button type="button" className={`lineage-detail-node lineage-small-node is-correction ${selected?.id === `correction:${round}` ? 'is-selected' : ''}`} onClick={() => selectDetail({ id: `correction:${round}`, round, kind: 'correction', title: `C · 本轮共享校正 ${corrections.length} 条`, summary: corrections.slice(0, 3).map((item) => item.message ?? item.action ?? item.status).join('；'), meta: ['校正影响本轮结论边界，但本身不作为科学证据', `${corrections.length} 条事实核验、重试或结论降级记录`] })}><span>C</span><strong>共享校正</strong><small>{corrections.length} 条</small></button>
+                    )}
+                    {tasks.map((task, index) => {
+                      const id = `task:${round}:${task.taskId}`
+                      const executionRound = taskExecutionRound(task, state.evidence)
+                      return <button key={id} type="button" className={`lineage-detail-node lineage-small-node is-task ${selected?.id === id ? 'is-selected' : ''}`} onClick={() => selectDetail({ id, round, kind: 'task', title: `T${index + 1} · ${executionRound === round ? '本轮已执行' : '本轮提出任务'}`, summary: task.objective, meta: [`执行器：${task.executorId ?? '未绑定'}`, `状态：${task.status}`, `路由：${task.route}`, `结果证据：${task.resultEvidenceIds?.length ?? 0} 条`] })}><span>T{index + 1}</span><strong>{executionRound === round ? '已执行任务' : '验证任务'}</strong><small>{compact(task.objective, 18)}</small></button>
+                    })}
+                    {processing.length === 0 && corrections.length === 0 && tasks.length === 0 && <div className="lineage-empty-node">本轮没有关联处理、校正或任务</div>}
+                  </div>
+
+                  {round < playbackRound && <div className="lineage-next-round"><i /><span>证据与任务写回后进入下一轮</span><i /></div>}
+                </motion.section>
+              )
+            })}
+          </AnimatePresence>
         </div>
-        <div className="h-3 w-px bg-white/20" />
-        <span className="font-mono text-[10px] uppercase text-white/50">
-          按住鼠标拖动平移 · 滚轮缩放 ({Math.round(scale * 100)}%)
-        </span>
-        <button
-          type="button"
-          onClick={handleReset}
-          className="rounded-full bg-white/10 px-2.5 py-0.5 font-mono text-[10px] uppercase text-white/80 hover:bg-white/20"
-        >
-          重置视图
-        </button>
+
+        <AnimatePresence>
+          {selected && (
+            <motion.aside className="lineage-detail-inspector" initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+              <span>{selected.kind.toUpperCase()} · ROUND {selected.round}</span>
+              <strong>{selected.title}</strong>
+              <p>{selected.summary}</p>
+              <ul>{selected.meta.map((item, index) => <li key={`${selected.id}-${index}`}>{item}</li>)}</ul>
+              <button type="button" aria-label="关闭节点详情" onClick={() => setSelected(null)}><X /></button>
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </div>
+    </section>
+  )
+}
 
-      {/* Empty state */}
-      {(!data || !data.root) && (
-        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-          <div className="rounded-lg border border-white/10 bg-black/80 px-6 py-4 text-center backdrop-blur-md">
-            <p className="font-mono text-sm text-white/60">暂无假设数据</p>
-            <p className="mt-1 font-mono text-[10px] text-white/40">
-              启动 Tournament Run 后将实时显示演化树
-            </p>
-          </div>
+export function EvolutionTree({ state }: { state: ScientificWorkbenchState }) {
+  const rounds = useMemo(() => scientificRounds(state), [state])
+  const latestRound = rounds.at(-1) ?? Math.max(state.round, 1)
+  const [playbackRound, setPlaybackRound] = useState(latestRound)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [drillHypothesisId, setDrillHypothesisId] = useState<string | null>(null)
+  const rootRef = useRef<HTMLElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+
+  useEffect(() => setPlaybackRound((current) => (rounds.includes(current) ? current : latestRound)), [latestRound, rounds])
+
+  const visibleRounds = useMemo(() => rounds.filter((round) => round <= playbackRound), [playbackRound, rounds])
+  const canvasHeight = 370 + Math.max(visibleRounds.length - 1, 0) * 255
+
+  const tree = useMemo(() => {
+    const nodes: EvolutionNode[] = []
+    const edges: EvolutionEdge[] = []
+    const processes: RoundProcess[] = []
+
+    visibleRounds.forEach((round, roundIndex) => {
+      const y = 245 + roundIndex * 255
+      const previousRound = visibleRounds[roundIndex - 1]
+      const roundEvidence = state.evidence.filter((item) => item.round === round)
+      const availableHypotheses = state.hypotheses.filter((item) => (item.round ?? 1) <= round)
+      const newHypotheses = availableHypotheses.filter((item) => (item.round ?? 1) === round)
+      const continuedHypotheses = availableHypotheses.filter((item) => (item.round ?? 1) < round)
+      const judgmentChangedCount = previousRound == null
+        ? 0
+        : continuedHypotheses.filter((hypothesis) => {
+            const previous = evidenceCounts(state.evidence.filter((item) => item.round === previousRound && item.hypothesisId === hypothesis.id))
+            const current = evidenceCounts(roundEvidence.filter((item) => item.hypothesisId === hypothesis.id))
+            return verdictFrom(previous) !== verdictFrom(current)
+          }).length
+
+      processes.push({
+        round,
+        y: 128 + roundIndex * 255,
+        evidenceCount: roundEvidence.length,
+        processingCount: state.processingResults.filter((item) => item.round === round).length,
+        correctionCount: state.corrections.filter((item) => item.round === round).length,
+        executedTaskCount: state.validationTasks.filter((task) => taskExecutionRound(task, state.evidence) === round).length,
+        newHypothesisCount: newHypotheses.length,
+        continuedHypothesisCount: continuedHypotheses.length,
+        judgmentChangedCount,
+      })
+
+      availableHypotheses.forEach((hypothesis) => {
+        const hypothesisIndex = state.hypotheses.findIndex((item) => item.id === hypothesis.id)
+        const x = hypothesisX(hypothesisIndex, state.hypotheses.length)
+        const evidence = roundEvidence.filter((item) => item.hypothesisId === hypothesis.id)
+        const counts = evidenceCounts(evidence)
+        const previousCounts = previousRound == null
+          ? null
+          : evidenceCounts(state.evidence.filter((item) => item.round === previousRound && item.hypothesisId === hypothesis.id))
+        const currentVerdict = verdictFrom(counts)
+        const previousVerdict = previousCounts ? verdictFrom(previousCounts) : null
+        const introducedNow = (hypothesis.round ?? 1) === round
+        const hypothesisEvidence = state.evidence.filter((item) => item.hypothesisId === hypothesis.id)
+        const executedTaskCount = state.validationTasks.filter(
+          (task) => taskBelongsToHypothesis(task, hypothesisEvidence) && taskExecutionRound(task, state.evidence) === round,
+        ).length
+
+        nodes.push({
+          id: `${round}:${hypothesis.id}`,
+          hypothesis,
+          hypothesisIndex,
+          round,
+          x,
+          y,
+          verdict: currentVerdict,
+          action: introducedNow
+            ? '本轮提出假说'
+            : previousVerdict !== currentVerdict
+              ? '证据判断发生变化'
+              : '表述未变，继续检验',
+          change: evolutionChange(counts, previousCounts),
+          evidence,
+          executedTaskCount,
+          ...counts,
+        })
+
+        if (roundIndex === 0 || introducedNow) {
+          edges.push({ id: `root:${round}:${hypothesis.id}`, hypothesisIndex, path: `M 500 82 C 500 112, ${x} 126, ${x} ${y - 28}` })
+        } else {
+          const previousY = y - 255
+          edges.push({ id: `${round}:${hypothesis.id}`, hypothesisIndex, path: `M ${x} ${previousY + 28} C ${x} ${previousY + 84}, ${x} ${y - 86}, ${x} ${y - 28}` })
+        }
+      })
+    })
+    return { nodes, edges, processes }
+  }, [state, visibleRounds])
+
+  useEffect(() => {
+    if (drillHypothesisId && !state.hypotheses.some((item) => item.id === drillHypothesisId)) setDrillHypothesisId(null)
+  }, [drillHypothesisId, state.hypotheses])
+
+  useEffect(() => {
+    rootRef.current?.scrollIntoView({ block: 'start' })
+  }, [drillHypothesisId])
+
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    const centerTreeOnNarrowViewport = () => {
+      if (viewport.clientWidth < 720 && viewport.scrollWidth > viewport.clientWidth && viewport.scrollLeft === 0) {
+        const canvas = viewport.firstElementChild as HTMLElement | null
+        viewport.scrollLeft = Math.max(0, ((canvas?.clientWidth ?? viewport.scrollWidth) - viewport.clientWidth) / 2)
+      }
+    }
+    const observer = new ResizeObserver(centerTreeOnNarrowViewport)
+    observer.observe(viewport)
+    centerTreeOnNarrowViewport()
+    return () => observer.disconnect()
+  }, [])
+
+  if (state.hypotheses.length === 0) return <div className="evolution-empty"><GitBranch className="h-5 w-5" />运行后显示假说提出、证据变化与逐轮检验过程。</div>
+
+  const drillHypothesis = state.hypotheses.find((item) => item.id === drillHypothesisId) ?? null
+  if (drillHypothesis) {
+    return (
+      <HypothesisLineageDetail
+        state={state}
+        hypothesis={drillHypothesis}
+        hypothesisIndex={state.hypotheses.findIndex((item) => item.id === drillHypothesis.id)}
+        rounds={rounds}
+        playbackRound={playbackRound}
+        onRoundChange={setPlaybackRound}
+        onBack={() => setDrillHypothesisId(null)}
+        rootRef={rootRef}
+      />
+    )
+  }
+
+  const focusNode = tree.nodes.find((node) => node.id === hoveredId) ?? null
+  const isRelated = (index: number) => !focusNode || focusNode.hypothesisIndex === index
+
+  return (
+    <section ref={rootRef} className={`evolution-shell evolution-compact-shell ${focusNode ? 'has-focus' : ''}`} aria-label="假设演化树">
+      <header className="evolution-header">
+        <div>
+          <div className="eyebrow-mono text-emerald-200/70">HYPOTHESIS LINEAGE / ROUND BY ROUND</div>
+          <h1>假设演化树</h1>
+          <p>选择轮次查看该轮新增的假说版本、证据与判断变化。切换到下一轮时，已有分支保持不动，新一轮从上一轮下方继续生长。</p>
         </div>
-      )}
+        <EvolutionRoundSelector rounds={rounds} value={playbackRound} onChange={setPlaybackRound} />
+      </header>
 
-      {/* Interactive 2D Stage with Mouse Pan & Zoom */}
-      <div
-        className="relative transition-transform duration-75"
-        style={{
-          width: bounds.width,
-          height: bounds.height,
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-          transformOrigin: 'top left',
-        }}
-      >
-        {/* SVG Bezier Lines */}
-        <svg
-          width={bounds.width}
-          height={bounds.height}
-          className="pointer-events-none absolute inset-0 z-0"
-        >
-          {links.map((link) => {
-            const midX = (link.sourceX + link.targetX) / 2
-            const d = `M ${link.sourceX} ${link.sourceY} C ${midX} ${link.sourceY}, ${midX} ${link.targetY}, ${link.targetX} ${link.targetY}`
-
-            return (
-              <g key={link.id}>
-                {link.isWinner && (
-                  <path d={d} fill="none" stroke="#f59e0b" strokeWidth={4} strokeOpacity={0.25} />
-                )}
-                <path
-                  d={d}
-                  fill="none"
-                  stroke={link.isWinner ? '#f59e0b' : link.isWithered ? '#334155' : '#3b82f6'}
-                  strokeWidth={link.isWinner ? 2.5 : 1.5}
-                  strokeOpacity={link.isWithered ? 0.35 : 0.8}
-                  strokeDasharray={link.isWithered ? '4 4' : undefined}
+      <div ref={viewportRef} className="evolution-tree-viewport">
+        <motion.div className="evolution-tree-canvas evolution-lineage-canvas" animate={{ height: canvasHeight }} transition={{ duration: reduceMotion ? .01 : .34, ease: 'easeOut' }}>
+          <svg className="evolution-tree-edges" viewBox={`0 0 1000 ${canvasHeight}`} preserveAspectRatio="none" aria-hidden="true">
+            <AnimatePresence initial={false}>
+              {tree.edges.map((edge) => (
+                <motion.path
+                  key={edge.id}
+                  d={edge.path}
+                  className={isRelated(edge.hypothesisIndex) ? 'is-related' : 'is-dimmed'}
+                  initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  exit={{ pathLength: 0, opacity: 0 }}
+                  transition={{ duration: reduceMotion ? .01 : .48, ease: 'easeOut' }}
                 />
-              </g>
+              ))}
+            </AnimatePresence>
+          </svg>
+
+          <div className="evolution-lineage-root" style={{ left: '50%', top: 55 }}>
+            <span><GitBranch /></span>
+            <div><strong>输入现象</strong><small>{compact(state.phenomenon?.title ?? '科学现象', 30)}</small></div>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {tree.processes.map((process) => (
+              <motion.div
+                key={process.round}
+                className="evolution-process-rail"
+                style={{ top: process.y }}
+                initial={reduceMotion ? false : { opacity: 0, y: -10, scaleX: .94 }}
+                animate={{ opacity: 1, y: 0, scaleX: 1 }}
+                exit={{ opacity: 0, y: -8, scaleX: .96 }}
+                transition={{ duration: reduceMotion ? .01 : .3 }}
+              >
+                <span>ROUND {process.round}</span>
+                <strong>
+                  {process.round === 1
+                    ? `提出 ${process.newHypothesisCount} 个假说`
+                    : `${process.newHypothesisCount} 个新假说 · ${process.continuedHypothesisCount} 个延续检验 · ${process.judgmentChangedCount} 个判断变化`}
+                </strong>
+                <div>
+                  <small><Database />处理 {process.processingCount}</small>
+                  <small><BookOpenCheck />证据 {process.evidenceCount}</small>
+                  <small><ShieldCheck />校正 {process.correctionCount}</small>
+                  <small><Wrench />执行任务 {process.executedTaskCount}</small>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {tree.nodes.map((node) => {
+            const active = focusNode?.id === node.id
+            const evidenceTotal = node.support + node.contradict + node.unknown
+            return (
+              <div key={node.id} className={`evolution-branch-unit ${isRelated(node.hypothesisIndex) ? 'is-related' : 'is-dimmed'}`} style={{ left: `${node.x / 10}%`, top: node.y }}>
+                <motion.span className={`evolution-branch-change is-${node.verdict}`} initial={reduceMotion ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? .01 : .3 }}>
+                  <b>{node.action}</b><small>{node.change}</small>
+                </motion.span>
+                <motion.button
+                  type="button"
+                  className={`evolution-node evolution-lineage-node is-${node.verdict} ${active ? 'is-focused' : ''}`}
+                  onMouseEnter={() => setHoveredId(node.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  onFocus={() => setHoveredId(node.id)}
+                  onBlur={() => setHoveredId(null)}
+                  onClick={() => {
+                    setHoveredId(null)
+                    setPlaybackRound(node.round)
+                    setDrillHypothesisId(node.hypothesis.id)
+                  }}
+                  initial={reduceMotion ? false : { opacity: 0, scale: .86, y: -8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: reduceMotion ? .01 : .3, delay: node.hypothesisIndex * .035 }}
+                  whileTap={{ scale: .94 }}
+                >
+                  <span className="evolution-node-core"><i /><strong>H{node.hypothesisIndex + 1}</strong></span>
+                  <span className="evolution-node-step">第 {node.round} 轮 · {node.round === (node.hypothesis.round ?? 1) ? '提出' : '复核'}</span>
+                  <span className="evolution-node-caption">{compact(node.hypothesis.statement, 30)}</span>
+                  <span className="evolution-node-verdict">{evidenceTotal} 条证据 · {verdictLabel(node.verdict)}</span>
+                  <AnimatePresence>
+                    {hoveredId === node.id && (
+                      <motion.span className="evolution-node-tooltip" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 3 }}>
+                        <b>{node.hypothesis.statement}</b>
+                        <small>{node.action}；{node.change}；{node.deterministic} 条确定性溯源；{node.executedTaskCount} 项关联任务已执行。</small>
+                        <em>点击进入该假说的多层系谱</em>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              </div>
             )
           })}
-        </svg>
-
-        {/* Node Cards */}
-        {nodes.map(({ data: node, x, y }) => {
-          const isWinner = node.status === 'winner'
-          const isWithered = node.status === 'withered'
-          const f1 = node.hypothesis.f1
-          const round = node.hypothesis.round
-          const isSelected = selectedNode?.hypothesis.id === node.hypothesis.id
-
-          return (
-            <motion.div
-              key={node.hypothesis.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              style={{ left: x, top: y, width: 240 }}
-              onClick={(e) => {
-                e.stopPropagation()
-                setSelectedNode(node)
-              }}
-              className={cn(
-                'absolute z-10 cursor-pointer rounded-xl border p-3.5 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5',
-                isWinner
-                  ? 'border-amber-500/70 bg-amber-500/15 shadow-[0_0_25px_rgba(245,158,11,0.2)] hover:border-amber-400'
-                  : isWithered
-                    ? 'border-white/5 bg-[#12141c]/60 opacity-60 hover:opacity-90'
-                    : 'border-white/15 bg-[#121624]/80 hover:border-emerald-500/60 hover:bg-[#161d30]',
-                isSelected && 'ring-2 ring-white/90',
-              )}
-            >
-              <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-[1px] text-white/70">
-                  R{round} · {node.hypothesis.id}
-                </span>
-                <span
-                  className={cn(
-                    'rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.8px]',
-                    isWinner
-                      ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
-                      : isWithered
-                        ? 'bg-slate-500/20 text-slate-400'
-                        : 'bg-emerald-500/20 text-emerald-300',
-                  )}
-                >
-                  {isWinner ? '🏆 胜出' : isWithered ? '淘汰' : '候选'}
-                </span>
-              </div>
-
-              <p className="mt-2 text-xs font-medium leading-relaxed text-white/90 line-clamp-2">
-                {node.hypothesis.statement}
-              </p>
-
-              {f1 != null && (
-                <div className="mt-2.5 flex items-center justify-between border-t border-white/5 pt-2">
-                  <span className="font-mono text-[10px] uppercase text-white/50">F1 Score</span>
-                  <span
-                    className={cn(
-                      'font-mono text-[11px] font-bold',
-                      isWinner ? 'text-amber-400' : 'text-emerald-400',
-                    )}
-                  >
-                    {f1.toFixed(2)}
-                  </span>
-                </div>
-              )}
-            </motion.div>
-          )
-        })}
+        </motion.div>
       </div>
 
-      {/* Selected Node Details Drawer */}
-      <AnimatePresence>
-        {selectedNode && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 z-30 w-96 rounded-xl border border-white/20 bg-black/90 p-5 backdrop-blur-2xl shadow-2xl"
-          >
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <span className="font-mono text-xs uppercase tracking-[1px] text-amber-400">
-                Round {selectedNode.hypothesis.round} · {selectedNode.hypothesis.id}
-              </span>
-              <button
-                type="button"
-                onClick={() => setSelectedNode(null)}
-                className="font-mono text-xs text-white/40 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-            <h4 className="mt-3 text-sm font-semibold leading-relaxed text-white">
-              {selectedNode.hypothesis.statement}
-            </h4>
-
-            {selectedNode.mutationRationale && (
-              <div className="mt-3 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3">
-                <span className="font-mono text-[10px] uppercase tracking-[1px] text-blue-300">
-                  突变依据 (Mutation Rationale)
-                </span>
-                <p className="mt-1 text-xs text-white/80">{selectedNode.mutationRationale}</p>
-              </div>
-            )}
-
-            {selectedNode.critiqueSummary && (
-              <div className="mt-2.5 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3">
-                <span className="font-mono text-[10px] uppercase tracking-[1px] text-rose-300">
-                  Oracle 评审摘要
-                </span>
-                <p className="mt-1 text-xs text-white/80">{selectedNode.critiqueSummary}</p>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    </section>
   )
 }
 

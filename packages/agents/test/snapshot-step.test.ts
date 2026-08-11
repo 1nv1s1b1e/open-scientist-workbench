@@ -18,6 +18,11 @@ function makeSnapshot(overrides: Partial<RoundSnapshot> = {}): RoundSnapshot {
       {
         id: 'h1',
         statement: 'AC wave heating',
+        mechanism: 'alfven-wave-dissipation',
+        predictions: ['propagating EUV disturbance'],
+        falsificationConditions: ['no propagating disturbance'],
+        sourceIds: ['paper:alfven-1'],
+        pythonCode: 'def filter(snapshot): return True',
         f1: 0.5,
         status: 'evaluated',
         parentId: null,
@@ -48,7 +53,7 @@ describe('snapshotStep', () => {
     const { path } = await snapshotStep(snap)
 
     expect(path).toContain('snap-test-proj')
-    expect(path).toContain(join('rounds', '1'))
+    expect(path).toContain(join('runs', 'run-1', 'rounds', '1'))
     expect(path.endsWith('snapshot.json')).toBe(true)
 
     const written = JSON.parse(await readFile(path, 'utf-8'))
@@ -78,6 +83,14 @@ describe('snapshotStep', () => {
     expect(parsed.hypotheses).toEqual(snap.hypotheses)
     // Full structural equality — the snapshot is persisted verbatim.
     expect(parsed).toEqual(snap)
+  })
+
+  it('persists executable hypothesis context needed for resume', async () => {
+    const snap = makeSnapshot()
+    const { path } = await snapshotStep(snap)
+    const parsed = JSON.parse(await readFile(path, 'utf-8')) as RoundSnapshot
+    expect(parsed.hypotheses[0]?.pythonCode).toContain('def filter')
+    expect(parsed.hypotheses[0]?.predictions).toEqual(['propagating EUV disturbance'])
   })
 
   it('overwrites on repeated write to the same round (no error)', async () => {

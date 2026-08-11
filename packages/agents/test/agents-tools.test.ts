@@ -32,9 +32,11 @@ describe('getDefaultXxxTools toolset keys', () => {
       [
         'addHypothesis',
         'bash',
+        'checkLocalSolarCoverage',
         'loadSkill',
         'readFile',
         'searchHypotheses',
+        'searchLocalSolarData',
         'searchPapers',
         'writeFile',
       ].sort(),

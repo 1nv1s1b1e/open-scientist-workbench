@@ -8,9 +8,9 @@ const config: NextConfig = {
   images: { unoptimized: true },
   // Transpile workspace packages (Next 15 needs this for monorepo TS sources).
   transpilePackages: ['@open-scientist/schema'],
-  // Proxy /api/* to the Hono backend (apps/api on :3000) so the browser stays
-  // same-origin and we avoid CORS entirely. Works in dev (Next proxy) and prod
-  // (deploy behind a single reverse proxy that routes /api/* → api).
+  // Same-origin fallback for deployments that do not set the browser-visible
+  // NEXT_PUBLIC_API_BASE_URL. When that variable is set, the API client sends
+  // both REST and SSE traffic directly to the same configured Hono origin.
   async rewrites() {
     const apiBase = process.env.API_BASE_URL ?? 'http://localhost:3000'
     return [

@@ -29,6 +29,10 @@ function validHypothesis(overrides: Record<string, unknown> = {}) {
   return {
     id: 'h1',
     statement: 'nanoflare heating triggered by neutral-line bending',
+    mechanism: 'magnetic-reconnection-nanoflare',
+    predictions: ['impulsive high-temperature brightenings near evolving magnetic structure'],
+    falsificationConditions: ['high-quality observations show no predicted impulsive response'],
+    sourceIds: ['paper:example-1'],
     pythonCode: 'def filter(s): return True',
     parentId: null,
     round: 1,
@@ -93,6 +97,22 @@ describe('schema', () => {
     expect(h.status).toBe('evaluated')
   })
 
+  it('preserves scientific hypothesis fields', () => {
+    const h = HypothesisSchema.parse(validHypothesis())
+    expect(h.mechanism).toBe('magnetic-reconnection-nanoflare')
+    expect(h.predictions).toHaveLength(1)
+    expect(h.falsificationConditions).toHaveLength(1)
+    expect(h.sourceIds).toEqual(['paper:example-1'])
+  })
+
+  it('rejects a hypothesis without observable predictions', () => {
+    expect(() => HypothesisSchema.parse(validHypothesis({ predictions: [] }))).toThrow()
+  })
+
+  it('rejects a hypothesis without falsification conditions', () => {
+    expect(() => HypothesisSchema.parse(validHypothesis({ falsificationConditions: [] }))).toThrow()
+  })
+
   it('throws when id is missing', () => {
     const { id: _id, ...rest } = validHypothesis()
     expect(() => HypothesisSchema.parse(rest)).toThrow()
@@ -138,6 +158,12 @@ describe('schema', () => {
 
   it('throws when HypothesisPool rationale is missing', () => {
     expect(() => HypothesisPoolSchema.parse({ hypotheses: [] })).toThrow()
+  })
+
+  it('rejects an empty hypothesis pool even when rationale is present', () => {
+    expect(() =>
+      HypothesisPoolSchema.parse({ hypotheses: [], rationale: 'no candidates' }),
+    ).toThrow()
   })
 
   // ------------------------------------------------------------
@@ -480,6 +506,21 @@ describe('schema', () => {
   it('parses StartRunRequest', () => {
     const r = StartRunRequestSchema.parse({ seed: 'nanoflare' })
     expect(r.seed).toBe('nanoflare')
+  })
+
+  it('parses a local-grounded scientific run without model fields', () => {
+    const r = StartRunRequestSchema.parse({
+      executionMode: 'local-grounded',
+      phenomenon: {
+        phenomenonId: 'ar11158',
+        title: 'AR11158',
+        description: 'AIA 多波段扰动与局部增亮。',
+        observations: [],
+        constraints: [],
+      },
+    })
+    expect(r.executionMode).toBe('local-grounded')
+    expect(r.phenomenon?.phenomenonId).toBe('ar11158')
   })
 
   it('throws when StartRunRequest seed is empty', () => {

@@ -8,6 +8,7 @@ import { addEvidenceTool, fitsAlignTool, getEvidenceByHypothesisTool } from '@op
 import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
 import { assembleDefaultTools } from '../shared/tool-assembly.ts'
 import { makeSubmitResultTool } from '../shared/tool-output.ts'
+import { AGENT_EXECUTION_BUDGETS, createSubmitResultPrepareStep } from '../shared/output-policy.ts'
 
 export interface LookerAgentDeps {
   /**
@@ -118,11 +119,12 @@ export async function createLookerAgent({
   }
 
   return new ToolLoopAgent({
-    maxOutputTokens: 8192,
+    maxOutputTokens: AGENT_EXECUTION_BUDGETS.looker.maxOutputTokens,
     id: 'looker',
     model,
     providerOptions,
     toolChoice: 'auto',
+    prepareStep: createSubmitResultPrepareStep(AGENT_EXECUTION_BUDGETS.looker.submitAtStep),
     instructions:
       instructions ??
       `你是 Multimodal Looker，太阳物理日冕加热研究的跨模态时空数据对齐 agent。
@@ -157,7 +159,7 @@ export async function createLookerAgent({
 
 重要：完成任务的唯一方式是调用 submit_result 工具。你必须在步数上限之前调用它。不要只输出文本——始终调用 submit_result 提交你的 EvidenceAlignment（hypoId、fitsPaths[]、videoClipPath（无 MP4 时为 null）、metadata {activeRegion, timestamp, wavelength, spatialIndex}）。spatialIndex 必须是具体字符串如"HPC (-420..-280, -180..-40) arcsec"，不能是模糊标签。`,
     tools: toolsWithSubmit,
-    stopWhen: [isStepCount(50), hasToolCall('submit_result')],
+    stopWhen: [isStepCount(AGENT_EXECUTION_BUDGETS.looker.maxSteps), hasToolCall('submit_result')],
     ...(runtimeContext !== undefined ? { runtimeContext } : {}),
   })
 }

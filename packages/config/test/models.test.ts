@@ -3,7 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Credential, CredentialStore } from '@open-scientist/schema'
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
-import { ModelAliasNotFoundError, resolveModelArg } from '../src/models.ts'
+import {
+  applyQwenChatRequestCompatibility,
+  ModelAliasNotFoundError,
+  resolveModelArg,
+} from '../src/models.ts'
 
 const BASE_DIR_KEY = 'BASE_DIR'
 
@@ -66,6 +70,30 @@ const FULL_TOURNAMENT = {
   convergenceWindow: 3,
   convergenceThreshold: 0.005,
 }
+
+describe('Qwen chat reasoning compatibility', () => {
+  it('explicitly disables Qwen thinking for off', () => {
+    expect(applyQwenChatRequestCompatibility(
+      { provider: 'openai', model: 'qwen3.5-plus', apiMode: 'chat', thinkingLevel: 'off' },
+      { reasoning_effort: 'high', thinking_budget: 999, messages: [] },
+    )).toEqual({ enable_thinking: false, messages: [] })
+  })
+
+  it('enables bounded native Qwen thinking for scientific agents', () => {
+    expect(applyQwenChatRequestCompatibility(
+      { provider: 'openai', model: 'qwen3.5-plus', apiMode: 'chat', thinkingLevel: 'high' },
+      { reasoning_effort: 'high', messages: [] },
+    )).toEqual({ enable_thinking: true, thinking_budget: 4096, messages: [] })
+  })
+
+  it('does not alter non-Qwen requests', () => {
+    const body = { reasoning_effort: 'high', messages: [] }
+    expect(applyQwenChatRequestCompatibility(
+      { provider: 'openai', model: 'gpt-5', apiMode: 'chat', thinkingLevel: 'high' },
+      body,
+    )).toBe(body)
+  })
+})
 
 describe('resolveModelArg', () => {
   it('resolves via role: settings.models[role] → credentialId → credential → ModelArg', async () => {
