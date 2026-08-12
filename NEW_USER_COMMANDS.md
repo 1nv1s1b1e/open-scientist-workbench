@@ -292,7 +292,71 @@ Test-NetConnection 127.0.0.1 -Port 5173
 
 停止后，两个结果中的 `TcpTestSucceeded` 应为 `False`。
 
-## 13. 下次启动所需命令
+## 13. 更新已有安装并保留本地更改
+
+`.env`、`data/`、`.venv/`、`.runtime/` 和 `output/` 不受 Git 管理，正常更新不会覆盖其中的本地配置、数据、虚拟环境或运行结果。
+
+如果改过仓库中的源码或文档，先创建备份分支并暂存工作区改动，再拉取远程更新。团队分支用户执行：
+
+```powershell
+Set-Location C:\open-scientist-work\open-scientist
+
+git status --short --branch
+$backupBranch = 'backup/local-before-update-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
+git branch $backupBranch
+
+$hadLocalChanges = -not [string]::IsNullOrWhiteSpace((git status --porcelain))
+if ($hadLocalChanges) {
+  git stash push --include-untracked -m $backupBranch
+}
+
+git fetch origin
+git rebase origin/feature/ymy-branch
+
+if ($hadLocalChanges) {
+  git stash pop
+}
+```
+
+从私有仓库 clone 的用户执行：
+
+```powershell
+Set-Location C:\open-scientist-work\open-scientist-workbench
+
+git status --short --branch
+$backupBranch = 'backup/local-before-update-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
+git branch $backupBranch
+
+$hadLocalChanges = -not [string]::IsNullOrWhiteSpace((git status --porcelain))
+if ($hadLocalChanges) {
+  git stash push --include-untracked -m $backupBranch
+}
+
+git fetch origin
+git rebase origin/main
+
+if ($hadLocalChanges) {
+  git stash pop
+}
+```
+
+如果 `rebase` 或 `stash pop` 报告冲突，Git 会保留冲突标记和 stash。不要执行 `git reset --hard`。先运行 `git status` 查看冲突文件，人工合并后再继续；创建的 `backup/local-before-update-*` 分支仍保留更新前的本地提交。
+
+只改过 `.env`、下载数据或 Settings 中模型配置的用户，可以直接更新：
+
+```powershell
+git pull --ff-only
+```
+
+更新完成后确认核心文献语料已经存在：
+
+```powershell
+Test-Path .\sources\coronal-heating-corpus-v1.json
+```
+
+正常结果为 `True`。
+
+## 14. 下次启动所需命令
 
 默认 clone 路径和默认数据目录：
 

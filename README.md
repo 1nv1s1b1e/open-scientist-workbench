@@ -24,7 +24,11 @@ scripts/
   analyze_coronal_window.py  处理本地日冕观测窗口
   start-local.ps1            启动 API 和 Web
   stop-local.ps1             停止本地服务
+sources/
+  coronal-heating-corpus-v1.json  本地核验文献元数据与受控注释
 ```
+
+核心文献语料随仓库提供，包含 10 篇日冕加热论文的题名、作者、年份、DOI、公开来源、主题、受控注释和证据边界。仓库不分发论文 PDF 全文；需要阅读全文时，应通过记录的 DOI 或公开来源获取。
 
 ## 运行模式
 

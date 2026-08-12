@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "name": "coronal-heating-curated-bootstrap",
+  "created_at": "2026-08-09",
+  "scope": "A small, verified metadata-and-annotation corpus for the Open-Scientist coronal-heating loop. It is a bootstrap RAG corpus, not a complete literature review and not direct observational evidence.",
+  "records": [
+    {
+      "id": "parnell-de-moortel-2012",
+      "title": "A contemporary view of coronal heating",
+      "authors": ["Clare E. Parnell", "Ineke De Moortel"],
+      "year": 2012,
+      "doi": "10.1098/rsta.2012.0113",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/22665900/",
+      "kind": "review",
+      "topics": ["coronal heating", "日冕加热", "mechanism comparison", "机制比较"],
+      "annotation": "综述将日冕加热视为与整个太阳大气耦合的问题：磁场是关键能量通道，但主导供能过程可能随磁结构、尺度和区域而变。适合用来建立竞争机制与可证伪预测的比较框架。",
+      "evidence_boundary": "这是综述性背景，不能单独作为某一种机制已经被观测证实的证据。"
+    },
+    {
+      "id": "klimchuk-2015",
+      "title": "Key aspects of coronal heating",
+      "authors": ["James A. Klimchuk"],
+      "year": 2015,
+      "doi": "10.1098/rsta.2014.0256",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4410549/",
+      "kind": "review",
+      "topics": ["coronal heating", "日冕加热", "impulsive heating", "脉冲加热", "nanoflare"],
+      "annotation": "文章归纳了日冕加热需要解释的关键问题，并强调观测、场向流体动力学、三维 MHD 与局域或动理学模拟的互补性。可作为设计多证据链而非单指标判定的依据。",
+      "evidence_boundary": "文中讨论的机制与诊断不是对任一具体活动区的直接因果结论。"
+    },
+    {
+      "id": "de-moortel-browning-2015",
+      "title": "Recent advances in coronal heating",
+      "authors": ["Ineke De Moortel", "Philippa Browning"],
+      "year": 2015,
+      "doi": "10.1098/rsta.2014.0269",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4410557/",
+      "kind": "review",
+      "topics": ["coronal heating", "日冕加热", "magnetic free energy", "磁自由能", "MHD"],
+      "annotation": "综述从光球运动导致的磁自由能积累或向上输运出发，比较磁重联与波动相关过程。适合为 A 阶段的机制组合假设提供背景和术语边界。",
+      "evidence_boundary": "综述本身不替代一个具体现象窗口中的时空对齐、质量控制或反例检验。"
+    },
+    {
+      "id": "van-doorsselaere-et-al-2020",
+      "title": "Coronal heating by MHD waves",
+      "authors": ["Tom Van Doorsselaere", "Abhishek K. Srivastava", "Patrick Antolin", "Norbert Magyar", "Soheil Vasheghani Farahani", "Hui Tian", "Dmitrii Y. Kolotkov", "Leon Ofman", "Mingzhe Guo", "Iñigo Arregui", "Ineke De Moortel", "David Pascoe"],
+      "year": 2020,
+      "doi": "10.1007/s11214-020-00770-y",
+      "source_url": "https://doi.org/10.1007/s11214-020-00770-y",
+      "kind": "mechanism review",
+      "topics": ["MHD waves", "Alfvén waves", "阿尔芬波", "wave dissipation", "波动耗散"],
+      "annotation": "该综述系统讨论 MHD 波的观测能量通量、耗散路径与数值模型，并指出不同磁结构中的解释能力并不相同。对工作台而言，传播、相位差、阻尼和非热展宽应作为需检验的预测，而不是自动成立的结论。",
+      "evidence_boundary": "即便存在波动信号，也还需要能量闭合、阻尼位置和替代机制排除，才能支持波动加热。"
+    },
+    {
+      "id": "del-zanna-mason-2018",
+      "title": "Solar UV and X-ray spectral diagnostics",
+      "authors": ["Giulio Del Zanna", "Helen E. Mason"],
+      "year": 2018,
+      "doi": "10.1007/s41116-018-0015-3",
+      "source_url": "https://doi.org/10.1007/s41116-018-0015-3",
+      "kind": "diagnostic review",
+      "topics": ["spectral diagnostics", "光谱诊断", "EUV", "X-ray", "non-thermal line width", "非热线宽"],
+      "annotation": "文章概述太阳紫外和 X 射线光谱诊断、仪器标定和原子数据库依赖。它说明为何仅凭宽带 EUV 成像难以区分加热机制，并为引入 EIS 或 IRIS 光谱约束提供方法学依据。",
+      "evidence_boundary": "光谱反演对标定、线混叠、背景和视线积分敏感，未经质量控制的线宽或温度结果不能直接写入结论。"
+    },
+    {
+      "id": "brooks-warren-2016",
+      "title": "Measurements of Non-Thermal Line Widths in Solar Active Regions",
+      "authors": ["David H. Brooks", "Harry P. Warren"],
+      "year": 2016,
+      "doi": "10.3847/0004-637X/820/1/63",
+      "source_url": "https://arxiv.org/abs/1511.02313",
+      "kind": "observational constraint",
+      "topics": ["Hinode/EIS", "non-thermal line width", "非热线宽", "active regions", "活动区"],
+      "annotation": "基于 Hinode/EIS 对 15 个非耀斑活动区的调查，文章报告了较小的非热速度并讨论了其对重联喷流、纳耀斑蒸发和阿尔芬波湍流模型的约束意义。它适合放入 Oracle 反例或约束通道，而非某一机制的直接胜出证据。",
+      "evidence_boundary": "线宽测量存在系统误差与视线积分影响；需要与具体时段、谱线选择和处理版本一起解释。"
+    },
+    {
+      "id": "viall-klimchuk-2011",
+      "title": "Patterns of nanoflare storm heating exhibited by an active region observed with SDO/AIA",
+      "authors": ["Nichole M. Viall", "James A. Klimchuk"],
+      "year": 2011,
+      "doi": "10.1088/0004-637X/738/1/24",
+      "source_url": "https://doi.org/10.1088/0004-637X/738/1/24",
+      "kind": "observational-model comparison",
+      "topics": ["nanoflare", "纳耀斑", "SDO/AIA", "time lag", "通道时延"],
+      "annotation": "文章用 SDO/AIA 活动区多通道响应讨论纳耀斑风暴加热的可观测模式。它可用于提出热通道增强与冷却时延等候选预测，并指导 Explorer 做时序和背景处理。",
+      "evidence_boundary": "多通道时延是机制鉴别线索，不是纳耀斑或磁重联的唯一指纹，必须检验替代热演化解释。"
+    },
+    {
+      "id": "bradshaw-klimchuk-reep-2012",
+      "title": "Diagnosing the time-dependence of active region core heating from the emission measure. I. Low-frequency nanoflares",
+      "authors": ["Stephen J. Bradshaw", "James A. Klimchuk", "Jeffrey W. Reep"],
+      "year": 2012,
+      "doi": "10.1088/0004-637X/758/1/53",
+      "source_url": "https://doi.org/10.1088/0004-637X/758/1/53",
+      "kind": "simulation-derived diagnostic",
+      "topics": ["emission measure", "发射量", "low-frequency nanoflares", "低频纳耀斑", "active-region core"],
+      "annotation": "文章从数值模型讨论活动区核心发射量分布对低频纳耀斑加热时变性的诊断潜力。它可提供可检验的模型预测，并应与观测处理和误差传播配套使用。",
+      "evidence_boundary": "模拟预测需要与同一仪器响应、观测几何和不确定度下的结果对照，不能直接等同于真实太阳机制。"
+    },
+    {
+      "id": "brosius-daw-rabin-2014",
+      "title": "Pervasive faint Fe XIX emission from a solar active region observed with EUNIS-13: evidence for nanoflare heating",
+      "authors": ["Jeffrey W. Brosius", "Adriana N. Daw", "Douglas M. Rabin"],
+      "year": 2014,
+      "doi": "10.1088/0004-637X/790/2/112",
+      "source_url": "https://doi.org/10.1088/0004-637X/790/2/112",
+      "kind": "observational candidate evidence",
+      "topics": ["EUNIS", "Fe XIX", "hot plasma", "nanoflare", "纳耀斑"],
+      "annotation": "文章报告活动区中微弱 Fe XIX 发射并将其讨论为与纳耀斑加热相容的候选证据。它适合进入支持性证据候选池，同时要求 Oracle 检查温度诊断、选择效应和替代解释。",
+      "evidence_boundary": "题名中的 evidence 表示候选性支持；在本系统中仍须保持为可反驳证据，而非机制定论。"
+    },
+    {
+      "id": "reale-2010",
+      "title": "Coronal Loops: Observations and Modeling of Confined Plasma",
+      "authors": ["Fabio Reale"],
+      "year": 2010,
+      "doi": "10.12942/lrsp-2010-5",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4841190/",
+      "kind": "observational-model review",
+      "topics": ["coronal loops", "日冕环", "confined plasma", "热演化", "loop diagnostics"],
+      "annotation": "综述日冕环的观测和受限等离子体建模，为解释环结构、热演化、视线积分和几何效应提供背景。它可帮助工作台避免把单个亮化或单一通道强度误读为加热机制。",
+      "evidence_boundary": "它提供模型与诊断框架，不是对单一活动区或单一加热机制的判定。"
+    }
+  ]
+}
