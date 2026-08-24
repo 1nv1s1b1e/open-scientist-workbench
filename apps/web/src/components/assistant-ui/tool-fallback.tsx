@@ -30,32 +30,32 @@ export function ToolFallback({ toolName, args, result, status, isError }: ToolFa
         <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-[var(--color-surface)]">
           <Hammer className="h-3.5 w-3.5 text-muted" />
         </span>
-        <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-body">
+        <span className="font-mono text-[12px] uppercase tracking-[1.2px] text-body">
           {toolName ?? 'tool'}
         </span>
         {isRunning && (
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-sunset)]">
+          <span className="ml-auto font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-sunset)]">
             running…
           </span>
         )}
       </div>
-      {isError && <p className="mt-2 font-mono text-[11px] text-red-400">tool execution error</p>}
+      {isError && <p className="mt-2 font-mono text-[12px] text-red-400">tool execution error</p>}
       {args != null && (
         <details className="mt-2 group">
-          <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[1px] text-muted transition-colors hover:text-body">
+          <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[1px] text-muted transition-colors hover:text-body">
             input
           </summary>
-          <pre className="mt-1.5 max-h-40 overflow-auto rounded-sm bg-[var(--color-surface)] p-2 text-[11px] leading-relaxed text-muted">
+          <pre className="mt-1.5 max-h-40 overflow-auto rounded-sm bg-[var(--color-surface)] p-2 text-[12px] leading-relaxed text-muted">
             {JSON.stringify(args, null, 2)}
           </pre>
         </details>
       )}
       {result != null && (
         <details className="mt-1.5 group">
-          <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[1px] text-muted transition-colors hover:text-body">
+          <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[1px] text-muted transition-colors hover:text-body">
             output
           </summary>
-          <pre className="mt-1.5 max-h-40 overflow-auto rounded-sm bg-[var(--color-surface)] p-2 text-[11px] leading-relaxed text-muted">
+          <pre className="mt-1.5 max-h-40 overflow-auto rounded-sm bg-[var(--color-surface)] p-2 text-[12px] leading-relaxed text-muted">
             {JSON.stringify(result, null, 2)}
           </pre>
         </details>

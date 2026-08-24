@@ -6,6 +6,7 @@ import {
   Database,
   GitBranch,
   ShieldCheck,
+  SunMedium,
   Wrench,
   X,
 } from 'lucide-react'
@@ -113,9 +114,11 @@ function EvolutionRoundSelector({
   return (
     <div className="evolution-round-selector" aria-label="切换演化轮次">
       <span>查看轮次</span>
-      {rounds.map((round) => (
-        <button key={round} type="button" aria-pressed={value === round} onClick={() => onChange(round)}>第 {round} 轮</button>
-      ))}
+      <select value={value} onChange={(event) => onChange(Number(event.target.value))}>
+        {rounds.map((round) => (
+          <option key={round} value={round}>第 {round} 轮</option>
+        ))}
+      </select>
     </div>
   )
 }
@@ -456,7 +459,7 @@ export function EvolutionTree({ state }: { state: ScientificWorkbenchState }) {
         <div>
           <div className="eyebrow-mono text-emerald-200/70">HYPOTHESIS LINEAGE / ROUND BY ROUND</div>
           <h1>假设演化树</h1>
-          <p>选择轮次查看该轮新增的假说版本、证据与判断变化。切换到下一轮时，已有分支保持不动，新一轮从上一轮下方继续生长。</p>
+          <p>选择轮次查看该轮新增的假说版本、证据与判断变化。切换到下一轮时，已有分支保持不动，新一轮从上一轮下方继续生长。<span className="text-amber-200/70">鼠标悬停节点可查看完整信息</span></p>
         </div>
         <EvolutionRoundSelector rounds={rounds} value={playbackRound} onChange={setPlaybackRound} />
       </header>
@@ -479,8 +482,8 @@ export function EvolutionTree({ state }: { state: ScientificWorkbenchState }) {
             </AnimatePresence>
           </svg>
 
-          <div className="evolution-lineage-root" style={{ left: '50%', top: 55 }}>
-            <span><GitBranch /></span>
+          <div className="evolution-lineage-root" style={{ left: '50%', top: 55 }} title={state.phenomenon?.title ?? '科学现象'}>
+            <span><SunMedium /></span>
             <div><strong>输入现象</strong><small>{compact(state.phenomenon?.title ?? '科学现象', 30)}</small></div>
           </div>
 
@@ -538,7 +541,6 @@ export function EvolutionTree({ state }: { state: ScientificWorkbenchState }) {
                 >
                   <span className="evolution-node-core"><i /><strong>H{node.hypothesisIndex + 1}</strong></span>
                   <span className="evolution-node-step">第 {node.round} 轮 · {node.round === (node.hypothesis.round ?? 1) ? '提出' : '复核'}</span>
-                  <span className="evolution-node-caption">{compact(node.hypothesis.statement, 30)}</span>
                   <span className="evolution-node-verdict">{evidenceTotal} 条证据 · {verdictLabel(node.verdict)}</span>
                   <AnimatePresence>
                     {hoveredId === node.id && (

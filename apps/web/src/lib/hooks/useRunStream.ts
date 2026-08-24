@@ -80,6 +80,11 @@ interface UseRunStreamOptions {
   onFinish?: () => void
   /** 连续重连失败上限（默认 5） */
   maxConsecutiveErrors?: number
+  /** 静态预览（示例项目）用：注入科学状态与智能体状态的初始值。 */
+  initialScientificState?: ScientificWorkbenchState
+  initialAgentStates?: Partial<Record<AgentRole, AgentState>>
+  /** 静态预览：跳过挂载时的历史加载（否则 loadHistory 会 reset 掉注入的初始状态）。 */
+  skipHistoryLoad?: boolean
 }
 
 interface UseRunStreamReturn {
@@ -127,14 +132,18 @@ function roleFromScientificAgent(agentId: unknown, stage?: unknown): AgentRole |
 }
 
 export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
-  const { project, maxConsecutiveErrors = MAX_RECONNECT_ERRORS } = opts
+  const { project, maxConsecutiveErrors = MAX_RECONNECT_ERRORS, skipHistoryLoad = false } = opts
   const [runId, setRunId] = useState<string | null>(null)
   const [messages, setMessages] = useState<RunMessage[]>([])
   const [state, setState] = useState<StreamState>('idle')
   const [error, setError] = useState<Error | null>(null)
-  const [agentStates, setAgentStates] = useState<Partial<Record<AgentRole, AgentState>>>({})
+  const [agentStates, setAgentStates] = useState<Partial<Record<AgentRole, AgentState>>>(
+    opts.initialAgentStates ?? {},
+  )
   const [roundUpdate, setRoundUpdate] = useState<RoundUpdateState>(null)
-  const [scientificState, setScientificState] = useState(emptyScientificWorkbenchState)
+  const [scientificState, setScientificState] = useState(
+    opts.initialScientificState ?? emptyScientificWorkbenchState,
+  )
   const [chunks, setChunks] = useState<UIMessageChunk[]>([])
 
   // Stable refs for callbacks that would otherwise break useCallback memoization
@@ -451,7 +460,7 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
   )
 
   const consumeStream = useCallback(
-    async (response: Response): Promise<void> => {
+    async (response: Response, generation: number): Promise<void> => {
       if (!response.body) throw new Error('SSE response has no body')
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
@@ -461,6 +470,8 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
+          // 新会话已开始（reset/start 使 generation 递增）→ 丢弃过期流
+          if (generation !== historyGenerationRef.current) return
           buffer += decoder.decode(value, { stream: true })
 
           // SSE 事件以 `\n\n` 分隔
@@ -475,6 +486,7 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
             }
             const payload = line.slice(5).trim()
             if (payload === DONE_MARKER) {
+              if (generation !== historyGenerationRef.current) return
               setState('done')
               onFinishRef.current?.()
               return
@@ -483,6 +495,7 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
               const chunk = JSON.parse(payload) as UIMessageChunk
               const result = handleChunk(chunk)
               if (result === 'done') {
+                if (generation !== historyGenerationRef.current) return
                 setState('done')
                 onFinishRef.current?.()
                 return
@@ -496,6 +509,7 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
         // Any stream that ends without [DONE] is incomplete.  Reconnect from
         // the absolute client cursor instead of silently freezing a restored
         // running page.
+        if (generation !== historyGenerationRef.current) return
         if (!userStoppedRef.current) {
           throw new Error('stream ended without finish')
         }
@@ -506,7 +520,10 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     [handleChunk],
   )
 
-  const reconnect = useCallback(async (): Promise<void> => {
+  const reconnect = useCallback(async (expectedGeneration?: number): Promise<void> => {
+    // 由过期退避定时器触发的重连：期间已 reset/start 新会话则直接放弃
+    if (expectedGeneration != null && expectedGeneration !== historyGenerationRef.current) return
+    const generation = historyGenerationRef.current
     const id = runIdRef.current
     if (!id || userStoppedRef.current) return
     if (reconnectErrorsRef.current >= maxConsecutiveErrors) {
@@ -531,21 +548,26 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
         fetch,
         controller.signal,
       )
+      // 过期重连：期间已 reset/start 新会话
+      if (generation !== historyGenerationRef.current) return
       reconnectErrorsRef.current = 0
       setState('streaming')
-      await consumeStream(response)
+      await consumeStream(response, generation)
     } catch (reconnectError) {
+      if (generation !== historyGenerationRef.current) return
       if (userStoppedRef.current || controller.signal.aborted) return
       // A run may finish while the transport is reconnecting.  Hydrate any
       // persisted tail once, then stop reconnecting when storage is terminal.
       try {
         const status = await getRunStatus(project, id)
+        if (generation !== historyGenerationRef.current) return
         if (
           status.status === 'completed' ||
           status.status === 'failed' ||
           status.status === 'stopped'
         ) {
           const entries = await getRunChunks(project, id)
+          if (generation !== historyGenerationRef.current) return
           const cursor = nextChunkIndexRef.current
           for (const entry of entries) {
             if (entry.seq >= cursor) handleChunk(entry.chunk as UIMessageChunk)
@@ -571,7 +593,7 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
       }
       // 重连失败，指数退避后重试（1s, 2s, 4s, 8s, 16s...）
       const delay = Math.min(1000 * 2 ** (reconnectErrorsRef.current - 1), 30000)
-      setTimeout(() => void reconnect(), delay)
+      setTimeout(() => void reconnect(generation), delay)
     }
   }, [project, maxConsecutiveErrors, consumeStream, handleChunk])
 
@@ -637,6 +659,7 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
       },
     ): Promise<void> => {
       reset()
+      const generation = historyGenerationRef.current
       setState('connecting')
       const controller = new AbortController()
       abortRef.current = controller
@@ -653,12 +676,14 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
           fetch,
           controller.signal,
         )
+        if (generation !== historyGenerationRef.current) return
         runIdRef.current = id
         setRunId(id)
         setState('streaming')
-        await consumeStream(response)
+        await consumeStream(response, generation)
       } catch (err) {
         const e = err instanceof Error ? err : new Error(String(err))
+        if (generation !== historyGenerationRef.current) return
         if (e instanceof ApiError) {
           setState('error')
           setError(e)
@@ -694,12 +719,13 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
 
   // Load persisted history on mount, then abort on unmount
   useEffect(() => {
+    if (skipHistoryLoad) return
     void loadHistory()
     return () => {
       historyGenerationRef.current += 1
       abortRef.current?.abort()
     }
-  }, [loadHistory])
+  }, [loadHistory, skipHistoryLoad])
 
   return {
     runId,

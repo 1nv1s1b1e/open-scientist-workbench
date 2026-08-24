@@ -82,7 +82,7 @@ export function PhenomenonPanel({
           <label className="block"><span>现象原文</span><textarea value={draft.narrative} onChange={(event) => update('narrative', event.target.value)} placeholder="例如：某活动区出现持续升温、局部亮度突增，不同波段响应存在时间差。" rows={5} /></label>
           <label className="block"><span>关注问题（可选）</span><div className="relative"><MessageSquareText className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" /><input className="pl-9" value={draft.question} onChange={(event) => update('question', event.target.value)} placeholder="例如：哪组观测最能区分两种机制？" /></div></label>
           <div className="flex items-center justify-between gap-3 border-t border-white/[0.08] pt-3">
-            <div className="flex min-w-0 items-start gap-2 text-[11px] leading-5 text-[var(--color-text-muted)]"><ScanSearch className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--color-breeze)]" /><span>只需描述现象；资料、证据与反例会在分析过程中由各阶段逐步登记。</span></div>
+            <div className="flex min-w-0 items-start gap-2 text-[12px] leading-5 text-[var(--color-text-muted)]"><ScanSearch className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--color-breeze)]" /><span>只需描述现象；资料、证据与反例会在分析过程中由各阶段逐步登记。</span></div>
             {isSubmitting && onStop
               ? <button type="button" onClick={onStop} className="workbench-stop-button"><Square className="h-3.5 w-3.5" />停止分析</button>
               : onSubmit && <button type="button" onClick={submit} disabled={!ready} className="workbench-submit-button"><ArrowRight className="h-3.5 w-3.5" />开始分析</button>}

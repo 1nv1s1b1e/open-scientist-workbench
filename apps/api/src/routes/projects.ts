@@ -3,7 +3,13 @@ import { join } from 'node:path'
 import { getBaseDir } from '@open-scientist/config'
 import { ProjectNameSchema } from '@open-scientist/schema'
 import { CreateProjectRequestSchema } from '@open-scientist/schema'
-import { createProject, deleteProject, getProject, listProjects } from '@open-scientist/storage'
+import {
+  createProject,
+  deleteProject,
+  getLatestProjectPhenomenon,
+  getProject,
+  listProjects,
+} from '@open-scientist/storage'
 import { Hono } from 'hono'
 
 export const projects = new Hono()
@@ -15,7 +21,17 @@ function validateProjectName(raw: string): string {
 
 projects.get('/api/projects', async (c) => {
   const rows = await listProjects()
-  const result = rows.map((p) => ({ id: p.id, name: p.name, createdAt: p.createdAt }))
+  const result = await Promise.all(
+    rows.map(async (p) => {
+      const phenomenon = await getLatestProjectPhenomenon(p.name)
+      return {
+        id: p.id,
+        name: p.name,
+        createdAt: p.createdAt,
+        summary: phenomenon?.title ?? null,
+      }
+    }),
+  )
   return c.json(result)
 })
 

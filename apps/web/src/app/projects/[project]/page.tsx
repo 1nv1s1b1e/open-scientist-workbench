@@ -27,7 +27,7 @@ import type { UIMessageChunk } from '@/lib/types/sse-events'
 import type { AgentRole, AgentState } from '@/lib/types/visualizers'
 import { WorkflowRuntimeProvider, type ExecutionMode } from '@/lib/chat/workflow-runtime'
 import { emptyScientificWorkbenchState, type ScientificWorkbenchState } from '@/lib/workbench/state'
-import { DEMO_PHENOMENON } from '@/lib/workbench/demo-data'
+import { DEMO_AGENT_STATES, DEMO_PHENOMENON, DEMO_SCIENTIFIC_STATE } from '@/lib/workbench/demo-data'
 
 type View = 'workbench' | 'orchestration' | 'trace' | 'concept-net' | 'evolution'
 
@@ -37,17 +37,20 @@ export default function ProjectRunPage() {
   const demoProject = project === 'coronal-heating-demo'
   const [view, setView] = useState<View>('workbench')
   const [chatCollapsed, setChatCollapsed] = useState(true)
+  const [desktopChatCollapsed, setDesktopChatCollapsed] = useState(false)
   const [phenomenon, setPhenomenon] = useState<PhenomenonInput | undefined>(() =>
     demoProject ? DEMO_PHENOMENON : undefined,
   )
   const [maxRounds, setMaxRounds] = useState(2)
   const [executionMode, setExecutionMode] = useState<ExecutionMode>('model-assisted')
   const [scientificState, setScientificState] = useState<ScientificWorkbenchState>(() =>
-    emptyScientificWorkbenchState(),
+    demoProject ? DEMO_SCIENTIFIC_STATE : emptyScientificWorkbenchState(),
   )
   const [streamState, setStreamState] = useState('idle')
   const [runId, setRunId] = useState<string | null>(null)
-  const [agentStates, setAgentStates] = useState<Partial<Record<AgentRole, AgentState>>>({})
+  const [agentStates, setAgentStates] = useState<Partial<Record<AgentRole, AgentState>>>(() =>
+    demoProject ? DEMO_AGENT_STATES : {},
+  )
   const [roundUpdate, setRoundUpdate] = useState<RoundUpdateState>(null)
   const [messages, setMessages] = useState<RunMessage[]>([])
   const [runChunks, setRunChunks] = useState<UIMessageChunk[]>([])
@@ -58,11 +61,12 @@ export default function ProjectRunPage() {
   useEffect(() => {
     setView('workbench')
     setChatCollapsed(true)
+    setDesktopChatCollapsed(false)
     setPhenomenon(demoProject ? DEMO_PHENOMENON : undefined)
-    setScientificState(emptyScientificWorkbenchState())
+    setScientificState(demoProject ? DEMO_SCIENTIFIC_STATE : emptyScientificWorkbenchState())
     setStreamState('idle')
     setRunId(null)
-    setAgentStates({})
+    setAgentStates(demoProject ? DEMO_AGENT_STATES : {})
     setRoundUpdate(null)
     setMessages([])
     setRunChunks([])
@@ -115,6 +119,9 @@ export default function ProjectRunPage() {
       key={project}
       project={project}
       phenomenon={phenomenon}
+      initialScientificState={demoProject ? DEMO_SCIENTIFIC_STATE : undefined}
+      initialAgentStates={demoProject ? DEMO_AGENT_STATES : undefined}
+      skipHistoryLoad={demoProject}
       maxRounds={maxRounds}
       executionMode={executionMode}
       selectedAgent={selectedAgent}
@@ -133,13 +140,13 @@ export default function ProjectRunPage() {
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/"
-              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] transition-colors hover:text-white"
+              className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] transition-colors hover:text-white"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               项目
             </Link>
             <span className="text-white/20">/</span>
-            <span className="truncate font-mono text-[11px] uppercase tracking-[0.12em] text-white">
+            <span className="truncate font-mono text-[12px] uppercase tracking-[0.12em] text-white">
               {project}
             </span>
           </div>
@@ -160,7 +167,7 @@ export default function ProjectRunPage() {
                   key={item.id}
                   type="button"
                   onClick={() => setView(item.id)}
-                  className={`relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition-colors ${view === item.id ? 'text-[#0a0a0a]' : 'text-[var(--color-text-muted)] hover:text-white'}`}
+                  className={`relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] transition-colors ${view === item.id ? 'text-[#0a0a0a]' : 'text-[var(--color-text-muted)] hover:text-white'}`}
                 >
                   {view === item.id && (
                     <motion.span
@@ -177,7 +184,7 @@ export default function ProjectRunPage() {
           <button
             type="button"
             onClick={() => setChatCollapsed((value) => !value)}
-            className={`console-toggle ${!chatCollapsed ? 'console-toggle-open' : ''}`}
+            className={`console-toggle md:hidden ${!chatCollapsed ? 'console-toggle-open' : ''}`}
             aria-expanded={!chatCollapsed}
             aria-controls="project-run-console"
           >
@@ -193,10 +200,32 @@ export default function ProjectRunPage() {
               <PanelRightClose className="h-3.5 w-3.5" />
             )}
           </button>
+          <button
+            type="button"
+            onClick={() => setDesktopChatCollapsed((value) => !value)}
+            className={`console-toggle hidden md:inline-flex ${!desktopChatCollapsed ? 'console-toggle-open' : ''}`}
+            aria-expanded={!desktopChatCollapsed}
+            aria-controls="project-run-console"
+            aria-label={desktopChatCollapsed ? '展开运行控制台' : '收回运行控制台'}
+          >
+            <span
+              className={`console-toggle-dot ${consoleStatus === '运行中' ? 'console-toggle-dot-live' : ''}`}
+            />
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span className="console-toggle-label">运行控制台</span>
+            <span className="console-toggle-status">{consoleStatus}</span>
+            {desktopChatCollapsed ? (
+              <PanelRightOpen className="h-3.5 w-3.5" />
+            ) : (
+              <PanelRightClose className="h-3.5 w-3.5" />
+            )}
+          </button>
         </header>
 
-        <div className="relative min-h-0 flex-1">
-          <main className="h-full min-h-0 min-w-0 overflow-hidden">
+        <div className="relative flex min-h-0 flex-1">
+          <main
+            className={`h-full min-h-0 min-w-0 flex-1 overflow-hidden ${desktopChatCollapsed ? 'project-main-console-collapsed' : 'project-main-console-open'}`}
+          >
             <AnimatePresence initial={false}>
               {view === 'workbench' && (
                 <motion.div
@@ -208,8 +237,6 @@ export default function ProjectRunPage() {
                 >
                   <ScientificWorkbench
                     state={scientificState}
-                    phenomenon={phenomenon}
-                    onPhenomenonChange={setPhenomenon}
                     streamState={streamState}
                     agentStates={agentStates}
                     runId={runId}
@@ -230,6 +257,7 @@ export default function ProjectRunPage() {
                 >
                   <ScientificOrchestration
                     state={scientificState.orchestration}
+                    isDemo={demoProject}
                     selectedAgent={selectedAgent}
                     onSelectAgent={(role) => {
                       setSelectedAgent(role)
@@ -293,18 +321,15 @@ export default function ProjectRunPage() {
             )}
           </AnimatePresence>
 
-          <motion.aside
+          <aside
             id="project-run-console"
-            aria-hidden={chatCollapsed}
-            initial={false}
-            animate={{ x: chatCollapsed ? 'calc(100% + 1rem)' : 0, opacity: chatCollapsed ? 0 : 1 }}
-            transition={{ duration: 0.26, ease: 'easeInOut' }}
-            className="project-console"
-            style={{ pointerEvents: chatCollapsed ? 'none' : 'auto' }}
+            className={`project-console ${chatCollapsed ? 'project-console-collapsed' : ''} ${desktopChatCollapsed ? 'project-console-desktop-collapsed' : ''}`}
           >
             <ChatPanel
               project={project}
               phenomenon={phenomenon}
+              readOnly={demoProject}
+              onPhenomenonChange={setPhenomenon}
               maxRounds={maxRounds}
               executionMode={executionMode}
               selectedAgent={selectedAgent}
@@ -325,7 +350,7 @@ export default function ProjectRunPage() {
               availableHypos={available.hypos}
               runtimeProvided
             />
-          </motion.aside>
+          </aside>
         </div>
       </div>
     </WorkflowRuntimeProvider>

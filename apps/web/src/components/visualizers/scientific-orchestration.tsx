@@ -7,6 +7,7 @@ import {
   CircleDot,
   Database,
   GitBranch,
+  History,
   LoaderCircle,
   ShieldCheck,
   XCircle,
@@ -50,10 +51,12 @@ function StatusGlyph({
 function NodeCard({
   node,
   selected,
+  dimmed,
   onSelect,
 }: {
   node: OrchestrationNodeView
   selected: boolean
+  dimmed: boolean
   onSelect: () => void
 }) {
   const structural = node.id === 'B.dispatch' || node.id === 'B.aggregate'
@@ -63,7 +66,7 @@ function NodeCard({
       type="button"
       layout
       onClick={onSelect}
-      className={`orchestration-node-card orchestration-state-${node.state} ${structural ? 'orchestration-node-structural' : ''} ${selected ? 'orchestration-node-selected' : ''}`}
+      className={`orchestration-node-card orchestration-state-${node.state} ${structural ? 'orchestration-node-structural' : ''} ${selected ? 'orchestration-node-selected' : ''} ${dimmed ? 'orchestration-round-dimmed' : ''}`}
     >
       <span className="orchestration-node-icon">
         <StatusGlyph state={node.state} />
@@ -83,10 +86,12 @@ function NodeCard({
 function WorkerCard({
   worker,
   selected,
+  dimmed,
   onSelect,
 }: {
   worker: OrchestrationWorkerView
   selected: boolean
+  dimmed: boolean
   onSelect: () => void
 }) {
   return (
@@ -94,7 +99,7 @@ function WorkerCard({
       type="button"
       layout
       onClick={onSelect}
-      className={`orchestration-worker-card orchestration-state-${worker.state} ${selected ? 'orchestration-worker-selected' : ''}`}
+      className={`orchestration-worker-card orchestration-state-${worker.state} ${selected ? 'orchestration-worker-selected' : ''} ${dimmed ? 'orchestration-round-dimmed' : ''}`}
     >
       <span className="orchestration-worker-top">
         <span className="orchestration-worker-dot">
@@ -120,6 +125,7 @@ export function ScientificOrchestration({
   const orchestration = state ?? EMPTY_ORCHESTRATION
   const view = useMemo(() => buildOrchestrationViewModel(orchestration), [orchestration])
   const [selection, setSelection] = useState<OrchestrationSelection | null>(view.suggestedSelection)
+  const [focusedRound, setFocusedRound] = useState<number | null>(null)
 
   useEffect(() => {
     setSelection((current) => {
@@ -163,12 +169,39 @@ export function ScientificOrchestration({
     selection?.kind === 'worker'
       ? (view.workers.items.find((worker) => worker.id === selection.id) ?? null)
       : null
+  const selectedStageId = selectedNode
+    ? (view.stages.find((stage) => stage.nodes.some((node) => node.id === selectedNode.id))?.id ??
+      null)
+    : selectedWorker
+      ? 'B'
+      : null
+  const selectedStageIndex = selectedStageId
+    ? view.stages.findIndex((stage) => stage.id === selectedStageId)
+    : -1
+  const orchestrationRounds = useMemo(() => {
+    const rounds = new Set<number>()
+    view.stages
+      .flatMap((stage) => stage.nodes)
+      .forEach((node) => {
+        if (node.round != null) rounds.add(node.round)
+      })
+    view.workers.items.forEach((worker) => {
+      if (worker.round != null) rounds.add(worker.round)
+    })
+    if (view.route.round != null) rounds.add(view.route.round)
+    return [...rounds].sort((left, right) => left - right)
+  }, [view])
+  const activeFocusedRound =
+    focusedRound != null && orchestrationRounds.includes(focusedRound) ? focusedRound : null
+  const isRoundDimmed = (itemRound: number | null) =>
+    activeFocusedRound != null && itemRound != null && itemRound !== activeFocusedRound
   const runtimeNodes = view.stages
     .flatMap((stage) => stage.nodes)
     .filter((node) => node.id !== 'B.dispatch' && node.id !== 'B.aggregate')
   const completedNodes = runtimeNodes.filter((node) => node.state === 'completed').length
   const activeWorkers = view.workers.summary.running
   const completedWorkers = view.workers.summary.completed
+  const queuedWorkers = view.workers.summary.queued
   const deterministicWorkers = view.workers.items.filter(
     (worker) => worker.executionKind !== 'model',
   )
@@ -185,6 +218,12 @@ export function ScientificOrchestration({
     view.route.round ??
     view.stages.flatMap((stage) => stage.nodes).find((node) => node.round != null)?.round ??
     1
+  const activeStage =
+    view.stages.find((stage) => stage.nodes.some((node) => node.state === 'running')) ??
+    view.stages.find((stage) => stage.id === view.route.target) ??
+    view.stages.find((stage) => stage.nodes.some((node) => node.state !== 'completed')) ??
+    view.stages[0]
+  const activeStageLabel = activeStage ? `${activeStage.id} · ${activeStage.title}` : '等待运行'
 
   const selectWorker = (worker: OrchestrationWorkerView) => {
     setSelection({ kind: 'worker', id: worker.id })
@@ -211,6 +250,26 @@ export function ScientificOrchestration({
           </p>
         </div>
         <div className="orchestration-header-actions">
+          {orchestrationRounds.length > 1 && (
+            <label className="orchestration-round-control">
+              <History className="h-3.5 w-3.5" />
+              <span>轮次聚焦</span>
+              <select
+                value={activeFocusedRound ?? ''}
+                onChange={(event) =>
+                  setFocusedRound(event.target.value === '' ? null : Number(event.target.value))
+                }
+                aria-label="编排轮次聚焦"
+              >
+                <option value="">当前轮</option>
+                {orchestrationRounds.map((availableRound) => (
+                  <option key={availableRound} value={availableRound}>
+                    第 {availableRound} 轮
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <span className="orchestration-live-label">
             <span className="orchestration-footer-dot" />
             {runStateLabel}
@@ -220,6 +279,10 @@ export function ScientificOrchestration({
       </header>
 
       <div className="orchestration-summary" aria-label="编排摘要">
+        <div>
+          <span>当前阶段</span>
+          <strong>{activeStageLabel}</strong>
+        </div>
         <div>
           <span>运行节点</span>
           <strong>
@@ -232,8 +295,10 @@ export function ScientificOrchestration({
             {activeWorkers > 0
               ? `${activeWorkers} 项进行中`
               : completedWorkers > 0
-                ? `${completedWorkers} 项已完成`
-                : '等待分发'}
+                ? `${completedWorkers} 项已完成${queuedWorkers > 0 ? ` · ${queuedWorkers} 项排队` : ''}`
+                : queuedWorkers > 0
+                  ? `${queuedWorkers} 项排队`
+                  : '等待分发'}
           </strong>
         </div>
         <div>
@@ -247,12 +312,44 @@ export function ScientificOrchestration({
       </div>
 
       <div className="orchestration-control-grid">
-        <div className="orchestration-canvas">
+        <div
+          className={
+            selection
+              ? 'orchestration-canvas orchestration-selection-active'
+              : 'orchestration-canvas'
+          }
+        >
+          <div className="orchestration-canvas-topline">
+            <span>流程路径</span>
+            <div className="orchestration-legend" aria-label="节点类型图例">
+              <span>
+                <i className="orchestration-legend-control" />
+                流程节点
+              </span>
+              <span>
+                <i className="orchestration-legend-agent" />
+                智能体任务
+              </span>
+              <span>
+                <i className="orchestration-legend-active" />
+                当前焦点
+              </span>
+            </div>
+          </div>
           <div className="orchestration-stage-grid">
             {view.stages.map((stage, index) => (
               <div key={stage.id} className="contents">
                 <section
-                  className={`orchestration-stage-card orchestration-stage-${stage.id}`}
+                  className={
+                    'orchestration-stage-card orchestration-stage-' +
+                    stage.id +
+                    ' ' +
+                    (selectedStageId === stage.id
+                      ? 'orchestration-stage-focused'
+                      : selectedStageId
+                        ? 'orchestration-stage-context'
+                        : '')
+                  }
                   aria-label={`${stage.id} 阶段：${stage.title}`}
                 >
                   <header>
@@ -268,6 +365,7 @@ export function ScientificOrchestration({
                         key={node.id}
                         node={node}
                         selected={selection?.kind === 'node' && selection.id === node.id}
+                        dimmed={isRoundDimmed(node.round)}
                         onSelect={() => selectNode(node.id)}
                       />
                     ))}
@@ -284,6 +382,7 @@ export function ScientificOrchestration({
                                 key={worker.id}
                                 worker={worker}
                                 selected={isWorkerSelected(worker)}
+                                dimmed={isRoundDimmed(worker.round)}
                                 onSelect={() => selectWorker(worker)}
                               />
                             ))}
@@ -303,6 +402,7 @@ export function ScientificOrchestration({
                                 key={worker.id}
                                 worker={worker}
                                 selected={isWorkerSelected(worker)}
+                                dimmed={isRoundDimmed(worker.round)}
                                 onSelect={() => selectWorker(worker)}
                               />
                             ))}
@@ -316,6 +416,7 @@ export function ScientificOrchestration({
                             key={node.id}
                             node={node}
                             selected={selection?.kind === 'node' && selection.id === node.id}
+                            dimmed={isRoundDimmed(node.round)}
                             onSelect={() => selectNode(node.id)}
                           />
                         ))}
@@ -324,7 +425,14 @@ export function ScientificOrchestration({
                   </div>
                 </section>
                 {index < view.stages.length - 1 && (
-                  <div className="orchestration-stage-arrow" aria-hidden="true">
+                  <div
+                    className={
+                      selectedStageIndex >= 0 && Math.abs(index - selectedStageIndex) <= 1
+                        ? 'orchestration-stage-arrow orchestration-stage-arrow-focused'
+                        : 'orchestration-stage-arrow'
+                    }
+                    aria-hidden="true"
+                  >
                     <ArrowRight className="h-4 w-4" />
                   </div>
                 )}
@@ -376,6 +484,14 @@ export function ScientificOrchestration({
                   <dt>写入</dt>
                   <dd>{selectedNode.writes}</dd>
                 </div>
+                <div>
+                  <dt>所属阶段</dt>
+                  <dd>{selectedStageId ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt>记录轮次</dt>
+                  <dd>{selectedNode.round ?? '—'}</dd>
+                </div>
               </dl>
               {selectedNode.round != null && <small>第 {selectedNode.round} 轮</small>}
             </div>
@@ -404,6 +520,10 @@ export function ScientificOrchestration({
                 <div>
                   <dt>控制台筛选</dt>
                   <dd>{selectedWorker.role}</dd>
+                </div>
+                <div>
+                  <dt>记录轮次</dt>
+                  <dd>{selectedWorker.round ?? '—'}</dd>
                 </div>
               </dl>
               <button

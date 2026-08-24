@@ -64,7 +64,7 @@ function AgentNodeCard({ data }: NodeProps<AgentNode>) {
         </div>
         <span
           className={cn(
-            'rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[1px]',
+            'rounded-full border px-2 py-0.5 font-mono text-[12px] uppercase tracking-[1px]',
             badge.cls,
           )}
         >
@@ -75,7 +75,7 @@ function AgentNodeCard({ data }: NodeProps<AgentNode>) {
       {/* Current active tool */}
       {data.currentTool && (
         <div
-          className="mt-2.5 flex items-center gap-1.5 rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 font-mono text-[10px] text-muted"
+          className="mt-2.5 flex items-center gap-1.5 rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 font-mono text-[11px] text-muted"
           title={data.currentTool}
         >
           <span className="h-1 w-1 rounded-full bg-[var(--color-sunset)]" />
@@ -86,7 +86,7 @@ function AgentNodeCard({ data }: NodeProps<AgentNode>) {
       {/* Token usage progress bar */}
       {tokenPct !== null && (
         <div className="mt-3 border-t border-[var(--color-border)]/60 pt-2">
-          <div className="flex justify-between font-mono text-[9px] uppercase tracking-[1px] text-muted">
+          <div className="flex justify-between font-mono text-[12px] uppercase tracking-[1px] text-muted">
             <span>Tokens</span>
             <span className="tabular-nums">
               {data.tokenUsage} / {data.tokenLimit}

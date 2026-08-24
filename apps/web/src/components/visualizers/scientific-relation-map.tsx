@@ -84,6 +84,7 @@ interface ConceptFlowNodeData extends Record<string, unknown> {
   focused: boolean
   selected: boolean
   dimmed: boolean
+  historical: boolean
   onHover: (id: string | null) => void
 }
 
@@ -105,17 +106,20 @@ const LAYERS: Array<{ id: LayerId; label: string; kinds: ConceptNodeKind[] }> = 
   { id: 'conclusions', label: '历史结论', kinds: ['conclusion'] },
 ]
 
-const KIND_ANCHOR_X: Record<ConceptNodeKind, number> = {
-  source: 100,
-  phenomenon: 270,
-  mechanism: 420,
-  hypothesis: 575,
-  prediction: 735,
-  processing: 680,
-  evidence: 825,
-  task: 1040,
-  conclusion: 1160,
-}
+// The graph is laid out as a compact execution timeline. Every visible update
+// is reflowed by step, so adding a layer cannot push a later step in front of
+// an earlier one.
+const EXECUTION_STEPS: ConceptNodeKind[][] = [
+  ['phenomenon'],
+  ['source'],
+  ['mechanism'],
+  ['hypothesis'],
+  ['prediction'],
+  ['processing'],
+  ['evidence'],
+  ['task'],
+  ['conclusion'],
+]
 
 function compact(text: string | undefined, maximum = 34): string {
   if (!text) return '未登记'
@@ -144,20 +148,26 @@ function numberValue(value: unknown): number | null {
 }
 
 function edgeColor(kind: ConceptEdgeKind): string {
-  if (kind === 'support') return '#91dfba'
+  if (kind === 'support') return '#6dba96ff'
   if (kind === 'contradict') return '#ff9d9d'
-  if (kind === 'unknown') return '#76bdd0'
-  if (kind === 'composition' || kind === 'task') return '#c8a7ff'
-  if (kind === 'input' || kind === 'synthesis') return '#ffc285'
+  if (kind === 'unknown') return '#b7c9f4'
+  if (kind === 'prediction') return '#5792a9ff'
+  if (kind === 'composition' || kind === 'task') return '#9b75b1ff'
+  if (kind === 'input' ) return '#dccc6fff'
+  if ( kind === 'synthesis') return '#f3c97cff'
+
   return '#82dcef'
 }
 
 function nodeColor(node: ConceptGraphNode): string {
-  if (node.kind === 'phenomenon' || node.kind === 'conclusion') return '#ffc285'
-  if (node.kind === 'mechanism' || node.kind === 'task') return '#c8a7ff'
+  if (node.kind === 'phenomenon' ) return '#d6bc6fff'
+   if ( node.kind === 'conclusion') return '#f1ac7aff'
+  if (node.kind === 'mechanism' || node.kind === 'task') return 'rgba(187, 154, 240, 1)'
   if (node.kind === 'hypothesis') return '#a9edcc'
-  if (node.kind === 'evidence' && node.status === 'support') return '#91dfba'
-  if (node.kind === 'evidence' && node.status === 'contradict') return '#ff9d9d'
+   if (node.kind === 'prediction') return '#abd0e7ff'
+  if (node.kind === 'evidence' && node.status === 'support') return '#c9ed8d'
+  if (node.kind === 'evidence' && node.status === 'contradict') return '#ffb7c7'
+  if (node.kind === 'evidence') return '#b7c9f4'
   return '#82dcef'
 }
 
@@ -188,79 +198,71 @@ function nodeIcon(kind: ConceptNodeKind) {
   return Network
 }
 
-function forceLayout(
-  nodes: Omit<ConceptGraphNode, 'position'>[],
-  edges: ConceptGraphEdge[],
-): ConceptGraphNode[] {
-  const width = 1280
-  const height = 760
-  const positions = nodes.map((node, index) => {
-    const hash = stableHash(node.id)
-    const xNoise = ((hash % 1000) / 1000 - 0.5) * 110
-    const y = 74 + (((hash >>> 10) % 1000) / 1000) * (height - 148)
-    if (node.kind === 'phenomenon') return { x: 270, y: height / 2 }
-    if (node.kind === 'conclusion') return { x: 1120 + (index % 2) * 48, y }
-    return { x: KIND_ANCHOR_X[node.kind] + xNoise, y }
+const TERMINAL_NODE_STATUSES = new Set([
+  'eliminated',
+  'completed',
+  'complete',
+  'failed',
+  'blocked',
+  'rejected',
+  'resolved',
+  'closed',
+  'done',
+  'support',
+  'contradict',
+  'winner',
+  'accepted',
+  'superseded',
+  'invalid',
+  'verified',
+  'unsupported',
+  'cancelled',
+  'skipped',
+  'terminated',
+])
+
+function isEndedNode(node: ConceptGraphNode): boolean {
+  if (node.kind === 'conclusion') return true
+  return TERMINAL_NODE_STATUSES.has((node.status ?? '').toLowerCase())
+}
+
+  function compareConceptNodes(left: Omit<ConceptGraphNode, 'position'>, right: Omit<ConceptGraphNode, 'position'>): number {
+   const leftFinal = left.code.endsWith('*')
+  const rightFinal = right.code.endsWith('*')
+  if (leftFinal !== rightFinal) return leftFinal ? 1 : -1
+    return left.code.localeCompare(right.code, undefined, { numeric: true, sensitivity: 'base' }) || left.id.localeCompare(right.id)
+}
+function executionStepLayout(nodes: Omit<ConceptGraphNode, 'position'>[]): ConceptGraphNode[] {
+  const stepByKind = new Map<ConceptNodeKind, number>()
+  EXECUTION_STEPS.forEach((kinds, step) => kinds.forEach((kind) => stepByKind.set(kind, step)))
+
+ const nodesByStep = EXECUTION_STEPS.map(() => [] as Omit<ConceptGraphNode, 'position'>[])
+  nodes.forEach((node) => nodesByStep[stepByKind.get(node.kind) ?? 0]!.push(node))
+
+    const nodesPerLane = 6
+  const nodeWidth = 116
+  const laneGap = 28
+  const stepGap = 48
+  const top = 62
+  const height = 700
+  let nextStepX = 72
+
+  return nodesByStep.flatMap((stepNodes) => {
+    if (stepNodes.length === 0) return []
+   const orderedStepNodes = [...stepNodes].sort(compareConceptNodes)
+    const laneCount = Math.ceil(orderedStepNodes.length / nodesPerLane)
+    const rowCount = Math.min(orderedStepNodes.length, nodesPerLane)
+    const stepWidth = laneCount * nodeWidth + (laneCount - 1) * laneGap
+    const positioned = orderedStepNodes.map((node, index) => {
+      const lane = Math.floor(index / nodesPerLane)
+      const row = index % nodesPerLane
+      const y = rowCount === 1 ? height / 2 : top + (row * (height - top * 2)) / (rowCount - 1)
+      return { ...node, position: { x: nextStepX + lane * (nodeWidth + laneGap), y } }
+    })
+
+ nextStepX += stepWidth + stepGap
+    return positioned
   })
-  const velocity = nodes.map(() => ({ x: 0, y: 0 }))
-  const indexById = new Map(nodes.map((node, index) => [node.id, index]))
-
-  for (let iteration = 0; iteration < 170; iteration += 1) {
-    for (let left = 0; left < nodes.length; left += 1) {
-      for (let right = left + 1; right < nodes.length; right += 1) {
-        const leftPosition = positions[left]!
-        const rightPosition = positions[right]!
-        const leftVelocity = velocity[left]!
-        const rightVelocity = velocity[right]!
-        const dx = rightPosition.x - leftPosition.x
-        const dy = rightPosition.y - leftPosition.y
-        const distanceSquared = Math.max(dx * dx + dy * dy, 80)
-        const distance = Math.sqrt(distanceSquared)
-        const strength = Math.min(1.7, 5200 / distanceSquared)
-        const fx = (dx / distance) * strength
-        const fy = (dy / distance) * strength
-        leftVelocity.x -= fx
-        leftVelocity.y -= fy
-        rightVelocity.x += fx
-        rightVelocity.y += fy
-      }
-    }
-
-    edges.forEach((edge) => {
-      const sourceIndex = indexById.get(edge.source)
-      const targetIndex = indexById.get(edge.target)
-      if (sourceIndex == null || targetIndex == null) return
-      const sourcePosition = positions[sourceIndex]!
-      const targetPosition = positions[targetIndex]!
-      const sourceVelocity = velocity[sourceIndex]!
-      const targetVelocity = velocity[targetIndex]!
-      const dx = targetPosition.x - sourcePosition.x
-      const dy = targetPosition.y - sourcePosition.y
-      const distance = Math.max(Math.sqrt(dx * dx + dy * dy), 1)
-      const desired = edge.kind === 'source' || edge.kind === 'composition' ? 125 : 145
-      const strength = (distance - desired) * 0.0035
-      const fx = (dx / distance) * strength
-      const fy = (dy / distance) * strength
-      sourceVelocity.x += fx
-      sourceVelocity.y += fy
-      targetVelocity.x -= fx
-      targetVelocity.y -= fy
-    })
-
-    nodes.forEach((node, index) => {
-      const anchorStrength = node.kind === 'phenomenon' ? 0.045 : 0.008
-      const position = positions[index]!
-      const nodeVelocity = velocity[index]!
-      nodeVelocity.x += (KIND_ANCHOR_X[node.kind] - position.x) * anchorStrength
-      nodeVelocity.y += (height / 2 - position.y) * 0.0015
-      nodeVelocity.x *= 0.82
-      nodeVelocity.y *= 0.82
-      position.x = Math.max(38, Math.min(width - 38, position.x + nodeVelocity.x))
-      position.y = Math.max(42, Math.min(height - 42, position.y + nodeVelocity.y))
-    })
-  }
-
-  return nodes.map((node, index) => ({ ...node, position: positions[index]! }))
 }
 
 function buildScientificGraph(state: ScientificWorkbenchState, round: number) {
@@ -525,7 +527,7 @@ function buildScientificGraph(state: ScientificWorkbenchState, round: number) {
   }
 
   const validEdges = edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
-  return { nodes: forceLayout(nodes, validEdges), edges: validEdges }
+    return { nodes: executionStepLayout(nodes), edges: validEdges }
 }
 
 function layerForKind(kind: ConceptNodeKind): LayerId | null {
@@ -536,18 +538,17 @@ function ConceptNodeView({ data }: NodeProps<ConceptFlowNode>) {
   const Icon = nodeIcon(data.model.kind)
   return (
     <div
-      className={`concept-flow-node is-${data.model.kind} ${data.model.status ? `status-${data.model.status}` : ''} ${data.focused ? 'is-focused' : ''} ${data.selected ? 'is-selected' : ''} ${data.dimmed ? 'is-dimmed' : ''}`}
+      className={`concept-flow-node is-${data.model.kind} ${data.model.status ? `status-${data.model.status}` : ''} ${data.focused ? 'is-focused' : ''} ${data.selected ? 'is-selected' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${data.historical ? 'is-historical' : ''}`}
       data-kind={data.model.kind}
       data-node-id={data.model.id}
-      onMouseEnter={() => data.onHover(data.model.id)}
-      onMouseLeave={() => data.onHover(null)}
+      onPointerEnter={() => data.onHover(data.model.id)}
+      onPointerLeave={() => data.onHover(null)}
     >
       <Handle type="target" position={Position.Left} className="concept-flow-handle" isConnectable={false} />
       <span className="concept-flow-node-core" style={{ '--concept-color': nodeColor(data.model) } as React.CSSProperties}>
         <Icon />
         <strong>{data.model.code}</strong>
       </span>
-      <span className="concept-flow-node-label">{data.model.label}</span>
       <span className="concept-flow-tooltip" aria-hidden={!data.focused || data.selected}>
         <b>{data.model.summary}</b>
         <small>{data.model.meta[0]}</small>
@@ -563,26 +564,54 @@ const NODE_TYPES = { 'scientific-concept': ConceptNodeView }
 export function ScientificRelationMap({ state }: { state: ScientificWorkbenchState }) {
   const rounds = useMemo(() => scientificRounds(state), [state])
   const latestRound = rounds.at(-1) ?? Math.max(state.round, 1)
-  const [round, setRound] = useState(latestRound)
+  const [viewMode, setViewMode] = useState<'cumulative' | 'single'>('cumulative')
+  const [cumulativeRound, setCumulativeRound] = useState(latestRound)
+  const [singleRound, setSingleRound] = useState(latestRound)
   const [enabledLayers, setEnabledLayers] = useState<Set<LayerId>>(() => new Set<LayerId>())
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [expandedHypothesisId, setExpandedHypothesisId] = useState<string | null>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState<ConceptFlowNode>([])
   const instanceRef = useRef<ReactFlowInstance<ConceptFlowNode, ConceptFlowEdge> | null>(null)
+  const appliedStructureKeyRef = useRef<string | null>(null)
+   const hoverClearTimerRef = useRef<number | null>(null)
   const reduceMotion = useReducedMotion()
 
-  useEffect(() => setRound((current) => (rounds.includes(current) ? current : latestRound)), [latestRound, rounds])
+  const round = viewMode === 'cumulative' ? cumulativeRound : singleRound
+
+  useEffect(() => {
+    setCumulativeRound((current) => (rounds.includes(current) ? current : latestRound))
+    setSingleRound((current) => (rounds.includes(current) ? current : latestRound))
+  }, [latestRound, rounds])
+
+  useEffect(() => {
+    if (viewMode === 'single') {
+      setEnabledLayers(new Set(LAYERS.map((layer) => layer.id)))
+    } else {
+      setEnabledLayers(new Set())
+    }
+  }, [viewMode])
+
+const handleHover = useCallback((id: string | null) => {
+    if (hoverClearTimerRef.current != null) {
+      window.clearTimeout(hoverClearTimerRef.current)
+      hoverClearTimerRef.current = null
+    }
+    if (id) {
+      setHoveredId(id)
+      return
+    }
+    hoverClearTimerRef.current = window.setTimeout(() => {
+      hoverClearTimerRef.current = null
+      setHoveredId(null)
+    }, 140)
+  }, [])
+
+  useEffect(() => () => {
+    if (hoverClearTimerRef.current != null) window.clearTimeout(hoverClearTimerRef.current)
+  }, [])
+
   const graph = useMemo(() => buildScientificGraph(state, round), [round, state])
-  const coreMechanismIds = useMemo(() => {
-    const hypothesisTargetsByMechanism = new Map<string, Set<string>>()
-    graph.edges.filter((edge) => edge.kind === 'composition').forEach((edge) => {
-      const targets = hypothesisTargetsByMechanism.get(edge.source) ?? new Set<string>()
-      targets.add(edge.target)
-      hypothesisTargetsByMechanism.set(edge.source, targets)
-    })
-    return new Set(Array.from(hypothesisTargetsByMechanism.entries()).filter(([, targets]) => targets.size > 1).map(([id]) => id))
-  }, [graph.edges])
   const branchIds = useMemo(() => {
     const ids = new Set<string>()
     if (!expandedHypothesisId) return ids
@@ -607,20 +636,60 @@ export function ScientificRelationMap({ state }: { state: ScientificWorkbenchSta
     const kind = graph.nodes.find((node) => node.id === id)?.kind
     return id === expandedHypothesisId || kind === 'mechanism' || kind === 'prediction'
   })), [branchIds, expandedHypothesisId, graph.nodes])
-  const visibleModels = useMemo(
+  const roundRelatedIds = useMemo(() => {
+    const ids = new Set(
+      graph.nodes
+        .filter((node) => node.round === round || node.kind === 'phenomenon')
+        .map((node) => node.id),
+    )
+    let changed = true
+    while (changed) {
+      changed = false
+      graph.edges.forEach((edge) => {
+        // Follow only upstream edges. This keeps a single-round view focused
+        // on the selected round and the preceding steps that explain it.
+        if (!ids.has(edge.target) || ids.has(edge.source)) return
+        if (!ids.has(edge.source)) {
+          ids.add(edge.source)
+          changed = true
+        }
+      })
+    }
+    return ids
+  }, [graph.edges, graph.nodes, round])
+  const singleVisibleIds = useMemo(() => {
+    const ids = new Set(roundRelatedIds)
+    graph.nodes.forEach((node) => {
+      if (node.round != null && node.round < round && isEndedNode(node)) ids.add(node.id)
+    })
+    return ids
+  }, [graph.nodes, round, roundRelatedIds])
+  const singleHistoricalIds = useMemo(
+    () => new Set(
+      graph.nodes
+        .filter((node) => viewMode === 'single' && node.round != null && node.round < round && isEndedNode(node))
+        .map((node) => node.id),
+    ),
+    [graph.nodes, round, viewMode],
+  )
+ const candidateModels = useMemo(
     () => graph.nodes.filter((node) => {
+       if (viewMode === 'single' && !singleVisibleIds.has(node.id)) return false
       if (expandedIds.has(node.id)) return true
-      if (node.kind === 'mechanism' && coreMechanismIds.has(node.id)) return true
       if (node.kind === 'conclusion' && (node.id === 'conclusion:final' || node.round === round)) return true
       const layer = layerForKind(node.kind)
       if (layer == null) return true
       if (!enabledLayers.has(layer)) return false
-      if (expandedHypothesisId && ['source', 'mechanism', 'prediction', 'processing', 'evidence', 'task'].includes(node.kind) && !branchIds.has(node.id)) return false
-      if (node.kind === 'evidence' || node.kind === 'processing' || node.kind === 'task') return node.round === round
+            if (viewMode !== 'single' && expandedHypothesisId && ['source', 'mechanism', 'prediction', 'processing', 'evidence', 'task'].includes(node.kind) && !branchIds.has(node.id)) return false
+      if (viewMode !== 'single' && (node.kind === 'evidence' || node.kind === 'processing' || node.kind === 'task')) return node.round === round
       return true
     }),
-    [branchIds, coreMechanismIds, enabledLayers, expandedHypothesisId, expandedIds, graph.nodes, round],
+    [branchIds, enabledLayers, expandedHypothesisId, expandedIds, graph.nodes, round, singleVisibleIds, viewMode],
   )
+  const visibleModels = useMemo(() => executionStepLayout(candidateModels.map((node) => {
+    const { position: _position, ...model } = node
+    return model
+  })), [candidateModels])
   const visibleIds = useMemo(() => new Set(visibleModels.map((node) => node.id)), [visibleModels])
   const visibleEdges = useMemo(
     () => graph.edges.filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target)),
@@ -641,12 +710,15 @@ export function ScientificRelationMap({ state }: { state: ScientificWorkbenchSta
   }, [activeId, visibleEdges])
 
   useEffect(() => {
+  const nextStructureKey = visibleModels.map((node) => `${node.id}:${node.position.x}:${node.position.y}`).join('|')
+    const resetPositions = appliedStructureKeyRef.current !== nextStructureKey
+    appliedStructureKeyRef.current = nextStructureKey
     setNodes((current) => {
       const positions = new Map(current.map((node) => [node.id, node.position]))
       return visibleModels.map((model) => ({
         id: model.id,
         type: 'scientific-concept',
-        position: positions.get(model.id) ?? model.position,
+        position: resetPositions ? model.position : positions.get(model.id) ?? model.position,
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
         draggable: true,
@@ -657,14 +729,15 @@ export function ScientificRelationMap({ state }: { state: ScientificWorkbenchSta
           model,
           focused: activeId === model.id,
           selected: selectedId === model.id,
-          dimmed: Boolean(activeId && !relatedIds.has(model.id)),
-          onHover: setHoveredId,
+            dimmed: Boolean((activeId && !relatedIds.has(model.id)) || singleHistoricalIds.has(model.id)),
+          historical: singleHistoricalIds.has(model.id),
+           onHover: handleHover,
         },
       }))
     })
-  }, [activeId, relatedIds, selectedId, setNodes, visibleModels])
+ }, [activeId, handleHover, relatedIds, selectedId, setNodes, singleHistoricalIds, visibleModels])
 
-  const structureKey = useMemo(() => visibleModels.map((node) => node.id).join('|'), [visibleModels])
+  const structureKey = useMemo(() => visibleModels.map((node) => `${node.id}:${node.position.x}:${node.position.y}`).join('|'), [visibleModels])
   useEffect(() => {
     const timer = window.setTimeout(() => instanceRef.current?.fitView({ padding: 0.14, duration: reduceMotion ? 0 : 320 }), 60)
     return () => window.clearTimeout(timer)
@@ -678,6 +751,7 @@ export function ScientificRelationMap({ state }: { state: ScientificWorkbenchSta
 
   const flowEdges = useMemo<ConceptFlowEdge[]>(() => visibleEdges.map((edge) => {
     const related = !activeId || edge.source === activeId || edge.target === activeId
+     const historical = singleHistoricalIds.has(edge.source) || singleHistoricalIds.has(edge.target)
     const color = edgeColor(edge.kind)
     return {
       id: edge.id,
@@ -686,15 +760,16 @@ export function ScientificRelationMap({ state }: { state: ScientificWorkbenchSta
       type: 'bezier',
       label: activeId && related ? edge.relation : undefined,
       data: { relation: edge.relation, kind: edge.kind },
-      animated: Boolean(activeId && related && !reduceMotion),
+       animated: Boolean(activeId && related && !historical && !reduceMotion),
       markerEnd: { type: MarkerType.ArrowClosed, color, width: 13, height: 13 },
-      style: { stroke: color, strokeWidth: related ? 1.35 : 0.8, opacity: related ? 0.68 : 0.06 },
+     style: { stroke: color, strokeWidth: historical ? 0.7 : related ? 1.35 : 0.8, opacity: historical ? 0.24 : related ? 0.68 : 0.06 },
       labelStyle: { fill: 'rgba(238,244,246,.76)', fontSize: 10, fontFamily: 'var(--font-mono)' },
       labelBgStyle: { fill: '#071015', fillOpacity: 0.92, stroke: color, strokeOpacity: 0.18 },
       labelBgPadding: [5, 3],
       labelBgBorderRadius: 8,
     }
-  }), [activeId, reduceMotion, visibleEdges])
+ }), [activeId, reduceMotion, singleHistoricalIds, visibleEdges])
+
 
   const selectedNode = graph.nodes.find((node) => node.id === selectedId) ?? null
   const expandedHypothesis = graph.nodes.find((node) => node.id === expandedHypothesisId) ?? null
@@ -728,12 +803,28 @@ export function ScientificRelationMap({ state }: { state: ScientificWorkbenchSta
         <div>
           <div className="eyebrow-mono text-cyan-200/70">SCIENTIFIC KNOWLEDGE CONSTELLATION</div>
           <h1>科学概念网络</h1>
-          <p>首屏只保留现象、共享机制、竞争假说和结论。点击某个假说按需展开它的来源、预测、证据、处理与任务；节点可拖动，空白处可平移。</p>
+          <p>可切换累计轮次或单独轮次；单轮视图保留本轮及其上游关联步骤，已结束节点会弱化显示。点击假说可展开来源、预测、证据、处理与任务；节点可拖动，空白处可平移。</p>
         </div>
-        <div className="relation-round-picker" aria-label="概念网络轮次">
-          {rounds.map((item) => (
-            <button key={item} type="button" className={round === item ? 'is-active' : ''} aria-pressed={round === item} onClick={() => setRound(item)}>累计至第 {item} 轮</button>
-          ))}
+         <div className="concept-round-controls" aria-label="概念网络轮次选择">
+          <label className="concept-round-control">
+            <span>展示方式</span>
+            <select value={viewMode} onChange={(event) => setViewMode(event.target.value as 'cumulative' | 'single')}>
+              <option value="cumulative">累计轮次</option>
+              <option value="single">单独轮次</option>
+            </select>
+          </label>
+          <label className={`concept-round-control ${viewMode === 'cumulative' ? 'is-active' : ''}`}>
+            <span>累计至</span>
+            <select value={cumulativeRound} onChange={(event) => setCumulativeRound(Number(event.target.value))} disabled={viewMode !== 'cumulative'}>
+              {rounds.map((item) => <option key={`cumulative-${item}`} value={item}>第 {item} 轮</option>)}
+            </select>
+          </label>
+          <label className={`concept-round-control ${viewMode === 'single' ? 'is-active' : ''}`}>
+            <span>查看单轮</span>
+            <select value={singleRound} onChange={(event) => setSingleRound(Number(event.target.value))} disabled={viewMode !== 'single'}>
+              {rounds.map((item) => <option key={`single-${item}`} value={item}>第 {item} 轮</option>)}
+            </select>
+          </label>
         </div>
       </header>
 
@@ -748,8 +839,9 @@ export function ScientificRelationMap({ state }: { state: ScientificWorkbenchSta
               {LAYERS.map((layer) => {
                 const count = graph.nodes.filter((node) => {
                   if (!layer.kinds.includes(node.kind)) return false
-                  if (expandedHypothesisId && ['source', 'mechanism', 'prediction', 'processing', 'evidence', 'task'].includes(node.kind) && !branchIds.has(node.id)) return false
-                  if (node.kind === 'evidence' || node.kind === 'processing' || node.kind === 'task') return node.round === round
+                  if (viewMode === 'single' && !singleVisibleIds.has(node.id)) return false
+                  if (viewMode !== 'single' && expandedHypothesisId && ['source', 'mechanism', 'prediction', 'processing', 'evidence', 'task'].includes(node.kind) && !branchIds.has(node.id)) return false
+                 if (viewMode !== 'single' && (node.kind === 'evidence' || node.kind === 'processing' || node.kind === 'task')) return node.round === round
                   return true
                 }).length
                 return <button key={layer.id} type="button" aria-pressed={enabledLayers.has(layer.id)} onClick={() => toggleLayer(layer.id)}>{layer.label}<span>{count}</span></button>
@@ -787,7 +879,7 @@ export function ScientificRelationMap({ state }: { state: ScientificWorkbenchSta
               zoomOnPinch
               proOptions={{ hideAttribution: true }}
             >
-              <Background color="rgba(139,216,238,.075)" gap={28} size={1} />
+              <Background color="rgba(160,195,236,.075)" gap={28} size={1} />
               <MiniMap
                 className="concept-flow-minimap"
                 nodeColor={(node) => nodeColor((node.data as ConceptFlowNodeData).model)}
@@ -797,6 +889,18 @@ export function ScientificRelationMap({ state }: { state: ScientificWorkbenchSta
               />
               <Controls className="concept-flow-controls" showInteractive={false} />
             </ReactFlow>
+              <aside className="concept-flow-node-legend" aria-label="节点类别图例">
+              <b>节点类别</b>
+              <span><strong>Φ</strong>科学现象</span>
+              <span><strong>O</strong>观测来源</span>
+              <span><strong>M</strong>候选机制</span>
+              <span><strong>H</strong>竞争假说</span>
+              <span><strong>P</strong>可检验预测</span>
+              <span><strong>D</strong>确定性处理</span>
+              <span><strong>E</strong>证据记录</span>
+              <span><strong>T</strong>验证任务</span>
+              <span><strong>C</strong>综合结论</span>
+            </aside>
 
             <div className="concept-flow-legend" aria-label="关系图例">
               <span><i className="is-support" />支持</span>

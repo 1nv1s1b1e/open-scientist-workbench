@@ -45,12 +45,12 @@ function ToolShell({
         <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-[var(--color-surface)]">
           {icon}
         </span>
-        <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-body">{name}</span>
+        <span className="font-mono text-[12px] uppercase tracking-[1.2px] text-body">{name}</span>
         {badge && (
-          <span className="font-mono text-[10px] uppercase tracking-[1px] text-muted">{badge}</span>
+          <span className="font-mono text-[11px] uppercase tracking-[1px] text-muted">{badge}</span>
         )}
         {isRunning && (
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-sunset)]">
+          <span className="ml-auto font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-sunset)]">
             running…
           </span>
         )}
@@ -65,10 +65,10 @@ function JsonPreview({ label, data }: { label: string; data: unknown }) {
   if (data == null) return null
   return (
     <details className="group">
-      <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[1px] text-muted transition-colors hover:text-body">
+      <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[1px] text-muted transition-colors hover:text-body">
         {label}
       </summary>
-      <pre className="mt-1.5 max-h-40 overflow-auto rounded-sm bg-[var(--color-surface)] p-2 text-[11px] leading-relaxed text-muted">
+      <pre className="mt-1.5 max-h-40 overflow-auto rounded-sm bg-[var(--color-surface)] p-2 text-[12px] leading-relaxed text-muted">
         {JSON.stringify(data, null, 2)}
       </pre>
     </details>
@@ -86,7 +86,7 @@ export const BashToolUI = makeAssistantToolUI({
       status={status.type}
     >
       {args?.command && (
-        <pre className="rounded-sm bg-[var(--color-surface)] p-2 text-[11px] text-emerald-300">
+        <pre className="rounded-sm bg-[var(--color-surface)] p-2 text-[12px] text-emerald-300">
           ${' '}
           {typeof args.command === 'string'
             ? args.command
@@ -109,7 +109,7 @@ export const HelixQueryToolUI = makeAssistantToolUI({
       status={status.type}
     >
       {args?.query && (
-        <p className="font-mono text-[11px] text-muted">
+        <p className="font-mono text-[12px] text-muted">
           query:{' '}
           {typeof args.query === 'string' ? args.query : JSON.stringify(args.query).slice(0, 120)}
         </p>
@@ -160,7 +160,7 @@ export const LoadSkillToolUI = makeAssistantToolUI({
       status={status.type}
     >
       {args?.skill && (
-        <p className="font-mono text-[11px] text-muted">
+        <p className="font-mono text-[12px] text-muted">
           skill: {typeof args.skill === 'string' ? args.skill : JSON.stringify(args.skill)}
         </p>
       )}
@@ -178,7 +178,7 @@ export const GenericToolUI = makeAssistantToolUI({
       name={toolName ?? 'tool'}
       status={status.type}
     >
-      {isError && <p className="font-mono text-[11px] text-red-400">tool execution error</p>}
+      {isError && <p className="font-mono text-[12px] text-red-400">tool execution error</p>}
       <JsonPreview label="input" data={args} />
       <JsonPreview label="output" data={result} />
     </ToolShell>

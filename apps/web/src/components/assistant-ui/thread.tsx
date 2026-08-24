@@ -2,6 +2,7 @@
 
 import { AuiIf, ComposerPrimitive, MessagePrimitive, ThreadPrimitive } from '@assistant-ui/react'
 import { ArrowUp, Bot, Flame, Square, User } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { MarkdownText } from './markdown-text'
 import { Reasoning } from './reasoning'
 import { ToolFallback } from './tool-fallback'
@@ -28,7 +29,7 @@ function UserMessage() {
         <div className="conversation-bubble conversation-user">
           <div className="mb-1 flex items-center gap-2 border-b border-white/10 pb-1.5">
             <User className="h-3.5 w-3.5 text-white/70" />
-            <span className="font-mono text-[10px] tracking-[1px] text-white/65">现象输入</span>
+            <span className="font-mono text-[11px] tracking-[1px] text-white/65">现象输入</span>
           </div>
           <MessagePrimitive.Parts components={{ Text: ({ text }) => <p className="whitespace-pre-wrap text-sm leading-relaxed text-white">{text}</p> }} />
         </div>
@@ -82,7 +83,7 @@ function ThreadEmpty({ showComposer }: { showComposer: boolean }) {
       {showComposer && <details className="console-example-list">
         <summary>查看现象示例</summary>
         <div className="mt-2 space-y-2">
-          {SUGGESTED_PHENOMENA.map((item) => <button key={item.title} type="button" onClick={() => handleSelectPhenomenon(item.prompt)} className="console-example-item"><span>{item.title}</span><span className="mt-1 line-clamp-2 text-[11px] leading-4 text-[var(--color-text-muted)]">{item.prompt}</span></button>)}
+          {SUGGESTED_PHENOMENA.map((item) => <button key={item.title} type="button" onClick={() => handleSelectPhenomenon(item.prompt)} className="console-example-item"><span>{item.title}</span><span className="mt-1 line-clamp-2 text-[12px] leading-4 text-[var(--color-text-muted)]">{item.prompt}</span></button>)}
         </div>
       </details>}
     </div>
@@ -94,7 +95,7 @@ function ThreadComposer() {
     <ComposerPrimitive.Root className="console-composer">
       <ComposerPrimitive.Input aria-label="现象或问题输入" placeholder="补充一个活动区现象、问题，或本轮需要核验的内容…" className="min-h-[68px] w-full resize-none bg-transparent px-3.5 pt-3 pb-2 font-sans text-sm text-body placeholder:text-muted focus:outline-none" rows={3} />
       <div className="flex items-center justify-between border-t border-[var(--color-border)]/60 px-3.5 py-2.5">
-        <div className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[var(--color-sunset)]" /><span className="font-mono text-[10px] tracking-[.06em] text-muted">自然语言输入</span></div>
+        <div className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[var(--color-sunset)]" /><span className="font-mono text-[11px] tracking-[.06em] text-muted">自然语言输入</span></div>
         <div className="flex items-center gap-2">
           <AuiIf condition={(s) => s.thread.isRunning}><ComposerPrimitive.Cancel aria-label="停止运行" className="flex h-8 w-8 items-center justify-center rounded-full border border-red-500/40 bg-red-500/10 text-red-400 transition-colors hover:bg-red-500/20"><Square className="h-3.5 w-3.5" /></ComposerPrimitive.Cancel></AuiIf>
           <AuiIf condition={(s) => !s.thread.isRunning}><ComposerPrimitive.Send aria-label="提交现象" className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-105 hover:bg-[#fafaf7] disabled:opacity-30"><ArrowUp className="h-4 w-4" /></ComposerPrimitive.Send></AuiIf>
@@ -105,12 +106,43 @@ function ThreadComposer() {
 }
 
 export function Thread({ showComposer = true }: { showComposer?: boolean }) {
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+
+    const updateScrollState = () => setShowScrollTop(viewport.scrollTop > 120)
+    updateScrollState()
+    viewport.addEventListener('scroll', updateScrollState, { passive: true })
+    return () => viewport.removeEventListener('scroll', updateScrollState)
+  }, [])
+
+  const scrollToTop = () => {
+    viewportRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
-    <ThreadPrimitive.Root className="flex h-full flex-col">
-      <ThreadPrimitive.Viewport className="console-thread-viewport flex-1 overflow-y-auto px-3 py-3">
+    <ThreadPrimitive.Root className="relative flex h-full flex-col">
+      <ThreadPrimitive.Viewport ref={viewportRef} className="console-thread-viewport flex-1 overflow-y-auto px-3 py-3">
         <ThreadPrimitive.Empty><ThreadEmpty showComposer={showComposer} /></ThreadPrimitive.Empty>
         <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
       </ThreadPrimitive.Viewport>
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="console-scroll-top"
+          aria-label="回到聊天顶部"
+          title="回到聊天顶部"
+        >
+          <span className="console-scroll-top-icon" aria-hidden="true">
+            <span className="console-scroll-top-triangle" />
+            <span className="console-scroll-top-line" />
+          </span>
+        </button>
+      )}
       {showComposer && <div className="console-composer-wrap"><ThreadComposer /></div>}
     </ThreadPrimitive.Root>
   )

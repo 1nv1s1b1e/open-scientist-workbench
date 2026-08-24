@@ -199,7 +199,7 @@ export const DEMO_ORCHESTRATION: ScientificOrchestrationState = {
   nodes: [
     { node: 'A.generate', state: 'completed', round: 1 },
     { node: 'A.verify', state: 'completed', round: 1 },
-    { node: 'B.run', state: 'running', round: 2 },
+    { node: 'B.run', state: 'completed', round: 2 },
     { node: 'BC.verify', state: 'idle', round: 2 },
     { node: 'C.synthesize', state: 'idle', round: 2 },
     { node: 'C.verify', state: 'idle', round: 2 },
@@ -207,7 +207,7 @@ export const DEMO_ORCHESTRATION: ScientificOrchestrationState = {
     { node: 'D.route', state: 'idle', round: 2 },
   ],
   agents: [
-    { agentId: 'looker-source-audit', label: 'Looker：数据来源审计', state: 'running', round: 2, message: '核对观测数据的来源与可复核性' },
+    { agentId: 'looker-source-audit', label: 'Looker：数据来源审计', state: 'completed', round: 2, message: '核对观测数据的来源与可复核性' },
     { agentId: 'explorer-history-search', label: 'Explorer：历史资料与数据查找', state: 'completed', round: 2, message: '已找到可比较的历史活动区样本' },
     { agentId: 'explorer-observation-analysis', label: 'Explorer：多波段观测分析', state: 'queued', round: 2 },
     { agentId: 'oracle-counterexample-search', label: 'Oracle：反例与事实核验', state: 'queued', round: 2 },
@@ -277,10 +277,10 @@ export const DEMO_ROUND_UPDATE: RoundUpdatePayload = {
 }
 
 export const DEMO_AGENT_STATES: Partial<Record<AgentRole, AgentState>> = {
-  sisyphus: 'thinking',
-  librarian: 'thinking',
-  looker: 'executing-tool',
-  explore: 'executing-tool',
+  sisyphus: 'idle',
+  librarian: 'idle',
+  looker: 'idle',
+  explore: 'idle',
   oracle: 'idle',
   prometheus: 'idle',
 }

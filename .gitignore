@@ -20,6 +20,7 @@ queries.json
 helix.toml
 target/
 apps/api/downloads/
+video-demo/*.mp4
 __oracle__/
 __pycache__/
 *.pyc

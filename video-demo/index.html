@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>Open Scientist · Backend Architecture Demo</title>
+    <style>
+      :root { color-scheme: dark; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #071014; }
+      @font-face { font-family: "Microsoft YaHei"; src: local("Microsoft YaHei"); }
+      @font-face { font-family: "Noto Sans CJK SC"; src: local("Noto Sans CJK SC"); }
+      body { font-family: "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", Arial, sans-serif; }
+      #stage { width: 100vw; height: 100vh; display: block; background: #071014; }
+      canvas { display: block; width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <main id="stage" data-composition-id="root" data-width="1920" data-height="1080" data-duration="330">
+      <canvas id="canvas" aria-label="Open Scientist 后端架构分镜"></canvas>
+    </main>
+    <script>
+      // Deterministic, frame-seekable timeline for HyperFrames.
+      // The renderer advances the paused GSAP timeline to an exact timestamp.
+      const W = 1920;
+      const H = 1080;
+      const DURATION = 330;
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d", { alpha: false, desynchronized: false });
+      let dpr = 1;
+
+      const C = {
+        bg: "#071014",
+        bg2: "#0b171b",
+        ink: "#eaf2ed",
+        muted: "#93aaa2",
+        faint: "#48615d",
+        line: "#29433f",
+        panel: "#0e1c20",
+        panel2: "#12252a",
+        amber: "#ffc285",
+        peach: "#f5a775",
+        blue: "#a9c9ee",
+        cyan: "#8fe4dc",
+        green: "#9ae6c1",
+        purple: "#c7a7ff",
+        red: "#f18b86",
+        yellow: "#f5d77d",
+        white: "#fbfff9"
+      };
+
+      const scenes = [
+        { id: "intro", start: 0, end: 24, label: "OPEN SCIENTIST" },
+        { id: "position", start: 24, end: 52, label: "01 · WHY BACKEND" },
+        { id: "architecture", start: 52, end: 78, label: "02 · SYSTEM MAP" },
+        { id: "intake", start: 78, end: 113, label: "03 · REQUEST INTAKE" },
+        { id: "runtime", start: 113, end: 153, label: "04 · RUN LIFECYCLE" },
+        { id: "graph", start: 153, end: 205, label: "05 · SCIENTIFIC LOOP" },
+        { id: "orchestration", start: 205, end: 247, label: "06 · AGENTS & TOOLS" },
+        { id: "evidence", start: 247, end: 287, label: "07 · EVIDENCE GATE" },
+        { id: "persistence", start: 287, end: 310, label: "08 · TRACEABILITY" },
+        { id: "close", start: 310, end: 330, label: "09 · THE LOOP CONTINUES" }
+      ];
+
+      function clamp(v, a = 0, b = 1) { return Math.max(a, Math.min(b, v)); }
+      function smooth(v) { v = clamp(v); return v * v * (3 - 2 * v); }
+      function easeOut(v) { v = clamp(v); return 1 - Math.pow(1 - v, 3); }
+      function easeInOut(v) { v = clamp(v); return v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2; }
+      function sceneAt(t) {
+        for (let i = 0; i < scenes.length; i++) if (t >= scenes[i].start && t < scenes[i].end) return [scenes[i], i];
+        return [scenes[scenes.length - 1], scenes.length - 1];
+      }
+      function localTime(scene, t) { return clamp((t - scene.start) / (scene.end - scene.start)); }
+      function fmtTime(t) {
+        const sec = Math.max(0, Math.min(DURATION, t));
+        const m = Math.floor(sec / 60).toString().padStart(2, "0");
+        const s = Math.floor(sec % 60).toString().padStart(2, "0");
+        return m + ":" + s;
+      }
+
+      function resize() {
+        dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        render(0);
+      }
+      window.addEventListener("resize", resize);
+
+      function roundRect(x, y, w, h, r = 12) {
+        const rr = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + rr, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rr);
+        ctx.arcTo(x + w, y + h, x, y + h, rr);
+        ctx.arcTo(x, y + h, x, y, rr);
+        ctx.arcTo(x, y, x + w, y, rr);
+        ctx.closePath();
+      }
+      function fillRound(x, y, w, h, r, fill, stroke = null, lineWidth = 1) {
+        roundRect(x, y, w, h, r);
+        if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+        if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke(); }
+      }
+      function line(x1, y1, x2, y2, color = C.line, width = 2, alpha = 1, dash = []) {
+        ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+      }
+      function dot(x, y, r, fill, alpha = 1, stroke = null) {
+        ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); } ctx.restore();
+      }
+      function text(value, x, y, size = 22, color = C.ink, opts = {}) {
+        ctx.save(); ctx.globalAlpha = opts.alpha == null ? 1 : opts.alpha;
+        ctx.fillStyle = color; ctx.font = `${opts.weight || 400} ${size}px ${opts.mono ? '"SFMono-Regular", Consolas, "Courier New", monospace' : '"Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", Arial, sans-serif'}`;
+        ctx.textAlign = opts.align || "left"; ctx.textBaseline = opts.baseline || "alphabetic";
+        if (opts.letterSpacing) { ctx.translate(x, y); const chars = [...String(value)]; const widths = chars.map(ch => ctx.measureText(ch).width); const total = widths.reduce((a, b) => a + b, 0) + opts.letterSpacing * Math.max(0, chars.length - 1); let xx = opts.align === "center" ? -total / 2 : opts.align === "right" ? -total : 0; for (let i = 0; i < chars.length; i++) { ctx.fillText(chars[i], xx, 0); xx += widths[i] + opts.letterSpacing; } }
+        else ctx.fillText(String(value), x, y);
+        ctx.restore();
+      }
+      function wrapText(value, x, y, maxWidth, lineHeight, size, color = C.ink, opts = {}) {
+        ctx.save(); ctx.font = `${opts.weight || 400} ${size}px ${opts.mono ? '"SFMono-Regular", Consolas, "Courier New", monospace' : '"Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", Arial, sans-serif'}`;
+        const words = [...String(value)]; let current = ""; let row = 0;
+        for (const ch of words) {
+          const next = current + ch;
+          if (ctx.measureText(next).width > maxWidth && current) { text(current, x, y + row * lineHeight, size, color, opts); current = ch; row++; }
+          else current = next;
+        }
+        if (current) { text(current, x, y + row * lineHeight, size, color, opts); row++; }
+        ctx.restore(); return row;
+      }
+      function alphaFill(alpha, color) { return color; }
+      function fadeIn(local, at = 0, span = .18) { return easeOut((local - at) / span); }
+      function stagger(local, index, step = .06, span = .2) { return fadeIn(local, .1 + index * step, span); }
+
+      function background() {
+        ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+        const g = ctx.createRadialGradient(1320, 110, 0, 1320, 110, 850); g.addColorStop(0, "rgba(41,92,87,.18)"); g.addColorStop(1, "rgba(7,16,20,0)"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        const g2 = ctx.createRadialGradient(250, 930, 0, 250, 930, 650); g2.addColorStop(0, "rgba(97,58,44,.14)"); g2.addColorStop(1, "rgba(7,16,20,0)"); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+        ctx.save(); ctx.globalAlpha = .28; ctx.strokeStyle = "#1a3031"; ctx.lineWidth = 1;
+        for (let x = 40; x < W; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+        for (let y = 40; y < H; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+        ctx.restore();
+        ctx.save(); ctx.globalAlpha = .22; ctx.fillStyle = C.faint; for (let x = 40; x < W; x += 80) for (let y = 40; y < H; y += 80) { ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill(); } ctx.restore();
+      }
+      function hud(scene, t, index, opts = {}) {
+        ctx.save(); ctx.globalAlpha = opts.alpha == null ? 1 : opts.alpha;
+        text("OPEN SCIENTIST", 72, 54, 16, C.amber, { mono: true, weight: 700, letterSpacing: 2 });
+        text("BACKEND ARCHITECTURE / 4K60 DEMO", 1848, 54, 14, C.muted, { mono: true, align: "right", letterSpacing: 1 });
+        line(72, 78, 1848, 78, C.line, 1, .9);
+        text(scene.label, 72, 1014, 15, C.muted, { mono: true, weight: 700, letterSpacing: 1.5 });
+        text(fmtTime(t) + " / 05:30", 1848, 1014, 15, C.muted, { mono: true, align: "right" });
+        const progress = clamp(t / DURATION);
+        fillRound(72, 1032, 1776, 4, 2, "#18302f"); fillRound(72, 1032, 1776 * progress, 4, 2, C.amber);
+        ctx.restore();
+      }
+      function titleBlock(kicker, titleValue, sub, x, y, alpha = 1, color = C.ink) {
+        text(kicker, x, y, 16, C.amber, { mono: true, weight: 700, letterSpacing: 2, alpha });
+        text(titleValue, x, y + 70, 62, color, { weight: 700, alpha });
+        if (sub) wrapText(sub, x, y + 120, 680, 34, 23, C.muted, { alpha });
+      }
+      function chip(label, x, y, color = C.blue, alpha = 1, w = null) {
+        ctx.save(); ctx.globalAlpha = alpha; ctx.font = `700 15px "SFMono-Regular", Consolas, monospace`; const width = w || ctx.measureText(label).width + 30; fillRound(x, y - 25, width, 34, 17, color + "18", color, 1); text(label, x + width / 2, y - 2, 14, color, { mono: true, weight: 700, align: "center" }); ctx.restore(); return width;
+      }
+      function panel(x, y, w, h, opts = {}) {
+        const alpha = opts.alpha == null ? 1 : opts.alpha; ctx.save(); ctx.globalAlpha = alpha; fillRound(x, y, w, h, opts.r || 18, opts.fill || C.panel, opts.stroke || C.line, opts.lineWidth || 1); if (opts.glow) { ctx.shadowColor = opts.glow; ctx.shadowBlur = 20; } ctx.restore();
+      }
+      function node(x, y, w, h, label, sub, color, alpha = 1, active = false) {
+        panel(x, y, w, h, { alpha, fill: active ? color + "20" : C.panel, stroke: active ? color : C.line, lineWidth: active ? 2 : 1, glow: active ? color : null });
+        dot(x + 24, y + h / 2, 7, color, alpha); text(label, x + 46, y + 30, 20, C.ink, { weight: 700, alpha }); if (sub) text(sub, x + 46, y + h - 20, 14, C.muted, { mono: true, alpha });
+      }
+      function arrow(x1, y1, x2, y2, color = C.muted, alpha = 1, width = 2) {
+        const dx = x2 - x1, dy = y2 - y1, len = Math.max(1, Math.hypot(dx, dy)), ux = dx / len, uy = dy / len;
+        line(x1, y1, x2, y2, color, width, alpha); ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - ux * 13 - uy * 6, y2 - uy * 13 + ux * 6); ctx.lineTo(x2 - ux * 13 + uy * 6, y2 - uy * 13 - ux * 6); ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+      function codeBox(lines, x, y, w, h, alpha = 1, accent = C.blue, activeLine = -1) {
+        panel(x, y, w, h, { alpha, fill: "#071115", stroke: C.line });
+        fillRound(x, y, w, 38, 14, "#102125", null); dot(x + 20, y + 19, 5, C.red, alpha); dot(x + 38, y + 19, 5, C.yellow, alpha); dot(x + 56, y + 19, 5, C.green, alpha);
+        const top = y + 69; lines.forEach((ln, i) => { const a = activeLine === i ? 1 : .78; if (activeLine === i) fillRound(x + 18, top + i * 29 - 19, w - 36, 25, 6, accent + "16", null); text(ln, x + 28, top + i * 29, 16, activeLine === i ? C.white : C.muted, { mono: true, alpha: a }); });
+      }
+      function metric(value, label, x, y, color = C.amber, alpha = 1) { text(value, x, y, 46, color, { mono: true, weight: 700, alpha }); text(label, x, y + 29, 15, C.muted, { mono: true, alpha }); }
+      function drawSun(x, y, r, phase, alpha = 1) {
+        ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); const rays = 18; for (let i = 0; i < rays; i++) { const a = i * Math.PI * 2 / rays + phase * .2; const len = r * (.55 + .12 * Math.sin(phase * 4 + i)); line(Math.cos(a) * r * 1.22, Math.sin(a) * r * 1.22, Math.cos(a) * len * 1.75, Math.sin(a) * len * 1.75, C.amber, 3, .45); } const grad = ctx.createRadialGradient(-r * .25, -r * .3, 0, 0, 0, r); grad.addColorStop(0, C.white); grad.addColorStop(.2, C.amber); grad.addColorStop(.7, C.peach); grad.addColorStop(1, "#8c4e38"); ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = C.amber; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+      }
+
+      function sceneIntro(p, t) {
+        const a = fadeIn(p, 0, .22); const drift = Math.sin(p * Math.PI) * 18;
+        drawSun(370, 470, 150 + 8 * Math.sin(p * Math.PI), p, a);
+        for (let i = 0; i < 5; i++) { const rr = 205 + i * 42 + Math.sin(p * 3 + i) * 5; ctx.save(); ctx.globalAlpha = a * (.32 - i * .035); ctx.strokeStyle = i % 2 ? C.peach : C.amber; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(370, 470, rr, rr * .42, -0.16 + i * .08, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
+        titleBlock("A SCIENTIFIC WORKBENCH FOR UNCERTAIN SYSTEMS", "让科学推理，变成可追踪的后端事件流", "Open Scientist 不把结论当作一次性回答，而是把现象、假设、证据、校验与下一步任务，组织成一条可以回放、验证和继续运行的科学循环。", 760, 330 - drift, a);
+        chip("5:30 · 3840×2160 · 60 FPS", 760, 575 - drift, C.green, a, 300);
+        text("本片聚焦：后端如何把一次研究请求，变成可审计的执行过程", 760, 665 - drift, 20, C.blue, { alpha: a });
+        text("OPEN SCIENTIST / BACKEND DESIGN", 960, 862, 16, C.muted, { mono: true, align: "center", letterSpacing: 2, alpha: a * .85 });
+      }
+
+      function scenePosition(p) {
+        const a = fadeIn(p, 0, .16); titleBlock("01 · FROM ANSWERS TO TRACES", "问题不只是“答对了吗？”", "真正需要回答的是：这条结论由谁产生？基于哪份数据？经历了哪些处理？下一步为什么要继续？", 92, 175, a);
+        const y = 540; const items = [
+          ["现象", "Phenomenon", C.amber], ["假设", "Hypothesis", C.purple], ["证据", "Evidence", C.blue], ["校验", "Verification", C.green], ["任务", "Next Task", C.peach]
+        ];
+        items.forEach((it, i) => { const x = 112 + i * 345; const q = stagger(p, i, .08, .2); panel(x, y, 282, 150, { alpha: q, fill: it[2] + "0d", stroke: it[2] }); dot(x + 30, y + 35, 8, it[2], q); text(it[0], x + 56, y + 43, 24, C.ink, { weight: 700, alpha: q }); text(it[1], x + 30, y + 92, 15, it[2], { mono: true, alpha: q }); text(["输入边界", "可被反驳", "有来源", "可复现", "可执行"][i], x + 30, y + 124, 16, C.muted, { alpha: q }); if (i < items.length - 1) arrow(x + 290, y + 75, x + 333, y + 75, C.faint, q, 2); });
+        panel(92, 790, 1736, 94, { alpha: fadeIn(p, .45, .22), fill: "#0c1b1f", stroke: C.line }); text("核心后端判断", 126, 828, 16, C.amber, { mono: true, weight: 700, alpha: fadeIn(p, .45, .22) }); text("任何一个“结论”，都必须能沿着运行记录，回到输入、工具、数据快照和验证门。", 360, 830, 24, C.ink, { alpha: fadeIn(p, .45, .22) });
+      }
+
+      function sceneArchitecture(p) {
+        const a = fadeIn(p, 0, .18); titleBlock("02 · THE BACKEND MAP", "一条从请求到证据的闭环", "入口负责收敛契约，运行时负责调度，科学图负责判断，存储层负责让每一次判断都留下可复用的痕迹。", 92, 142, a);
+        const boxes = [
+          ["Phenomenon", "结构化现象", C.amber], ["Zod Schema", "契约与边界", C.yellow], ["Hono API", "启动 / 流式 / 恢复", C.blue], ["Run Registry", "实时与回放", C.cyan], ["LangGraph", "A → B → C → D", C.purple], ["Evidence Gate", "支持 / 矛盾 / 未知", C.green], ["SQLite", "记录与检查点", C.peach]
+        ];
+        const x0 = 95, y = 525, bw = 218, bh = 126, gap = 36;
+        boxes.forEach((b, i) => { const q = stagger(p, i, .055, .2); const x = x0 + i * (bw + gap); panel(x, y, bw, bh, { alpha: q, fill: b[2] + "12", stroke: b[2], lineWidth: 1.4 }); text(String(i + 1).padStart(2, "0"), x + 22, y + 31, 14, b[2], { mono: true, weight: 700, alpha: q }); text(b[0], x + 22, y + 69, 21, C.ink, { mono: true, weight: 700, alpha: q }); text(b[1], x + 22, y + 101, 15, C.muted, { alpha: q }); if (i < boxes.length - 1) arrow(x + bw + 8, y + bh / 2, x + bw + gap - 8, y + bh / 2, C.faint, q, 2); });
+        const pulse = .5 + .5 * Math.sin(p * Math.PI * 8); dot(x0 + 3 * (bw + gap) + bw + 18, y + bh / 2, 5 + 3 * pulse, C.amber, a * .75); text("可观察的事件流", 95, 760, 18, C.green, { mono: true, weight: 700, alpha: a }); text("每一步都能被 SSE 看到、被 SQLite 保存、被 checkpoint 恢复。", 95, 798, 26, C.ink, { alpha: a });
+      }
+
+      function sceneIntake(p) {
+        const a = fadeIn(p, 0, .15); titleBlock("03 · REQUEST INTAKE", "先把科学问题变成稳定契约", "API 不直接把一段自然语言扔给模型，而是先把项目、现象、运行模式和 agent 配置收敛成可以验证的请求。", 92, 134, a);
+        const leftX = 92, rightX = 1048; codeBox([
+          "POST /api/projects/:projectId/runs",
+          "{",
+          '  "mode": "local-grounded",',
+          '  "phenomenon": {',
+          '    "title": "coronal heating",',
+          '    "observationRefs": [...]',
+          "  },",
+          '  "agentConfig": { ... }',
+          "}"
+        ], leftX, 475, 820, 340, a, C.blue, Math.min(7, Math.floor(p * 9)));
+        panel(rightX, 475, 760, 340, { alpha: a, fill: "#0d1d20", stroke: C.line });
+        chip("ZOD / REQUEST BOUNDARY", rightX + 34, 520, C.yellow, a, 250);
+        const checks = [["projectId", "定位项目隔离边界", C.amber], ["phenomenon", "结构化观察输入", C.blue], ["mode", "local / model-assisted", C.purple], ["agentConfig", "工具与模型选择", C.green]];
+        checks.forEach((c, i) => { const q = stagger(p, i, .09, .22); const y = 590 + i * 48; dot(rightX + 42, y - 5, 7, c[2], q); text(c[0], rightX + 66, y, 19, C.ink, { mono: true, weight: 700, alpha: q }); text(c[1], rightX + 245, y, 17, C.muted, { alpha: q }); line(rightX + 34, y + 18, rightX + 700, y + 18, C.line, 1, q * .55); });
+        panel(92, 866, 1716, 62, { alpha: fadeIn(p, .58, .2), fill: "#0c1a1e", stroke: C.blue }); text("边界明确以后，运行时才知道：什么可以执行，什么必须停下来等待新的输入。", 124, 905, 22, C.blue, { alpha: fadeIn(p, .58, .2) });
+      }
+
+      function sceneRuntime(p) {
+        const a = fadeIn(p, 0, .15); titleBlock("04 · RUN LIFECYCLE", "一个 Run，不只是一条请求", "它是一个可取消、可流式、可恢复、可回放的执行实例。后端把“正在发生什么”与“最终留下什么”分成两条同步路径。", 92, 128, a);
+        const y = 455; const items = [
+          ["POST", "start", C.blue], ["RunRegistry", "live state", C.cyan], ["SSE", "chunks", C.green], ["SQLite", "run row", C.peach], ["Checkpoint", "thread_id", C.purple]
+        ];
+        items.forEach((it, i) => { const q = stagger(p, i, .08, .2); const x = 102 + i * 345; node(x, y, 260, 108, it[0], it[1], it[2], q, i === Math.floor(p * 5) % 5 && p < .9); if (i < items.length - 1) arrow(x + 268, y + 54, x + 335, y + 54, C.faint, q, 2); });
+        const live = p * 5; const idx = Math.min(4, Math.floor(live)); const barY = 675;
+        panel(102, 620, 1718, 160, { alpha: a, fill: "#0b191d", stroke: C.line });
+        text("同一条运行记录的两种视角", 132, 658, 17, C.muted, { mono: true, weight: 700, alpha: a });
+        const labels = ["queued", "running", "streaming", "completed", "resumable"];
+        labels.forEach((lab, i) => { const x = 150 + i * 330; const q = i <= idx ? a : a * .35; dot(x, barY, 10, i <= idx ? [C.blue, C.cyan, C.green, C.amber, C.purple][i] : C.line, q); if (i < 4) line(x + 12, barY, x + 318, barY, i < idx ? C.green : C.line, 4, q); text(lab, x, barY + 42, 15, i <= idx ? C.ink : C.muted, { mono: true, alpha: q }); });
+        text("前端通过 /stream 看到事件", 132, 746, 18, C.blue, { alpha: a }); text("重启后通过 checkpoint + run_id 找回上下文", 1040, 746, 18, C.purple, { alpha: a });
+      }
+
+      function sceneGraph(p) {
+        const a = fadeIn(p, 0, .15); titleBlock("05 · SCIENTIFIC LOOP", "真正的主角：可路由的科学图", "LangGraph 把研究过程拆成有条件的节点。每一节点都能写入记录，每一条边都由验证结果决定下一步，而不是把所有步骤藏在一次模型调用里。", 92, 126, a);
+        const nodes = [
+          { id: "A", label: "生成假设", sub: "A.generate", x: 160, y: 505, c: C.purple },
+          { id: "A✓", label: "校验假设", sub: "A.verify", x: 540, y: 505, c: C.blue },
+          { id: "B", label: "寻找证据", sub: "B.run", x: 920, y: 505, c: C.cyan },
+          { id: "BC", label: "证据校验", sub: "BC.verify", x: 1300, y: 505, c: C.green },
+          { id: "C", label: "整理结论", sub: "C.synthesize", x: 920, y: 730, c: C.amber },
+          { id: "D", label: "生成任务", sub: "D.plan / D.route", x: 1300, y: 730, c: C.peach }
+        ];
+        const edges = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[5,2]]; edges.forEach((e, i) => { const q = stagger(p, i, .05, .18); const n1 = nodes[e[0]], n2 = nodes[e[1]]; arrow(n1.x + 270, n1.y + 59, n2.x - 24, n2.y + 59, i === 5 || i === 6 ? C.peach : C.faint, q, 2); });
+        const active = Math.min(nodes.length - 1, Math.floor(p * (nodes.length + 1))); nodes.forEach((n, i) => { const q = stagger(p, i, .06, .2); node(n.x, n.y, 270, 118, n.label, n.sub, n.c, q, i === active); });
+        panel(92, 870, 1718, 58, { alpha: fadeIn(p, .55, .2), fill: "#0e1c20", stroke: C.purple }); text("D.route 的意义：下一步可以回到 A，继续改写假设；也可以回到 B，补齐证据；只有满足门槛，才真正结束。", 122, 907, 21, C.purple, { alpha: fadeIn(p, .55, .2) });
+      }
+
+      function sceneOrchestration(p) {
+        const a = fadeIn(p, 0, .14); titleBlock("06 · AGENTS & TOOLS", "确定性工具，和模型能力各司其职", "后端先运行可复现的本地工具，再把整理后的上下文交给模型型 agent。这样既保留探索能力，也保留工程上的可验证性。", 92, 126, a);
+        panel(92, 435, 820, 405, { alpha: a, fill: "#0d1d20", stroke: C.cyan }); chip("DETERMINISTIC FIRST", 132, 480, C.cyan, a, 238);
+        const local = [["solar-data", "数据检索", C.blue], ["fits", "FITS 读取", C.green], ["helix", "等离子体处理", C.amber], ["sandbox", "安全执行", C.purple]];
+        local.forEach((it, i) => { const q = stagger(p, i, .08, .2); const y = 548 + i * 60; dot(142, y - 6, 7, it[2], q); text(it[0], 170, y, 19, C.ink, { mono: true, weight: 700, alpha: q }); text(it[1], 410, y, 17, C.muted, { alpha: q }); line(130, y + 20, 850, y + 20, C.line, 1, q * .6); });
+        panel(1008, 435, 820, 405, { alpha: a, fill: "#0d1b24", stroke: C.purple }); chip("MODEL-ASSISTED", 1048, 480, C.purple, a, 212);
+        const model = [["hypothesis agent", "提出可反驳解释", C.purple], ["evidence agent", "组织支持与矛盾", C.blue], ["synthesis agent", "压缩为可读结论", C.amber], ["task planner", "规划下一轮动作", C.peach]];
+        model.forEach((it, i) => { const q = stagger(p, i + 1, .08, .2); const y = 548 + i * 60; dot(1058, y - 6, 7, it[2], q); text(it[0], 1086, y, 19, C.ink, { mono: true, weight: 700, alpha: q }); text(it[1], 1355, y, 17, C.muted, { alpha: q }); line(1048, y + 20, 1768, y + 20, C.line, 1, q * .6); });
+        const sweep = easeInOut((p - .35) / .4); line(912 + sweep * 96, 620, 1008 + sweep * 96, 620, C.amber, 5, a); dot(960 + sweep * 96, 620, 7, C.amber, a); text("上下文边界", 902, 875, 17, C.amber, { mono: true, align: "center", alpha: fadeIn(p, .55, .18) });
+      }
+
+      function sceneEvidence(p) {
+        const a = fadeIn(p, 0, .14); titleBlock("07 · EVIDENCE GATE", "证据不是一句引用，而是一条 provenance 链", "每条支持或反驳，都必须能回到 processing run、data snapshot、artifact，以及生成它的 agent 执行记录。", 92, 126, a);
+        const chain = [
+          ["Data Snapshot", "checksum: 7f3a…", C.blue], ["Processing Run", "deterministic: true", C.cyan], ["Artifact", "table / figure", C.amber], ["Evidence", "support / contradict", C.green], ["Hypothesis", "confidence update", C.purple]
+        ];
+        chain.forEach((it, i) => { const q = stagger(p, i, .075, .2); const x = 120 + i * 354; panel(x, 480, 250, 132, { alpha: q, fill: it[2] + "12", stroke: it[2] }); text(String(i + 1).padStart(2, "0"), x + 22, 513, 14, it[2], { mono: true, weight: 700, alpha: q }); text(it[0], x + 22, 552, 20, C.ink, { mono: true, weight: 700, alpha: q }); text(it[1], x + 22, 584, 15, C.muted, { mono: true, alpha: q }); if (i < 4) arrow(x + 260, 546, x + 340, 546, C.faint, q, 2); });
+        panel(120, 714, 1640, 150, { alpha: fadeIn(p, .48, .2), fill: "#0d1d20", stroke: C.green });
+        const gateA = fadeIn(p, .55, .2); text("C.verify / SUPPORT GATE", 155, 758, 16, C.green, { mono: true, weight: 700, alpha: gateA }); text("至少 2 条 support records", 155, 806, 21, C.ink, { alpha: gateA }); text("至少 2 次 processing runs", 665, 806, 21, C.ink, { alpha: gateA }); text("至少 2 种 methods", 1190, 806, 21, C.ink, { alpha: gateA });
+        const passed = p > .78; chip(passed ? "SUPPORTED" : "WAITING FOR EVIDENCE", 1450, 756, passed ? C.green : C.yellow, gateA, passed ? 170 : 250);
+      }
+
+      function scenePersistence(p) {
+        const a = fadeIn(p, 0, .15); titleBlock("08 · TRACEABILITY", "把运行结果变成项目记忆", "项目级 SQLite 隔离业务记录，LangGraph checkpoint 保存执行上下文，SSE chunks 保存过程回放。三者一起，才让“继续研究”成为可能。", 92, 138, a);
+        const cards = [
+          ["project.db", ["runs", "scientificHypotheses", "validationTasks"], C.blue],
+          ["checkpoints", ["thread_id", "state", "resume"], C.purple],
+          ["runChunks", ["event", "payload", "replay"], C.green]
+        ];
+        cards.forEach((card, i) => { const q = stagger(p, i, .1, .22); const x = 150 + i * 565; panel(x, 510, 470, 270, { alpha: q, fill: card[2] + "12", stroke: card[2] }); text(card[0], x + 34, 564, 24, card[2], { mono: true, weight: 700, alpha: q }); card[1].forEach((s, j) => { dot(x + 42, 632 + j * 42, 6, card[2], q); text(s, x + 66, 639 + j * 42, 19, C.ink, { mono: true, alpha: q }); }); });
+        const keyAlpha = fadeIn(p, .5, .2); panel(150, 850, 1580, 60, { alpha: keyAlpha, fill: "#0d1b20", stroke: C.line }); text("projectId : runId", 190, 889, 19, C.amber, { mono: true, weight: 700, alpha: keyAlpha }); text("= 研究空间隔离 + 一次运行的可恢复身份", 530, 889, 21, C.ink, { alpha: keyAlpha });
+      }
+
+      function sceneClose(p) {
+        const a = fadeIn(p, 0, .2); const scale = .96 + .04 * easeOut(p); ctx.save(); ctx.translate(960, 500); ctx.scale(scale, scale); ctx.translate(-960, -500);
+        text("研究不是一次回答", 960, 360, 58, C.ink, { weight: 700, align: "center", alpha: a });
+        text("而是一条可以继续运行的证据链", 960, 435, 34, C.amber, { weight: 700, align: "center", alpha: a });
+        const words = [["输入", C.amber], ["执行", C.blue], ["验证", C.green], ["持久化", C.purple], ["再出发", C.peach]];
+        words.forEach((w, i) => { const q = stagger(p, i, .08, .2); const x = 425 + i * 270; dot(x, 585, 13, w[1], q); text(w[0], x, 640, 23, C.ink, { align: "center", weight: 700, alpha: q }); if (i < 4) arrow(x + 28, 585, x + 240, 585, C.line, q, 2); });
+        ctx.restore();
+        text("Open Scientist / Backend Architecture", 960, 846, 18, C.muted, { mono: true, align: "center", letterSpacing: 1.5, alpha: a });
+        text("从现象出发，让每一步都留下下一步的理由。", 960, 900, 23, C.blue, { align: "center", alpha: a });
+      }
+
+      function drawScene(scene, p, t, alpha = 1) {
+        ctx.save(); ctx.globalAlpha = alpha;
+        if (scene.id === "intro") sceneIntro(p, t);
+        if (scene.id === "position") scenePosition(p);
+        if (scene.id === "architecture") sceneArchitecture(p);
+        if (scene.id === "intake") sceneIntake(p);
+        if (scene.id === "runtime") sceneRuntime(p);
+        if (scene.id === "graph") sceneGraph(p);
+        if (scene.id === "orchestration") sceneOrchestration(p);
+        if (scene.id === "evidence") sceneEvidence(p);
+        if (scene.id === "persistence") scenePersistence(p);
+        if (scene.id === "close") sceneClose(p);
+        ctx.restore();
+      }
+
+      function render(t) {
+        t = Number.isFinite(t) ? clamp(t, 0, DURATION) : 0;
+        background(); const [scene, index] = sceneAt(t); const p = localTime(scene, t); drawScene(scene, p, t, 1);
+        // A restrained crossfade keeps scene changes readable without a hard flash.
+        const next = scenes[index + 1];
+        if (next && scene.end - t < .65) { const q = easeInOut((.65 - (scene.end - t)) / .65); background(); drawScene(scene, 1, t, 1 - q); drawScene(next, 0, t, q); }
+        hud(scene, t, index);
+      }
+
+      // HyperFrames seeks this paused timeline by frame time.
+      const state = { time: 0 };
+      const timeline = {
+        _time: 0,
+        duration: () => DURATION,
+        totalDuration: () => DURATION,
+        time(value) { if (value == null) return this._time; this._time = Number(value) || 0; render(this._time); return this; },
+        seek(value) { return this.time(value); },
+        pause() { return this; },
+        play() { return this; }
+      };
+      window.__timelines = window.__timelines || {};
+      window.__timelines["root"] = timeline;
+      window.__timeline = timeline;
+      window.__hfComposition = { duration: DURATION, fps: 60, width: W, height: H };
+      resize();
+    </script>
+  </body>
+</html>
