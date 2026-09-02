@@ -332,7 +332,9 @@ export function ScientificWorkbench({
                 <span className="workbench-round-indicator">
                   第 {Math.max(state.round, 1)} / {maxRounds} 轮
                 </span>
-                <Activity className={`h-4 w-4 ${isSubmitting ? 'text-cyan-200' : 'text-white/35'}`} />
+                <Activity
+                  className={`h-4 w-4 ${isSubmitting ? 'text-cyan-200' : 'text-white/35'}`}
+                />
               </div>
             </div>
             <StageRail state={state} agentStates={agentStates} />
@@ -395,7 +397,9 @@ export function ScientificWorkbench({
                   onChange={(event) => setSelectedResultRound(Number(event.target.value))}
                 >
                   {availableRounds.map((round) => (
-                    <option key={round} value={round}>第 {round} 轮</option>
+                    <option key={round} value={round}>
+                      第 {round} 轮
+                    </option>
                   ))}
                 </select>
               </div>
