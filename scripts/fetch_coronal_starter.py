@@ -20,7 +20,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -28,7 +30,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 
 DATASET_ID = "coronal-starter-v1"
@@ -75,6 +77,31 @@ CASE_SPECS: tuple[dict[str, Any], ...] = (
 CORE_AIA_BANDS = ("94", "131", "171", "193", "211", "335")
 
 
+def aia_series_for_band(band: str) -> str:
+    """Return the JSOC Level-1 series that actually contains an AIA band."""
+    return "aia.lev1_uv_24s" if band in {"1600", "1700"} else "aia.lev1_euv_12s"
+
+
+def load_collection_spec(path: Path | None) -> tuple[str, tuple[dict[str, Any], ...], int]:
+    if path is None:
+        return DATASET_ID, CASE_SPECS, DEFAULT_BUDGET_BYTES
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    dataset_id = str(payload.get("datasetId") or "").strip()
+    cases = payload.get("cases")
+    budget_bytes = int(payload.get("budgetBytes") or DEFAULT_BUDGET_BYTES)
+    if not dataset_id or not isinstance(cases, list) or not cases:
+        raise ValueError("collection spec requires a non-empty datasetId and cases array")
+    case_ids = [str(case.get("caseId") or "") for case in cases]
+    if any(not case_id for case_id in case_ids) or len(case_ids) != len(set(case_ids)):
+        raise ValueError("collection spec caseId values must be non-empty and unique")
+    required = ("label", "activeRegion", "startTai", "duration", "purpose")
+    for case in cases:
+        missing = [key for key in required if not case.get(key)]
+        if missing:
+            raise ValueError(f"{case.get('caseId', '<unknown>')} misses: {', '.join(missing)}")
+    return dataset_id, tuple(cases), budget_bytes
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -98,32 +125,62 @@ def run_curl(arguments: list[str], *, timeout: int) -> subprocess.CompletedProce
     executable = shutil.which("curl.exe") or shutil.which("curl")
     if not executable:
         raise RuntimeError("curl is required to download the JSOC starter pack")
-    return subprocess.run(
-        [
-            executable,
-            "--noproxy",
-            "*",
-            "--connect-timeout",
-            "20",
-            "--retry",
-            "3",
-            "--retry-delay",
-            "2",
-            *arguments,
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
+    base_arguments = [
+        executable,
+        "--connect-timeout",
+        "20",
+        "--retry",
+        "3",
+        "--retry-delay",
+        "2",
+        "--retry-all-errors",
+    ]
+    resolve_arguments: list[str] = []
+    url = next((value for value in arguments if value.startswith(("http://", "https://"))), None)
+    if url:
+        parsed = urlparse(url)
+        if parsed.hostname:
+            try:
+                address = socket.gethostbyname(parsed.hostname)
+                port = parsed.port or (443 if parsed.scheme == "https" else 80)
+                resolve_arguments = ["--resolve", f"{parsed.hostname}:{port}:{address}"]
+            except OSError:
+                pass
+    direct_arguments = ["--noproxy", "*", *resolve_arguments]
+    bypass_proxy = os.environ.get("OPEN_SCIENTIST_BYPASS_PROXY") == "1"
+    attempts = [direct_arguments] if bypass_proxy else [[], direct_arguments]
+    last_error: subprocess.CalledProcessError | None = None
+    for network_arguments in attempts:
+        try:
+            return subprocess.run(
+                [*base_arguments, *network_arguments, *arguments],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+        except subprocess.CalledProcessError as error:
+            last_error = error
+    assert last_error is not None
+    raise last_error
 
 
 def request_json(url: str, parameters: dict[str, str]) -> dict[str, Any]:
-    response = run_curl(
-        ["--max-time", "90", "-fsS", f"{url}?{urlencode(parameters)}"],
-        timeout=100,
-    )
-    return json.loads(response.stdout)
+    last_error: Exception | None = None
+    for attempt in range(5):
+        try:
+            response = run_curl(
+                ["--max-time", "90", "-fsS", f"{url}?{urlencode(parameters)}"],
+                timeout=100,
+            )
+            return json.loads(response.stdout)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, json.JSONDecodeError) as error:
+            last_error = error
+            if attempt == 4:
+                raise
+            time.sleep(min(2 ** attempt, 8))
+    assert last_error is not None
+    raise last_error
 
 
 def jsoc_records(dataset: str, segment: str) -> list[dict[str, str]]:
@@ -183,49 +240,80 @@ def add_records(
         })
 
 
-def collect_logical_observations() -> list[dict[str, Any]]:
+def collect_logical_observations(case_specs: tuple[dict[str, Any], ...]) -> list[dict[str, Any]]:
     logical: list[dict[str, Any]] = []
-    for case in CASE_SPECS:
-        for band in CORE_AIA_BANDS:
+    for case in case_specs:
+        core_bands = tuple(str(band) for band in case.get("coreBands", CORE_AIA_BANDS))
+        core_cadence = int(case.get("coreCadenceSeconds", 240))
+        for band in core_bands:
+            aia_series = aia_series_for_band(band)
             add_records(
                 logical,
                 case,
-                stream_id="aia-core-4min",
+                stream_id=f"aia-core-{core_cadence}s",
                 instrument="SDO/AIA",
                 segment="image",
-                cadence_seconds=240,
+                cadence_seconds=core_cadence,
                 wavelength=band + " Å",
                 dataset=(
-                    f"aia.lev1_euv_12s[{case['startTai']}/{case['duration']}@4m][{band}]"
+                    f"{aia_series}[{case['startTai']}/{case['duration']}@{core_cadence}s][{band}]"
                 ),
             )
-        add_records(
-            logical,
-            case,
-            stream_id="hmi-los-12min",
-            instrument="SDO/HMI",
-            segment="magnetogram",
-            cadence_seconds=720,
-            dataset=f"hmi.M_45s[{case['startTai']}/{case['duration']}@12m]",
-            wavelength="line-of-sight magnetogram",
-        )
-        if case["includeBurst"]:
-            for band in ("171", "193"):
+        if case.get("includeHmi", True):
+            hmi_cadence = int(case.get("hmiCadenceSeconds", 720))
+            hmi_series = str(case.get("hmiSeries", "hmi.M_720s"))
+            add_records(
+                logical,
+                case,
+                stream_id=f"hmi-los-{hmi_cadence}s",
+                instrument="SDO/HMI",
+                segment="magnetogram",
+                cadence_seconds=hmi_cadence,
+                dataset=f"{hmi_series}[{case['startTai']}/{case['duration']}@{hmi_cadence}s]",
+                wavelength="line-of-sight magnetogram",
+            )
+        burst = case.get("burst")
+        if burst is None and case.get("includeBurst"):
+            burst = {
+                "startTai": "2011.02.15_01:42_TAI",
+                "duration": "30m",
+                "cadenceSeconds": 24,
+                "bands": ["171", "193"],
+            }
+        if burst:
+            burst_cadence = int(burst.get("cadenceSeconds", 24))
+            for band in tuple(str(value) for value in burst.get("bands", ("171", "193"))):
+                aia_series = aia_series_for_band(band)
                 add_records(
                     logical,
                     case,
-                    stream_id="aia-burst-24s",
+                    stream_id=f"aia-burst-{burst_cadence}s",
                     instrument="SDO/AIA",
                     segment="image",
-                    cadence_seconds=24,
+                    cadence_seconds=burst_cadence,
                     wavelength=band + " Å",
-                    dataset=f"aia.lev1_euv_12s[2011.02.15_01:42_TAI/30m@24s][{band}]",
+                    dataset=(
+                        f"{aia_series}[{burst.get('startTai', case['startTai'])}/"
+                        f"{burst.get('duration', '30m')}@{burst_cadence}s][{band}]"
+                    ),
                 )
     return logical
 
 
 def content_length(url: str) -> int:
-    response = run_curl(["--max-time", "90", "-fsSI", url], timeout=100)
+    last_error: Exception | None = None
+    for attempt in range(5):
+        try:
+            response = run_curl(["--max-time", "90", "-fsSI", url], timeout=100)
+            break
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            last_error = error
+            if attempt == 4:
+                raise
+            time.sleep(min(2 ** attempt, 8))
+    else:  # pragma: no cover - the loop either breaks or raises
+        assert last_error is not None
+        raise last_error
     values = [
         line.split(":", 1)[1].strip()
         for line in response.stdout.splitlines()
@@ -241,25 +329,46 @@ def content_length(url: str) -> int:
     return length
 
 
-def preflight_assets(logical: list[dict[str, Any]], workers: int) -> list[dict[str, Any]]:
+def preflight_assets(
+    logical: list[dict[str, Any]], workers: int, cache_path: Path | None = None
+) -> list[dict[str, Any]]:
     by_url: dict[str, list[dict[str, Any]]] = {}
     for item in logical:
         by_url.setdefault(item["sourceUrl"], []).append(item)
 
     sizes: dict[str, int] = {}
+    if cache_path and cache_path.is_file():
+        try:
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+            sizes = {
+                str(url): int(size)
+                for url, size in cached.get("sizes", {}).items()
+                if url in by_url and int(size) > 0
+            }
+            if sizes:
+                print(f"preflight cache hit {len(sizes)}/{len(by_url)}", flush=True)
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            sizes = {}
+    pending_urls = [url for url in by_url if url not in sizes]
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = {executor.submit(content_length, url): url for url in by_url}
+        futures = {executor.submit(content_length, url): url for url in pending_urls}
         for index, future in enumerate(as_completed(futures), start=1):
             url = futures[future]
             sizes[url] = future.result()
+            completed = len(sizes)
+            if cache_path and (index % 25 == 0 or index == len(futures)):
+                json_dump(cache_path, {"format": "jsoc-content-length-cache-v1", "sizes": sizes})
             if index % 25 == 0 or index == len(futures):
-                print(f"preflight {index}/{len(futures)}", flush=True)
+                print(f"preflight {completed}/{len(by_url)}", flush=True)
 
     assets: list[dict[str, Any]] = []
     for url, references in sorted(by_url.items()):
         first = references[0]
         timestamp = safe_filename(first["observedAt"])
         band = safe_filename(first["wavelengthOrBand"] or "magnetogram")
+        if first["instrument"] == "SDO/HMI":
+            series = str(first["query"]).split("[", 1)[0]
+            band = f"{band}-{safe_filename(series)}"
         relative_path = Path(
             "raw",
             first["instrument"].split("/")[-1].lower(),
@@ -292,10 +401,13 @@ def build_manifest(
     logical: list[dict[str, Any]],
     assets: list[dict[str, Any]],
     budget_bytes: int,
+    dataset_id: str,
+    case_specs: tuple[dict[str, Any], ...],
+    spec_path: Path | None,
 ) -> dict[str, Any]:
     asset_by_url = {asset["sourceUrl"]: asset for asset in assets}
     case_entries = []
-    for case in CASE_SPECS:
+    for case in case_specs:
         observations = []
         for item in logical:
             if item["caseId"] != case["caseId"]:
@@ -319,8 +431,16 @@ def build_manifest(
     total_bytes = sum(int(asset["bytes"]) for asset in assets)
     return {
         "format": FORMAT,
-        "datasetId": DATASET_ID,
+        "datasetId": dataset_id,
         "generatedAt": utc_now(),
+        "collectionSpec": (
+            {
+                "path": str(spec_path.resolve()),
+                "sha256": hashlib.sha256(spec_path.read_bytes()).hexdigest(),
+            }
+            if spec_path
+            else None
+        ),
         "sourceCatalog": {
             "name": "JSOC SDO data archive",
             "catalogEndpoint": JSOC_INFO_URL,
@@ -331,7 +451,7 @@ def build_manifest(
         "plannedTotalBytes": total_bytes,
         "uniqueAssetCount": len(assets),
         "logicalObservationCount": len(logical),
-        "caseCount": len(CASE_SPECS),
+        "caseCount": len(case_specs),
         "scientificBoundary": {
             "mechanismLabels": "none",
             "statement": (
@@ -341,9 +461,9 @@ def build_manifest(
             ),
             "knownGaps": [
                 "No spectroscopy or Doppler/non-thermal line-width diagnostic is included.",
-                "The 24-second burst exists for one AIA two-band window only.",
-                "Direct JSOC segment files are preserved as raw assets; spatial alignment must use "
-                "a later WCS-aware processing run and may require richer export headers.",
+                "High-cadence coverage is intentionally limited to pre-registered target windows.",
+                "Direct JSOC segment files are preserved as raw assets; HMI record WCS/BUNIT/time "
+                "keywords are retained in a checksummed JSOC metadata sidecar before analysis.",
             ],
         },
         "cases": case_entries,
@@ -361,13 +481,38 @@ def hash_existing(path: Path, expected: int) -> str | None:
     return hasher.hexdigest()
 
 
-def download_asset(root: Path, asset: dict[str, Any]) -> None:
+def download_asset(root: Path, asset: dict[str, Any], reuse_roots: tuple[Path, ...]) -> None:
     destination = root / asset["relativePath"]
+    if (
+        asset.get("downloadStatus") == "verified"
+        and asset.get("sha256")
+        and destination.is_file()
+        and destination.stat().st_size == int(asset["bytes"])
+    ):
+        return
     existing_hash = hash_existing(destination, int(asset["bytes"]))
     if existing_hash:
         asset["sha256"] = existing_hash
         asset["downloadStatus"] = "verified"
         return
+
+    if not destination.exists():
+        for reuse_root in reuse_roots:
+            candidate = reuse_root / asset["relativePath"]
+            reused_hash = hash_existing(candidate, int(asset["bytes"]))
+            if not reused_hash:
+                continue
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                os.link(candidate, destination)
+                asset["reuseMethod"] = "hardlink"
+            except OSError:
+                shutil.copy2(candidate, destination)
+                asset["reuseMethod"] = "copy"
+            asset["sha256"] = reused_hash
+            asset["downloadStatus"] = "verified"
+            asset["reusedFrom"] = str(candidate.resolve())
+            return
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     partial = destination.with_suffix(destination.suffix + ".part")
@@ -405,42 +550,85 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--plan", action="store_true", help="query and preflight without downloading")
     parser.add_argument("--download", action="store_true", help="download and hash every preflighted asset")
     parser.add_argument(
+        "--spec",
+        type=Path,
+        help="JSON collection spec; defaults to the original three-case starter pack",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
-        default=repository_root / "data" / "dataset" / DATASET_ID,
+        default=None,
         help="destination directory for the local data pack",
     )
     parser.add_argument(
         "--budget-bytes",
         type=int,
-        default=DEFAULT_BUDGET_BYTES,
+        default=None,
         help="hard byte cap; download will not start if the preflight exceeds it",
+    )
+    parser.add_argument(
+        "--reuse-from",
+        type=Path,
+        action="append",
+        default=[],
+        help="reuse verified assets from another pack via hard links when possible",
     )
     parser.add_argument("--workers", type=int, default=6, help="parallel JSOC metadata HEAD requests")
     parser.add_argument("--download-workers", type=int, default=4, help="parallel FITS downloads")
     args = parser.parse_args()
     if args.plan == args.download:
         parser.error("choose exactly one of --plan or --download")
-    if args.budget_bytes <= 0 or args.workers <= 0 or args.download_workers <= 0:
+    if args.budget_bytes is not None and args.budget_bytes <= 0:
+        parser.error("budget-bytes must be positive")
+    if args.workers <= 0 or args.download_workers <= 0:
         parser.error("budget-bytes, workers and download-workers must be positive")
+    args.repository_root = repository_root
     return args
 
 
 def main() -> int:
     args = parse_args()
-    output = args.output.resolve()
-    manifest_path = output / "manifest.json"
-    print("querying JSOC catalog", flush=True)
-    logical = collect_logical_observations()
-    print(f"catalog contains {len(logical)} logical observations", flush=True)
-    assets = preflight_assets(logical, args.workers)
-    manifest = build_manifest(logical, assets, args.budget_bytes)
-    json_dump(manifest_path, manifest)
+    dataset_id, case_specs, spec_budget = load_collection_spec(args.spec)
+    budget_bytes = int(args.budget_bytes or spec_budget)
+    output = (
+        args.output or args.repository_root / "data" / "dataset" / dataset_id
+    ).resolve()
+    manifest_path = output / ("manifest.plan.json" if args.plan else "manifest.json")
+    manifest: dict[str, Any] | None = None
+    if args.download and args.spec and manifest_path.is_file():
+        try:
+            existing = json.loads(manifest_path.read_text(encoding="utf-8"))
+            spec_sha256 = hashlib.sha256(args.spec.read_bytes()).hexdigest()
+            if (
+                existing.get("datasetId") == dataset_id
+                and existing.get("collectionSpec", {}).get("sha256") == spec_sha256
+                and isinstance(existing.get("assets"), list)
+                and existing.get("assets")
+            ):
+                manifest = existing
+                manifest["budgetBytes"] = budget_bytes
+                print("using cached catalog and preflight manifest", flush=True)
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            manifest = None
+    if manifest is None:
+        print("querying JSOC catalog", flush=True)
+        logical = collect_logical_observations(case_specs)
+        print(f"catalog contains {len(logical)} logical observations", flush=True)
+        assets = preflight_assets(logical, args.workers, output / ".preflight-sizes.json")
+        manifest = build_manifest(
+            logical,
+            assets,
+            budget_bytes,
+            dataset_id,
+            case_specs,
+            args.spec,
+        )
+        json_dump(manifest_path, manifest)
     print(pack_summary(manifest), flush=True)
 
-    if manifest["plannedTotalBytes"] > args.budget_bytes:
+    if manifest["plannedTotalBytes"] > budget_bytes:
         print(
-            f"refusing download: preflight {manifest['plannedTotalBytes']} exceeds budget {args.budget_bytes}",
+            f"refusing download: preflight {manifest['plannedTotalBytes']} exceeds budget {budget_bytes}",
             file=sys.stderr,
             flush=True,
         )
@@ -448,15 +636,64 @@ def main() -> int:
     if args.plan:
         return 0
 
+    case_priority = {case["caseId"]: index for index, case in enumerate(case_specs)}
+    download_order = sorted(
+        manifest["assets"],
+        key=lambda asset: (
+            min(case_priority.get(case_id, len(case_priority)) for case_id in asset["caseIds"]),
+            asset["observedAt"],
+            asset["assetId"],
+        ),
+    )
+    pending_downloads: list[dict[str, Any]] = []
+    for index, asset in enumerate(download_order, start=1):
+        destination = output / asset["relativePath"]
+        if (
+            asset.get("downloadStatus") == "verified"
+            and asset.get("sha256")
+            and destination.is_file()
+            and destination.stat().st_size == int(asset["bytes"])
+        ):
+            continue
+        existing_hash = hash_existing(destination, int(asset["bytes"]))
+        if existing_hash:
+            asset["sha256"] = existing_hash
+            asset["downloadStatus"] = "verified"
+        else:
+            pending_downloads.append(asset)
+        if index % 100 == 0 or index == len(download_order):
+            json_dump(manifest_path, manifest)
+            print(
+                f"local verification {index}/{len(download_order)}: {pack_summary(manifest)}",
+                flush=True,
+            )
+    print(f"remote downloads required: {len(pending_downloads)}", flush=True)
     with ThreadPoolExecutor(max_workers=args.download_workers) as executor:
-        futures = [executor.submit(download_asset, output, asset) for asset in manifest["assets"]]
+        reuse_roots = tuple(path.resolve() for path in args.reuse_from)
+        futures = [
+            executor.submit(download_asset, output, asset, reuse_roots)
+            for asset in pending_downloads
+        ]
         for index, future in enumerate(as_completed(futures), start=1):
             future.result()
-            if index % 5 == 0 or index == len(manifest["assets"]):
+            if index % 5 == 0 or index == len(futures):
                 json_dump(manifest_path, manifest)
-                print(f"download {index}/{len(manifest['assets'])}: {pack_summary(manifest)}", flush=True)
+                print(f"download {index}/{len(futures)}: {pack_summary(manifest)}", flush=True)
     json_dump(manifest_path, manifest)
     print("download complete: " + pack_summary(manifest), flush=True)
+    metadata_script = Path(__file__).with_name("enrich_hmi_metadata.py")
+    subprocess.run(
+        [
+            sys.executable,
+            str(metadata_script),
+            "--manifest",
+            str(manifest_path),
+            "--dataset-root",
+            str(output),
+            "--strict",
+        ],
+        check=True,
+    )
     return 0
 
 

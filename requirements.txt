@@ -1,0 +1,8 @@
+numpy==2.2.6
+scipy==1.16.3
+astropy==7.1.1
+matplotlib==3.11.0
+demregpy==1.0.0
+scikit-learn==1.7.2
+eispac==0.99.4
+fiasco==0.8.2

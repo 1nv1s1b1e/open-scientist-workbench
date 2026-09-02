@@ -1,6 +1,6 @@
 import type { Hypothesis } from '@open-scientist/schema'
 import { describe, expect, it } from 'vite-plus/test'
-import { selectLeadingHypothesis } from '../src/sisyphus/leader.ts'
+import { selectLeadingHypothesis } from '../src/legacy/sisyphus/leader.ts'
 
 function hypothesis(id: string, f1: number | null, status: Hypothesis['status'] = 'evaluated'): Hypothesis {
   return {

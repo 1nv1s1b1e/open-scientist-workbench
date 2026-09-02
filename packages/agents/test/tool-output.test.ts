@@ -24,4 +24,12 @@ describe('normalizeSubmitResultInput', () => {
       }),
     ).toEqual({ hypotheses: [{ id: 'h1' }], rationale: '???????' })
   })
+
+  it('unwraps Qwen-style packed members that already close the outer object', () => {
+    expect(
+      normalizeSubmitResultInput({
+        hypotheses: '\n[{"id":"h1"}], "rationale": "基于已核验来源"}\n',
+      }),
+    ).toEqual({ hypotheses: [{ id: 'h1' }], rationale: '基于已核验来源' })
+  })
 })

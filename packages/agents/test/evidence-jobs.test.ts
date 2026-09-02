@@ -1,6 +1,6 @@
 import type { EvalResult } from '@open-scientist/schema'
 import { describe, expect, it } from 'vite-plus/test'
-import { buildEvidenceAlignmentJobs } from '../src/sisyphus/evidence.ts'
+import { buildEvidenceAlignmentJobs } from '../src/legacy/sisyphus/evidence.ts'
 
 function result(overrides: Partial<EvalResult> = {}): EvalResult {
   return {

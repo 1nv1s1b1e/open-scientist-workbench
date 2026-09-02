@@ -1,7 +1,4 @@
-import type {
-  EvidenceStatus,
-  ValidationTask,
-} from '@open-scientist/schema'
+import type { EvidenceStatus, ValidationTask } from '@open-scientist/schema'
 import type { EvidenceAgentCapability } from './evidence-workgroup.ts'
 
 export type ScientificContextStage = 'A' | 'B' | 'C' | 'D'
@@ -14,35 +11,35 @@ export interface ScientificContextPolicy {
   taskStatuses: readonly ValidationTask['status'][]
 }
 
-const STAGE_CONTEXT_POLICIES: Record<
-  ScientificContextStage,
-  ScientificContextPolicy
-> = {
+const STAGE_CONTEXT_POLICIES: Record<ScientificContextStage, ScientificContextPolicy> = {
   A: {
-    maxHypotheses: 12,
+    maxHypotheses: 24,
     maxEvidence: 12,
     maxTasks: 4,
     evidenceStatuses: ['support', 'contradict', 'unknown'],
     taskStatuses: ['planned', 'completed', 'failed'],
   },
   B: {
-    maxHypotheses: 6,
+    maxHypotheses: 24,
     maxEvidence: 12,
-    maxTasks: 6,
+    // D can legitimately schedule several diagnostics per hypothesis. Keep
+    // the whole bounded round batch so an arbitrary context slice cannot
+    // leave an `executable_now` task stranded.
+    maxTasks: 256,
     evidenceStatuses: ['support', 'contradict', 'unknown'],
     taskStatuses: ['planned', 'running'],
   },
   C: {
-    maxHypotheses: 16,
+    maxHypotheses: 24,
     maxEvidence: 32,
-    maxTasks: 16,
+    maxTasks: 256,
     evidenceStatuses: ['support', 'contradict', 'unknown'],
     taskStatuses: ['planned', 'running', 'completed', 'failed', 'rejected'],
   },
   D: {
-    maxHypotheses: 16,
+    maxHypotheses: 24,
     maxEvidence: 32,
-    maxTasks: 24,
+    maxTasks: 256,
     evidenceStatuses: ['support', 'contradict', 'unknown'],
     taskStatuses: ['planned', 'running', 'completed', 'failed', 'rejected'],
   },
@@ -55,9 +52,7 @@ export function contextPolicyFor(
   const base = STAGE_CONTEXT_POLICIES[stage]
   if (
     stage === 'B' &&
-    capabilities.some((item) =>
-      item === 'counterexample-search' || item === 'fact-check'
-    )
+    capabilities.some((item) => item === 'counterexample-search' || item === 'fact-check')
   ) {
     return {
       ...base,

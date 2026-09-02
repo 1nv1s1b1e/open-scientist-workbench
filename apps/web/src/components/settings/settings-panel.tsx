@@ -396,7 +396,7 @@ export function SettingsPanel() {
         <SectionShell
           eyebrow="Tournament · Evolution Loop"
           title="锦标赛演化参数"
-          description="控制 Sisyphus 编排的假设演化循环。"
+          description="控制闭环协调智能体编排的假设演化循环。"
           action={
             <Button
               size="sm"

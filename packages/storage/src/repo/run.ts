@@ -11,6 +11,16 @@ export type RunStatus =
   | 'failed'
   | 'stopped'
 
+export type WorkflowType = 'tournament' | 'scientific-loop'
+export type ScientificRunStatus =
+  | 'supported'
+  | 'inconclusive'
+  | 'needs_data'
+  | 'needs_external_validation'
+  | 'falsified'
+  | 'mixed'
+  | 'blocked'
+
 /**
  * Optional overrides for {@link createRun}.
  *
@@ -26,6 +36,9 @@ export interface CreateRunOptions {
   id?: string
   /** Initial status. Defaults to `'pending'`. */
   status?: RunStatus
+  workflowType?: WorkflowType
+  /** Secret-free, reproducibility-relevant configuration only. */
+  config?: Record<string, unknown>
 }
 
 export async function createRun(
@@ -38,7 +51,16 @@ export async function createRun(
   const status: RunStatus = options?.status ?? 'pending'
   const now = new Date().toISOString()
   db.insert(runs)
-    .values({ id, projectId, status, startedAt: now, currentRound: 0, bestF1: 0 })
+    .values({
+      id,
+      projectId,
+      status,
+      startedAt: now,
+      currentRound: 0,
+      bestF1: 0,
+      workflowType: options?.workflowType ?? 'tournament',
+      configJson: options?.config ? JSON.stringify(options.config) : null,
+    })
     .run()
   return { id, projectId, status, startedAt: now }
 }
@@ -78,7 +100,13 @@ export async function completeRun(
   projectName: string,
   runId: string,
   status: 'completed' | 'failed',
-  metrics?: { bestF1?: number; currentRound?: number },
+  metrics?: {
+    bestF1?: number
+    currentRound?: number
+    scientificStatus?: ScientificRunStatus
+    terminationReason?: string
+    result?: unknown
+  },
 ) {
   const { db } = createProjectDb(projectName)
   db.update(runs)
@@ -87,6 +115,13 @@ export async function completeRun(
       endedAt: new Date().toISOString(),
       ...(metrics?.bestF1 !== undefined ? { bestF1: metrics.bestF1 } : {}),
       ...(metrics?.currentRound !== undefined ? { currentRound: metrics.currentRound } : {}),
+      ...(metrics?.scientificStatus !== undefined
+        ? { scientificStatus: metrics.scientificStatus }
+        : {}),
+      ...(metrics?.terminationReason !== undefined
+        ? { terminationReason: metrics.terminationReason }
+        : {}),
+      ...(metrics?.result !== undefined ? { resultJson: JSON.stringify(metrics.result) } : {}),
     })
     .where(eq(runs.id, runId))
     .run()

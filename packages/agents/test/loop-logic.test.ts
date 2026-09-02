@@ -5,7 +5,7 @@ import {
   applyOracleRevision,
   getActiveHypotheses,
   getRevisionTriggers,
-} from '../src/sisyphus/loop-logic.ts'
+} from '../src/legacy/sisyphus/loop-logic.ts'
 
 function hypothesis(
   id: string,

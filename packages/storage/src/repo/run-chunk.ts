@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, max } from 'drizzle-orm'
 import { createProjectDb } from '../db.ts'
 import { runChunks } from '../schema/project.ts'
 
@@ -9,7 +9,19 @@ export async function appendRunChunk(
   chunkJson: string,
 ) {
   const { db } = createProjectDb(projectName)
-  db.insert(runChunks).values({ runId, seq, chunkJson }).run()
+  return db.transaction((tx) => {
+    const currentMaximum = tx
+      .select({ value: max(runChunks.seq) })
+      .from(runChunks)
+      .where(eq(runChunks.runId, runId))
+      .all()[0]?.value
+    const resolvedSeq =
+      currentMaximum !== null && currentMaximum !== undefined
+        ? Math.max(seq, currentMaximum + 1)
+        : seq
+    tx.insert(runChunks).values({ runId, seq: resolvedSeq, chunkJson }).run()
+    return resolvedSeq
+  })
 }
 
 export async function getRunChunks(projectName: string, runId: string) {

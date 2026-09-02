@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "demo:scientific": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/run-scientific-demo.ps1",
     "local:start": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start-local.ps1",
     "local:start:helix": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start-local.ps1 -WithHelix",
     "local:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/stop-local.ps1",
@@ -12,7 +13,8 @@
     "format": "vp fmt --write",
     "check": "vp check",
     "typecheck": "vp run -r typecheck",
-    "test": "vp test run",
+    "test": "vp test run && powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/tests/start-local.regression.ps1",
+    "test:scripts": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/tests/start-local.regression.ps1",
     "db:generate": "vp run --filter @open-scientist/storage db:generate",
     "prepare": "vp config"
   },

@@ -2,6 +2,8 @@ import { StateSchema } from '@langchain/langgraph'
 import {
   AgentExecutionSchema,
   EvidenceRecordSchema,
+  HypothesisCoverageAuditSchema,
+  HypothesisVerificationReportSchema,
   PhenomenonInputSchema,
   ScientificCorrectionSchema,
   ScientificHypothesisSchema,
@@ -16,7 +18,20 @@ export const ScientificGraphStateSchema = new StateSchema({
   round: z.number().int().min(1),
   maxRounds: z.number().int().min(1),
   hypotheses: z.array(ScientificHypothesisSchema).default([]),
+  hypothesisCoverage: HypothesisCoverageAuditSchema.default({
+    mode: 'open_world',
+    exhaustiveClaim: false,
+    fixedMechanismCount: false,
+    candidateCount: 0,
+    retrievalSourceCount: 0,
+    retrievedMechanismFamilies: [],
+    representedMechanismFamilies: [],
+    unrepresentedMechanismFamilies: [],
+    residualAlternativeAllowed: true,
+    limitations: ['尚未完成 A 阶段假设覆盖审计。'],
+  }),
   evidence: z.array(EvidenceRecordSchema).default([]),
+  verificationReports: z.array(HypothesisVerificationReportSchema).default([]),
   validationTasks: z.array(ValidationTaskSchema).default([]),
   corrections: z.array(ScientificCorrectionSchema).default([]),
   agentExecutions: z.array(AgentExecutionSchema).default([]),
@@ -35,6 +50,7 @@ export const ScientificGraphStateSchema = new StateSchema({
       'new_task',
       'no_executable_validation_task',
       'no_valid_hypotheses',
+      'human_halted_at_plan_review',
     ])
     .nullable()
     .default(null),

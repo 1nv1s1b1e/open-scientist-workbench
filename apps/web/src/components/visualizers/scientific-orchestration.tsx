@@ -295,7 +295,7 @@ export function ScientificOrchestration({
                         <div className="orchestration-worker-lane orchestration-worker-lane-model">
                           <header>
                             <span>模型串行审阅</span>
-                            <small>Looker → Explorer → Oracle</small>
+                            <small>观测质控 → 物理诊断 → 反证审计</small>
                           </header>
                           <div className="orchestration-worker-grid orchestration-worker-grid-model">
                             {modelWorkers.map((worker) => (

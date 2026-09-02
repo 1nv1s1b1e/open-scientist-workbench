@@ -10,6 +10,7 @@ import {
   Database,
   FileCheck2,
   Layers3,
+  Network,
   ShieldAlert,
   ShieldCheck,
   SunMedium,
@@ -64,10 +65,35 @@ function statusText(status: string) {
   return '等待分析'
 }
 
-function hypothesisStatusLabel(status: string) {
-  if (status === 'candidate') return '候选'
-  if (status === 'supported') return '有指标支持'
-  if (status === 'uncertain') return '待验证'
+function supportTierLabel(tier?: string) {
+  if (tier === 'bounded_process_support') return '受限过程支持'
+  if (tier === 'specific_mechanism_support') return '具体机制支持'
+  if (tier === 'conflicted') return '证据冲突'
+  return '未通过支持门槛'
+}
+
+function runDispositionLabel(disposition?: string) {
+  if (disposition === 'accepted_bounded_process') return '受限过程支持'
+  if (disposition === 'accepted_specific_mechanism') return '具体机制支持'
+  if (disposition === 'rejected_falsified') return '已严格排除'
+  if (disposition === 'disfavored_not_falsified') return '证据不利，未达排除'
+  if (disposition === 'deferred_requires_data') return '缺指定数据，已挂起'
+  if (disposition === 'deferred_external_validation') return '待外部验证'
+  if (disposition === 'deferred_underpowered') return '已检验，功效不足'
+  if (disposition === 'incomplete_executable_work') return '本地任务未完成'
+  if (disposition === 'unresolved_no_executable_path') return '无可执行验证路径'
+  if (disposition === 'superseded_by_revision') return '已被修订版取代'
+  return null
+}
+
+function hypothesisStatusLabel(status: string, supportTier?: string, disposition?: string) {
+  const dispositionLabel = runDispositionLabel(disposition)
+  if (status === 'candidate') return dispositionLabel ?? '候选'
+  if (status === 'supported') return supportTierLabel(supportTier)
+  if (status === 'provisionally_supported') return '阶段性支持'
+  if (status === 'contradicted') return '反证主导'
+  if (status === 'deferred_requires_data') return '缺数据待判'
+  if (status === 'uncertain') return dispositionLabel ?? '待验证'
   if (status === 'revised') return '已修订'
   if (status === 'eliminated') return '已排除'
   return status || '待判断'
@@ -160,11 +186,29 @@ export function ScientificWorkbench({
     selectedResultRound != null && availableRounds.includes(selectedResultRound)
       ? selectedResultRound
       : latestRound
-  const roundView = useMemo(
-    () => scientificRoundView(state, resultRound),
-    [resultRound, state],
+  const roundView = useMemo(() => scientificRoundView(state, resultRound), [resultRound, state])
+  const roundEvidenceCounts = useMemo(
+    () => evidenceCounts(roundView.evidence),
+    [roundView.evidence],
   )
-  const roundEvidenceCounts = useMemo(() => evidenceCounts(roundView.evidence), [roundView.evidence])
+  const hypothesisOutcomeCounts = useMemo(
+    () => ({
+      supported: state.hypotheses.filter((item) => item.status === 'supported').length,
+      provisionallySupported: state.hypotheses.filter(
+        (item) => item.status === 'provisionally_supported',
+      ).length,
+      contradicted: state.hypotheses.filter((item) => item.status === 'contradicted').length,
+      eliminated: state.hypotheses.filter((item) => item.status === 'eliminated').length,
+      unresolved: state.hypotheses.filter(
+        (item) =>
+          item.status === 'candidate' ||
+          item.status === 'uncertain' ||
+          item.status === 'deferred_requires_data' ||
+          item.status === 'revised',
+      ).length,
+    }),
+    [state.hypotheses],
+  )
 
   useEffect(() => {
     if (!selectedHypothesisId && state.hypotheses[0])
@@ -185,6 +229,17 @@ export function ScientificWorkbench({
 
   const selectedHypothesis =
     state.hypotheses.find((item) => item.id === selectedHypothesisId) ?? state.hypotheses[0]
+  const selectedVerificationReport = useMemo(
+    () =>
+      [...state.verificationReports]
+        .filter((item) => item.hypothesisId === selectedHypothesis?.id)
+        .sort((left, right) => right.round - left.round)[0],
+    [selectedHypothesis?.id, state.verificationReports],
+  )
+  const selectedClosureReport = useMemo(
+    () => state.closureReports.find((item) => item.hypothesisId === selectedHypothesis?.id),
+    [selectedHypothesis?.id, state.closureReports],
+  )
   const selectedEvidence = useMemo(
     () =>
       roundView.evidence.filter(
@@ -199,9 +254,9 @@ export function ScientificWorkbench({
     workflow?.isRunning ??
     ['connecting', 'running', 'streaming', 'reconnecting'].includes(effectiveStatus)
   const observationCount = displayPhenomenon?.observations?.length ?? 0
-  const supportedCount = roundEvidenceCounts.support
-  const contradictedCount = roundEvidenceCounts.contradict
-  const pendingCount = roundEvidenceCounts.unknown
+  const supportingEvidenceCount = roundEvidenceCounts.support
+  const contradictingEvidenceCount = roundEvidenceCounts.contradict
+  const unknownEvidenceCount = roundEvidenceCounts.unknown
   const hasResults =
     state.hypotheses.length +
       state.processingResults.length +
@@ -395,9 +450,19 @@ export function ScientificWorkbench({
                 )}
               </div>
               <div className="workbench-result-counts">
-                <span className="text-emerald-200/80">支持 {supportedCount}</span>
-                <span className="text-rose-200/80">反例 {contradictedCount}</span>
-                <span>证据不足 {pendingCount}</span>
+                <span className="text-emerald-200/80">
+                  假设支持 {hypothesisOutcomeCounts.supported}
+                </span>
+                <span className="text-sky-200/80">
+                  阶段性支持 {hypothesisOutcomeCounts.provisionallySupported}
+                </span>
+                <span className="text-amber-200/80">
+                  反证主导 {hypothesisOutcomeCounts.contradicted}
+                </span>
+                <span className="text-rose-200/80">
+                  假设排除 {hypothesisOutcomeCounts.eliminated}
+                </span>
+                <span>待裁决 {hypothesisOutcomeCounts.unresolved}</span>
               </div>
             </div>
           </header>
@@ -437,7 +502,7 @@ export function ScientificWorkbench({
                   {state.hypotheses.length === 0 ? (
                     <div className="workbench-empty-result">
                       <Layers3 className="h-5 w-5" />
-                        <p>{hypothesisBlock ? '本轮未生成可核验的竞争假设' : '尚未提出竞争假设'}</p>
+                      <p>{hypothesisBlock ? '本轮未生成可核验的竞争假设' : '尚未提出竞争假设'}</p>
                       <span>
                         {hypothesisBlock
                           ? formatCorrectionMessage(hypothesisBlock.message)
@@ -456,6 +521,12 @@ export function ScientificWorkbench({
                             (item) => item.hypothesisId === hypothesis.id,
                           )
                           const hypothesisCounts = evidenceCounts(hypothesisEvidence)
+                          const verificationReport = [...state.verificationReports]
+                            .filter((item) => item.hypothesisId === hypothesis.id)
+                            .sort((left, right) => right.round - left.round)[0]
+                          const closureReport = state.closureReports.find(
+                            (item) => item.hypothesisId === hypothesis.id,
+                          )
                           return (
                             <button
                               type="button"
@@ -469,7 +540,11 @@ export function ScientificWorkbench({
                                 <span
                                   className={`status-chip status-chip-small ${hypothesis.status === 'eliminated' ? 'status-chip-danger' : ''}`}
                                 >
-                                  {hypothesisStatusLabel(hypothesis.status)}
+                                  {hypothesisStatusLabel(
+                                    hypothesis.status,
+                                    verificationReport?.supportTier,
+                                    closureReport?.runDisposition,
+                                  )}
                                 </span>
                               </div>
                               <p className="mt-3 text-sm leading-6 text-white">
@@ -479,7 +554,10 @@ export function ScientificWorkbench({
                                 {(hypothesis.mechanismComposition ?? [])
                                   .slice(0, 3)
                                   .map((item, itemIndex) => (
-                                    <span key={`${hypothesis.id}-${itemIndex}`} className="mechanism-tag">
+                                    <span
+                                      key={`${hypothesis.id}-${itemIndex}`}
+                                      className="mechanism-tag"
+                                    >
                                       {String(item.mechanism)}
                                       {typeof item.contribution === 'number'
                                         ? ` · ${Math.round(item.contribution * 100)}%`
@@ -488,10 +566,13 @@ export function ScientificWorkbench({
                                   ))}
                               </div>
                               <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/[0.07] pt-3 text-[11px] text-[var(--color-text-muted)]">
-                                <span>第 {hypothesis.round ?? 1} 轮提出 · 第 {resultRound} 轮继续检验</span>
+                                <span>
+                                  第 {hypothesis.round ?? 1} 轮提出 · 证据等级{' '}
+                                  {hypothesis.evidenceStrengthGrade ?? 'not_assessed'}（非概率）
+                                </span>
                                 <span className="shrink-0 font-mono">
-                                  {hypothesisEvidence.length} 证据 · {hypothesisCounts.support} 支持 ·{' '}
-                                  {hypothesisCounts.contradict} 反例
+                                  {hypothesisEvidence.length} 证据 · {hypothesisCounts.support} 支持
+                                  · {hypothesisCounts.contradict} 反例
                                 </span>
                               </div>
                             </button>
@@ -505,24 +586,98 @@ export function ScientificWorkbench({
                               <span>当前选中假设</span>
                               <strong>{selectedHypothesis.id}</strong>
                             </div>
-                            <p>以下内容说明该假设如何进入第 {resultRound} 轮处理，不把共享处理运行误写成单一假设的专属实验。</p>
+                            <p>
+                              以下内容说明该假设如何进入第 {resultRound}{' '}
+                              轮处理，不把共享处理运行误写成单一假设的专属实验。
+                            </p>
                           </header>
                           <div>
                             <article>
                               <span>可检验预测</span>
-                              <ul>{(selectedHypothesis.predictions ?? []).slice(0, 3).map((item) => <li key={item}>{item}</li>)}</ul>
+                              <ul>
+                                {(selectedHypothesis.predictions ?? []).slice(0, 3).map((item) => (
+                                  <li key={item}>{item}</li>
+                                ))}
+                              </ul>
                             </article>
                             <article>
                               <span>证伪条件</span>
-                              <ul>{(selectedHypothesis.falsificationConditions ?? []).slice(0, 3).map((item) => <li key={item}>{item}</li>)}</ul>
+                              <ul>
+                                {(selectedHypothesis.falsificationConditions ?? [])
+                                  .slice(0, 3)
+                                  .map((item) => (
+                                    <li key={item}>{item}</li>
+                                  ))}
+                              </ul>
                             </article>
                             <article className="hypothesis-round-work">
                               <span>第 {resultRound} 轮实际工作</span>
                               <dl>
-                                <div><dt>共享处理运行</dt><dd>{roundView.processingResults.length}</dd></div>
-                                <div><dt>关联证据</dt><dd>{selectedEvidence.length}</dd></div>
-                                <div><dt>本轮提出任务</dt><dd>{roundView.tasksProposed.length}</dd></div>
+                                <div>
+                                  <dt>共享处理运行</dt>
+                                  <dd>{roundView.processingResults.length}</dd>
+                                </div>
+                                <div>
+                                  <dt>关联证据</dt>
+                                  <dd>{selectedEvidence.length}</dd>
+                                </div>
+                                <div>
+                                  <dt>本轮提出任务</dt>
+                                  <dd>{roundView.tasksProposed.length}</dd>
+                                </div>
                               </dl>
+                            </article>
+                            <article>
+                              <span>支持门槛审计（非概率）</span>
+                              {selectedVerificationReport ? (
+                                <ul>
+                                  <li>
+                                    裁决：
+                                    {hypothesisStatusLabel(
+                                      selectedVerificationReport.decision,
+                                      selectedVerificationReport.supportTier,
+                                      selectedClosureReport?.runDisposition,
+                                    )}
+                                  </li>
+                                  {selectedClosureReport && (
+                                    <li>
+                                      本运行处置：
+                                      {runDispositionLabel(selectedClosureReport.runDisposition)}；
+                                      本地数据
+                                      {selectedClosureReport.localDataSufficient
+                                        ? '足够支撑该处置'
+                                        : '不足以完成机制裁决'}
+                                    </li>
+                                  )}
+                                  <li>
+                                    有效支持证据{' '}
+                                    {selectedVerificationReport.validSupportEvidenceIds.length} 条；
+                                    独立事件 {selectedVerificationReport.eventGroupIds.length} 个
+                                  </li>
+                                  <li>
+                                    方法族 {selectedVerificationReport.methodFamilies.length} 种；
+                                    留出复测
+                                    {selectedVerificationReport.hasHoldoutEvidence
+                                      ? '已通过'
+                                      : '未通过'}
+                                  </li>
+                                  <li>
+                                    预测覆盖{' '}
+                                    {selectedVerificationReport.coveredPredictionIds.length}/
+                                    {selectedVerificationReport.coveredPredictionIds.length +
+                                      selectedVerificationReport.uncoveredPredictionIds.length}
+                                  </li>
+                                  {!selectedVerificationReport.supportGatePassed &&
+                                    selectedVerificationReport.nextActions
+                                      .slice(0, 2)
+                                      .map((item) => <li key={item}>{item}</li>)}
+                                  {selectedClosureReport && (
+                                    <li>{selectedClosureReport.dispositionReason}</li>
+                                  )}
+                                </ul>
+                              ) : (
+                                <p>本假设尚未完成 C.verify 门槛裁决。</p>
+                              )}
                             </article>
                           </div>
                         </section>
@@ -564,11 +719,31 @@ export function ScientificWorkbench({
                   exit={{ opacity: 0, y: -4 }}
                 >
                   <div className="processing-round-scope">
-                    <div><span>本轮处理运行</span><strong>{roundView.processingResults.length}</strong></div>
-                    <div><span>实际读取观测</span><strong>{roundView.processingResults.reduce((total, item) => total + item.usedObservationCount, 0)}</strong></div>
-                    <div><span>登记处理产物</span><strong>{roundView.processingResults.length * 2}</strong></div>
-                    <div><span>带确定性溯源的证据</span><strong>{roundEvidenceCounts.deterministic}</strong></div>
-                    <p>处理数量按真实 processing run、读取观测和产物登记统计；模型审阅记录不会计作新的数据处理。</p>
+                    <div>
+                      <span>本轮处理运行</span>
+                      <strong>{roundView.processingResults.length}</strong>
+                    </div>
+                    <div>
+                      <span>实际读取观测</span>
+                      <strong>
+                        {roundView.processingResults.reduce(
+                          (total, item) => total + item.usedObservationCount,
+                          0,
+                        )}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>登记处理产物</span>
+                      <strong>{roundView.processingResults.length * 2}</strong>
+                    </div>
+                    <div>
+                      <span>带确定性溯源的证据</span>
+                      <strong>{roundEvidenceCounts.deterministic}</strong>
+                    </div>
+                    <p>
+                      处理数量按真实 processing
+                      run、读取观测和产物登记统计；模型审阅记录不会计作新的数据处理。
+                    </p>
                   </div>
                   <ProcessingResults results={roundView.processingResults} />
                 </motion.div>
@@ -583,14 +758,29 @@ export function ScientificWorkbench({
                 >
                   <article className="workbench-boundary-card workbench-boundary-conclusion">
                     <div className="flex items-center gap-2 text-xs text-[var(--color-body)]">
-                      <FileCheck2 className="h-4 w-4 text-cyan-200" />
-                      第 {resultRound} 轮判断
+                      <FileCheck2 className="h-4 w-4 text-cyan-200" />第 {resultRound} 轮判断
                     </div>
                     <p>
                       {roundView.summary?.conclusion ??
                         '尚未形成结论。系统会明确区分已经登记的证据、仍然未知的部分，以及下一步需要补充的资料。'}
                     </p>
-                    {resultRound === latestRound && terminationLabel && <span>停止原因：{terminationLabel}</span>}
+                    {resultRound === latestRound && terminationLabel && (
+                      <span>停止原因：{terminationLabel}</span>
+                    )}
+                    {resultRound === latestRound && state.workflowClosure && (
+                      <span>
+                        流程闭环：
+                        {state.workflowClosure.status === 'complete' ? '已完成' : '未完成'}；
+                        运行闭环：
+                        {state.operationalClosure?.status === 'complete' ? '已完成' : '降级'}；
+                        科学闭环：
+                        {state.closureStatus === 'complete'
+                          ? '已完成'
+                          : state.closureStatus === 'blocked'
+                            ? '受阻'
+                            : '部分完成'}
+                      </span>
+                    )}
                   </article>
                   <article className="workbench-boundary-card">
                     <div className="flex items-center gap-2 text-xs text-[var(--color-body)]">
@@ -598,12 +788,56 @@ export function ScientificWorkbench({
                       结论强度边界
                     </div>
                     <dl className="boundary-evidence-counts">
-                      <div><dt>支持性指标</dt><dd>{supportedCount}</dd></div>
-                      <div><dt>反例 / 不一致</dt><dd>{contradictedCount}</dd></div>
-                      <div><dt>不足以判定</dt><dd>{pendingCount}</dd></div>
+                      <div>
+                        <dt>支持性指标</dt>
+                        <dd>{supportingEvidenceCount}</dd>
+                      </div>
+                      <div>
+                        <dt>反例 / 不一致</dt>
+                        <dd>{contradictingEvidenceCount}</dd>
+                      </div>
+                      <div>
+                        <dt>不足以判定</dt>
+                        <dd>{unknownEvidenceCount}</dd>
+                      </div>
                     </dl>
-                    <p>这里仅展示经过校正后的本轮结论。事实核验、模型重试和过强推断的修正过程独立放在“审计与校正”，避免把过程日志混入科学结论。</p>
+                    <p>
+                      这里仅展示经过校正后的本轮结论。事实核验、模型重试和过强推断的修正过程独立放在“审计与校正”，避免把过程日志混入科学结论。
+                    </p>
                   </article>
+                  {resultRound === latestRound && state.hypothesisCoverage && (
+                    <article className="workbench-boundary-card">
+                      <div className="flex items-center gap-2 text-xs text-[var(--color-body)]">
+                        <Network className="h-3.5 w-3.5 text-violet-200" />
+                        开放世界假设覆盖
+                      </div>
+                      <dl className="boundary-evidence-counts">
+                        <div>
+                          <dt>候选</dt>
+                          <dd>{state.hypothesisCoverage.candidateCount}</dd>
+                        </div>
+                        <div>
+                          <dt>检索机制族</dt>
+                          <dd>{state.hypothesisCoverage.retrievedMechanismFamilies.length}</dd>
+                        </div>
+                        <div>
+                          <dt>未表示机制族</dt>
+                          <dd>{state.hypothesisCoverage.unrepresentedMechanismFamilies.length}</dd>
+                        </div>
+                      </dl>
+                      <p>
+                        不设三类主流理论或固定条数；有限检索不声称穷尽。已表示：
+                        {state.hypothesisCoverage.representedMechanismFamilies.join('、') || '尚无'}
+                        。
+                      </p>
+                      {state.hypothesisCoverage.unrepresentedMechanismFamilies.length > 0 && (
+                        <p>
+                          待补候选：
+                          {state.hypothesisCoverage.unrepresentedMechanismFamilies.join('、')}。
+                        </p>
+                      )}
+                    </article>
+                  )}
                 </motion.div>
               )}
               {activeSection === 'audit' && (
@@ -616,19 +850,26 @@ export function ScientificWorkbench({
                 >
                   <header>
                     <div>
-                      <div className="eyebrow-mono text-amber-200/70">过程审计 / 第 {resultRound} 轮</div>
+                      <div className="eyebrow-mono text-amber-200/70">
+                        过程审计 / 第 {resultRound} 轮
+                      </div>
                       <h2>事实核验、自校正与模型重试</h2>
                     </div>
                     <span>{roundView.corrections.length} 条</span>
                   </header>
-                  <p className="workbench-audit-explainer">这些记录说明系统如何拒绝无溯源证据、降级过强结论或重试不完整模型输出；它们影响结论，但本身不是科学证据。</p>
+                  <p className="workbench-audit-explainer">
+                    这些记录说明系统如何拒绝无溯源证据、降级过强结论或重试不完整模型输出；它们影响结论，但本身不是科学证据。
+                  </p>
                   <div className="workbench-audit-list">
                     {roundView.corrections.map((correction, index) => (
                       <article
                         key={correction.correctionId ?? `legacy-correction-${resultRound}-${index}`}
                         className="workbench-correction"
                       >
-                        <span>{correction.stage} 阶段 · {correction.kind ?? correction.severity ?? correction.status}</span>
+                        <span>
+                          {correction.stage} 阶段 ·{' '}
+                          {correction.kind ?? correction.severity ?? correction.status}
+                        </span>
                         <div>
                           {formatCorrectionMessage(correction.message)}
                           {correction.action && <small>修正动作：{correction.action}</small>}

@@ -50,8 +50,15 @@ export async function runScientificModelTask<TOutput>(
         input.modelConfig.provider,
         input.modelConfig.thinkingLevel,
       ),
+      // Qwen-compatible gateways can briefly return retryable 429 capacity
+      // responses during a multi-agent round. Five bounded exponential
+      // retries improve recovery without masking permanent/provider errors.
+      maxRetries: 5,
       tools,
       maxOutputTokens,
+      // Some OpenAI-compatible Qwen gateways return an empty generation for
+      // forced tool choice. Keep auto mode and recover a missed/invalid
+      // submission with bounded schema-focused retries below.
       toolChoice: 'auto',
       stopWhen: [hasToolCall('submit_result'), isStepCount(2)],
       instructions,
@@ -72,32 +79,40 @@ export async function runScientificModelTask<TOutput>(
   }
 
   const initialBudget = input.maxOutputTokens ?? 2400
-  try {
-    return await execute(input.prompt, initialBudget)
-  } catch (error) {
-    if (input.abortSignal?.aborted) throw error
-    const message = error instanceof Error ? error.message : String(error)
-    if (!/submit_result|step limit|tool|schema|json/i.test(message)) throw error
-    const round = input.round ?? 1
-    input.emitChunk?.({
-      type: 'custom',
-      kind: 'scientific.self-correction',
-      correction: {
-        correctionId: `model-retry-${input.agentId}-${round}-${Date.now()}`,
-        stage,
-        kind: 'execution',
-        severity: 'warning',
-        message: `${input.agentId} 的首次结构化提交不完整，已触发一次受限重试。`,
-        action: '压缩公开摘要并提高结构化答案预算；首次未完成内容不进入 State。',
-        affectedIds: [input.agentId],
-        triggeredBy: [input.agentId],
-        round,
-        agentId: input.agentId,
-      },
-    } as never)
-    return execute(
-      `${input.prompt}\n\n上一次 submit_result 因结构化参数不完整而被拒绝。请显著压缩文字，只保留每个字段必需的事实与边界，并一次性提交完整 JSON；不要重复背景。`,
-      Math.max(initialBudget + 2000, 5200),
-    )
+  const retryable = /submit_result|step limit|tool|schema|json|no output generated/i
+  const round = input.round ?? 1
+  let lastError: unknown
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const retryPrompt =
+      attempt === 0
+        ? input.prompt
+        : `${input.prompt}\n\n上一次 submit_result 因结构化参数不完整或未生成而被拒绝。请显著压缩文字，只保留每个字段必需的事实与边界，并一次性调用 submit_result 提交完整 JSON；不要输出普通文本或重复背景。`
+    const outputBudget =
+      attempt === 0 ? initialBudget : Math.max(initialBudget + 2000 * attempt, 5200)
+    try {
+      return await execute(retryPrompt, outputBudget)
+    } catch (error) {
+      if (input.abortSignal?.aborted) throw error
+      const message = error instanceof Error ? error.message : String(error)
+      if (!retryable.test(message) || attempt === 2) throw error
+      lastError = error
+      input.emitChunk?.({
+        type: 'custom',
+        kind: 'scientific.self-correction',
+        correction: {
+          correctionId: `model-retry-${input.agentId}-${round}-${attempt + 1}-${Date.now()}`,
+          stage,
+          kind: 'execution',
+          severity: 'warning',
+          message: `${input.agentId} 的第 ${attempt + 1} 次结构化提交不完整，已触发受限重试。`,
+          action: '压缩公开摘要并提高结构化答案预算；未完成内容不进入 State。',
+          affectedIds: [input.agentId],
+          triggeredBy: [input.agentId],
+          round,
+          agentId: input.agentId,
+        },
+      } as never)
+    }
   }
+  throw lastError
 }

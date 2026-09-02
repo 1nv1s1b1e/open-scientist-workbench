@@ -330,7 +330,7 @@ function buildScientificGraph(state: ScientificWorkbenchState, round: number) {
       meta: [
         `第 ${hypothesis.round ?? 1} 轮提出 · 状态 ${hypothesis.status}`,
         `${hypothesis.predictions?.length ?? 0} 条预测 · ${hypothesis.falsificationConditions?.length ?? 0} 条证伪条件`,
-        hypothesis.confidence == null ? '未登记置信度' : `登记置信度 ${hypothesis.confidence.toFixed(2)}`,
+        `证据等级 ${hypothesis.evidenceStrengthGrade ?? 'not_assessed'} · 非概率`,
       ],
       round: hypothesis.round ?? 1,
       status: hypothesis.status,

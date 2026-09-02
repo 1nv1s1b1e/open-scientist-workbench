@@ -1,0 +1,17 @@
+{
+  "phenomenon": {
+    "phenomenonId": "phenomenon-ar11158-submission-demo",
+    "title": "NOAA AR11158 多波段热响应与磁场演化",
+    "description": "在 NOAA AR11158 的本地观测窗口中，AIA 94 Å 与 131 Å 出现间歇性热通道增强，171 Å 与 193 Å 同时存在准周期强度变化，HMI 视向磁场在目标区域内持续演化。请比较波动耗散、纳耀斑重联及二者耦合能否解释这些共存现象，并主动寻找反例。",
+    "activeRegion": "NOAA 11158",
+    "observations": [],
+    "requestedQuestion": "哪些真实处理指标能够区分波动耗散、间歇性重联和耦合机制？当前证据不能回答的部分是什么，下一步哪些任务在现有系统中确实可执行？",
+    "constraints": [
+      "只使用已核验文献、本地 FITS 数据和登记的处理产物",
+      "不得把数据覆盖或模型判断直接解释为机制证据",
+      "单一非唯一指标不得把候选机制升级为 supported"
+    ]
+  },
+  "maxRounds": 2,
+  "executionMode": "local-grounded"
+}

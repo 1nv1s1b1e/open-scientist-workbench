@@ -8,5 +8,6 @@ health.get('/api/health', (c) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     baseDir: env.BASE_DIR,
+    coronalDatasetId: process.env.CORONAL_DATASET_ID?.trim() || 'coronal-starter-v1',
   })
 })

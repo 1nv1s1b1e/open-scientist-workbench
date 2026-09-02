@@ -8,6 +8,8 @@ import type { ScientificLoopResult } from '@open-scientist/schema'
 import { appendRunChunk } from '@open-scientist/storage'
 import type { UIMessageChunk } from 'ai'
 
+import { createRunHumanControl, removeRunHumanControl } from './run-control'
+
 /**
  * In-memory registry of active tournament runs.
  *
@@ -17,15 +19,15 @@ import type { UIMessageChunk } from 'ai'
  *   1. consume the live SSE stream from POST `/runs`, and
  *   2. reconnect from a `startIndex` via GET `/runs/:id/stream`.
  *
- * There is no durable persistence — if the process restarts, in-flight runs
- * are lost. SQLite `runs` rows remain the source of truth for final status;
- * tournament rounds persist per-round `snapshot.json` files on disk which can
- * seed a future "resume from snapshot" path.
+ * Chunks and final run state are durably persisted in SQLite. Active workflow
+ * execution remains process-local, while scientific checkpoints and legacy
+ * tournament snapshots provide their respective resume paths after restart.
  *
  * **Seam**: the workflow function is injected via the constructor so the
  * registry's deep logic (replay-on-connect, live-forward, tail indexing,
  * abort threading, 60s eviction, 3 rejection guards) can be unit-tested with
- * a fake workflow instead of the real `tournamentWorkflow`.
+ * a fake workflow instead of the real workflow dispatch (scientific loop
+ * vs. legacy tournament).
  */
 
 /** A single run's state and stream surface. */
@@ -59,10 +61,13 @@ export interface RunReadable {
 }
 
 /**
- * Workflow function type — the seam between the registry and the tournament.
+ * Workflow function type — the seam between the registry and the two
+ * supported workflows.
  *
- * Production binds this to `tournamentWorkflow`; tests bind it to a fake that
- * emits deterministic chunks.
+ * Production dispatches on the input shape: a `phenomenon` (or a
+ * `scientificResume`) routes to the current `scientificLoopWorkflow`; a bare
+ * seed routes to the archived `tournamentWorkflow` (legacy compatibility
+ * path). Tests bind this to a fake that emits deterministic chunks.
  */
 export type WorkflowResult = TournamentResult | ScientificLoopResult
 export type WorkflowFn = (input: TournamentWorkflowInput) => Promise<WorkflowResult>
@@ -121,12 +126,21 @@ export class RunRegistryImpl implements RunRegistry {
     // settles, every controller is closed and the set is cleared.
     const activeControllers = new Set<ReadableStreamDefaultController<UIMessageChunk>>()
     let chunkSeq = 0
+    let chunkPersistenceError: Error | null = null
+    let chunkWrites: Promise<void> = Promise.resolve()
 
     const emit = (chunk: UIMessageChunk) => {
       chunks.push(chunk)
       const seq = chunkSeq++
-      // Persist to SQLite (fire-and-forget — doesn't block the live stream)
-      void appendRunChunk(input.projectId, input.runId, seq, JSON.stringify(chunk)).catch(() => {})
+      // Keep live delivery non-blocking, but serialize writes and fail the run
+      // if durable persistence did not complete.
+      chunkWrites = chunkWrites.then(async () => {
+        try {
+          await appendRunChunk(input.projectId, input.runId, seq, JSON.stringify(chunk))
+        } catch (error) {
+          chunkPersistenceError ??= error instanceof Error ? error : new Error(String(error))
+        }
+      })
       for (const controller of activeControllers) {
         try {
           controller.enqueue(chunk)
@@ -137,6 +151,17 @@ export class RunRegistryImpl implements RunRegistry {
         }
       }
     }
+
+    // Human control surface (pause / steering / optional approval gate). The
+    // scientific loop treats it as fully optional: with the gate disarmed and
+    // no pause request the loop reaches closure without any human input.
+    const humanControl = createRunHumanControl({
+      runId,
+      ...(input.humanGate ? { gateMode: input.humanGate } : {}),
+      ...(input.humanGateTimeoutMs !== undefined
+        ? { gateTimeoutMs: input.humanGateTimeoutMs }
+        : {}),
+    })
 
     // Kick off the workflow in the background. The abort signal is threaded
     // into workflowFn → sub-workflows → agent.stream so cancellation
@@ -152,14 +177,23 @@ export class RunRegistryImpl implements RunRegistry {
     //   `completeRun(..., 'failed')` on rejection.
     // - The `.catch(swallow)` after `.finally()` prevents unhandled rejection
     //   from the finally-derived promise.
-    const result = this.workflowFn({
+    const workflowResult = this.workflowFn({
       ...input,
       emitChunk: emit,
+      humanChannel: humanControl,
       ...(input.abortSignal ? {} : { abortSignal: abortController.signal }),
-    }).then(
-      (output) => output,
-      (err) => {
+    })
+    const result = workflowResult.then(
+      async (output) => {
+        await chunkWrites
+        if (chunkPersistenceError) {
+          throw new Error(`Run chunk persistence failed: ${chunkPersistenceError.message}`)
+        }
+        return output
+      },
+      async (err) => {
         if (abortController.signal.aborted) {
+          await chunkWrites
           return undefined
         }
         // Emit an error chunk so the client sees the failure on the SSE feed
@@ -168,6 +202,7 @@ export class RunRegistryImpl implements RunRegistry {
           type: 'error',
           errorText: err instanceof Error ? err.message : String(err),
         } as UIMessageChunk)
+        await chunkWrites
         throw err
       },
     )
@@ -178,6 +213,9 @@ export class RunRegistryImpl implements RunRegistry {
       chunks,
       result,
       cancel: async () => {
+        // Wake any human-gate / pause waiter first so the aborted run cannot
+        // hang on a promise that would never resolve.
+        removeRunHumanControl(runId)
         abortController.abort()
       },
       getReadable: (opts) => makeReadable(chunks, activeControllers, opts?.startIndex),
@@ -200,6 +238,8 @@ export class RunRegistryImpl implements RunRegistry {
           }
         }
         activeControllers.clear()
+        // Drop the human control surface with the run.
+        removeRunHumanControl(runId)
         // Defer eviction slightly so a reconnect landing right at completion
         // still finds the run.
         setTimeout(() => {
@@ -270,18 +310,15 @@ function makeReadable(
 }
 
 /**
- * Production singleton — bound to the real `tournamentWorkflow`.
- *
- * Routes use the `start` / `getRun` wrapper functions below (which delegate to
- * this singleton), not the singleton directly, so the registry's deep logic
- * is testable via dependency injection while production uses the real workflow.
+ * Production singleton — dispatches between the current scientific loop and
+ * the archived tournament workflow by input shape (see `WorkflowFn`).
  */
 const productionWorkflow: WorkflowFn = (input) =>
   input.phenomenon || input.scientificResume
     ? scientificLoopWorkflow({
-      ...(input as ScientificLoopWorkflowInput),
-      resume: input.scientificResume,
-    })
+        ...(input as ScientificLoopWorkflowInput),
+        resume: input.scientificResume,
+      })
     : tournamentWorkflow(input)
 
 const runRegistry: RunRegistry = new RunRegistryImpl(productionWorkflow)

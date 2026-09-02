@@ -3,10 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
 import type { ScientificHypothesis } from '@open-scientist/schema'
-import {
-  closeProjectDb,
-  listScientificHypotheses,
-} from '@open-scientist/storage'
+import { closeProjectDb, listScientificHypotheses } from '@open-scientist/storage'
 import {
   scientificLoopWorkflow,
   type ScientificLoopWorkflowInput,
@@ -58,6 +55,7 @@ describe('scientific workflow entrypoint', () => {
 
   it('delegates orchestration to the LangGraph root graph', async () => {
     const nodes: string[] = []
+    const eventKinds: string[] = []
     const result = await scientificLoopWorkflow({
       ...input,
       modelConfig: {
@@ -75,6 +73,7 @@ describe('scientific workflow entrypoint', () => {
       },
       emitChunk: (chunk) => {
         const event = chunk as unknown as Record<string, unknown>
+        if (typeof event.kind === 'string') eventKinds.push(event.kind)
         if (event.kind === 'scientific.node-state' && event.state === 'completed') {
           nodes.push(String(event.node))
         }
@@ -86,13 +85,15 @@ describe('scientific workflow entrypoint', () => {
       'A.verify',
       'B.run',
       'BC.verify',
-      'C.synthesize',
       'C.verify',
+      'C.synthesize',
       'D.plan',
       'D.route',
     ])
     expect(result.terminationReason).toBe('max_rounds_reached')
-    expect(await listScientificHypotheses(input.projectId, { runId: input.runId }))
-      .toEqual([expect.objectContaining({ id: hypothesis.id })])
+    expect(eventKinds.at(-1)).toBe('scientific.loop-complete')
+    expect(await listScientificHypotheses(input.projectId, { runId: input.runId })).toEqual([
+      expect.objectContaining({ id: hypothesis.id }),
+    ])
   })
 })

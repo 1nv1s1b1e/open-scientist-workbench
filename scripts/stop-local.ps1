@@ -15,14 +15,32 @@ function Stop-ManagedProcessTree {
 
   if ($null -ne $RootProcessId) {
     $root = Get-Process -Id $RootProcessId -ErrorAction SilentlyContinue
-    if ($null -ne $root -and $root.StartTime.ToUniversalTime() -ge $EarliestStartTime) {
+    $rootStartedAt = $null
+    if ($null -ne $root) {
+      try {
+        $rootStartedAt = $root.StartTime.ToUniversalTime()
+      }
+      catch {
+        $rootStartedAt = $null
+      }
+    }
+    if ($null -ne $rootStartedAt -and $rootStartedAt -ge $EarliestStartTime) {
       & taskkill.exe /PID $RootProcessId /T /F 2>$null | Out-Null
     }
   }
 
   if ($null -ne $ListenerProcessId) {
     $listener = Get-Process -Id $ListenerProcessId -ErrorAction SilentlyContinue
-    if ($null -ne $listener -and $listener.StartTime.ToUniversalTime() -ge $EarliestStartTime) {
+    $listenerStartedAt = $null
+    if ($null -ne $listener) {
+      try {
+        $listenerStartedAt = $listener.StartTime.ToUniversalTime()
+      }
+      catch {
+        $listenerStartedAt = $null
+      }
+    }
+    if ($null -ne $listenerStartedAt -and $listenerStartedAt -ge $EarliestStartTime) {
       Stop-Process -Id $ListenerProcessId -Force -ErrorAction SilentlyContinue
     }
   }
@@ -36,10 +54,12 @@ if (-not (Test-Path -LiteralPath $StatePath)) {
 $state = Get-Content -LiteralPath $StatePath -Encoding UTF8 -Raw | ConvertFrom-Json
 $startedAt = [DateTime]::Parse($state.startedAtUtc).ToUniversalTime().AddSeconds(-5)
 
-Stop-ManagedProcessTree `
-  -RootProcessId $state.webRootPid `
-  -ListenerProcessId $state.webListenerPid `
-  -EarliestStartTime $startedAt
+if ($state.webRootPid) {
+  Stop-ManagedProcessTree `
+    -RootProcessId $state.webRootPid `
+    -ListenerProcessId $state.webListenerPid `
+    -EarliestStartTime $startedAt
+}
 Stop-ManagedProcessTree `
   -RootProcessId $state.apiRootPid `
   -ListenerProcessId $state.apiListenerPid `

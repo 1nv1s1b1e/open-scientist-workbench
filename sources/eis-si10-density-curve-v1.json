@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "kind": "eis-si10-density-curve-v1",
+  "analysisVersion": "eis-si10-density-curve-v1",
+  "generatedAt": "2026-08-28T18:17:27Z",
+  "ion": "Si X",
+  "diagnostic": "Si X 258.375/261.058 intensity ratio -> electron density",
+  "units": {
+    "intensityRatio": "energy units (erg cm-2 s-1 sr-1 per Å cancel)",
+    "density": "log10(electron density, cm-3)"
+  },
+  "chiantiVersion": "11.0.2",
+  "chiantiPyVersion": "0.16.0",
+  "levelPopulationAssumptions": [
+    "Steady-state level populations from electron-impact excitation/de-excitation (CHIANTI scups) including proton impact rates (si_10.psplups).",
+    "Level-resolved radiative recombination data are absent for Si X in CHIANTI (empty si_10.rrlvl), so recombination-cascade feeding is not included.",
+    "Isothermal plasma at each registered log T; abundance and ionization fraction cancel in the same-ion ratio.",
+    "Optically thin emission (EIS Software Note 15 method)."
+  ],
+  "registeredTemperatures": {
+    "6.05": {
+      "assumption": "log T fixed for the emissivity calculation"
+    },
+    "6.10": {
+      "assumption": "log T fixed for the emissivity calculation"
+    },
+    "6.15": {
+      "assumption": "log T fixed for the emissivity calculation"
+    }
+  },
+  "transitions": {
+    "line258": {
+      "chiantiWavelengthAngstrom": 258.374,
+      "lowerLevel": 2,
+      "upperLevel": 10
+    },
+    "line261": {
+      "chiantiWavelengthAngstrom": 261.056,
+      "lowerLevel": 2,
+      "upperLevel": 9
+    }
+  },
+  "curve": {
+    "6.05": [
+      {
+        "logElectronDensityCm3": 7.0,
+        "intensityRatioEnergyUnits": 1.141085
+      },
+      {
+        "logElectronDensityCm3": 7.5,
+        "intensityRatioEnergyUnits": 1.216344
+      },
+      {
+        "logElectronDensityCm3": 8.0,
+        "intensityRatioEnergyUnits": 1.428022
+      },
+      {
+        "logElectronDensityCm3": 8.5,
+        "intensityRatioEnergyUnits": 1.912478
+      },
+      {
+        "logElectronDensityCm3": 9.0,
+        "intensityRatioEnergyUnits": 2.64002
+      },
+      {
+        "logElectronDensityCm3": 9.5,
+        "intensityRatioEnergyUnits": 3.251475
+      },
+      {
+        "logElectronDensityCm3": 10.0,
+        "intensityRatioEnergyUnits": 3.560795
+      },
+      {
+        "logElectronDensityCm3": 10.5,
+        "intensityRatioEnergyUnits": 3.678031
+      },
+      {
+        "logElectronDensityCm3": 11.0,
+        "intensityRatioEnergyUnits": 3.717416
+      }
+    ],
+    "6.10": [
+      {
+        "logElectronDensityCm3": 7.0,
+        "intensityRatioEnergyUnits": 1.141019
+      },
+      {
+        "logElectronDensityCm3": 7.5,
+        "intensityRatioEnergyUnits": 1.213561
+      },
+      {
+        "logElectronDensityCm3": 8.0,
+        "intensityRatioEnergyUnits": 1.418417
+      },
+      {
+        "logElectronDensityCm3": 8.5,
+        "intensityRatioEnergyUnits": 1.89188
+      },
+      {
+        "logElectronDensityCm3": 9.0,
+        "intensityRatioEnergyUnits": 2.615231
+      },
+      {
+        "logElectronDensityCm3": 9.5,
+        "intensityRatioEnergyUnits": 3.234903
+      },
+      {
+        "logElectronDensityCm3": 10.0,
+        "intensityRatioEnergyUnits": 3.552561
+      },
+      {
+        "logElectronDensityCm3": 10.5,
+        "intensityRatioEnergyUnits": 3.673704
+      },
+      {
+        "logElectronDensityCm3": 11.0,
+        "intensityRatioEnergyUnits": 3.714497
+      }
+    ],
+    "6.15": [
+      {
+        "logElectronDensityCm3": 7.0,
+        "intensityRatioEnergyUnits": 1.140767
+      },
+      {
+        "logElectronDensityCm3": 7.5,
+        "intensityRatioEnergyUnits": 1.210695
+      },
+      {
+        "logElectronDensityCm3": 8.0,
+        "intensityRatioEnergyUnits": 1.408934
+      },
+      {
+        "logElectronDensityCm3": 8.5,
+        "intensityRatioEnergyUnits": 1.871474
+      },
+      {
+        "logElectronDensityCm3": 9.0,
+        "intensityRatioEnergyUnits": 2.590153
+      },
+      {
+        "logElectronDensityCm3": 9.5,
+        "intensityRatioEnergyUnits": 3.217674
+      },
+      {
+        "logElectronDensityCm3": 10.0,
+        "intensityRatioEnergyUnits": 3.543698
+      },
+      {
+        "logElectronDensityCm3": 10.5,
+        "intensityRatioEnergyUnits": 3.668819
+      },
+      {
+        "logElectronDensityCm3": 11.0,
+        "intensityRatioEnergyUnits": 3.711054
+      }
+    ]
+  },
+  "primaryTemperature": "6.10",
+  "validation": {
+    "anchor": {
+      "source": "Warren, H. P. 2009, ApJ, 700, 762, Table 2",
+      "observedIntensityRatio": 1.645,
+      "publishedLogElectronDensityCm3": 8.35,
+      "publishedChiantiVersion": "5.2.1",
+      "thisCurveLogElectronDensityCm3": 8.239,
+      "deviationDex": 0.111,
+      "maximumAllowedDeviationDex": 0.5
+    }
+  },
+  "chiantiFiles": [
+    {
+      "relativePath": "VERSION",
+      "sha256": "da359533575a52b213dddd1b0ba267aa1f20855443bc00906eb0fa1b6cd2cc1f"
+    },
+    {
+      "relativePath": "abundance/sun_photospheric_2021_asplund.abund",
+      "sha256": "665f6a911c66d71ffd9def879c9b12836f25986bb4f01a8f054e58af31661a86"
+    },
+    {
+      "relativePath": "ioneq/chianti.ioneq",
+      "sha256": "706029c824704ab727c40570a8709bae42bf69745db2fa5cd54d5b8b12bc41db"
+    },
+    {
+      "relativePath": "ioneq/grndLevels.dat",
+      "sha256": "152f9216cd626fb62fccf5cbb53adf5836e6f4cebc78244deefbdc97a99344b5"
+    },
+    {
+      "relativePath": "ip/chianti.ip",
+      "sha256": "c39f95522a0ac86965c2a283d64db142945aa310f3da10e35842dadee136445e"
+    },
+    {
+      "relativePath": "masterlist/masterlist.ions",
+      "sha256": "25c20d3ae8b699c8f36aaf774b26c9d79be49b5afa76c23fdf28c3f934679b82"
+    },
+    {
+      "relativePath": "continuum/verner_short.txt",
+      "sha256": "59fad3094c816ce699d826a92e7bd9b53bd15c8dc9f751a5417b121688c9d078"
+    },
+    {
+      "relativePath": "continuum/gffgu.dat",
+      "sha256": "e7b706cbb25f975bea65955edc3678465f5b4c2a014920878579480a25fc26f9"
+    },
+    {
+      "relativePath": "continuum/gffint.dat",
+      "sha256": "ca71ab5702ebe081b6aacb67707927c4047767d282512a996f5753987e4f3cf8"
+    },
+    {
+      "relativePath": "continuum/hseq_2photon.dat",
+      "sha256": "4be24a08d49d39b5ace37e89f10844cee6c7adc919874251711bf59a7631b6f2"
+    },
+    {
+      "relativePath": "continuum/klgfb_1.dat",
+      "sha256": "7a6ac84a8f9cd6087c12db0faa85e10a276889ecae812e5d189b9167483c4160"
+    },
+    {
+      "relativePath": "continuum/klgfb_2.dat",
+      "sha256": "6a589d3df3bfe2b9377c8814e19a12125c63bfd65ef5917cc85a9049d6104b41"
+    },
+    {
+      "relativePath": "continuum/klgfb_3.dat",
+      "sha256": "9bbdb26769dec9aba975332f4c0c0e96bc96de1ecd852bfbe693b3a412e4f223"
+    },
+    {
+      "relativePath": "continuum/klgfb_4.dat",
+      "sha256": "e4bd0dc559f738476264c193db2f4ec95eb8e7409b16fde33f685fa383d1b7ee"
+    },
+    {
+      "relativePath": "continuum/klgfb_5.dat",
+      "sha256": "b54638387aba9063ed35e3d07236da5ebfcf82c30644a5228f27a7ffed83280e"
+    },
+    {
+      "relativePath": "continuum/klgfb_6.dat",
+      "sha256": "5c00ee5d747d1610517ffe6221653b131fc9cfa6ac84ad6383aa47654aab8c6c"
+    },
+    {
+      "relativePath": "si/si_10/si_10.elvlc",
+      "sha256": "833fbd9e0fc4924b596840700ae487a28a34c42d7c324167f0da87de8b47d2cb"
+    },
+    {
+      "relativePath": "si/si_10/si_10.scups",
+      "sha256": "516eec8543724e5e2fddd993f5336a0f4664d630b6f397d2be1a69cdbd4d90cf"
+    },
+    {
+      "relativePath": "si/si_10/si_10.wgfa",
+      "sha256": "4ea86592ee013963b042344abb0ad63405eadbfe431103fb73eb99a3bae0e385"
+    },
+    {
+      "relativePath": "si/si_10/si_10.psplups",
+      "sha256": "25aa6d7dd3033bf7c0a4c5dedb75e180438d2f55df5283eee453638429c86703"
+    },
+    {
+      "relativePath": "si/si_11/si_11.elvlc",
+      "sha256": "fdbcc2449e0a96510d08bb373bbab3359b7d831feb8938dec90ec95e7aa15b19"
+    },
+    {
+      "relativePath": "si/si_11/si_11.rrparams",
+      "sha256": "8c56fc3efa11ba79b582faa57bd49cefb749a76edf25eee065f97292e997ba8e"
+    },
+    {
+      "relativePath": "si/si_11/si_11.drparams",
+      "sha256": "0fcdb66ad0b7f42ff25f274b251f0b1ef94b71b856bb09d5e3cead1730608193"
+    },
+    {
+      "relativePath": "si/si_11/si_11.fblvl",
+      "sha256": "dfa51771ac20bf6a88f83061b7ec5dd87a9f60c7a11bcc9b68b881a8aba34594"
+    }
+  ],
+  "boundaries": [
+    "The curve is a frozen atomic response, not an observation; it carries no event data.",
+    "Density sensitivity is bounded by the registered grid; ratios outside the curve range must be reported as unconstrained, not clipped.",
+    "A few-percent blend contribution in the observed 258.375 feature propagates directly into the inverted density."
+  ]
+}

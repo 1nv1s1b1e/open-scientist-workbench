@@ -90,6 +90,7 @@ export const CustomEventKind = {
   ScientificPhenomenon: 'scientific.phenomenon',
   ScientificRetrieval: 'scientific.retrieval',
   ScientificHypothesis: 'scientific.hypothesis',
+  ScientificVerificationReport: 'scientific.verification-report',
   ScientificEvidence: 'scientific.evidence',
   ScientificNodeState: 'scientific.node-state',
   ScientificAgentState: 'scientific.agent-state',
@@ -101,6 +102,11 @@ export const CustomEventKind = {
   ScientificRoundSummary: 'scientific.round-summary',
   ScientificValidationTask: 'scientific.validation-task',
   ScientificLoopComplete: 'scientific.loop-complete',
+  ScientificHumanPaused: 'scientific.human-paused',
+  ScientificHumanResumed: 'scientific.human-resumed',
+  ScientificSteeringInjected: 'scientific.steering-injected',
+  ScientificHumanGateRequest: 'scientific.human-gate-request',
+  ScientificHumanGateResult: 'scientific.human-gate-result',
 } as const
 
 /** Round-update custom chunk payload (emitted after Explore + Oracle phases) */

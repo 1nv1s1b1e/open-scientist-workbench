@@ -2,6 +2,7 @@ import type {
   EvidenceRecord,
   MemoryEntry,
   PhenomenonInput,
+  ScientificCorrection,
   ScientificHypothesis,
   ValidationTask,
 } from '@open-scientist/schema'
@@ -25,16 +26,27 @@ export interface EvidenceAgentContext {
   evidence: readonly EvidenceRecord[]
   validationTasks: readonly ValidationTask[]
   memory?: readonly MemoryEntry[]
+  /**
+   * Self-correction corrections from earlier rounds, transported into the
+   * worker projection. buildScientificContext compacts them into
+   * `recentLessons` so reviewers see known problems instead of re-reporting
+   * them verbatim.
+   */
+  recentCorrections?: readonly ScientificCorrection[]
+  /** Compact earlier-round findings projected by buildScientificContext. */
+  recentLessons?: readonly string[]
   round: number
   signal?: AbortSignal
 }
 
 export interface EvidenceAgentCorrection {
   stage: string
+  kind?: ScientificCorrection['kind']
   severity: 'info' | 'warning' | 'error'
   message: string
   action: string
   affectedIds?: string[]
+  evidenceAction?: 'none' | 'downgrade_to_unknown' | 'revoke'
 }
 
 export interface EvidenceAgentOutput {
@@ -56,18 +68,13 @@ export interface EvidenceAgent {
    */
   executionKind?: 'deterministic' | 'model'
   capabilities: EvidenceAgentCapability[]
-  canRun?: (
-    context: Readonly<EvidenceAgentContext>,
-  ) => boolean | Promise<boolean>
+  canRun?: (context: Readonly<EvidenceAgentContext>) => boolean | Promise<boolean>
   run: (
     context: Readonly<EvidenceAgentContext>,
   ) => EvidenceAgentOutput | Promise<EvidenceAgentOutput>
 }
 
-export type EvidenceAgentExecutionStatus =
-  | 'completed'
-  | 'skipped'
-  | 'failed'
+export type EvidenceAgentExecutionStatus = 'completed' | 'skipped' | 'failed'
 
 export interface EvidenceAgentExecution {
   agentId: string
@@ -87,9 +94,7 @@ export interface EvidenceAgentStateEvent {
 }
 
 export interface EvidenceWorkgroupOptions {
-  onAgentState?: (
-    event: EvidenceAgentStateEvent,
-  ) => void | Promise<void>
+  onAgentState?: (event: EvidenceAgentStateEvent) => void | Promise<void>
 }
 
 export interface EvidenceWorkgroupResult {
@@ -204,9 +209,7 @@ export async function runEvidenceWorkgroup(
 
   for (const execution of executions) {
     if (execution.status === 'failed') {
-      limitations.push(
-        `智能体 ${execution.label} 执行失败：${execution.error ?? '未知错误'}`,
-      )
+      limitations.push(`智能体 ${execution.label} 执行失败：${execution.error ?? '未知错误'}`)
       continue
     }
     if (execution.status !== 'completed' || !execution.output) continue

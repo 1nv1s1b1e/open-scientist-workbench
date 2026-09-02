@@ -6,6 +6,9 @@ param(
   [ValidateRange(1, 65535)]
   [int]$WebPort = 5173,
 
+  # Skip the Next.js workbench entirely (API-only runs, e.g. SSE demos).
+  [switch]$NoWeb,
+
   [ValidateRange(10, 300)]
   [int]$TimeoutSeconds = 90,
 
@@ -29,7 +32,14 @@ function Import-LocalEnvironment {
     'BASE_DIR',
     'HELIX_URL',
     'LOG_LEVEL',
-    'CREDENTIAL_ENCRYPTION_KEY'
+    'CREDENTIAL_ENCRYPTION_KEY',
+    # Interpreter used by the deterministic FITS analysis chain spawned by
+    # the API (local-processing.ts). Without it a bare `python` on PATH that
+    # lacks the scientific stack fails every local diagnostic.
+    'PYTHON_EXECUTABLE',
+    # Dataset served by the API for scientific runs (README: 完整评测使用
+    # coronal-evidence-70gb-v1).
+    'CORONAL_DATASET_ID'
   )
 
   foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
@@ -164,6 +174,18 @@ function Start-LocalHelix {
   return $true
 }
 
+function Initialize-HelixLiterature {
+  if (-not $WithHelix) {
+    return
+  }
+
+  Write-Host 'Seeding the verified coronal-heating literature corpus into HelixDB...'
+  & node (Join-Path $ProjectRoot 'scripts/seed-papers.ts')
+  if ($LASTEXITCODE -ne 0) {
+    throw "HelixDB literature seeding failed with exit code $LASTEXITCODE."
+  }
+}
+
 function Stop-StartedProcessTree {
   param(
     [System.Diagnostics.Process]$RootProcess,
@@ -215,8 +237,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'node_modules'))) {
 }
 
 if (Test-Path -LiteralPath $StatePath) {
-  if ((Test-HttpEndpoint -Uri "http://127.0.0.1:$ApiPort/api/health") -and
-      (Test-HttpEndpoint -Uri "http://localhost:$WebPort")) {
+  $apiAlreadyHealthy = Test-HttpEndpoint -Uri "http://127.0.0.1:$ApiPort/api/health"
+  $webAlreadyHealthy = -not $NoWeb -and (Test-HttpEndpoint -Uri "http://localhost:$WebPort")
+  if ($apiAlreadyHealthy -and ($NoWeb -or $webAlreadyHealthy)) {
     if ($WithHelix) {
       $existingState = Get-Content -LiteralPath $StatePath -Encoding UTF8 -Raw |
         ConvertFrom-Json
@@ -224,16 +247,21 @@ if (Test-Path -LiteralPath $StatePath) {
         $existingState.helixStartedByScript = $true
         $existingState | ConvertTo-Json | Set-Content -LiteralPath $StatePath -Encoding UTF8
       }
+      Initialize-HelixLiterature
     }
     Write-Host 'Open-Scientist is already running.' -ForegroundColor Green
-    Write-Host "Web:        http://localhost:$WebPort"
+    if (-not $NoWeb) {
+      Write-Host "Web:        http://localhost:$WebPort"
+    }
     Write-Host "API health: http://127.0.0.1:$ApiPort/api/health"
     exit 0
   }
   Remove-Item -LiteralPath $StatePath -Force
 }
 
-foreach ($port in @($ApiPort, $WebPort)) {
+$portsToCheck = @($ApiPort)
+if (-not $NoWeb) { $portsToCheck += $WebPort }
+foreach ($port in $portsToCheck) {
   $owner = Get-ListeningProcessId -Port $port
   if ($null -ne $owner) {
     throw "Port $port is already occupied by PID $owner. Stop that service or choose another port."
@@ -241,6 +269,7 @@ foreach ($port in @($ApiPort, $WebPort)) {
 }
 
 $helixStartedByScript = Start-LocalHelix -Timeout $TimeoutSeconds
+Initialize-HelixLiterature
 
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $apiOutLog = Join-Path $RuntimeDir "api-$timestamp.out.log"
@@ -273,8 +302,11 @@ try {
 
   $env:API_BASE_URL = "http://127.0.0.1:$ApiPort"
   $env:NEXT_PUBLIC_API_BASE_URL = "http://127.0.0.1:$ApiPort"
+  if ($NoWeb) {
+    Write-Host 'NoWeb requested: skipping the Next.js workbench (API-only mode).'
+  } else {
   $webProcess = Start-Process -FilePath $corepack `
-    -ArgumentList @('pnpm', '--filter', '@open-scientist/web', 'dev') `
+    -ArgumentList @('pnpm', '--filter', '@open-scientist/web', 'exec', 'next', 'dev', '-p', [string]$WebPort) `
     -WorkingDirectory $ProjectRoot `
     -WindowStyle Hidden `
     -RedirectStandardOutput $webOutLog `
@@ -283,26 +315,31 @@ try {
 
   Wait-HttpEndpoint -Name 'Web' -Uri "http://localhost:$WebPort" -Timeout $TimeoutSeconds
   $webListenerPid = Get-ListeningProcessId -Port $WebPort
+  }
 
   $state = [ordered]@{
     startedAtUtc = $StartedAt.ToString('o')
     projectRoot = $ProjectRoot
     apiPort = $ApiPort
-    webPort = $WebPort
     apiRootPid = $apiProcess.Id
-    webRootPid = $webProcess.Id
     apiListenerPid = $apiListenerPid
-    webListenerPid = $webListenerPid
     helixStartedByScript = $helixStartedByScript
     helixInstance = 'dev'
     apiOutLog = $apiOutLog
     apiErrLog = $apiErrLog
-    webOutLog = $webOutLog
-    webErrLog = $webErrLog
+  }
+  if (-not $NoWeb) {
+    $state.webPort = $WebPort
+    $state.webRootPid = $webProcess.Id
+    $state.webListenerPid = $webListenerPid
+    $state.webOutLog = $webOutLog
+    $state.webErrLog = $webErrLog
   }
   $state | ConvertTo-Json | Set-Content -LiteralPath $StatePath -Encoding UTF8
 } catch {
-  Stop-StartedProcessTree -RootProcess $webProcess -ListenerProcessId $webListenerPid
+  if ($webProcess) {
+    Stop-StartedProcessTree -RootProcess $webProcess -ListenerProcessId $webListenerPid
+  }
   Stop-StartedProcessTree -RootProcess $apiProcess -ListenerProcessId $apiListenerPid
   if ($helixStartedByScript) {
     $helix = Join-Path $env:USERPROFILE '.local\bin\helix.exe'
@@ -319,8 +356,10 @@ try {
 
 Write-Host ''
 Write-Host 'Open-Scientist started successfully.' -ForegroundColor Green
-Write-Host "Web:        http://localhost:$WebPort"
-Write-Host "Demo:       http://localhost:$WebPort/projects/scientific-thinking-demo"
+if (-not $NoWeb) {
+  Write-Host "Web:        http://localhost:$WebPort"
+  Write-Host "Demo:       http://localhost:$WebPort/projects/scientific-thinking-demo"
+}
 Write-Host "API health: http://127.0.0.1:$ApiPort/api/health"
 Write-Host "State:      $StatePath"
 Write-Host "Logs:       $RuntimeDir"

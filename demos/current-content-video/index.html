@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>金乌智研 · 当前内容展示</title>
+    <style>
+      :root {
+        --ink: #06131a;
+        --ink-soft: #0a2028;
+        --paper: #eef9f6;
+        --muted: #8eaaa8;
+        --cyan: #70e4da;
+        --cyan-soft: #2a918d;
+        --solar: #ff9f43;
+        --solar-hot: #ffd07a;
+        --warning: #f3ca52;
+        --line: rgba(151, 224, 216, 0.2);
+        --duration: 48s;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: var(--ink);
+        color: var(--paper);
+        font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      }
+
+      body {
+        position: relative;
+        background:
+          radial-gradient(circle at 80% 42%, rgba(255, 159, 67, 0.08), transparent 29%),
+          radial-gradient(circle at 30% 120%, rgba(112, 228, 218, 0.1), transparent 34%),
+          linear-gradient(135deg, #07171d 0%, #041015 68%, #071c23 100%);
+      }
+
+      .space-grid {
+        position: absolute;
+        inset: 0;
+        opacity: 0.42;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 96px 96px;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent 88%);
+      }
+
+      .space-grid::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(238, 249, 246, 0.72) 1px, transparent 1.5px);
+        background-size: 137px 157px;
+        background-position: 17px 39px;
+        opacity: 0.25;
+      }
+
+      .solar-orbit {
+        position: absolute;
+        width: 760px;
+        height: 760px;
+        right: -310px;
+        top: 145px;
+        border: 1px solid rgba(255, 184, 88, 0.34);
+        border-radius: 50%;
+        box-shadow:
+          0 0 90px rgba(255, 140, 40, 0.1),
+          inset 0 0 120px rgba(255, 159, 67, 0.04);
+        animation: orbit-breathe 7s ease-in-out infinite;
+      }
+
+      .solar-orbit::before,
+      .solar-orbit::after {
+        content: "";
+        position: absolute;
+        border: 1px solid rgba(112, 228, 218, 0.14);
+        border-radius: 50%;
+      }
+
+      .solar-orbit::before {
+        inset: 74px;
+      }
+
+      .solar-orbit::after {
+        inset: 178px;
+        background: radial-gradient(circle at 38% 33%, #ffd58b 0%, #ff9d3f 33%, #c54722 67%, #261319 100%);
+        box-shadow: 0 0 72px rgba(255, 135, 54, 0.48);
+      }
+
+      @keyframes orbit-breathe {
+        0%, 100% { transform: scale(0.985); opacity: 0.78; }
+        50% { transform: scale(1.015); opacity: 1; }
+      }
+
+      .frame-top {
+        position: absolute;
+        z-index: 40;
+        top: 42px;
+        left: 62px;
+        right: 62px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font: 500 18px/1.2 "Cascadia Mono", "Microsoft YaHei UI", monospace;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: var(--paper);
+      }
+
+      .brand-mark {
+        width: 35px;
+        height: 35px;
+        position: relative;
+        border: 2px solid var(--solar);
+        border-radius: 50%;
+        box-shadow: 0 0 22px rgba(255, 159, 67, 0.45);
+      }
+
+      .brand-mark::before,
+      .brand-mark::after {
+        content: "";
+        position: absolute;
+        inset: 6px -8px;
+        border-top: 1px solid var(--cyan);
+        border-bottom: 1px solid var(--cyan);
+        border-radius: 50%;
+        transform: rotate(-23deg);
+      }
+
+      .brand-mark::after {
+        transform: rotate(23deg);
+      }
+
+      .source-lock {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .source-lock::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 14px var(--cyan);
+      }
+
+      .scene {
+        --start: 0s;
+        position: absolute;
+        z-index: 10;
+        inset: 0;
+        padding: 142px 145px 150px;
+        opacity: 0;
+        transform: translateY(26px);
+        animation: scene-window 8s cubic-bezier(0.22, 0.78, 0.22, 1) both;
+        animation-delay: var(--start);
+      }
+
+      .scene-1 { --start: 0s; }
+      .scene-2 { --start: 8s; }
+      .scene-3 { --start: 16s; }
+      .scene-4 { --start: 24s; }
+      .scene-5 { --start: 32s; }
+      .scene-6 {
+        --start: 40s;
+        animation-name: scene-final;
+      }
+
+      @keyframes scene-window {
+        0% { opacity: 0; transform: translateY(26px); }
+        11% { opacity: 1; transform: translateY(0); }
+        86% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-18px); }
+      }
+
+      @keyframes scene-final {
+        0% { opacity: 0; transform: translateY(26px); }
+        11%, 100% { opacity: 1; transform: translateY(0); }
+      }
+
+      .reveal {
+        --reveal: 0.7s;
+        opacity: 0;
+        transform: translateY(22px);
+        animation: reveal 0.9s cubic-bezier(0.18, 0.8, 0.22, 1) both;
+        animation-delay: calc(var(--start) + var(--reveal));
+      }
+
+      @keyframes reveal {
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 28px;
+        font: 650 20px/1.2 "Cascadia Mono", monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cyan);
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 48px;
+        height: 2px;
+        background: currentColor;
+        box-shadow: 0 0 12px currentColor;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1,
+      h2 {
+        font-family: "Bahnschrift SemiCondensed", "Microsoft YaHei UI", sans-serif;
+        font-weight: 680;
+        letter-spacing: -0.035em;
+      }
+
+      h1 {
+        max-width: 1150px;
+        font-size: 132px;
+        line-height: 0.96;
+      }
+
+      h2 {
+        font-size: 78px;
+        line-height: 1.03;
+      }
+
+      .solar-text {
+        color: var(--solar-hot);
+        text-shadow: 0 0 32px rgba(255, 159, 67, 0.24);
+      }
+
+      .lead {
+        max-width: 870px;
+        margin-top: 38px;
+        font-size: 31px;
+        line-height: 1.6;
+        color: #bdd1ce;
+      }
+
+      .hero-rail {
+        position: absolute;
+        left: 145px;
+        bottom: 175px;
+        width: 920px;
+        height: 1px;
+        background: linear-gradient(90deg, var(--solar), var(--cyan), transparent);
+      }
+
+      .hero-rail::before,
+      .hero-rail::after {
+        content: "";
+        position: absolute;
+        top: -5px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--solar);
+        box-shadow: 0 0 18px var(--solar);
+      }
+
+      .hero-rail::after {
+        left: 56%;
+        background: var(--cyan);
+        box-shadow: 0 0 18px var(--cyan);
+      }
+
+      .hero-note {
+        position: absolute;
+        right: 485px;
+        bottom: 178px;
+        width: 310px;
+        font: 500 18px/1.6 "Cascadia Mono", monospace;
+        color: var(--muted);
+      }
+
+      .two-column {
+        display: grid;
+        grid-template-columns: 0.82fr 1.18fr;
+        align-items: center;
+        gap: 82px;
+        height: 100%;
+      }
+
+      .question {
+        margin-top: 34px;
+        font-size: 28px;
+        line-height: 1.55;
+        color: #c5d6d3;
+      }
+
+      .channel-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 34px;
+      }
+
+      .channel-row span {
+        padding: 10px 14px;
+        border-left: 2px solid var(--solar);
+        background: rgba(255, 159, 67, 0.08);
+        font: 600 17px/1 "Cascadia Mono", monospace;
+        color: var(--solar-hot);
+      }
+
+      .diagnostic-panel {
+        position: relative;
+        padding: 18px;
+        background: rgba(7, 24, 31, 0.9);
+        border: 1px solid rgba(112, 228, 218, 0.28);
+        box-shadow: 0 28px 90px rgba(0, 0, 0, 0.38);
+      }
+
+      .diagnostic-panel::before {
+        content: "OBSERVATION / ROI";
+        position: absolute;
+        top: -34px;
+        left: 0;
+        font: 600 16px/1 "Cascadia Mono", monospace;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+      }
+
+      .diagnostic-panel img {
+        display: block;
+        width: 100%;
+        max-height: 590px;
+        object-fit: cover;
+        object-position: center;
+        filter: saturate(0.88) contrast(1.04);
+      }
+
+      .scan-line {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        top: 18px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+        box-shadow: 0 0 22px var(--cyan);
+        animation: scan 3.8s ease-in-out infinite;
+      }
+
+      @keyframes scan {
+        0%, 100% { transform: translateY(0); opacity: 0; }
+        12% { opacity: 0.85; }
+        78% { opacity: 0.85; }
+        90% { transform: translateY(548px); opacity: 0; }
+      }
+
+      .hypothesis-layout {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .hypothesis-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      .round-seal {
+        width: 176px;
+        height: 176px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(112, 228, 218, 0.35);
+        border-radius: 50%;
+        font: 700 25px/1.3 "Cascadia Mono", monospace;
+        text-align: center;
+        color: var(--cyan);
+        box-shadow: inset 0 0 34px rgba(112, 228, 218, 0.06);
+      }
+
+      .hypothesis-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0;
+        margin-top: 58px;
+        border-top: 1px solid rgba(112, 228, 218, 0.24);
+        border-bottom: 1px solid rgba(112, 228, 218, 0.24);
+      }
+
+      .hypothesis-item {
+        min-height: 350px;
+        padding: 34px 34px 30px;
+        border-right: 1px solid rgba(112, 228, 218, 0.2);
+      }
+
+      .hypothesis-item:last-child {
+        border-right: 0;
+      }
+
+      .hypothesis-index {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        font: 700 19px/1 "Cascadia Mono", monospace;
+        color: var(--solar);
+      }
+
+      .hypothesis-status {
+        color: var(--muted);
+        font-size: 15px;
+        letter-spacing: 0.08em;
+      }
+
+      .hypothesis-item h3 {
+        margin: 0 0 20px;
+        min-height: 126px;
+        font-size: 25px;
+        line-height: 1.52;
+        font-weight: 620;
+      }
+
+      .mechanism {
+        min-height: 52px;
+        font-size: 17px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
+      .confidence {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-top: 24px;
+        color: var(--cyan);
+      }
+
+      .confidence strong {
+        font: 700 54px/1 "Bahnschrift SemiCondensed", sans-serif;
+      }
+
+      .confidence span {
+        font: 500 14px/1 "Cascadia Mono", monospace;
+        letter-spacing: 0.12em;
+      }
+
+      .evidence-layout {
+        height: 100%;
+        display: grid;
+        grid-template-columns: 0.72fr 1.28fr;
+        gap: 110px;
+        align-items: center;
+      }
+
+      .big-stat {
+        font: 680 204px/0.82 "Bahnschrift SemiCondensed", sans-serif;
+        letter-spacing: -0.06em;
+        color: var(--paper);
+      }
+
+      .big-stat-label {
+        margin-top: 26px;
+        font: 650 22px/1.4 "Cascadia Mono", monospace;
+        letter-spacing: 0.12em;
+        color: var(--cyan);
+      }
+
+      .evidence-bars {
+        display: grid;
+        gap: 34px;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 180px 1fr 90px;
+        align-items: center;
+        gap: 26px;
+      }
+
+      .bar-label,
+      .bar-value {
+        font: 650 21px/1 "Cascadia Mono", monospace;
+      }
+
+      .bar-value {
+        text-align: right;
+      }
+
+      .bar-track {
+        height: 22px;
+        position: relative;
+        background: rgba(238, 249, 246, 0.08);
+        overflow: hidden;
+      }
+
+      .bar-fill {
+        width: var(--width);
+        height: 100%;
+        transform-origin: left;
+        background: var(--color);
+        box-shadow: 0 0 20px color-mix(in srgb, var(--color), transparent 50%);
+        animation: grow-bar 1.5s cubic-bezier(0.17, 0.8, 0.22, 1) both;
+        animation-delay: calc(var(--start) + 1.5s);
+      }
+
+      @keyframes grow-bar {
+        from { transform: scaleX(0); }
+        to { transform: scaleX(1); }
+      }
+
+      .evidence-note {
+        margin-top: 54px;
+        padding-left: 26px;
+        border-left: 2px solid var(--warning);
+        font-size: 25px;
+        line-height: 1.65;
+        color: #c6d6d3;
+      }
+
+      .route-layout {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .route-track {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 36px;
+        margin-top: 92px;
+      }
+
+      .route-track::before {
+        content: "";
+        position: absolute;
+        top: 49px;
+        left: 6%;
+        right: 6%;
+        height: 2px;
+        background: linear-gradient(90deg, var(--solar), var(--cyan));
+        box-shadow: 0 0 18px rgba(112, 228, 218, 0.28);
+      }
+
+      .route-node {
+        position: relative;
+        z-index: 2;
+        min-height: 260px;
+        padding-top: 98px;
+      }
+
+      .route-dot {
+        position: absolute;
+        top: 31px;
+        left: 0;
+        width: 38px;
+        height: 38px;
+        border: 8px solid var(--ink);
+        border-radius: 50%;
+        background: var(--node-color);
+        box-shadow: 0 0 24px var(--node-color);
+      }
+
+      .route-node small {
+        display: block;
+        font: 650 16px/1 "Cascadia Mono", monospace;
+        letter-spacing: 0.11em;
+        color: var(--muted);
+      }
+
+      .route-node strong {
+        display: block;
+        margin-top: 16px;
+        font: 700 64px/1 "Bahnschrift SemiCondensed", sans-serif;
+        color: var(--node-color);
+      }
+
+      .route-node p {
+        margin-top: 14px;
+        max-width: 280px;
+        font-size: 21px;
+        line-height: 1.5;
+        color: #bdd1ce;
+      }
+
+      .conclusion-layout {
+        display: grid;
+        grid-template-columns: 0.82fr 1.18fr;
+        gap: 110px;
+        height: 100%;
+        align-items: center;
+      }
+
+      .status-stamp {
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        margin-top: 36px;
+        padding: 15px 20px;
+        border: 1px solid var(--warning);
+        font: 700 18px/1 "Cascadia Mono", monospace;
+        letter-spacing: 0.13em;
+        color: var(--warning);
+      }
+
+      .status-stamp::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 12px currentColor;
+      }
+
+      .conclusion-copy {
+        margin-top: 34px;
+        font-size: 26px;
+        line-height: 1.7;
+        color: #c6d6d3;
+      }
+
+      .next-panel {
+        padding: 36px 0 0 48px;
+        border-left: 1px solid rgba(112, 228, 218, 0.3);
+      }
+
+      .next-title {
+        margin-bottom: 28px;
+        font: 650 18px/1 "Cascadia Mono", monospace;
+        letter-spacing: 0.12em;
+        color: var(--cyan);
+      }
+
+      .next-task {
+        display: grid;
+        grid-template-columns: 48px 1fr;
+        gap: 20px;
+        padding: 22px 0;
+        border-top: 1px solid rgba(112, 228, 218, 0.18);
+      }
+
+      .next-task:last-child {
+        border-bottom: 1px solid rgba(112, 228, 218, 0.18);
+      }
+
+      .next-task span {
+        font: 700 20px/1 "Cascadia Mono", monospace;
+        color: var(--solar);
+      }
+
+      .next-task p {
+        font-size: 22px;
+        line-height: 1.5;
+        color: #d5e2df;
+      }
+
+      .closing-line {
+        position: absolute;
+        left: 145px;
+        right: 145px;
+        bottom: 158px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        font: 650 20px/1 "Cascadia Mono", monospace;
+        letter-spacing: 0.11em;
+        color: var(--muted);
+      }
+
+      .closing-line::before {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, var(--cyan), transparent);
+      }
+
+      .frame-bottom {
+        position: absolute;
+        z-index: 50;
+        left: 62px;
+        right: 62px;
+        bottom: 44px;
+      }
+
+      .progress-track {
+        height: 3px;
+        background: rgba(238, 249, 246, 0.12);
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        width: 100%;
+        height: 100%;
+        transform: scaleX(0);
+        transform-origin: left;
+        background: linear-gradient(90deg, var(--solar), var(--cyan));
+        box-shadow: 0 0 18px var(--cyan);
+        animation: progress var(--duration) linear forwards;
+      }
+
+      @keyframes progress {
+        to { transform: scaleX(1); }
+      }
+
+      .progress-labels {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        margin-top: 14px;
+        font: 550 14px/1 "Cascadia Mono", monospace;
+        letter-spacing: 0.08em;
+        color: #78918f;
+      }
+
+      .progress-labels span:last-child {
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="space-grid"></div>
+    <div class="solar-orbit"></div>
+
+    <header class="frame-top">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span>金乌智研 / OPEN SCIENTIST</span>
+      </div>
+      <div class="source-lock">SOURCE LOCKED · <span id="source-digest">—</span></div>
+    </header>
+
+    <main>
+      <section class="scene scene-1">
+        <div class="eyebrow reveal">AI SCIENTIST · SOLAR PHYSICS</div>
+        <h1 class="reveal" style="--reveal: 1.15s">
+          让假设<br />接受<span class="solar-text">证据</span>
+        </h1>
+        <p class="lead reveal" style="--reveal: 1.7s">
+          从多波段太阳观测出发，组织假设、反例、确定性处理与下一步验证。
+        </p>
+        <div class="hero-rail reveal" style="--reveal: 2.15s"></div>
+        <p class="hero-note reveal" style="--reveal: 2.35s">
+          本片只使用当前运行结果中的已登记事实。
+        </p>
+      </section>
+
+      <section class="scene scene-2">
+        <div class="two-column">
+          <div>
+            <div class="eyebrow reveal">01 · OBSERVATION</div>
+            <h2 class="reveal" style="--reveal: 1.05s">从 AR11158<br />开始追问</h2>
+            <p class="question reveal" style="--reveal: 1.55s">
+              多波段热响应，究竟来自波动耗散、纳耀斑重联，还是两者耦合？
+            </p>
+            <div class="channel-row reveal" style="--reveal: 2.05s">
+              <span>AIA 94 Å</span><span>131 Å</span><span>171 Å</span><span>193 Å</span>
+            </div>
+          </div>
+          <figure class="diagnostic-panel reveal" style="--reveal: 1.15s">
+            <img id="diagnostic-image" alt="AR11158 多波段诊断图" />
+            <span class="scan-line"></span>
+          </figure>
+        </div>
+      </section>
+
+      <section class="scene scene-3">
+        <div class="hypothesis-layout">
+          <div class="hypothesis-head">
+            <div>
+              <div class="eyebrow reveal">02 · HYPOTHESIS SPACE</div>
+              <h2 class="reveal" style="--reveal: 1.05s"><span id="hypothesis-count">3</span> 条候选解释<br />同时接受检验</h2>
+            </div>
+            <div class="round-seal reveal" style="--reveal: 1.35s"><span id="round-seal">02<br />ROUNDS</span></div>
+          </div>
+          <div class="hypothesis-grid reveal" id="hypothesis-grid" style="--reveal: 1.7s"></div>
+        </div>
+      </section>
+
+      <section class="scene scene-4">
+        <div class="evidence-layout">
+          <div>
+            <div class="eyebrow reveal">03 · EVIDENCE GATE</div>
+            <div class="big-stat reveal" id="evidence-total" style="--reveal: 1.05s">32</div>
+            <div class="big-stat-label reveal" style="--reveal: 1.35s">STRUCTURED EVIDENCE RECORDS</div>
+          </div>
+          <div>
+            <div class="evidence-bars reveal" style="--reveal: 1.2s">
+              <div class="bar-row">
+                <div class="bar-label">支持</div>
+                <div class="bar-track"><div class="bar-fill" id="support-bar" style="--color: var(--cyan)"></div></div>
+                <div class="bar-value" id="support-count">2</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">未知</div>
+                <div class="bar-track"><div class="bar-fill" id="unknown-bar" style="--color: var(--warning)"></div></div>
+                <div class="bar-value" id="unknown-count">30</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">反驳</div>
+                <div class="bar-track"><div class="bar-fill" id="contradict-bar" style="--color: #e16d61"></div></div>
+                <div class="bar-value" id="contradict-count">0</div>
+              </div>
+            </div>
+            <p class="evidence-note reveal" style="--reveal: 2.25s">
+              证据不足时，系统保留“未知”。<br />确定性溯源缺失时，不升级为支持或反驳。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene scene-5">
+        <div class="route-layout">
+          <div class="eyebrow reveal">04 · SCIENTIFIC LOOP</div>
+          <h2 class="reveal" style="--reveal: 1.05s">科研闭环留下可审计轨迹</h2>
+          <div class="route-track reveal" style="--reveal: 1.55s">
+            <article class="route-node" style="--node-color: var(--solar)">
+              <span class="route-dot"></span><small>AGENT EXECUTIONS</small>
+              <strong id="agent-total">14</strong><p><span id="agent-complete">13</span> 完成 · <span id="agent-skipped">1</span> 跳过</p>
+            </article>
+            <article class="route-node" style="--node-color: var(--cyan)">
+              <span class="route-dot"></span><small>ROUNDS</small>
+              <strong id="round-total">2</strong><p>生成、检验、路由，再进入下一轮</p>
+            </article>
+            <article class="route-node" style="--node-color: var(--warning)">
+              <span class="route-dot"></span><small>CORRECTIONS</small>
+              <strong id="correction-total">23</strong><p>事实核验、重试与结论降级</p>
+            </article>
+            <article class="route-node" style="--node-color: #b99af4">
+              <span class="route-dot"></span><small>VALIDATION TASKS</small>
+              <strong id="task-total">12</strong><p><span id="task-complete">3</span> 完成 · <span id="task-planned">9</span> 待执行</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene scene-6">
+        <div class="conclusion-layout">
+          <div>
+            <div class="eyebrow reveal">05 · CURRENT VERDICT</div>
+            <h2 class="reveal" style="--reveal: 1.05s">当前结论：<br /><span class="solar-text">仍需数据</span></h2>
+            <div class="status-stamp reveal" id="status-stamp" style="--reveal: 1.45s">NEEDS DATA</div>
+            <p class="conclusion-copy reveal" id="conclusion" style="--reveal: 1.8s"></p>
+          </div>
+          <div class="next-panel reveal" style="--reveal: 1.35s">
+            <div class="next-title">NEXT VALIDATION PLAN</div>
+            <div id="next-tasks"></div>
+          </div>
+        </div>
+        <div class="closing-line reveal" style="--reveal: 2.5s">让未知保持未知，直到证据改变它。</div>
+      </section>
+    </main>
+
+    <footer class="frame-bottom">
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <div class="progress-labels">
+        <span>00 / 引题</span><span>01 / 观测</span><span>02 / 假设</span>
+        <span>03 / 证据</span><span>04 / 闭环</span><span>05 / 结论</span>
+      </div>
+    </footer>
+
+    <script src="./data.js"></script>
+    <script>
+      const data = window.__OPEN_SCIENTIST_DEMO__ || {}
+      const text = (id, value) => {
+        const node = document.getElementById(id)
+        if (node) node.textContent = String(value ?? '—')
+      }
+
+      text('source-digest', data.sourceDigest)
+      text('hypothesis-count', data.hypothesisCount)
+      text('round-seal', `${String(data.totalRounds ?? 0).padStart(2, '0')}\nROUNDS`)
+      text('evidence-total', data.evidenceTotal)
+      text('support-count', data.evidenceSupport)
+      text('unknown-count', data.evidenceUnknown)
+      text('contradict-count', data.evidenceContradict)
+      text('agent-total', data.agentTotal)
+      text('agent-complete', data.agentsCompleted)
+      text('agent-skipped', data.agentsSkipped)
+      text('round-total', data.totalRounds)
+      text('correction-total', data.correctionCount)
+      text('task-total', data.taskTotal)
+      text('task-complete', data.tasksCompleted)
+      text('task-planned', data.tasksPlanned)
+      text('status-stamp', String(data.scientificStatus ?? 'unknown').replaceAll('_', ' ').toUpperCase())
+      text('conclusion', data.conclusion)
+
+      const total = Math.max(1, Number(data.evidenceTotal ?? 0))
+      document.getElementById('support-bar')?.style.setProperty('--width', `${Math.max(1.5, (Number(data.evidenceSupport ?? 0) / total) * 100)}%`)
+      document.getElementById('unknown-bar')?.style.setProperty('--width', `${Math.max(1.5, (Number(data.evidenceUnknown ?? 0) / total) * 100)}%`)
+      document.getElementById('contradict-bar')?.style.setProperty('--width', `${Math.max(1.5, (Number(data.evidenceContradict ?? 0) / total) * 100)}%`)
+
+      const image = document.getElementById('diagnostic-image')
+      if (image) image.src = data.diagnosticsImage
+
+      const hypothesisGrid = document.getElementById('hypothesis-grid')
+      if (hypothesisGrid) {
+        hypothesisGrid.innerHTML = (data.hypotheses ?? []).map((item, index) => `
+          <article class="hypothesis-item">
+            <div class="hypothesis-index"><span>H${index + 1}</span><span class="hypothesis-status">${String(item.status).toUpperCase()}</span></div>
+            <h3>${item.statement}</h3>
+            <p class="mechanism">${item.mechanism}</p>
+            <div class="confidence"><strong>${Number(item.confidence ?? 0).toFixed(2)}</strong><span>CONFIDENCE</span></div>
+          </article>
+        `).join('')
+      }
+
+      const nextTasks = document.getElementById('next-tasks')
+      if (nextTasks) {
+        nextTasks.innerHTML = (data.nextTasks ?? []).map((task, index) => `
+          <div class="next-task"><span>${String(index + 1).padStart(2, '0')}</span><p>${task}</p></div>
+        `).join('')
+      }
+    </script>
+  </body>
+</html>

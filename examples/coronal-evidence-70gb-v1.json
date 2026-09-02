@@ -1,0 +1,184 @@
+{
+  "datasetId": "coronal-evidence-70gb-v1",
+  "budgetBytes": 70000000000,
+  "design": {
+    "hmiProduct": "hmi.M_720s definitive line-of-sight magnetograms with checksummed JSOC record metadata",
+    "independentUnit": "active-region event window",
+    "targetTotalBytes": "approximately 60-70 decimal GB after preflight",
+    "policy": "Literature-anchored target windows plus same-region background controls; no mechanism labels are assigned by the data pack.",
+    "reservedCapacity": "The remaining budget is reserved for HMI vector/SHARP or IRIS/EIS products only after a prediction-level diagnostic requires them."
+  },
+  "cases": [
+    {
+      "caseId": "ar11158-background-20110214",
+      "label": "NOAA 11158 多波段背景窗口",
+      "activeRegion": "NOAA 11158",
+      "startTai": "2011.02.14_16:00_TAI",
+      "duration": "2h",
+      "purpose": "同活动区背景/负对照；检查热通道和周期代理的非特异性。",
+      "role": "background_control",
+      "includeBurst": false
+    },
+    {
+      "caseId": "ar11158-window-20110215",
+      "label": "NOAA 11158 多波段短时窗口",
+      "activeRegion": "NOAA 11158",
+      "startTai": "2011.02.15_01:30_TAI",
+      "duration": "2h",
+      "purpose": "现有发现事件；检查短时 EUV 演化、温度响应和磁场背景。",
+      "role": "discovery",
+      "includeBurst": true
+    },
+    {
+      "caseId": "ar11429-window-20120307",
+      "label": "NOAA 11429 多波段短时窗口",
+      "activeRegion": "NOAA 11429",
+      "startTai": "2012.03.07_00:00_TAI",
+      "duration": "2h",
+      "purpose": "现有冻结参数留出事件；检查跨活动区可迁移性。",
+      "role": "holdout",
+      "includeBurst": false
+    },
+    {
+      "caseId": "ar11082-cooling-20100619",
+      "label": "NOAA 11082 全日冷却时延窗口",
+      "activeRegion": "NOAA 11082",
+      "startTai": "2010.06.19_00:00_TAI",
+      "duration": "24h",
+      "purpose": "复核多波段冷却时延与非耀斑扇环传播；该活动区和日期来自 Viall & Klimchuk 2012 及 Uritsky et al. 2013。",
+      "role": "independent_target",
+      "coreCadenceSeconds": 720,
+      "selectionBasis": ["https://arxiv.org/abs/1202.4001", "https://arxiv.org/abs/1308.6195"]
+    },
+    {
+      "caseId": "ar11082-background-20100618",
+      "label": "NOAA 11082 前一日背景窗口",
+      "activeRegion": "NOAA 11082",
+      "startTai": "2010.06.18_12:00_TAI",
+      "duration": "2h",
+      "purpose": "与 AR11082 目标窗使用相同仪器和波段的同区背景对照。",
+      "role": "background_control",
+      "backgroundFor": "ar11082-cooling-20100619"
+    },
+    {
+      "caseId": "ar11089-dem-20100724",
+      "label": "NOAA 11089 六通道热结构窗口",
+      "activeRegion": "NOAA 11089",
+      "startTai": "2010.07.24_20:30_TAI",
+      "duration": "2h",
+      "purpose": "复核六通道热结构和近等温环对标准纳耀斑解释的区分力；窗口覆盖论文的 21:00-22:00 UT。",
+      "role": "independent_target",
+      "coreCadenceSeconds": 120,
+      "burst": {
+        "startTai": "2010.07.24_21:00_TAI",
+        "duration": "30m",
+        "cadenceSeconds": 24,
+        "bands": ["171", "193"]
+      },
+      "selectionBasis": ["https://arxiv.org/abs/1103.0228"]
+    },
+    {
+      "caseId": "ar11089-background-20100724",
+      "label": "NOAA 11089 事前背景窗口",
+      "activeRegion": "NOAA 11089",
+      "startTai": "2010.07.24_16:00_TAI",
+      "duration": "2h",
+      "purpose": "同活动区、同日但早于目标时段的背景对照。",
+      "role": "background_control",
+      "backgroundFor": "ar11089-dem-20100724"
+    },
+    {
+      "caseId": "ar11420-coronal-rain-20120222",
+      "label": "NOAA 11420 灾变冷却与日冕雨窗口",
+      "activeRegion": "NOAA 11420",
+      "startTai": "2012.02.22_18:00_TAI",
+      "duration": "6h",
+      "purpose": "检验热非平衡/灾变冷却替代解释；目标覆盖论文中约 20:00-21:50 UT 的 171/304 Å 演化。",
+      "role": "independent_target",
+      "coreBands": ["94", "131", "171", "193", "211", "304", "335"],
+      "coreCadenceSeconds": 240,
+      "burst": {
+        "startTai": "2012.02.22_19:30_TAI",
+        "duration": "150m",
+        "cadenceSeconds": 60,
+        "bands": ["171", "304"]
+      },
+      "selectionBasis": ["https://arxiv.org/abs/1504.03471"]
+    },
+    {
+      "caseId": "ar11420-background-20120222",
+      "label": "NOAA 11420 事前背景窗口",
+      "activeRegion": "NOAA 11420",
+      "startTai": "2012.02.22_12:00_TAI",
+      "duration": "2h",
+      "purpose": "与日冕雨目标窗相同七通道的同区背景对照。",
+      "role": "background_control",
+      "backgroundFor": "ar11420-coronal-rain-20120222",
+      "coreBands": ["94", "131", "171", "193", "211", "304", "335"]
+    },
+    {
+      "caseId": "ar11850-loop-heating-20130924",
+      "label": "NOAA 11850 快速加热与逐通道冷却窗口",
+      "activeRegion": "NOAA 11850",
+      "startTai": "2013.09.24_02:30_TAI",
+      "duration": "3h",
+      "purpose": "复核孤立环在 Fe XVIII/94 Å 增亮后逐通道冷却、上升和下降运动；覆盖论文的 03:00-05:00 UT。",
+      "role": "independent_target",
+      "coreCadenceSeconds": 120,
+      "burst": {
+        "startTai": "2013.09.24_03:00_TAI",
+        "duration": "1h",
+        "cadenceSeconds": 24,
+        "bands": ["94", "131", "171", "193"]
+      },
+      "selectionBasis": [
+        "https://arxiv.org/abs/1509.04510",
+        "https://www.aanda.org/articles/aa/pdf/2015/11/aa26912-15.pdf"
+      ]
+    },
+    {
+      "caseId": "ar11850-background-20130923",
+      "label": "NOAA 11850 前一日背景窗口",
+      "activeRegion": "NOAA 11850",
+      "startTai": "2013.09.23_03:00_TAI",
+      "duration": "2h",
+      "purpose": "同活动区前一日背景，用于识别通道共变与磁演化的非特异性。",
+      "role": "background_control",
+      "backgroundFor": "ar11850-loop-heating-20130924"
+    },
+    {
+      "caseId": "ar11899-joint-spectroscopy-20131119",
+      "label": "NOAA 11899 IRIS/EIS/AIA/HMI 联合观测留出窗口",
+      "activeRegion": "NOAA 11899",
+      "startTai": "2013.11.19_10:20_TAI",
+      "duration": "2h",
+      "purpose": "分析前冻结的独立留出事件；覆盖 IRIS 10:31:15–11:03:36 UT 与 EIS 10:40:20–11:59:30 UT，用热成像、光谱和磁场共同区分低频脉冲加热与稳态/纯波动解释。",
+      "role": "holdout",
+      "coreBands": ["94", "131", "171", "193", "211", "335", "1600"],
+      "coreCadenceSeconds": 120,
+      "burst": {
+        "startTai": "2013.11.19_10:25_TAI",
+        "duration": "100m",
+        "cadenceSeconds": 24,
+        "bands": ["171", "193"]
+      },
+      "selectionBasis": [
+        "https://doi.org/10.3847/1538-4357/835/2/244",
+        "https://arxiv.org/abs/1701.01617",
+        "https://www.lmsal.com/hek/hcr?cmd=view-event&event-id=ivo%3A%2F%2Fsot.lmsal.com%2FVOEvent%23VOEvent_IRIS_20131119_103115_3803257441_2013-11-19T10%3A31%3A152013-11-19T10%3A31%3A15.xml"
+      ]
+    },
+    {
+      "caseId": "ar11899-background-20131119",
+      "label": "NOAA 11899 同日联合观测前背景窗口",
+      "activeRegion": "NOAA 11899",
+      "startTai": "2013.11.19_07:30_TAI",
+      "duration": "2h",
+      "purpose": "与联合观测留出窗口使用相同七通道和磁场产品的同活动区背景对照；不参与阈值选择。",
+      "role": "background_control",
+      "backgroundFor": "ar11899-joint-spectroscopy-20131119",
+      "coreBands": ["94", "131", "171", "193", "211", "335", "1600"],
+      "coreCadenceSeconds": 120
+    }
+  ]
+}

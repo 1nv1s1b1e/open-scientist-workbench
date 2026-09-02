@@ -1,3 +1,13 @@
+import {
+  SCIENTIFIC_AGENT_DISPLAY_NAMES,
+  type HypothesisClosureReport,
+  type HypothesisCoverageAudit,
+  type HypothesisVerificationReport,
+  type OperationalClosureSummary,
+  type ScientificLoopResult,
+  type ScientificOutcomeProfile,
+  type WorkflowClosureSummary,
+} from '@open-scientist/schema'
 import type { UIMessageChunk } from '@/lib/types/sse-events'
 
 export interface WorkbenchPhenomenon {
@@ -25,6 +35,14 @@ export interface WorkbenchHypothesis {
   sourceIds?: string[]
   status: string
   round?: number
+  evidenceStrengthGrade?:
+    | 'not_assessed'
+    | 'insufficient'
+    | 'limited'
+    | 'moderate'
+    | 'strong'
+    | 'conflicted'
+  /** @deprecated Historical ranking field; the UI must not present it as probability. */
   confidence?: number
 }
 
@@ -161,6 +179,8 @@ export interface ScientificWorkbenchState {
   inputDigest: string | null
   round: number
   hypotheses: WorkbenchHypothesis[]
+  verificationReports: HypothesisVerificationReport[]
+  closureReports: HypothesisClosureReport[]
   retrieval: WorkbenchRetrieval | null
   evidence: WorkbenchEvidence[]
   validationTasks: WorkbenchValidationTask[]
@@ -169,6 +189,12 @@ export interface ScientificWorkbenchState {
   orchestration: ScientificOrchestrationState
   conclusion: string | null
   terminationReason: string | null
+  scientificStatus: ScientificLoopResult['scientificStatus'] | null
+  closureStatus: ScientificLoopResult['closureStatus'] | null
+  outcomeProfile: ScientificOutcomeProfile | null
+  workflowClosure: WorkflowClosureSummary | null
+  operationalClosure: OperationalClosureSummary | null
+  hypothesisCoverage: HypothesisCoverageAudit | null
   processingResults: WorkbenchProcessingResult[]
   status: 'idle' | 'running' | 'completed' | 'blocked' | 'failed'
 }
@@ -179,6 +205,8 @@ export function emptyScientificWorkbenchState(): ScientificWorkbenchState {
     inputDigest: null,
     round: 0,
     hypotheses: [],
+    verificationReports: [],
+    closureReports: [],
     retrieval: null,
     evidence: [],
     validationTasks: [],
@@ -191,6 +219,12 @@ export function emptyScientificWorkbenchState(): ScientificWorkbenchState {
     },
     conclusion: null,
     terminationReason: null,
+    scientificStatus: null,
+    closureStatus: null,
+    outcomeProfile: null,
+    workflowClosure: null,
+    operationalClosure: null,
+    hypothesisCoverage: null,
     status: 'idle',
     processingResults: [],
   }
@@ -203,6 +237,30 @@ function replaceById<T>(items: T[], item: T, getId: (value: T) => string): T[] {
   const next = [...items]
   next[index] = item
   return next
+}
+
+function scientificAgentLabel(agentId: string, persistedLabel: string): string {
+  const role = agentId.startsWith('librarian-')
+    ? 'librarian'
+    : agentId.startsWith('looker-')
+      ? 'looker'
+      : agentId.startsWith('explorer-') || agentId.startsWith('explore-')
+        ? 'explore'
+        : agentId.startsWith('oracle-')
+          ? 'oracle'
+          : agentId.startsWith('prometheus-')
+            ? 'prometheus'
+            : agentId.startsWith('sisyphus-')
+              ? 'sisyphus'
+              : null
+  if (!role) return persistedLabel
+  const suffix = persistedLabel
+    .split(/[：:]/)
+    .slice(1)
+    .join('：')
+    .trim()
+  const displayName = SCIENTIFIC_AGENT_DISPLAY_NAMES[role]
+  return suffix ? `${displayName}：${suffix}` : displayName
 }
 
 /** Replay persisted/live scientific custom chunks into one UI state. */
@@ -235,7 +293,8 @@ export function reduceScientificChunk(
 
   if (kind === 'scientific.agent-state') {
     const agentId = typeof payload.agentId === 'string' ? payload.agentId : null
-    const label = typeof payload.label === 'string' ? payload.label : agentId
+    const persistedLabel = typeof payload.label === 'string' ? payload.label : agentId
+    const label = agentId ? scientificAgentLabel(agentId, persistedLabel ?? agentId) : null
     const agentState = payload.state
     if (
       !agentId ||
@@ -323,6 +382,28 @@ export function reduceScientificChunk(
       ...state,
       round: typeof payload.round === 'number' ? Math.max(state.round, payload.round) : state.round,
       hypotheses: replaceById(state.hypotheses, hypothesis, (item) => item.id),
+    }
+  }
+  if (kind === 'scientific.hypothesis-coverage') {
+    const coverage = payload.coverage
+    if (!coverage || typeof coverage !== 'object') return state
+    return {
+      ...state,
+      round: typeof payload.round === 'number' ? Math.max(state.round, payload.round) : state.round,
+      hypothesisCoverage: coverage as HypothesisCoverageAudit,
+    }
+  }
+  if (kind === 'scientific.verification-report') {
+    const report = payload.report as HypothesisVerificationReport
+    if (!report || typeof report.hypothesisId !== 'string') return state
+    return {
+      ...state,
+      round: typeof payload.round === 'number' ? Math.max(state.round, payload.round) : state.round,
+      verificationReports: replaceById(
+        state.verificationReports,
+        report,
+        (item) => `${item.hypothesisId}:${item.round}`,
+      ),
     }
   }
   if (kind === 'scientific.evidence') {
@@ -440,6 +521,36 @@ export function reduceScientificChunk(
     const corrections = Array.isArray(result?.corrections)
       ? (result.corrections as WorkbenchCorrection[])
       : state.corrections
+    const verificationReports = Array.isArray(result?.verificationReports)
+      ? (result.verificationReports as HypothesisVerificationReport[])
+      : state.verificationReports
+    const closureReports = Array.isArray(result?.closureReports)
+      ? (result.closureReports as HypothesisClosureReport[])
+      : state.closureReports
+    const scientificStatus =
+      typeof result?.scientificStatus === 'string'
+        ? (result.scientificStatus as ScientificLoopResult['scientificStatus'])
+        : state.scientificStatus
+    const closureStatus =
+      typeof result?.closureStatus === 'string'
+        ? (result.closureStatus as ScientificLoopResult['closureStatus'])
+        : state.closureStatus
+    const outcomeProfile =
+      result?.outcomeProfile && typeof result.outcomeProfile === 'object'
+        ? (result.outcomeProfile as ScientificOutcomeProfile)
+        : state.outcomeProfile
+    const workflowClosure =
+      result?.workflowClosure && typeof result.workflowClosure === 'object'
+        ? (result.workflowClosure as WorkflowClosureSummary)
+        : state.workflowClosure
+    const operationalClosure =
+      result?.operationalClosure && typeof result.operationalClosure === 'object'
+        ? (result.operationalClosure as OperationalClosureSummary)
+        : state.operationalClosure
+    const hypothesisCoverage =
+      result?.hypothesisCoverage && typeof result.hypothesisCoverage === 'object'
+        ? (result.hypothesisCoverage as HypothesisCoverageAudit)
+        : state.hypothesisCoverage
     return {
       ...state,
       round:
@@ -447,6 +558,8 @@ export function reduceScientificChunk(
           ? Math.max(state.round, result.totalRounds)
           : state.round,
       hypotheses,
+      verificationReports,
+      closureReports,
       evidence,
       validationTasks,
       corrections,
@@ -456,6 +569,12 @@ export function reduceScientificChunk(
         typeof result?.terminationReason === 'string'
           ? result.terminationReason
           : state.terminationReason,
+      scientificStatus,
+      closureStatus,
+      outcomeProfile,
+      workflowClosure,
+      operationalClosure,
+      hypothesisCoverage,
     }
   }
   return state

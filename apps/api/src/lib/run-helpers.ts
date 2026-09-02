@@ -51,9 +51,24 @@ export function attachRunCompletion(projectName: string, run: Run): void {
       // the single owner of the persisted `stopped` status, so do not race it
       // with a late `completed` update.
       if (!output) return
+      if ('terminationReason' in output) {
+        void completeRun(
+          projectName,
+          run.runId,
+          output.status === 'failed' ? 'failed' : 'completed',
+          {
+            currentRound: output.totalRounds,
+            scientificStatus: output.scientificStatus ?? 'inconclusive',
+            terminationReason: output.terminationReason,
+            result: output,
+          },
+        )
+        return
+      }
       void completeRun(projectName, run.runId, 'completed', {
-        bestF1: 'bestF1' in output ? output.bestF1 : undefined,
-        currentRound: output?.totalRounds,
+        bestF1: output.bestF1,
+        currentRound: output.totalRounds,
+        result: output,
       })
     },
     () => {

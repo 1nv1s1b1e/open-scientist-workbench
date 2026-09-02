@@ -42,11 +42,13 @@
   --color-hypo-withered: #6b5b4f;
   --color-hypo-winner: #f59e0b;
 
-  /* ── Fonts (next/font variables injected by layout.tsx) ─────────────────── */
-  --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* ── Offline-safe system fonts: production builds never download fonts. ── */
+  --font-sans:
+    'Segoe UI', 'Microsoft YaHei', 'Noto Sans CJK SC', ui-sans-serif, system-ui, -apple-system,
+    sans-serif;
   --font-mono:
-    var(--font-geist-mono), 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo,
-    Monaco, monospace;
+    'Cascadia Mono', 'JetBrains Mono', Consolas, ui-monospace, SFMono-Regular, Menlo, Monaco,
+    monospace;
 
   /* ── Radius (xAI: sm 8px cards · pill 9999px buttons) ────────────────────── */
   --radius-sm: 8px;

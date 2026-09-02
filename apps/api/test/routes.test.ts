@@ -43,6 +43,7 @@ describe('GET /api/health', () => {
     const body = await json(res)
     expect(body.status).toBe('ok')
     expect(body.baseDir).toBe(tmp)
+    expect(body.coronalDatasetId).toBe('coronal-starter-v1')
     expect(typeof body.timestamp).toBe('string')
   })
 })

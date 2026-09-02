@@ -1,3 +1,4 @@
+import { SCIENTIFIC_AGENT_DISPLAY_NAMES } from '@open-scientist/schema'
 import type { AgentRole } from '@/lib/types/visualizers'
 import type {
   ScientificOrchestrationAgentState,
@@ -155,49 +156,49 @@ const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     id: 'looker-local-observation-catalog',
     role: 'looker',
-    title: 'Looker：本地观测目录审计',
+    title: `${SCIENTIFIC_AGENT_DISPLAY_NAMES.looker}：本地观测目录审计`,
     description: '核验 manifest、仪器、波段、采样和覆盖。',
     executionKind: 'deterministic',
   },
   {
     id: 'explorer-coronal-diagnostics',
     role: 'explore',
-    title: 'Explorer：FITS 可观测量分析',
+    title: `${SCIENTIFIC_AGENT_DISPLAY_NAMES.explore}：FITS 可观测量分析`,
     description: '计算 ROI 时序、相关、周期、峰值和变异指标。',
     executionKind: 'deterministic',
   },
   {
     id: 'oracle-local-counterexample',
     role: 'oracle',
-    title: 'Oracle：同活动区背景对照',
+    title: `${SCIENTIFIC_AGENT_DISPLAY_NAMES.oracle}：同活动区背景对照`,
     description: '用固定背景窗口检查指标的特异性。',
     executionKind: 'deterministic',
   },
   {
     id: 'oracle-processing-fact-check',
     role: 'oracle',
-    title: 'Oracle：处理溯源复核',
+    title: `${SCIENTIFIC_AGENT_DISPLAY_NAMES.oracle}：处理溯源复核`,
     description: '核对快照、处理运行、产物和校验和。',
     executionKind: 'deterministic',
   },
   {
     id: 'looker-model-observation-review',
     role: 'looker',
-    title: 'Looker：模型观测语境审阅',
+    title: `${SCIENTIFIC_AGENT_DISPLAY_NAMES.looker}：模型观测语境审阅`,
     description: '读取确定性结果并校验观测语境。',
     executionKind: 'model',
   },
   {
     id: 'explorer-model-diagnostic-review',
     role: 'explore',
-    title: 'Explorer：模型诊断比较',
+    title: `${SCIENTIFIC_AGENT_DISPLAY_NAMES.explore}：模型诊断比较`,
     description: '比较诊断结果、竞争解释和未满足条件。',
     executionKind: 'model',
   },
   {
     id: 'oracle-model-counterexample-review',
     role: 'oracle',
-    title: 'Oracle：模型反例审阅',
+    title: `${SCIENTIFIC_AGENT_DISPLAY_NAMES.oracle}：模型反例审阅`,
     description: '基于前序证据检查冲突、反例和结论边界。',
     executionKind: 'model',
   },

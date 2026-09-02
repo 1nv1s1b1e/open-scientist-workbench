@@ -260,8 +260,9 @@ export interface StartRunRequest {
 /**
  * POST /api/projects/:name/runs
  *
- * 启动 tournament run。返回 SSE 流 Response（Content-Type: text/event-stream），
- * header 携带 x-workflow-run-id。调用方需：
+ * 启动一次运行：携带 phenomenon 时走当前 scientificLoopWorkflow；仅带 seed 时
+ * 走归档的 tournamentWorkflow（legacy 兼容路径）。返回 SSE 流 Response
+ * （Content-Type: text/event-stream），header 携带 x-workflow-run-id。调用方需：
  *   1. 读取 res.headers.get('x-workflow-run-id') 保存 runId
  *   2. 消费 res.body（ReadableStream<Uint8Array>）解析 SSE chunks
  *   3. 流结束发送 [DONE]
@@ -375,6 +376,99 @@ export async function stopRun(
 }
 
 // ---------------------------------------------------------------------------
+// Human-in-the-loop 控制（可选交互面；humanGate=off 的运行不需要这些调用）
+// ---------------------------------------------------------------------------
+
+export interface HumanControlState {
+  runId: string
+  gateMode: 'off' | 'plan_review'
+  paused: boolean
+  pendingGate: { gateId: string; kind: 'plan_review'; round: number; summary: string } | null
+  gateDecisions: number
+}
+
+export async function getRunHumanControl(
+  project: string,
+  runId: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<HumanControlState> {
+  return jsonOrThrow(
+    await fetchFn(
+      apiEndpoint(
+        `/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/human`,
+      ),
+    ),
+  )
+}
+
+export async function steerRun(
+  project: string,
+  runId: string,
+  content: string,
+  mode: 'steering' | 'follow-up' = 'steering',
+  fetchFn: typeof fetch = fetch,
+): Promise<{ ok: true; runId: string; message: { messageId: string; content: string } }> {
+  return jsonOrThrow(
+    await fetchFn(
+      apiEndpoint(
+        `/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/steer`,
+      ),
+      { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content, mode }) },
+    ),
+  )
+}
+
+export async function pauseRun(
+  project: string,
+  runId: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<{ ok: true; runId: string; paused: true }> {
+  return jsonOrThrow(
+    await fetchFn(
+      apiEndpoint(
+        `/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/pause`,
+      ),
+      { method: 'POST' },
+    ),
+  )
+}
+
+export async function unpauseRun(
+  project: string,
+  runId: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<{ ok: true; runId: string; paused: false }> {
+  return jsonOrThrow(
+    await fetchFn(
+      apiEndpoint(
+        `/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/unpause`,
+      ),
+      { method: 'POST' },
+    ),
+  )
+}
+
+export async function approveRunGate(
+  project: string,
+  runId: string,
+  input: { approved: boolean; reason?: string; gateId?: string },
+  fetchFn: typeof fetch = fetch,
+): Promise<{
+  ok: true
+  runId: string
+  decision: { gateId: string; approved: boolean; source: string; reason?: string }
+}> {
+  return jsonOrThrow(
+    await fetchFn(
+      apiEndpoint(
+        `/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/approve`,
+      ),
+      { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) },
+    ),
+  )
+}
+
+// ---------------------------------------------------------------------------
 // 聚合导出（便于 TanStack Query 的 queryFn 引用）
 // ---------------------------------------------------------------------------
 
@@ -402,6 +496,12 @@ export const api = {
   listRuns,
   getRunChunks,
   stopRun,
+  // runs — human-in-the-loop（可选）
+  getRunHumanControl,
+  steerRun,
+  pauseRun,
+  unpauseRun,
+  approveRunGate,
 }
 
 export type Api = typeof api

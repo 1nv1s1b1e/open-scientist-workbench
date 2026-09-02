@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="zh-CN" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Open Scientist / 20s Motion Proof</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Microsoft YaHei UI"; src: local("Microsoft YaHei UI"); }
+      @font-face { font-family: "Bahnschrift SemiCondensed"; src: local("Bahnschrift SemiCondensed"); }
+      @font-face { font-family: "Cascadia Mono"; src: local("Cascadia Mono"); }
+
+      :root {
+        --bg: #030911;
+        --bg-soft: #071622;
+        --paper: #eef9f7;
+        --soft: #b8d0cf;
+        --muted: #6d8f94;
+        --faint: #365b63;
+        --cyan: #67e7de;
+        --cyan-deep: #1c8f98;
+        --solar: #ffb861;
+        --hot: #ffd889;
+        --violet: #bba7ff;
+        --warn: #e4c75b;
+        --red: #ed716e;
+        --line: rgba(103, 231, 222, .2);
+        --line-strong: rgba(103, 231, 222, .48);
+      }
+
+      * { box-sizing: border-box; }
+      html, body {
+        width: 1920px;
+        height: 1080px;
+        margin: 0;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--paper);
+        font-family: "Microsoft YaHei UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      body { background: var(--bg); }
+      h1, h2, h3, p { margin: 0; }
+      h1, h2, h3, .metric, .big-word { font-family: "Bahnschrift SemiCondensed", "Microsoft YaHei UI", sans-serif; }
+      .mono { font-family: "Cascadia Mono", Consolas, monospace; }
+      .cyan { color: var(--cyan); }
+      .solar { color: var(--hot); }
+      .violet { color: var(--violet); }
+      .warn { color: var(--warn); }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 69% 43%, rgba(20, 102, 112, .17), transparent 34%),
+          radial-gradient(circle at 26% 47%, rgba(255, 166, 74, .1), transparent 26%),
+          linear-gradient(135deg, #071c2a 0%, #030911 67%, #06141e 100%);
+      }
+      #root::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(103, 231, 222, .13) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(103, 231, 222, .13) 1px, transparent 1px);
+        background-size: 80px 80px;
+        opacity: .2;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .85), transparent 88%);
+      }
+      #root::after {
+        content: "";
+        position: absolute;
+        width: 880px;
+        height: 880px;
+        right: -440px;
+        top: 100px;
+        border: 1px solid rgba(255, 184, 97, .18);
+        border-radius: 50%;
+        box-shadow: 0 0 120px rgba(255, 155, 54, .08), inset 0 0 100px rgba(255, 184, 97, .03);
+      }
+
+      .ambient, .ambient::before, .ambient::after {
+        position: absolute;
+        pointer-events: none;
+        border-radius: 50%;
+      }
+      .ambient {
+        inset: 0;
+        z-index: 1;
+        overflow: hidden;
+      }
+      .ambient::before {
+        content: "";
+        width: 11px;
+        height: 11px;
+        left: 21%;
+        top: 24%;
+        background: var(--cyan);
+        box-shadow: 0 0 20px var(--cyan), 420px 350px 0 -3px var(--solar), 820px 30px 0 -4px var(--violet), 1120px 530px 0 -2px var(--cyan), 1520px 220px 0 -4px var(--solar);
+        opacity: .72;
+      }
+      .ambient::after {
+        content: "";
+        width: 3px;
+        height: 3px;
+        left: 11%;
+        top: 72%;
+        background: var(--paper);
+        box-shadow: 180px -450px 0 var(--paper), 510px -560px 0 var(--cyan), 740px -220px 0 var(--paper), 1010px -530px 0 var(--solar), 1360px -390px 0 var(--paper), 1590px 120px 0 var(--cyan), 1680px 510px 0 var(--paper);
+        opacity: .42;
+      }
+
+      .topbar {
+        position: absolute;
+        z-index: 80;
+        top: 34px;
+        right: 70px;
+        left: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font: 600 14px/1 "Cascadia Mono", monospace;
+        letter-spacing: .1em;
+        color: var(--muted);
+      }
+      .brand { display: flex; align-items: center; gap: 13px; color: var(--paper); }
+      .brand-mark {
+        position: relative;
+        width: 29px;
+        height: 29px;
+        border: 2px solid var(--solar);
+        border-radius: 50%;
+        box-shadow: 0 0 20px rgba(255, 184, 97, .48);
+      }
+      .brand-mark::before, .brand-mark::after {
+        content: "";
+        position: absolute;
+        inset: 5px -7px;
+        border-top: 1px solid var(--cyan);
+        border-bottom: 1px solid var(--cyan);
+        border-radius: 50%;
+        transform: rotate(-23deg);
+      }
+      .brand-mark::after { transform: rotate(23deg); }
+      .top-state { display: flex; align-items: center; gap: 24px; }
+      .top-state span:first-child { color: var(--cyan); }
+      .top-state span:first-child::before {
+        content: "";
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        margin: 0 8px 1px 0;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 15px var(--cyan);
+      }
+
+      #camera-world {
+        position: absolute;
+        z-index: 10;
+        inset: 0;
+        transform-origin: 960px 535px;
+        will-change: transform;
+      }
+      #trace-svg {
+        position: absolute;
+        z-index: 4;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: visible;
+        pointer-events: none;
+      }
+      #trace-svg path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      #trace-underlay { stroke: rgba(103, 231, 222, .08); stroke-width: 2; stroke-dasharray: 8 20; }
+      #trace-main { stroke: url(#trace-gradient); stroke-width: 4; filter: url(#cyan-glow); }
+      #trace-branch { stroke: var(--solar); stroke-width: 3; opacity: .6; stroke-dasharray: 8 14; }
+      #data-packet, #branch-packet { filter: url(#packet-glow); }
+      #data-packet { fill: var(--hot); }
+      #branch-packet { fill: var(--solar); }
+
+      .field-orbit {
+        position: absolute;
+        z-index: 3;
+        left: 96px;
+        top: 174px;
+        width: 805px;
+        height: 650px;
+        pointer-events: none;
+      }
+      .field-orbit svg { width: 100%; height: 100%; overflow: visible; }
+      .field-line { fill: none; stroke: rgba(103, 231, 222, .42); stroke-width: 2; stroke-dasharray: 12 17; }
+      .field-line.hot { stroke: rgba(255, 184, 97, .7); stroke-width: 3; }
+      .field-line.soft { stroke: rgba(187, 167, 255, .32); }
+      .field-particle { fill: var(--cyan); filter: url(#cyan-glow); }
+      .field-particle.hot { fill: var(--hot); filter: url(#packet-glow); }
+      .sun {
+        position: absolute;
+        z-index: 6;
+        left: 292px;
+        top: 332px;
+        width: 330px;
+        height: 330px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 38% 34%, #fff8bd 0%, #ffc567 18%, #ec7d35 48%, #9e3f32 74%, #421a28 100%);
+        box-shadow: 0 0 35px rgba(255, 178, 74, .7), 0 0 120px rgba(244, 98, 50, .28), inset -22px -24px 42px rgba(74, 18, 45, .46);
+        will-change: transform;
+      }
+      .sun::before {
+        content: "";
+        position: absolute;
+        inset: 16px;
+        border: 1px solid rgba(255, 250, 191, .6);
+        border-radius: 50%;
+        box-shadow: inset 0 0 28px rgba(255, 218, 117, .34);
+      }
+      .sun::after {
+        content: "AR11158";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: rgba(52, 24, 32, .78);
+        font: 700 16px/1 "Cascadia Mono", monospace;
+        letter-spacing: .1em;
+      }
+      .sun-label {
+        position: absolute;
+        z-index: 8;
+        left: 366px;
+        top: 700px;
+        color: var(--hot);
+        font: 600 14px/1 "Cascadia Mono", monospace;
+        letter-spacing: .16em;
+      }
+      .sun-label::before { content: ""; display: inline-block; width: 42px; height: 1px; margin: 0 12px 4px 0; background: var(--solar); }
+
+      .hero-copy {
+        position: absolute;
+        z-index: 20;
+        left: 870px;
+        top: 255px;
+        width: 790px;
+      }
+      .eyebrow { color: var(--cyan); font: 600 15px/1.2 "Cascadia Mono", monospace; letter-spacing: .16em; }
+      .hero-copy h1 { margin-top: 23px; font-size: 106px; line-height: .9; letter-spacing: -.045em; }
+      .hero-copy h1 strong { display: block; color: var(--hot); font-weight: inherit; text-shadow: 0 0 34px rgba(255, 184, 97, .2); }
+      .hero-copy p { width: 650px; margin-top: 30px; color: var(--soft); font-size: 24px; line-height: 1.48; }
+      .phenomenon-tag { display: inline-flex; align-items: center; gap: 12px; margin-top: 31px; color: var(--paper); font: 600 14px/1 "Cascadia Mono", monospace; letter-spacing: .06em; }
+      .phenomenon-tag::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--solar); box-shadow: 0 0 13px var(--solar); }
+
+      .diagnostic-card {
+        position: absolute;
+        z-index: 16;
+        left: 690px;
+        top: 635px;
+        width: 450px;
+        height: 252px;
+        padding: 12px;
+        background: rgba(5, 19, 28, .72);
+        border: 1px solid var(--line-strong);
+        box-shadow: 0 20px 70px rgba(0, 0, 0, .34), 0 0 30px rgba(103, 231, 222, .06);
+        transform: rotate(-4deg);
+        transform-origin: 50% 50%;
+      }
+      .diagnostic-card img { width: 100%; height: 100%; object-fit: cover; opacity: .72; filter: saturate(.78) contrast(1.12); }
+      .diagnostic-card::before {
+        content: "OBSERVED / ROI";
+        position: absolute;
+        z-index: 2;
+        left: 18px;
+        top: 20px;
+        color: var(--cyan);
+        font: 600 11px/1 "Cascadia Mono", monospace;
+        letter-spacing: .12em;
+        text-shadow: 0 0 12px var(--bg);
+      }
+      .diagnostic-card::after {
+        content: "";
+        position: absolute;
+        z-index: 3;
+        left: 14px;
+        right: 14px;
+        top: 22px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+        box-shadow: 0 0 16px var(--cyan);
+        opacity: .7;
+        transform: translateY(0);
+      }
+
+      .run-space {
+        position: absolute;
+        z-index: 15;
+        left: 800px;
+        top: 190px;
+        width: 1010px;
+        height: 710px;
+        opacity: 0;
+      }
+      .run-kicker { color: var(--cyan); font: 600 14px/1 "Cascadia Mono", monospace; letter-spacing: .16em; }
+      .run-title { margin-top: 18px; font-size: 66px; line-height: .98; letter-spacing: -.04em; }
+      .run-title strong { color: var(--hot); font-weight: inherit; }
+      .run-subtitle { width: 650px; margin-top: 18px; color: var(--soft); font-size: 21px; line-height: 1.45; }
+      .run-panel {
+        position: absolute;
+        left: 0;
+        top: 205px;
+        width: 520px;
+        height: 250px;
+        padding: 27px 29px;
+        background: linear-gradient(145deg, rgba(10, 38, 49, .92), rgba(3, 14, 23, .82));
+        border: 1px solid var(--line-strong);
+        box-shadow: 0 22px 65px rgba(0, 0, 0, .35);
+      }
+      .run-panel::before { content: ""; position: absolute; left: 0; top: 0; width: 78px; height: 2px; background: var(--solar); box-shadow: 0 0 18px var(--solar); }
+      .run-panel-label { color: var(--muted); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .12em; }
+      .run-command { margin-top: 18px; color: var(--paper); font: 600 32px/1 "Cascadia Mono", monospace; }
+      .run-command span { color: var(--solar); }
+      .state-row { display: flex; justify-content: space-between; margin-top: 23px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--soft); font: 500 13px/1.4 "Cascadia Mono", monospace; }
+      .state-row b { color: var(--cyan); font-weight: 600; }
+      .run-id { margin-top: 18px; color: var(--faint); font: 500 11px/1 "Cascadia Mono", monospace; letter-spacing: .08em; }
+
+      .graph-space { position: absolute; left: 575px; top: 235px; width: 890px; height: 410px; }
+      .graph-space svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+      .graph-edge { fill: none; stroke: rgba(103, 231, 222, .25); stroke-width: 2; stroke-dasharray: 8 11; }
+      .graph-edge.hot { stroke: rgba(255, 184, 97, .62); }
+      .node {
+        position: absolute;
+        width: 172px;
+        height: 96px;
+        padding: 17px 19px;
+        background: rgba(7, 31, 43, .94);
+        border: 1px solid var(--line-strong);
+        box-shadow: 0 13px 32px rgba(0, 0, 0, .28);
+        opacity: 0;
+        transform: scale(.72);
+      }
+      .node::before { content: ""; position: absolute; top: -1px; left: -1px; width: 44px; height: 2px; background: var(--node-color); box-shadow: 0 0 15px var(--node-color); }
+      .node b { display: block; color: var(--node-color); font: 700 19px/1 "Cascadia Mono", monospace; letter-spacing: .02em; }
+      .node span { display: block; margin-top: 12px; color: var(--soft); font: 500 12px/1 "Cascadia Mono", monospace; }
+      #node-a { left: 0; top: 122px; --node-color: var(--solar); }
+      #node-b { left: 232px; top: 46px; --node-color: var(--cyan); }
+      #node-c { left: 464px; top: 122px; --node-color: var(--violet); }
+      #node-d { left: 696px; top: 46px; --node-color: var(--warn); }
+      .graph-label { position: absolute; left: 0; top: 0; color: var(--muted); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .14em; }
+      .graph-caption { position: absolute; left: 0; bottom: 0; color: var(--soft); font-size: 16px; }
+
+      #data-packet, #branch-packet { opacity: 0; }
+      #scanner { position: absolute; z-index: 50; left: 0; top: 0; width: 3px; height: 100%; background: linear-gradient(to bottom, transparent, var(--cyan), transparent); box-shadow: 0 0 22px var(--cyan); opacity: 0; }
+      #micro-label { position: absolute; z-index: 70; left: 70px; top: 104px; color: var(--faint); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .14em; }
+      #phase-label { position: absolute; z-index: 70; right: 70px; top: 104px; color: var(--cyan); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .14em; }
+      #phase-label::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 13px currentColor; }
+
+      #caption {
+        position: absolute;
+        z-index: 80;
+        left: 70px;
+        bottom: 122px;
+        max-width: 840px;
+        min-height: 45px;
+        color: var(--paper);
+        font-size: 25px;
+        line-height: 1.3;
+      }
+      #caption::before { content: "//"; margin-right: 13px; color: var(--solar); font: 600 18px/1 "Cascadia Mono", monospace; }
+      #caption-note { position: absolute; z-index: 80; left: 70px; bottom: 78px; color: var(--muted); font: 500 13px/1 "Cascadia Mono", monospace; letter-spacing: .05em; }
+      .metric-strip { position: absolute; z-index: 80; right: 70px; bottom: 119px; display: flex; gap: 32px; opacity: 0; }
+      .metric-strip div { min-width: 110px; padding-left: 15px; border-left: 1px solid var(--line-strong); }
+      .metric-strip b { display: block; color: var(--hot); font: 700 30px/1 "Bahnschrift SemiCondensed", sans-serif; }
+      .metric-strip span { display: block; margin-top: 8px; color: var(--muted); font: 600 10px/1 "Cascadia Mono", monospace; letter-spacing: .1em; }
+
+      .bottom {
+        position: absolute;
+        z-index: 80;
+        right: 70px;
+        bottom: 35px;
+        left: 70px;
+      }
+      .progress-track { height: 3px; overflow: hidden; background: rgba(238, 249, 247, .12); }
+      #progress { width: 100%; height: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--solar), var(--cyan)); box-shadow: 0 0 18px var(--cyan); }
+      .bottom-labels { display: flex; justify-content: space-between; margin-top: 10px; color: var(--faint); font: 600 11px/1 "Cascadia Mono", monospace; letter-spacing: .1em; }
+      #frame-counter { color: var(--cyan); }
+
+      .hidden { opacity: 0; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <main id="root" data-composition-id="motion-20s" data-start="0" data-duration="20" data-width="1920" data-height="1080" data-fps="30">
+      <div class="ambient"></div>
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark"></span><span>OPEN-SCIENTIST / MOTION PROOF</span></div>
+        <div class="top-state"><span>LIVE TRACE</span><span>AR11158</span><span>20 SEC STUDY</span></div>
+      </header>
+      <div id="micro-label">SCIENTIFIC LOOP / OBSERVE → EVIDENCE → VALIDATE → NEXT ROUND</div>
+      <div id="phase-label">01 / PHENOMENON INPUT</div>
+
+      <div id="camera-world">
+        <div class="field-orbit">
+          <svg viewBox="0 0 805 650" aria-hidden="true">
+            <path class="field-line hot" d="M 190 410 C 105 270 160 80 325 72 C 496 63 652 231 595 405 C 554 531 388 564 250 496 C 154 448 127 330 198 227" />
+            <path class="field-line" d="M 185 457 C 33 281 124 34 344 45 C 592 58 748 290 618 486 C 525 626 286 642 153 478 C 62 366 91 229 191 138" />
+            <path class="field-line soft" d="M 216 493 C 110 357 173 151 343 137 C 504 124 640 264 596 411 C 557 539 402 583 286 526 C 185 476 157 361 221 253" />
+            <path class="field-line" d="M 273 494 C 187 384 243 211 363 201 C 468 191 564 287 535 388 C 506 493 390 534 310 481 C 250 441 224 361 267 299" />
+            <circle class="field-particle hot" cx="192" cy="227" r="6"></circle>
+            <circle class="field-particle" cx="594" cy="405" r="5"></circle>
+            <circle class="field-particle" cx="344" cy="45" r="5"></circle>
+            <circle class="field-particle" cx="286" cy="526" r="4"></circle>
+          </svg>
+        </div>
+        <div id="sun" class="sun"></div>
+        <div id="sun-label" class="sun-label">OBSERVED / ROI / NOUN 11158</div>
+
+        <div id="hero-copy" class="hero-copy">
+          <div class="eyebrow">A RESEARCH RUN SHOULD LEAVE A TRACE</div>
+          <h1 id="hero-title">让假设<br /><strong>接受证据</strong></h1>
+          <p id="hero-body">从真实太阳观测出发，让每一个判断都连接到数据、处理产物和下一轮任务。</p>
+          <div class="phenomenon-tag" id="phenomenon-tag">NOAA AR11158 多波段热响应与磁场演化</div>
+        </div>
+
+        <div id="diagnostic-card" class="diagnostic-card"><img src="./coronal_diagnostics.png" alt="AR11158 diagnostic plot" /></div>
+
+        <div id="run-space" class="run-space">
+          <div class="run-kicker">01 / INPUT BECOMES STATE</div>
+          <div class="run-title">观测进入<br /><strong>可回放的运行</strong></div>
+          <p class="run-subtitle">数据包沿着 API、workflow 和 checkpoint 推进；镜头跟随状态，而不是切换到下一张页面。</p>
+          <div class="run-panel">
+            <div class="run-panel-label">REQUEST / RUN CONTEXT</div>
+            <div class="run-command"><span>POST</span> /runs</div>
+            <div class="state-row"><b>runtime</b><span>scientificLoopWorkflow()</span></div>
+            <div class="state-row"><b>state</b><span>hypotheses · evidence · tasks</span></div>
+            <div class="run-id">RUN <span id="run-id">—</span> / CHECKPOINTED</div>
+          </div>
+          <div id="graph-space" class="graph-space">
+            <div class="graph-label">LANGGRAPH ROOT / STRUCTURED STATE</div>
+            <svg viewBox="0 0 890 410" aria-hidden="true">
+              <path class="graph-edge" d="M 162 170 C 220 100 254 92 315 93" />
+              <path class="graph-edge hot" d="M 394 94 C 454 165 476 166 547 170" />
+              <path class="graph-edge" d="M 626 170 C 684 97 715 95 780 93" />
+              <path class="graph-edge" d="M 780 155 C 780 305 665 340 552 315 C 440 289 330 300 278 196" />
+              <circle id="graph-pulse" cx="162" cy="170" r="8" fill="var(--hot)" opacity="0" />
+            </svg>
+            <div id="node-a" class="node"><b>A.generate</b><span>hypotheses</span></div>
+            <div id="node-b" class="node"><b>A.verify</b><span>predictions</span></div>
+            <div id="node-c" class="node"><b>B.run</b><span>evidence workers</span></div>
+            <div id="node-d" class="node"><b>C.verify</b><span>support gate</span></div>
+            <div class="graph-caption">一个状态对象，继续向下一轮流动</div>
+          </div>
+        </div>
+      </div>
+
+      <svg id="trace-svg" viewBox="0 0 1920 1080" aria-hidden="true">
+        <defs>
+          <linearGradient id="trace-gradient" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="#ffb861" />
+            <stop offset=".52" stop-color="#67e7de" />
+            <stop offset="1" stop-color="#bba7ff" />
+          </linearGradient>
+          <filter id="cyan-glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="6" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+          <filter id="packet-glow" x="-160%" y="-160%" width="420%" height="420%"><feGaussianBlur stdDeviation="9" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+        </defs>
+        <path id="trace-underlay" d="M 525 536 C 720 530 788 465 915 506 C 1061 553 1058 734 1247 720 C 1417 708 1408 530 1560 490" />
+        <path id="trace-main" d="M 525 536 C 720 530 788 465 915 506 C 1061 553 1058 734 1247 720 C 1417 708 1408 530 1560 490" />
+        <path id="trace-branch" d="M 1247 720 C 1385 850 1492 857 1644 760" />
+        <circle id="data-packet" cx="525" cy="536" r="10"></circle>
+        <circle id="branch-packet" cx="1247" cy="720" r="7"></circle>
+      </svg>
+
+      <div id="scanner"></div>
+      <div id="caption">一个真实现象，进入一条可回放的科学闭环。</div>
+      <div id="caption-note">MOTION RULE: follow the object, preserve the state, never cut to a slide.</div>
+      <div class="metric-strip" id="metric-strip">
+        <div><b id="metric-hypotheses">3</b><span>HYPOTHESES</span></div>
+        <div><b id="metric-evidence">32</b><span>EVIDENCE RECORDS</span></div>
+        <div><b id="metric-tasks">12</b><span>VALIDATION TASKS</span></div>
+      </div>
+      <div class="bottom">
+        <div class="progress-track"><div id="progress"></div></div>
+        <div class="bottom-labels"><span id="frame-counter">01 / PHENOMENON INPUT</span><span>OPEN-SCIENTIST / CONTINUOUS TRACE</span><span>20 SEC / MOTION PROOF</span></div>
+      </div>
+    </main>
+
+    <script src="./data.js"></script>
+    <script>
+      const D = window.__OPEN_SCIENTIST_DEMO__ || {};
+      const setText = (id, value) => {
+        const node = document.getElementById(id);
+        if (node) node.textContent = String(value ?? "—");
+      };
+
+      setText("phenomenon-tag", D.phenomenon?.title || "NOAA AR11158");
+      setText("run-id", D.runShortId || D.runId || "RUN-UNKNOWN");
+      setText("metric-hypotheses", D.hypothesisCount || 3);
+      setText("metric-evidence", D.evidenceTotal || 32);
+      setText("metric-tasks", D.taskTotal || 12);
+
+      const pathLength = (id) => {
+        const node = document.getElementById(id);
+        return node && typeof node.getTotalLength === "function" ? node.getTotalLength() : 1;
+      };
+      const mainLength = pathLength("trace-main");
+      const branchLength = pathLength("trace-branch");
+      ["trace-main", "trace-branch"].forEach((id) => {
+        const node = document.getElementById(id);
+        const length = id === "trace-main" ? mainLength : branchLength;
+        node.style.strokeDasharray = length + " " + length;
+        node.style.strokeDashoffset = length;
+      });
+
+      const phase = (value) => setText("phase-label", value);
+      const counter = (value) => setText("frame-counter", value);
+      const caption = (value) => setText("caption", value);
+      const tl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+
+      tl.fromTo("#progress", { scaleX: 0 }, { scaleX: 1, duration: 20, ease: "none" }, 0);
+      tl.fromTo("#sun", { scale: .72, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.6, ease: "power2.out" }, 0);
+      tl.fromTo(".field-orbit", { opacity: 0, scale: .78, rotation: -9 }, { opacity: 1, scale: 1, rotation: 0, duration: 2.2, ease: "power3.out" }, 0);
+      tl.fromTo(".field-line", { strokeDashoffset: 420 }, { strokeDashoffset: 0, duration: 3.3, stagger: .18, ease: "power2.out" }, .2);
+      tl.fromTo(".field-particle", { opacity: 0, scale: .4 }, { opacity: 1, scale: 1, duration: .7, stagger: .16 }, .9);
+      tl.to(".field-line", { strokeDashoffset: -180, duration: 5.2, ease: "none", repeat: 3 }, 4.3);
+      tl.to("#sun", { scale: 1.04, duration: 1.6, ease: "sine.inOut", repeat: 2, yoyo: true }, 1.8);
+      tl.fromTo("#hero-copy", { opacity: 0, x: 90 }, { opacity: 1, x: 0, duration: 1.2 }, .65);
+      tl.fromTo("#hero-title", { y: 35, opacity: 0 }, { y: 0, opacity: 1, duration: 1.1 }, 1.15);
+      tl.fromTo("#hero-body, #phenomenon-tag", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .8, stagger: .16 }, 2.1);
+      tl.fromTo("#diagnostic-card", { opacity: 0, x: 90, y: 48, rotation: -13, scale: .8 }, { opacity: .95, x: 0, y: 0, rotation: -4, scale: 1, duration: 1.15, ease: "back.out(1.2)" }, 3.4);
+      tl.to("#diagnostic-card", { y: -13, rotation: -1, duration: 2.8, ease: "sine.inOut", yoyo: true, repeat: 3 }, 5.1);
+      tl.fromTo("#scanner", { x: 660, opacity: 0 }, { x: 1140, opacity: .8, duration: 2.5, ease: "sine.inOut", repeat: 1, yoyo: true }, 4.1);
+
+      tl.fromTo("#trace-main", { strokeDashoffset: mainLength }, { strokeDashoffset: 0, duration: 6.4, ease: "power2.inOut" }, 5.4);
+      tl.fromTo("#data-packet", { attr: { cx: 525, cy: 536 }, opacity: 0, scale: .5 }, { attr: { cx: 915, cy: 506 }, opacity: 1, scale: 1, duration: 2.8, ease: "power1.inOut" }, 5.6);
+      tl.to("#data-packet", { attr: { cx: 1247, cy: 720 }, duration: 2.4, ease: "power1.inOut" }, 8.4);
+      tl.to("#data-packet", { attr: { cx: 1560, cy: 490 }, duration: 2.9, ease: "power2.inOut" }, 10.8);
+      tl.to("#data-packet", { scale: 1.8, opacity: .35, duration: .16, repeat: 4, yoyo: true }, 13.2);
+      tl.fromTo("#run-space", { opacity: 0, x: 170 }, { opacity: 1, x: 0, duration: 1.15 }, 6.9);
+      tl.to("#camera-world", { x: -270, y: -32, scale: 1.045, duration: 4.2, ease: "power2.inOut" }, 6.9);
+      tl.to("#camera-world", { x: -390, y: -48, scale: 1.08, duration: 3.6, ease: "power2.inOut" }, 11.3);
+      tl.to("#hero-copy", { opacity: 0, duration: .85, ease: "power2.in" }, 6.1);
+      tl.to("#diagnostic-card, #sun-label", { opacity: 0, duration: .8, ease: "power2.in" }, 6.4);
+      tl.to("#sun", { opacity: .32, scale: .72, duration: 1.1, ease: "power2.in" }, 7.0);
+      tl.to("#trace-main", { opacity: .35, duration: 1.1 }, 11.4);
+      tl.fromTo("#trace-branch", { strokeDashoffset: branchLength, opacity: 0 }, { strokeDashoffset: 0, opacity: .7, duration: 2.5, ease: "power2.out" }, 13.1);
+      tl.fromTo("#branch-packet", { attr: { cx: 1247, cy: 720 }, opacity: 0 }, { attr: { cx: 1644, cy: 760 }, opacity: 1, duration: 3.4, ease: "power1.inOut" }, 13.35);
+      tl.fromTo("#graph-space .graph-label, #graph-space .graph-caption", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: .7, stagger: .15 }, 13.2);
+      tl.fromTo(".node", { opacity: 0, scale: .72, y: 26 }, { opacity: 1, scale: 1, y: 0, duration: .7, stagger: .24, ease: "back.out(1.5)" }, 13.65);
+      tl.fromTo("#graph-space .graph-edge", { strokeDashoffset: 520, opacity: 0 }, { strokeDashoffset: 0, opacity: 1, duration: 1.0, stagger: .18, ease: "power2.out" }, 14.1);
+      tl.fromTo("#graph-pulse", { opacity: 0, scale: .4 }, { opacity: 1, scale: 1, duration: .45, repeat: 4, yoyo: true }, 14.9);
+      tl.to("#data-packet", { attr: { cx: 1480, cy: 630 }, duration: 1.3, ease: "power2.inOut" }, 15.3);
+      tl.to("#data-packet", { attr: { cx: 1550, cy: 500 }, duration: 1.1, ease: "power2.inOut" }, 16.6);
+      tl.fromTo("#metric-strip", { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: .7 }, 16.4);
+      tl.to("#camera-world", { x: -350, y: -38, scale: 1.06, duration: 3.2, ease: "sine.inOut" }, 16.5);
+      tl.to(".run-panel", { y: -13, duration: 2.1, ease: "sine.inOut", yoyo: true, repeat: 1 }, 16.8);
+
+      const updateState = () => {
+        const t = tl.time();
+        if (t < 5.4) {
+          phase("01 / PHENOMENON INPUT");
+          counter("01 / PHENOMENON INPUT");
+          caption("一个真实现象，进入一条可回放的科学闭环。");
+        } else if (t < 10.9) {
+          phase("02 / API → STATE");
+          counter("02 / API → STATE");
+          caption("数据包不消失；它沿着运行状态继续前进。");
+        } else if (t < 13.4) {
+          phase("03 / LANGGRAPH ROOT");
+          counter("03 / LANGGRAPH ROOT");
+          caption("每个节点留下输入、输出和下一跳。");
+        } else {
+          phase("04 / A → B → C / CLOSED LOOP ENTRY");
+          counter("04 / A → B → C / CLOSED LOOP ENTRY");
+          caption("从假设到证据，闭环已经开始运行。");
+        }
+      };
+      tl.eventCallback("onUpdate", updateState);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["motion-20s"] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "datasetId": "coronal-mechanism-discriminant-supplement-v1",
+  "budgetBytes": 6000000000,
+  "design": {
+    "hmiProduct": "hmi.M_720s definitive line-of-sight magnetograms with checksummed JSOC record metadata",
+    "independentUnit": "active-region event window",
+    "targetTotalBytes": "approximately 4-6 decimal GB after preflight",
+    "policy": "Task-triggered supplement: only windows that close a registered mechanism-discriminating prediction. Every window is anchored to a published event documented in sources/research_targeted_mechanism_data_20260826.md. No mechanism labels are assigned by the data pack."
+  },
+  "cases": [
+    {
+      "caseId": "ar12721-microflare-context-20180909",
+      "label": "NOAA 12721 NuSTAR 微耀斑 AIA/HMI 上下文窗口",
+      "activeRegion": "NOAA 12721",
+      "startTai": "2018.09.09_10:30_TAI",
+      "duration": "2h",
+      "purpose": "为已在手的 NuSTAR ObsID 80414201001/2001/3001 提供同期 AIA 热上下文与 HMI 磁场背景；已发表微耀斑时间为 11:04 UT（DOI:10.3847/2041-8213/ab873e）。热通道间歇性、冷却时延与 HXR 上限的联合判别只有在该窗口存在时才可执行。",
+      "role": "independent_target",
+      "coreBands": ["94", "131", "171", "193", "211", "335"],
+      "coreCadenceSeconds": 120,
+      "burst": {
+        "startTai": "2018.09.09_10:50_TAI",
+        "duration": "30m",
+        "cadenceSeconds": 24,
+        "bands": ["94", "131"]
+      },
+      "selectionBasis": ["https://doi.org/10.3847/2041-8213/ab873e"]
+    },
+    {
+      "caseId": "ar12222-nustar-context-20141211",
+      "label": "NOAA 12222 NuSTAR 晚相事件 AIA/HMI 全日上下文窗口",
+      "activeRegion": "NOAA 12222",
+      "startTai": "2014.12.11_00:00_TAI",
+      "duration": "24h",
+      "purpose": "为已在手的 NuSTAR ObsID 20001005001（2014-12-11，晚相事件，DOI:10.3847/1538-4357/835/1/6）提供全天 AIA 上下文以定位晚相目标区间；注意该 ObsID 未通过冻结的 FPMA/FPMB 跨模块一致性检查，分析前必须先查明筛选/探测器差异。最终目标子窗必须在下载后对照 NuSTAR GTI 冻结，不得凭本窗口直接宣称 HXR 证据。",
+      "role": "independent_target",
+      "coreBands": ["94", "131", "171", "193", "211", "335"],
+      "coreCadenceSeconds": 720,
+      "selectionBasis": ["https://doi.org/10.3847/1538-4357/835/1/6"]
+    }
+  ]
+}

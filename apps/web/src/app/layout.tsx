@@ -1,28 +1,6 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono, Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-  weight: ['400', '500', '600'],
-})
-
-const geistMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-geist-mono',
-  display: 'swap',
-  weight: ['400', '500'],
-})
-
-const geist = Geist({
-  subsets: ['latin'],
-  variable: '--font-geist',
-  display: 'swap',
-  weight: ['400', '500'],
-})
 
 export const metadata: Metadata = {
   title: 'Open Scientist — 日冕加热之谜',
@@ -31,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN" className={`dark ${inter.variable} ${geistMono.variable} ${geist.variable}`}>
+    <html lang="zh-CN" className="dark">
       <body className="min-h-screen bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased">
         {/* Film grain overlay — fixed, low opacity, pointer-events-none */}
         <div

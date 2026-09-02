@@ -1,6 +1,6 @@
 import type { Hypothesis } from '@open-scientist/schema'
 import { describe, expect, it } from 'vite-plus/test'
-import { formatWinningHypothesis } from '../src/prometheus/workflow.ts'
+import { formatWinningHypothesis } from '../src/legacy/prometheus/workflow.ts'
 
 const hypothesis: Hypothesis = {
   id: 'h-1',

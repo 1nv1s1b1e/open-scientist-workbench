@@ -3,21 +3,28 @@
 import { ArrowUpRight } from 'lucide-react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
+import { SCIENTIFIC_AGENT_DISPLAY_NAMES, scientificAgentIdentity } from '@open-scientist/schema'
 import { Eyebrow } from './eyebrow'
 import { DEMO_PHENOMENON } from '@/lib/workbench/demo-data'
 
+/** "Codename · stage" tag, e.g. "Oracle · B", matching backend traces. */
+function agentTag(key: string): string {
+  const identity = scientificAgentIdentity(key)
+  return identity ? `${identity.codename} · ${identity.stage}` : key
+}
+
 const AGENTS = [
-  ['Sisyphus', 'Orchestrator', 'A → B → C → D 的闭环编排', '#f97316'],
-  ['Librarian', 'RAG / A', '现象检索与候选机制组合', '#10b981'],
-  ['Looker', 'Observation / B', '多波段图像与时间序列对齐', '#06b6d4'],
-  ['Explore', 'Analysis / B', '历史样本与数值结果分析', '#8b5cf6'],
-  ['Oracle', 'Counterexample / B', '反例查找与事实校正', '#ef4444'],
-  ['Prometheus', 'Plan / D', '下一步验证与闭环反馈', '#f59e0b'],
+  [SCIENTIFIC_AGENT_DISPLAY_NAMES.sisyphus, agentTag('sisyphus'), 'A → B → C → D 的闭环编排', '#f97316'],
+  [SCIENTIFIC_AGENT_DISPLAY_NAMES.librarian, agentTag('librarian'), '现象检索与候选机制组合', '#10b981'],
+  [SCIENTIFIC_AGENT_DISPLAY_NAMES.looker, agentTag('looker'), '多波段图像与时间序列质控', '#06b6d4'],
+  [SCIENTIFIC_AGENT_DISPLAY_NAMES.explore, agentTag('explore'), '历史样本与定量诊断分析', '#8b5cf6'],
+  [SCIENTIFIC_AGENT_DISPLAY_NAMES.oracle, agentTag('oracle'), '反例查找与事实校正', '#ef4444'],
+  [SCIENTIFIC_AGENT_DISPLAY_NAMES.prometheus, agentTag('prometheus'), '下一步验证与闭环反馈', '#f59e0b'],
 ] as const
 
 const FLOW = [
   ['A', '提出候选机制', 'RAG + 模型思考', '#8ee8c2'],
-  ['B', '找证据与反例', 'Looker / Explore / Oracle', '#8bd8ee'],
+  ['B', '找证据与反例', '观测质控 / 物理诊断 / 反证审计', '#8bd8ee'],
   ['C', '给出边界结论', '支持 · 反驳 · 未知', '#f6c77d'],
   ['D', '安排下一步', '验证或反馈到 B', '#c8a7ff'],
 ] as const

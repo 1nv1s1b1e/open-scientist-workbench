@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { renderJwfdEvalScript } from '@open-scientist/config'
 import { afterEach, describe, expect, it } from 'vite-plus/test'
-import { evaluatePythonFilter } from '../src/explore/evaluate.ts'
+import { evaluatePythonFilter } from '../src/legacy/explore/evaluate.ts'
 
 const tempDirs: string[] = []
 

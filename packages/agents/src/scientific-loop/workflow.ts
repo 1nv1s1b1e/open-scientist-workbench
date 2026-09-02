@@ -1,24 +1,14 @@
 import { getProjectDir, type AgentRuntimeConfig, type ModelArg } from '@open-scientist/config'
-import {
-  createValidationTask,
-  persistScientificRecords,
-} from '@open-scientist/storage'
-import {
-  type PhenomenonInput,
-  type ScientificLoopResult,
-} from '@open-scientist/schema'
+import { persistScientificRecords } from '@open-scientist/storage'
+import { type PhenomenonInput, type ScientificLoopResult } from '@open-scientist/schema'
 import type { EmitChunk } from '../shared/stream.ts'
 import {
   createProjectScientificRuntime,
   type ScientificGraphRuntime,
 } from '../orchestration/langgraph-runtime.ts'
-import {
-  createDefaultScientificDependencies,
-  parsePhenomenon,
-} from './default-services.ts'
-import {
-  runScientificLoopGraph,
-} from './scientific-graph.ts'
+import type { ScientificHumanChannel } from './human-channel.ts'
+import { createDefaultScientificDependencies, parsePhenomenon } from './default-services.ts'
+import { runScientificLoopGraph } from './scientific-graph.ts'
 import type { ScientificGraphDependencies } from './services.ts'
 
 const DEFAULT_MAX_ROUNDS = 3
@@ -41,6 +31,12 @@ export interface ScientificLoopWorkflowInput {
   runtime?: ScientificGraphRuntime
   /** Continue this run from the latest LangGraph checkpoint. */
   resume?: boolean
+  /**
+   * Optional human-in-the-loop channel (pause / advisory steering / optional
+   * approval gate). Omitted by default: the loop then runs fully automatic
+   * and no human participation is required to reach closure.
+   */
+  humanChannel?: ScientificHumanChannel
 }
 
 /**
@@ -55,15 +51,17 @@ export async function scientificLoopWorkflow(
 ): Promise<ScientificLoopResult> {
   const phenomenon = input.phenomenon ? parsePhenomenon(input.phenomenon) : undefined
   const runtime = input.runtime ?? createProjectScientificRuntime(input.projectId)
-  const dependencies = input.graphDependencies ?? createDefaultScientificDependencies({
-    projectId: input.projectId,
-    runId: input.runId,
-    modelConfig: input.modelConfig,
-    agentConfigs: input.agentConfigs,
-    emitChunk: input.emitChunk,
-    abortSignal: input.abortSignal,
-    localGrounded: input.localGrounded,
-  })
+  const dependencies =
+    input.graphDependencies ??
+    createDefaultScientificDependencies({
+      projectId: input.projectId,
+      runId: input.runId,
+      modelConfig: input.modelConfig,
+      agentConfigs: input.agentConfigs,
+      emitChunk: input.emitChunk,
+      abortSignal: input.abortSignal,
+      localGrounded: input.localGrounded,
+    })
 
   try {
     const result = await runScientificLoopGraph(
@@ -76,6 +74,7 @@ export async function scientificLoopWorkflow(
         abortSignal: input.abortSignal,
         runtime,
         resume: input.resume,
+        ...(input.humanChannel ? { humanChannel: input.humanChannel } : {}),
       },
       dependencies,
     )
@@ -85,14 +84,13 @@ export async function scientificLoopWorkflow(
       hypotheses: result.hypotheses,
       evidence: result.evidence,
       corrections: result.corrections,
+      validationTasks: result.validationTasks,
     })
-    for (const task of result.validationTasks) {
-      await createValidationTask(input.projectId, {
-        ...task,
-        projectId: input.projectId,
-        runId: input.runId,
-      })
-    }
+    input.emitChunk?.({
+      type: 'custom',
+      kind: 'scientific.loop-complete',
+      result,
+    } as never)
     return result
   } finally {
     if (!input.runtime) runtime.close()

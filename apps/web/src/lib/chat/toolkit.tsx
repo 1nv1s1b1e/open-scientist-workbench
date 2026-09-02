@@ -19,7 +19,14 @@
 'use client'
 
 import { makeAssistantToolUI, type ToolCallMessagePartProps } from '@assistant-ui/react'
+import { scientificAgentIdentity } from '@open-scientist/schema'
 import { FileSearch, FlaskConical, Hammer, Search, Terminal, Wrench } from 'lucide-react'
+
+/** Same "Codename·中文职责名" badge format the backend traces emit. */
+function agentBadge(key: string): string {
+  const identity = scientificAgentIdentity(key)
+  return identity ? `${identity.codename}·${identity.displayName}` : key
+}
 
 /** 通用工具渲染 props（简化版，只取需要的字段） */
 type ToolProps = ToolCallMessagePartProps<Record<string, unknown>, unknown>
@@ -82,7 +89,7 @@ export const BashToolUI = makeAssistantToolUI({
     <ToolShell
       icon={<Terminal className="h-3.5 w-3.5 text-[var(--color-explore)]" />}
       name="bash"
-      badge="Explore"
+      badge={agentBadge('explore')}
       status={status.type}
     >
       {args?.command && (
@@ -105,7 +112,7 @@ export const HelixQueryToolUI = makeAssistantToolUI({
     <ToolShell
       icon={<Search className="h-3.5 w-3.5 text-[var(--color-librarian)]" />}
       name="helix-query"
-      badge="Librarian"
+      badge={agentBadge('librarian')}
       status={status.type}
     >
       {args?.query && (
@@ -126,7 +133,7 @@ export const FitsAlignToolUI = makeAssistantToolUI({
     <ToolShell
       icon={<FileSearch className="h-3.5 w-3.5 text-[var(--color-looker)]" />}
       name="fits-align"
-      badge="Looker"
+      badge={agentBadge('looker')}
       status={status.type}
     >
       <JsonPreview label="input" data={args} />
@@ -142,7 +149,7 @@ export const MhdConfigToolUI = makeAssistantToolUI({
     <ToolShell
       icon={<FlaskConical className="h-3.5 w-3.5 text-[var(--color-prometheus)]" />}
       name="mhd-config"
-      badge="Prometheus"
+      badge={agentBadge('prometheus')}
       status={status.type}
     >
       <JsonPreview label="config" data={result} />

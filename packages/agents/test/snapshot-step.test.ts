@@ -3,8 +3,8 @@ import { readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
-import type { RoundSnapshot } from '../src/sisyphus/snapshot.ts'
-import { snapshotStep } from '../src/sisyphus/snapshot.ts'
+import type { RoundSnapshot } from '../src/legacy/sisyphus/snapshot.ts'
+import { snapshotStep } from '../src/legacy/sisyphus/snapshot.ts'
 
 function makeSnapshot(overrides: Partial<RoundSnapshot> = {}): RoundSnapshot {
   return {

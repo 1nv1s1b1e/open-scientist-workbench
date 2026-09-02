@@ -1,3 +1,4 @@
+import { SCIENTIFIC_AGENT_DISPLAY_NAMES } from '@open-scientist/schema'
 import type { AgentRole, ConceptCategory } from '@/lib/types/visualizers'
 
 /** Agent 配色常量（见 docs/web/03-visualizers.md §视觉风格） */
@@ -11,12 +12,12 @@ export const AGENT_COLORS: Record<AgentRole, string> = {
 }
 
 export const AGENT_LABELS: Record<AgentRole, string> = {
-  sisyphus: 'Sisyphus',
-  librarian: 'Librarian',
-  looker: 'Looker',
-  explore: 'Explore',
-  oracle: 'Oracle',
-  prometheus: 'Prometheus',
+  sisyphus: SCIENTIFIC_AGENT_DISPLAY_NAMES.sisyphus,
+  librarian: SCIENTIFIC_AGENT_DISPLAY_NAMES.librarian,
+  looker: SCIENTIFIC_AGENT_DISPLAY_NAMES.looker,
+  explore: SCIENTIFIC_AGENT_DISPLAY_NAMES.explore,
+  oracle: SCIENTIFIC_AGENT_DISPLAY_NAMES.oracle,
+  prometheus: SCIENTIFIC_AGENT_DISPLAY_NAMES.prometheus,
 }
 
 export const AGENT_ROLES: AgentRole[] = [

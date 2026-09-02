@@ -1,4 +1,5 @@
 export * from './bash.ts'
+export * from './academic-literature.ts'
 export * from './coronal-data.ts'
 export * from './fits-align.ts'
 export * from './helix-query.ts'

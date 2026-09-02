@@ -8,11 +8,35 @@ import {
   PhenomenonInputSchema,
   ProcessingRunSchema,
   ScientificCorrectionSchema,
+  ScientificHypothesisCandidateSchema,
   ScientificHypothesisSchema,
   ValidationTaskSchema,
+  scientificFalsificationConditionId,
+  scientificPredictionId,
 } from '../src/index.ts'
 
 describe('scientific loop contracts', () => {
+  it('normalizes a null optional mechanism contribution to an omitted value', () => {
+    const parsed = ScientificHypothesisCandidateSchema.parse({
+      id: 'h-null-contribution',
+      statement: '低频脉冲热过程候选',
+      mechanism: '具体能量释放机制未定',
+      mechanismComposition: [
+        { mechanism: '低频脉冲加热过程', role: 'dominant', contribution: null },
+      ],
+      predictions: ['热事件尾与 DEM 响应满足预注册条件'],
+      falsificationConditions: ['热事件尾或 DEM 响应不满足预注册条件'],
+      sourceIds: ['local:test'],
+      scope: '登记的跨事件样本',
+      parentId: null,
+      round: 1,
+      status: 'candidate',
+    })
+
+    expect(parsed.mechanismComposition?.[0]?.contribution).toBeUndefined()
+    expect(JSON.stringify(parsed)).not.toContain('"contribution"')
+  })
+
   const observation = {
     sourceId: 'aia-171-2024-01-01',
     kind: 'image' as const,
@@ -28,7 +52,10 @@ describe('scientific loop contracts', () => {
       title: '活动区环状结构出现短时增亮',
       description: '同一活动区在多个 EUV 波段出现时序不同的增亮。',
       activeRegion: 'AR-1',
-      observations: [observation, { ...observation, sourceId: 'aia-193-2024-01-01', wavelengthOrBand: '193 Å' }],
+      observations: [
+        observation,
+        { ...observation, sourceId: 'aia-193-2024-01-01', wavelengthOrBand: '193 Å' },
+      ],
       requestedQuestion: '阿尔芬波耗散与纳耀斑加热是否能被区分？',
     })
 
@@ -57,11 +84,23 @@ describe('scientific loop contracts', () => {
       sourceIds: ['aia-171-2024-01-01'],
       scope: '仅适用于本活动区的观测窗口',
       confidence: 0.5,
+      priority: 'high',
+      priorityReason: '现有数据可直接检验该候选的时序预测',
+      confidenceBasis: [
+        {
+          basisId: 'basis-literature-1',
+          kind: 'literature',
+          sourceIds: ['aia-171-2024-01-01'],
+          evidenceIds: [],
+          explanation: '初始置信度来自文献与数据可检验性，不代表机制得证。',
+        },
+      ],
       round: 1,
       status: 'candidate',
     })
 
     expect(result.success).toBe(true)
+    if (result.success) expect(result.data.priority).toBe('high')
   })
 
   it('keeps unknown evidence distinct from contradiction', () => {
@@ -117,6 +156,58 @@ describe('scientific loop contracts', () => {
         },
       }).success,
     ).toBe(true)
+  })
+
+  it('binds quantitative evidence to a prediction and raw-event lineage', () => {
+    const predictionId = scientificPredictionId('h-wave-reconnection', 0)
+    const falsificationId = scientificFalsificationConditionId('h-wave-reconnection', 0)
+    const result = EvidenceRecordSchema.parse({
+      evidenceId: 'e-lineage-1',
+      hypothesisId: 'h-wave-reconnection',
+      status: 'support',
+      claim: '留出事件中的时序指标与预测一致',
+      observed: '三个独立事件给出同方向效应',
+      method: 'registered-timeseries-analysis',
+      sourceIds: ['aia-171-2024-01-01'],
+      sampleIds: ['event-3'],
+      predictionIds: [predictionId],
+      falsificationConditionIds: [falsificationId],
+      provenance: {
+        processingRunId: 'processing-1',
+        dataSnapshotIds: ['snapshot-1'],
+        artifactIds: ['artifact-metrics-1'],
+        generatedBy: 'timeseries-agent',
+        deterministic: true,
+      },
+      lineage: {
+        eventGroupId: 'event-3',
+        rawDataFingerprint: 'sha256:event-3',
+        observableFamily: 'wave_timing',
+        methodFamily: 'cross-channel-timing',
+        analysisSplit: 'holdout',
+      },
+      quantitativeResults: [
+        {
+          metric: 'lag-seconds',
+          estimate: 12,
+          lowerBound: 8,
+          upperBound: 16,
+          unit: 's',
+        },
+      ],
+      limitations: [],
+      round: 1,
+    })
+
+    expect(result.predictionIds).toEqual([predictionId])
+    expect(result.lineage?.analysisSplit).toBe('holdout')
+    expect(result.quantitativeResults[0]?.confidenceLevel).toBe(0.95)
+    expect(
+      EvidenceRecordSchema.safeParse({
+        ...result,
+        quantitativeResults: [{ metric: 'invalid', estimate: 4, lowerBound: 5, upperBound: 6 }],
+      }).success,
+    ).toBe(false)
   })
 
   it('records data snapshots, deterministic processing, and immutable artifacts', () => {
@@ -216,7 +307,16 @@ describe('scientific loop contracts', () => {
       route: 'B',
       type: 'analysis',
       objective: '比较两个活动区的高频功率谱',
+      hypothesisIds: ['h-wave-reconnection'],
+      predictionIds: [scientificPredictionId('h-wave-reconnection', 0)],
+      falsificationConditionIds: [scientificFalsificationConditionId('h-wave-reconnection', 0)],
       requiredSourceIds: ['aia-171-2024-01-01'],
+      requiredData: ['AIA 171 Å 时序'],
+      requiredFacilities: ['本地确定性时序分析执行器'],
+      readiness: 'executable_now',
+      expectedDuration: '约 5 分钟',
+      successCriteria: ['在独立事件复现预注册功率谱特征'],
+      failureCriteria: ['独立事件中不复现该特征'],
       discriminatingOutcomes: ['波动主导应出现连续谱衰减', '重联主导应出现间歇性突发'],
       triggeredBy: 'e-unknown-1',
       status: 'planned',
@@ -225,6 +325,8 @@ describe('scientific loop contracts', () => {
     })
 
     expect(result.route).toBe('B')
+    expect(result.hypothesisIds).toEqual(['h-wave-reconnection'])
+    expect(result.readiness).toBe('executable_now')
   })
 
   it('records self-corrections and agent execution states with explicit triggers', () => {

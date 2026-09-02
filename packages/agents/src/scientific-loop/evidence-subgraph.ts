@@ -9,6 +9,7 @@ import {
 import {
   EvidenceRecordSchema,
   PhenomenonInputSchema,
+  ScientificCorrectionSchema,
   ScientificHypothesisSchema,
   ValidationTaskSchema,
 } from '@open-scientist/schema'
@@ -35,6 +36,10 @@ const EvidenceSubgraphState = new StateSchema({
   hypotheses: z.array(ScientificHypothesisSchema).default([]),
   evidence: z.array(EvidenceRecordSchema).default([]),
   validationTasks: z.array(ValidationTaskSchema).default([]),
+  // Transport for the self-correction feedback loop: earlier-round findings
+  // are projected into `recentLessons` by buildScientificContext so workers
+  // review known problems instead of re-reporting them verbatim.
+  corrections: z.array(ScientificCorrectionSchema).default([]),
   round: z.number().int().min(0),
   workerAgentId: z.string().optional(),
   workerIndex: z.number().int().min(0).optional(),
@@ -170,6 +175,7 @@ export function createEvidenceSubgraph(
         hypotheses: projected.hypotheses,
         evidence: projected.evidence,
         validationTasks: projected.validationTasks,
+        recentLessons: projected.recentLessons,
         round: projected.round,
         ...(options.signal ? { signal: options.signal } : {}),
       }
@@ -284,6 +290,7 @@ export async function runLangGraphEvidenceWorkgroup(
     hypotheses: [...context.hypotheses],
     evidence: [...context.evidence],
     validationTasks: [...context.validationTasks],
+    corrections: [...(context.recentCorrections ?? [])],
     round: context.round,
     workerExecutions: [],
   })

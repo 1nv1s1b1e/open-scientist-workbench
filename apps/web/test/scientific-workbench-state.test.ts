@@ -23,6 +23,56 @@ describe('scientific workbench state replay', () => {
     })
     state = reduceScientificChunk(state, {
       type: 'custom',
+      kind: 'scientific.hypothesis',
+      round: 1,
+      hypothesis: {
+        id: 'h-1',
+        statement: '耦合加热',
+        status: 'supported',
+        evidenceStrengthGrade: 'strong',
+      },
+      adjudicated: true,
+    })
+    state = reduceScientificChunk(state, {
+      type: 'custom',
+      kind: 'scientific.verification-report',
+      round: 1,
+      report: {
+        hypothesisId: 'h-1',
+        round: 1,
+        decision: 'supported',
+        evidenceStrengthGrade: 'strong',
+        evidenceStrengthSemantics: 'ordinal_evidence_grade_not_probability',
+        supportTier: 'bounded_process_support',
+        supportEvidenceIds: ['e-1'],
+        validSupportEvidenceIds: ['e-1'],
+        contradictionEvidenceIds: [],
+        eventGroupIds: ['event-1'],
+        rawDataFingerprints: ['raw-1'],
+        observableFamilies: ['thermal_variability'],
+        methodFamilies: ['timing-analysis'],
+        analysisSplits: ['holdout'],
+        attemptedAnalysisSplits: ['holdout'],
+        coveredPredictionIds: ['h-1:prediction:1'],
+        uncoveredPredictionIds: [],
+        hasHoldoutEvidence: true,
+        holdoutAttempted: true,
+        hasQuantitativeEvidence: true,
+        meetsEvidenceCriteria: true,
+        supportGatePassed: true,
+        eliminationGatePassed: false,
+        eliminationEvidenceIds: [],
+        coveredFalsificationConditionIds: [],
+        decisiveFalsificationConditionIds: [],
+        uncoveredFalsificationConditionIds: [],
+        eliminationTaskIds: [],
+        eliminationReasons: [],
+        reasons: [],
+        nextActions: [],
+      },
+    })
+    state = reduceScientificChunk(state, {
+      type: 'custom',
       kind: 'scientific.evidence',
       round: 1,
       evidence: {
@@ -82,6 +132,12 @@ describe('scientific workbench state replay', () => {
 
     expect(state.phenomenon?.phenomenonId).toBe('ar-1')
     expect(state.hypotheses).toHaveLength(1)
+    expect(state.hypotheses[0]?.status).toBe('supported')
+    expect(state.verificationReports[0]).toMatchObject({
+      hypothesisId: 'h-1',
+      supportGatePassed: true,
+      supportTier: 'bounded_process_support',
+    })
     expect(state.evidence[0]).toMatchObject({
       status: 'support',
       provenance: { processingRunId: 'processing-1', deterministic: true },
@@ -151,7 +207,7 @@ describe('scientific workbench state replay', () => {
     expect(state.orchestration.agents).toEqual([
       {
         agentId: 'looker-source-audit',
-        label: 'Looker：数据来源审计',
+        label: '观测质控智能体：数据来源审计',
         state: 'running',
         round: 1,
       },
@@ -199,6 +255,66 @@ describe('scientific workbench state replay', () => {
         corrections: [
           { correctionId: 'c-final', stage: 'C', status: 'passed', message: 'checked' },
         ],
+        verificationReports: [
+          {
+            hypothesisId: 'h-final',
+            round: 2,
+            decision: 'candidate',
+            supportGatePassed: false,
+          },
+        ],
+        closureReports: [
+          {
+            hypothesisId: 'h-final',
+            status: 'partial',
+            runDisposition: 'deferred_requires_data',
+            dispositionReason: 'requires spectroscopy',
+            localDataSufficient: false,
+            blockingTaskIds: ['t-final'],
+          },
+        ],
+        scientificStatus: 'needs_data',
+        closureStatus: 'partial',
+        outcomeProfile: {
+          candidate: 1,
+          supported: 0,
+          provisionallySupported: 0,
+          contradicted: 0,
+          deferredRequiresData: 0,
+          uncertain: 0,
+          eliminated: 0,
+          revised: 0,
+        },
+        workflowClosure: {
+          status: 'complete',
+          allHypothesesDisposed: true,
+          noExecutableTasksRemaining: true,
+          noUnassessedTasksRemaining: true,
+          terminalHypothesisCount: 1,
+          totalHypothesisCount: 1,
+          dispositionCounts: { deferred_requires_data: 1 },
+          reasons: [],
+        },
+        operationalClosure: {
+          status: 'complete',
+          agentFailures: [],
+          failedTaskIds: [],
+          unresolvedErrorCorrectionCount: 0,
+          dataIntegrityErrors: [],
+          reasons: [],
+        },
+        hypothesisCoverage: {
+          mode: 'open_world',
+          exhaustiveClaim: false,
+          fixedMechanismCount: false,
+          candidateCount: 1,
+          retrievalSourceCount: 3,
+          retrievedMechanismFamilies: ['thermal-nonequilibrium'],
+          representedMechanismFamilies: ['thermal-nonequilibrium'],
+          unrepresentedMechanismFamilies: [],
+          residualAlternativeAllowed: true,
+          limitations: ['finite retrieval is not exhaustive'],
+        },
       },
     })
 
@@ -207,6 +323,14 @@ describe('scientific workbench state replay', () => {
     expect(state.evidence[0]?.evidenceId).toBe('e-final')
     expect(state.validationTasks[0]?.taskId).toBe('t-final')
     expect(state.corrections[0]?.correctionId).toBe('c-final')
+    expect(state.verificationReports[0]?.hypothesisId).toBe('h-final')
+    expect(state.scientificStatus).toBe('needs_data')
+    expect(state.closureStatus).toBe('partial')
+    expect(state.outcomeProfile?.candidate).toBe(1)
+    expect(state.closureReports[0]?.runDisposition).toBe('deferred_requires_data')
+    expect(state.workflowClosure?.status).toBe('complete')
+    expect(state.operationalClosure?.status).toBe('complete')
+    expect(state.hypothesisCoverage?.fixedMechanismCount).toBe(false)
     expect(state.conclusion).toBe('bounded conclusion')
   })
 })

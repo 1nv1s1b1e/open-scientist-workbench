@@ -18,9 +18,17 @@ export type HypothesisStatus = z.infer<typeof HypothesisStatus>
 export const HypothesisMechanismComponentSchema = z.object({
   mechanism: z.string().min(1),
   role: z.enum(['dominant', 'secondary', 'coupled', 'unknown']),
-  contribution: z.number().min(0).max(1).optional(),
+  // OpenAI-compatible tool callers commonly serialize an omitted optional
+  // number as null. Treat that wire representation as "not supplied"; it
+  // must never become a fabricated zero contribution in scientific state.
+  contribution: z
+    .number()
+    .min(0)
+    .max(1)
+    .nullable()
+    .optional()
+    .transform((value) => value ?? undefined),
 })
-
 
 export const HypothesisSchema = z.object({
   id: z.string(),
@@ -58,8 +66,11 @@ export type HypothesisPool = z.infer<typeof HypothesisPoolSchema>
 export const ScientificHypothesisCandidateSchema = HypothesisSchema.omit({
   pythonCode: true,
   f1: true,
+  createdAt: true,
 }).extend({
   status: z.literal('candidate').default('candidate'),
+  /** Claim population/window; required by the prompt and optional for legacy artifacts. */
+  scope: z.string().min(1).optional(),
 })
 
 export const ScientificHypothesisPoolSchema = z.object({

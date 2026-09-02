@@ -124,15 +124,26 @@ export async function mergeMcpTools(
 ): Promise<void> {
   if (!mcpServers || mcpServers.length === 0) return
   for (const server of mcpServers) {
-    const mcpTools = await getMcpTools(projectId, server)
-    for (const name of Object.keys(mcpTools)) {
-      if (name in tools) {
-        logger.warn(
-          { serverName: server.name, toolName: name },
-          'mergeMcpTools: MCP tool overwrites existing tool of the same name',
-        )
+    try {
+      const mcpTools = await getMcpTools(projectId, server)
+      for (const name of Object.keys(mcpTools)) {
+        if (name in tools) {
+          logger.warn(
+            { serverName: server.name, toolName: name },
+            'mergeMcpTools: MCP tool overwrites existing tool of the same name',
+          )
+        }
       }
+      Object.assign(tools, mcpTools)
+    } catch (error) {
+      logger.warn(
+        {
+          projectId,
+          serverName: server.name,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'optional MCP server unavailable; retaining built-in tools',
+      )
     }
-    Object.assign(tools, mcpTools)
   }
 }

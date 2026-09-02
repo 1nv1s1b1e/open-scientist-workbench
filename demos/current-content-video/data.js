@@ -1,0 +1,393 @@
+window.__OPEN_SCIENTIST_DEMO__ = {
+  "runId": "run-1787228974299-f017d43d",
+  "runShortId": "run-1787228974299-f017…",
+  "status": "completed",
+  "scientificStatus": "needs_data",
+  "terminationReason": "max_rounds_reached",
+  "totalRounds": 2,
+  "hypothesisCount": 3,
+  "evidenceTotal": 32,
+  "evidenceSupport": 2,
+  "evidenceUnknown": 30,
+  "evidenceContradict": 0,
+  "taskTotal": 12,
+  "tasksCompleted": 3,
+  "tasksPlanned": 9,
+  "agentTotal": 14,
+  "agentsCompleted": 13,
+  "agentsSkipped": 1,
+  "correctionCount": 23,
+  "maxConfidence": 0.56,
+  "conclusion": "本轮得到支持 2 条、反驳 0 条、未知 30 条；结论仅限于已绑定数据处理产物和当前观测窗口，仍需按下一步验证计划复核。",
+  "phenomenon": {
+    "title": "NOAA AR11158 多波段热响应与磁场演化",
+    "activeRegion": "NOAA 11158",
+    "description": "在 NOAA AR11158 的本地观测窗口中，AIA 94 Å 与 131 Å 出现间歇性热通道增强，171 Å 与 193 Å 同时存在准周期强度变化，HMI 视向磁场在目标区域内持续演化。请比较波动耗散、纳耀斑重联及二者耦合能否解释这些共存现象，并主动寻找反例。",
+    "requestedQuestion": "哪些真实处理指标能够区分波动耗散、间歇性重联和耦合机制？当前证据不能回答的部分是什么，下一步哪些任务在现有系统中确实可执行？"
+  },
+  "hypotheses": [
+    {
+      "id": "h-librarian-e178d0…",
+      "statement": "AR11158中观测到的94 Å与131 Å间歇性热通道增强及171 Å与193 Å准周期强度变化可由阿尔芬波湍流耗散主导，辅以背景磁场演化调制的加热过程解释。",
+      "confidence": 0.5,
+      "status": "candidate",
+      "mechanism": "阿尔芬波湍流耗散 × 磁场演化调制波导",
+      "predictionCount": 3,
+      "falsificationCount": 3
+    },
+    {
+      "id": "h-librarian-ae0437…",
+      "statement": "AR11158的多波段热响应特征可由低频纳耀斑重联风暴解释，其中间歇性94/131 Å增强对应重联加热事件，171/193 Å准周期变化反映冷却环的视线叠加效应。",
+      "confidence": 0.56,
+      "status": "uncertain",
+      "mechanism": "低频纳耀斑重联 × 视线积分冷却环叠加",
+      "predictionCount": 3,
+      "falsificationCount": 3
+    },
+    {
+      "id": "h-librarian-8f09ae…",
+      "statement": "AR11158的共存现象需要波动与重联耦合机制：波动提供背景加热和预条件，重联事件在波动调制的磁场结构中触发间歇性增强。",
+      "confidence": 0.5,
+      "status": "candidate",
+      "mechanism": "阿尔芬波背景加热 × 间歇性磁重联 × 重联-波动正反馈",
+      "predictionCount": 3,
+      "falsificationCount": 3
+    }
+  ],
+  "frameworkLayers": [
+    {
+      "index": "01",
+      "name": "API / SSE",
+      "path": "apps/api/src/routes/runs.ts",
+      "detail": "POST /runs · stream · resume"
+    },
+    {
+      "index": "02",
+      "name": "WORKFLOW",
+      "path": "packages/agents/.../workflow.ts",
+      "detail": "runtime · context · persistence"
+    },
+    {
+      "index": "03",
+      "name": "LANGGRAPH",
+      "path": "scientific-graph.ts",
+      "detail": "A / B / C / D · checkpointed State"
+    },
+    {
+      "index": "04",
+      "name": "TOOLS / MCP",
+      "path": "packages/tools/src + packages/mcp/src",
+      "detail": "FITS · solar data · search · sandbox"
+    },
+    {
+      "index": "05",
+      "name": "STORAGE / ARTIFACTS",
+      "path": "packages/storage/src/repo",
+      "detail": "records · snapshots · runs · checksums"
+    }
+  ],
+  "graphNodes": [
+    {
+      "id": "A.generate",
+      "title": "生成假设",
+      "io": "phenomenon → hypotheses",
+      "color": "var(--solar)"
+    },
+    {
+      "id": "A.verify",
+      "title": "结构检查",
+      "io": "schema · predictions · falsification",
+      "color": "var(--solar)"
+    },
+    {
+      "id": "B.run",
+      "title": "证据工作组",
+      "io": "agents → evidence / tasks",
+      "color": "var(--cyan)"
+    },
+    {
+      "id": "BC.verify",
+      "title": "证据晋级",
+      "io": "provenance → auditable records",
+      "color": "var(--warn)"
+    },
+    {
+      "id": "C.verify",
+      "title": "严格门槛",
+      "io": "gate → status / confidence",
+      "color": "var(--violet)"
+    },
+    {
+      "id": "C.synthesize",
+      "title": "收敛结论",
+      "io": "bounded conclusion",
+      "color": "var(--violet)"
+    },
+    {
+      "id": "D.plan",
+      "title": "规划验证",
+      "io": "gaps → validation tasks",
+      "color": "var(--solar)"
+    },
+    {
+      "id": "D.route",
+      "title": "条件路由",
+      "io": "A / B / END",
+      "color": "var(--cyan)"
+    }
+  ],
+  "agentRoles": [
+    {
+      "key": "looker",
+      "label": "LOOKER",
+      "title": "观测目录与语境审计",
+      "description": "核对来源、观测窗口和既有研究语境",
+      "color": "var(--cyan)",
+      "executions": 4,
+      "completed": 3,
+      "skipped": 1,
+      "rounds": "1 / 2"
+    },
+    {
+      "key": "explorer",
+      "label": "EXPLORER",
+      "title": "FITS 可观测量分析",
+      "description": "执行 ROI、时间序列和图像诊断",
+      "color": "var(--solar)",
+      "executions": 4,
+      "completed": 4,
+      "skipped": 0,
+      "rounds": "1 / 2"
+    },
+    {
+      "key": "oracle",
+      "label": "ORACLE",
+      "title": "反例与交叉验证",
+      "description": "寻找背景差异、反例和替代解释",
+      "color": "var(--violet)",
+      "executions": 4,
+      "completed": 4,
+      "skipped": 0,
+      "rounds": "1 / 2"
+    },
+    {
+      "key": "provenance",
+      "label": "FACT-CHECK",
+      "title": "处理溯源复核",
+      "description": "复核 snapshot、processing run 和 artifact",
+      "color": "var(--warn)",
+      "executions": 2,
+      "completed": 2,
+      "skipped": 0,
+      "rounds": "1 / 2"
+    }
+  ],
+  "modelRoleCount": 3,
+  "deterministicRoleCount": 4,
+  "rounds": [
+    {
+      "round": 1,
+      "evidence": 19,
+      "support": 1,
+      "unknown": 18,
+      "tasks": 6,
+      "completedTasks": 3,
+      "plannedTasks": 3,
+      "agents": 7,
+      "completedAgents": 7,
+      "skippedAgents": 0,
+      "corrections": 14
+    },
+    {
+      "round": 2,
+      "evidence": 13,
+      "support": 1,
+      "unknown": 12,
+      "tasks": 6,
+      "completedTasks": 0,
+      "plannedTasks": 6,
+      "agents": 7,
+      "completedAgents": 6,
+      "skippedAgents": 1,
+      "corrections": 9
+    }
+  ],
+  "gateChecks": [
+    {
+      "label": "可量化结果与区间",
+      "value": "present",
+      "state": "pass"
+    },
+    {
+      "label": "支持记录 ≥ 3",
+      "value": "2 / 3",
+      "state": "hold"
+    },
+    {
+      "label": "独立事件与原始谱系",
+      "value": "requires ≥ 3",
+      "state": "hold"
+    },
+    {
+      "label": "观测族 / 方法族",
+      "value": "requires ≥ 2 / 2",
+      "state": "hold"
+    },
+    {
+      "label": "独立 holdout",
+      "value": "missing",
+      "state": "hold"
+    },
+    {
+      "label": "覆盖全部预测",
+      "value": "not complete",
+      "state": "hold"
+    },
+    {
+      "label": "confidence ≥ 0.60",
+      "value": "0.56",
+      "state": "hold"
+    }
+  ],
+  "corrections": [
+    {
+      "stage": "B",
+      "kind": "factual",
+      "severity": "warning",
+      "message": "本轮没有覆盖：spectroscopy、simulation。",
+      "action": "将这些诊断写入下一步验证计划，不把缺失诊断解释为支持或反驳。",
+      "round": 1
+    },
+    {
+      "stage": "B",
+      "kind": "factual",
+      "severity": "warning",
+      "message": "前序记录中 explorer-coronal-diagnostics 对假设 h-librarian-ae0437962600285b 标记为'support'，但实际仅验证了热通道间歇性，未验证幂律分布或冷却时延等关键预测，易误导为机制…",
+      "action": "将评估降级为部分支持预测而非支持假说整体，强调非唯一性。",
+      "round": 1
+    },
+    {
+      "stage": "B",
+      "kind": "factual",
+      "severity": "info",
+      "message": "所有前序诊断记录均指出 ROI 由自动变异选择且未经人工核验，这限制了物理结论的可靠性，但未被充分强调为关键限制。",
+      "action": "在 findings 中明确列出 ROI 未经人工掩膜核验作为主要局限性。",
+      "round": 1
+    },
+    {
+      "stage": "B",
+      "kind": "factual",
+      "severity": "warning",
+      "message": "前序记录中 counterexample 智能体声称'尚未构成可复核反例'，但目标/背景变异比 5.46 实际上支持了信号的特异性，表述可能引起歧义。",
+      "action": "澄清该比值支持信号存在性，但不足以反驳或支持特定加热机制。",
+      "round": 1
+    },
+    {
+      "stage": "B",
+      "kind": "factual",
+      "severity": "warning",
+      "message": "e-diagnostic-42bcb71803799fe1 标记 status 为 'support' 可能过度解读：该记录自身局限性已声明'热通道间歇性和 HMI 代理量不是重联或纳耀斑的唯一指纹'，且未验证能量幂律分布与冷却时延序列两…",
+      "action": "建议将 status 从 'support' 降级为 'unknown' 或添加明确注释说明仅支持部分非唯一预测",
+      "round": 1
+    }
+  ],
+  "limitations": [
+    "No spectroscopy or Doppler/non-thermal line-width diagnostic is included.",
+    "The 24-second burst exists for one AIA two-band window only.",
+    "Direct JSOC segment files are preserved as raw assets; spatial alignment must use a later WCS-aware processing run and may require richer export headers.",
+    "积分强度周期不是传播速度或能流测量，不能单独证明波动加热。",
+    "当前包没有与观测同化的 MHD 数值模拟产物。",
+    "无联合特征定量指标"
+  ],
+  "tasks": [
+    {
+      "id": "task-model-58169ac…",
+      "executor": "external",
+      "route": "A",
+      "type": "analysis",
+      "status": "planned",
+      "readiness": "requires_data",
+      "objective": "计算94/131 Å增强事件与HMI磁场足点运动速度的时间相关性，检验磁场调制假说"
+    },
+    {
+      "id": "task-model-bfdbc05…",
+      "executor": "external",
+      "route": "A",
+      "type": "analysis",
+      "status": "planned",
+      "readiness": "requires_data",
+      "objective": "测量多波段增强事件的冷却时延序列(94→131→193→171 Å)，检验重联加热预测"
+    },
+    {
+      "id": "task-model-832527b…",
+      "executor": "external",
+      "route": "A",
+      "type": "analysis",
+      "status": "planned",
+      "readiness": "requires_data",
+      "objective": "定量分析94/131 Å增强事件的重联形态特征与171/193 Å波动振荡延续的联合指标"
+    },
+    {
+      "id": "task-model-6059ac6…",
+      "executor": "coronal-timeseries-lag-v1",
+      "route": "B",
+      "type": "analysis",
+      "status": "planned",
+      "readiness": "registered_executor",
+      "objective": "计算当前 ROI 的 AIA 171/193 跨通道互相关、时延和单一候选主周期；检验 h-librarian-e178d0c43e3d9d66:prediction:1。"
+    },
+    {
+      "id": "task-model-19ab9ab…",
+      "executor": "coronal-hot-channel-variabil…",
+      "route": "B",
+      "type": "analysis",
+      "status": "planned",
+      "readiness": "registered_executor",
+      "objective": "计算当前 ROI 的 AIA 94/131 稳健峰值数和相对变异度；检验 h-librarian-ae0437962600285b:prediction:1。"
+    },
+    {
+      "id": "task-model-541eaa2…",
+      "executor": "external",
+      "route": "A",
+      "type": "observation",
+      "status": "planned",
+      "readiness": "requires_data",
+      "objective": "获取多波段冷却时延序列证据以检验纳耀斑重联假说：多波段响应应显示从高温到低温通道的冷却时延序列(94→131→193→171 Å)。当前本地诊断无法提供跨波段时延的精确测量，需要外部DEM反演或前向建模支持。"
+    }
+  ],
+  "handoffTasks": [
+    {
+      "id": "task-model-58169ac…",
+      "executor": "external",
+      "route": "A",
+      "type": "analysis",
+      "status": "planned",
+      "readiness": "requires_data",
+      "objective": "计算94/131 Å增强事件与HMI磁场足点运动速度的时间相关性，检验磁场调制假说"
+    },
+    {
+      "id": "task-model-bfdbc05…",
+      "executor": "external",
+      "route": "A",
+      "type": "analysis",
+      "status": "planned",
+      "readiness": "requires_data",
+      "objective": "测量多波段增强事件的冷却时延序列(94→131→193→171 Å)，检验重联加热预测"
+    },
+    {
+      "id": "task-model-832527b…",
+      "executor": "external",
+      "route": "A",
+      "type": "analysis",
+      "status": "planned",
+      "readiness": "requires_data",
+      "objective": "定量分析94/131 Å增强事件的重联形态特征与171/193 Å波动振荡延续的联合指标"
+    }
+  ],
+  "validationMore": "+ 3 条验证任务排队",
+  "fileCountLabel": "324/324",
+  "candidatePeriodSeconds": 864,
+  "crossChannelCorrelation": 0.7905365116681242,
+  "diagnosticImage": "./coronal_diagnostics.png",
+  "sourceDigest": "77addbbb3f34"
+};

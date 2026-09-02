@@ -71,11 +71,17 @@ vi.mock('@open-scientist/storage', () => ({
     delete: vi.fn(),
   })),
   getProject: vi.fn(async (name: string) => projectRow && { ...projectRow, name }),
-  createRun: vi.fn(async (_projectName: string, _projectId: string, options?: { id?: string }) => {
-    const id = options?.id ?? 'auto-uuid'
-    storageCreateRunResult = { id, status: 'running' }
-    return storageCreateRunResult
-  }),
+  createRun: vi.fn(
+    async (
+      _projectName: string,
+      _projectId: string,
+      options?: { id?: string; status?: string },
+    ) => {
+      const id = options?.id ?? 'auto-uuid'
+      storageCreateRunResult = { id, status: options?.status ?? 'pending' }
+      return storageCreateRunResult
+    },
+  ),
   getRun: vi.fn(async (_projectName: string, _runId: string) => storageGetRunRow),
   updateRunStatus: vi.fn(async (projectName: string, runId: string, status: string) => {
     updateRunStatusCalls.push({ projectName, runId, status })
@@ -209,9 +215,10 @@ describe('POST /api/projects/:name/runs', () => {
     expect(input.modelConfig.provider).toBe('openai')
     expect(input.modelConfig.model).toBe('gpt-4o')
 
-    // createRun persisted with the run id + status running.
+    // The durable row exists before the workflow starts, then transitions to running.
     expect(storageCreateRunResult).not.toBeNull()
-    expect(storageCreateRunResult?.status).toBe('running')
+    expect(storageCreateRunResult?.status).toBe('pending')
+    expect(updateRunStatusCalls).toEqual([expect.objectContaining({ status: 'running' })])
   })
 
   it('forwards a structured phenomenon to the scientific workflow path', async () => {
@@ -256,7 +263,14 @@ describe('POST /api/projects/:name/runs', () => {
           phenomenonId: 'ar-2',
           title: '活动区 EUV 增亮',
           description: '一个活动区在 EUV 图像中出现短时增亮。',
-          observations: [{ sourceId: 'obs-193', kind: 'image', label: 'AIA 193', uri: 'fixture://ar-2/aia-193.fits' }],
+          observations: [
+            {
+              sourceId: 'obs-193',
+              kind: 'image',
+              label: 'AIA 193',
+              uri: 'fixture://ar-2/aia-193.fits',
+            },
+          ],
         },
       }),
     })

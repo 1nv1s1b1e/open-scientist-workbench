@@ -1,0 +1,1312 @@
+<!doctype html>
+<html lang="zh-CN" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=3840, height=2160" />
+    <title>Open Scientist - 4K 60FPS Continuous Trace & Architecture Video</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --bg: #03080f;
+        --bg-grad-1: #071526;
+        --bg-grad-2: #02060b;
+        --text: #f3f7fb;
+        --text-dim: #94a3b8;
+        --text-dimmer: #64748b;
+        --accent: #6ce9df;
+        --accent-glow: rgba(108, 233, 223, 0.25);
+        --accent-gold: #ffbe5b;
+        --accent-gold-glow: rgba(255, 190, 91, 0.28);
+        --accent-amber: #f97316;
+        --accent-purple: #c084fc;
+        --panel-bg: rgba(7, 18, 33, 0.78);
+        --panel-border: rgba(108, 233, 223, 0.18);
+        --panel-border-glow: rgba(108, 233, 223, 0.4);
+        --font-mono: "JetBrains Mono", "Fira Code", monospace;
+        --font-sans: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 3840px;
+        height: 2160px;
+        overflow: hidden;
+        background-color: var(--bg);
+        background-image: 
+          radial-gradient(circle at 15% 30%, rgba(255, 140, 0, 0.08) 0%, transparent 45%),
+          radial-gradient(circle at 85% 70%, rgba(108, 233, 223, 0.06) 0%, transparent 50%),
+          linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+        color: var(--text);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        position: relative;
+      }
+
+      #root {
+        width: 3840px;
+        height: 2160px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* 4K Background Grid & Cosmic Grid */
+      .bg-grid {
+        position: absolute;
+        inset: 0;
+        background-size: 160px 160px;
+        background-image: 
+          linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black 40%, transparent 95%);
+        pointer-events: none;
+      }
+
+      /* Fixed Top Navigation Bar */
+      .top-nav {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 140px;
+        padding: 0 100px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 100;
+        background: linear-gradient(180deg, rgba(3, 8, 15, 0.95) 0%, rgba(3, 8, 15, 0) 100%);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+      }
+
+      .brand-badge {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #ffd280 0%, #ff8c00 60%, #b34700 100%);
+        box-shadow: 0 0 30px #ff9e2c88, inset 0 0 10px #ffffff99;
+        position: relative;
+      }
+
+      .brand-badge::after {
+        content: "";
+        position: absolute;
+        inset: -8px;
+        border-radius: 50%;
+        border: 2px dashed rgba(255, 190, 91, 0.4);
+      }
+
+      .brand-text {
+        font-family: var(--font-mono);
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: #fff;
+      }
+
+      .brand-tag {
+        font-family: var(--font-mono);
+        font-size: 18px;
+        padding: 6px 16px;
+        background: rgba(108, 233, 223, 0.12);
+        border: 1px solid rgba(108, 233, 223, 0.35);
+        color: var(--accent);
+        border-radius: 6px;
+        letter-spacing: 0.1em;
+      }
+
+      .flow-steps {
+        display: flex;
+        align-items: center;
+        gap: 36px;
+        font-family: var(--font-mono);
+        font-size: 20px;
+        color: var(--text-dimmer);
+      }
+
+      .flow-step.active {
+        color: var(--accent);
+        font-weight: 600;
+        text-shadow: 0 0 15px rgba(108, 233, 223, 0.5);
+      }
+
+      .flow-step-arrow {
+        color: rgba(255, 255, 255, 0.15);
+      }
+
+      .live-meta {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        font-family: var(--font-mono);
+        font-size: 20px;
+      }
+
+      .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--accent-gold);
+      }
+
+      .live-dot {
+        width: 14px;
+        height: 14px;
+        background: var(--accent-gold);
+        border-radius: 50%;
+        box-shadow: 0 0 16px var(--accent-gold);
+      }
+
+      /* Fixed Bottom Subtitle & Progress Bar */
+      .bottom-hud {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 220px;
+        padding: 0 100px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        z-index: 100;
+        background: linear-gradient(0deg, rgba(3, 8, 15, 0.98) 0%, rgba(3, 8, 15, 0.8) 50%, rgba(3, 8, 15, 0) 100%);
+      }
+
+      .progress-bar-wrap {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 3px;
+        margin-bottom: 24px;
+        overflow: hidden;
+      }
+
+      #progress-bar {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, #ff9e2c 0%, #6ce9df 50%, #c084fc 100%);
+        transform-origin: left center;
+      }
+
+      .caption-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 60px;
+      }
+
+      .caption-content {
+        flex: 1;
+        max-width: 2800px;
+      }
+
+      .caption-prefix {
+        font-family: var(--font-mono);
+        font-size: 22px;
+        color: var(--accent);
+        letter-spacing: 0.15em;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .caption-text {
+        font-size: 34px;
+        font-weight: 500;
+        line-height: 1.4;
+        color: #ffffff;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+      }
+
+      .caption-note {
+        font-family: var(--font-mono);
+        font-size: 20px;
+        color: var(--text-dimmer);
+        margin-top: 8px;
+      }
+
+      .metric-badge-hud {
+        display: flex;
+        gap: 36px;
+        background: rgba(10, 25, 45, 0.7);
+        border: 1px solid rgba(108, 233, 223, 0.2);
+        padding: 16px 36px;
+        border-radius: 12px;
+        backdrop-filter: blur(12px);
+      }
+
+      .hud-metric-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .hud-metric-num {
+        font-family: var(--font-mono);
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--accent-gold);
+      }
+
+      .hud-metric-lbl {
+        font-size: 16px;
+        color: var(--text-dim);
+        letter-spacing: 0.08em;
+      }
+
+      /* Camera Viewport & Dynamic Canvas Container */
+      #camera-stage {
+        position: absolute;
+        inset: 0;
+        width: 3840px;
+        height: 2160px;
+        transform-origin: 1920px 1080px;
+      }
+
+      /* SVG Dynamic Circuit & Flow Layer */
+      #svg-canvas {
+        position: absolute;
+        inset: 0;
+        width: 3840px;
+        height: 2160px;
+        pointer-events: none;
+        z-index: 20;
+      }
+
+      /* Scene Layouts */
+      .scene-container {
+        position: absolute;
+        inset: 0;
+        width: 3840px;
+        height: 2160px;
+        pointer-events: none;
+      }
+
+      /* Sun & Space Weather Hero (Scene 1 & Outro) */
+      .sun-system {
+        position: absolute;
+        left: 240px;
+        top: 420px;
+        width: 1000px;
+        height: 1000px;
+      }
+
+      .sun-core {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 480px;
+        height: 480px;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #fff2a3 0%, #ffaa2c 30%, #ff5500 70%, #881a00 100%);
+        box-shadow: 
+          0 0 120px rgba(255, 140, 0, 0.7),
+          0 0 240px rgba(255, 85, 0, 0.4),
+          inset 0 0 80px rgba(255, 240, 180, 0.8);
+      }
+
+      .sun-corona {
+        position: absolute;
+        inset: -60px;
+        border-radius: 50%;
+        border: 2px dashed rgba(255, 190, 91, 0.35);
+      }
+
+      .sun-channel-tag {
+        position: absolute;
+        font-family: var(--font-mono);
+        font-size: 18px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 6px;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(8px);
+      }
+
+      .hero-textbox {
+        position: absolute;
+        left: 1360px;
+        top: 540px;
+        width: 1900px;
+      }
+
+      .kicker-tag {
+        font-family: var(--font-mono);
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--accent-gold);
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .hero-headline {
+        font-size: 96px;
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+        margin-bottom: 36px;
+      }
+
+      .hero-headline span {
+        background: linear-gradient(135deg, #ffffff 0%, #6ce9df 60%, #ffbe5b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .hero-desc {
+        font-size: 34px;
+        line-height: 1.6;
+        color: var(--text-dim);
+        max-width: 1600px;
+        margin-bottom: 48px;
+      }
+
+      .hero-cards-row {
+        display: flex;
+        gap: 32px;
+      }
+
+      .hero-card {
+        flex: 1;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        padding: 32px 36px;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      }
+
+      .hero-card-title {
+        font-family: var(--font-mono);
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .hero-card-val {
+        font-size: 28px;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 8px;
+      }
+
+      .hero-card-sub {
+        font-size: 20px;
+        color: var(--text-dimmer);
+      }
+
+      /* Scene 2: Runtime Architecture & Pipeline Layers */
+      .arch-layout {
+        position: absolute;
+        inset: 220px 140px 240px 140px;
+        display: grid;
+        grid-template-columns: 1.1fr 1.3fr 1.1fr;
+        gap: 48px;
+      }
+
+      .arch-col {
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+        padding: 44px;
+        backdrop-filter: blur(20px);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+      }
+
+      .arch-col-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 32px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .arch-col-title {
+        font-family: var(--font-mono);
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.1em;
+      }
+
+      .arch-col-badge {
+        font-family: var(--font-mono);
+        font-size: 18px;
+        padding: 6px 14px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-dim);
+      }
+
+      .pipeline-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        flex: 1;
+      }
+
+      .pipe-node {
+        background: rgba(14, 30, 50, 0.6);
+        border: 1px solid rgba(108, 233, 223, 0.15);
+        border-radius: 12px;
+        padding: 22px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+      }
+
+      .pipe-node.highlight {
+        border-color: var(--accent);
+        background: rgba(108, 233, 223, 0.1);
+        box-shadow: 0 0 30px var(--accent-glow);
+      }
+
+      .pipe-node-info {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .pipe-node-name {
+        font-family: var(--font-mono);
+        font-size: 24px;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      .pipe-node-desc {
+        font-size: 18px;
+        color: var(--text-dim);
+      }
+
+      .pipe-node-status {
+        font-family: var(--font-mono);
+        font-size: 16px;
+        padding: 4px 12px;
+        border-radius: 4px;
+        background: rgba(108, 233, 223, 0.15);
+        color: var(--accent);
+      }
+
+      /* Scene 3: Multi-Agent Orchestration */
+      .agent-grid-layout {
+        position: absolute;
+        inset: 220px 140px 240px 140px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 36px;
+      }
+
+      .agent-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+        padding: 36px;
+        backdrop-filter: blur(20px);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .agent-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--accent);
+      }
+
+      .agent-card.oracle::before { background: var(--accent-gold); }
+      .agent-card.gate::before { background: var(--accent-amber); }
+      .agent-card.fact::before { background: var(--accent-purple); }
+
+      .agent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .agent-role {
+        font-family: var(--font-mono);
+        font-size: 26px;
+        font-weight: 700;
+        color: #fff;
+      }
+
+      .agent-badge {
+        font-family: var(--font-mono);
+        font-size: 16px;
+        padding: 4px 12px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .agent-tasks-box {
+        background: rgba(5, 15, 28, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-size: 18px;
+        color: var(--text-dim);
+      }
+
+      .agent-task-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .agent-task-bullet {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+
+      .agent-metric-foot {
+        margin-top: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        font-family: var(--font-mono);
+      }
+
+      /* Scene 4: Evidence Ledger & Rigorous Verification Gate */
+      .evidence-layout {
+        position: absolute;
+        inset: 220px 140px 240px 140px;
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 48px;
+      }
+
+      .evidence-table-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+        padding: 44px;
+        backdrop-filter: blur(20px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .evidence-row-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .evidence-row-item:last-child {
+        border-bottom: none;
+      }
+
+      .evidence-id {
+        font-family: var(--font-mono);
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      .evidence-type {
+        font-size: 20px;
+        color: #fff;
+      }
+
+      .evidence-verdict {
+        font-family: var(--font-mono);
+        font-size: 18px;
+        padding: 6px 16px;
+        border-radius: 6px;
+      }
+
+      .verdict-support {
+        background: rgba(108, 233, 223, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(108, 233, 223, 0.4);
+      }
+
+      .verdict-hold {
+        background: rgba(255, 190, 91, 0.15);
+        color: var(--accent-gold);
+        border: 1px solid rgba(255, 190, 91, 0.4);
+      }
+
+      .verdict-falsify {
+        background: rgba(249, 115, 22, 0.15);
+        color: var(--accent-amber);
+        border: 1px solid rgba(249, 115, 22, 0.4);
+      }
+
+      .gate-display-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+        padding: 44px;
+        backdrop-filter: blur(20px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        position: relative;
+      }
+
+      .gate-ring-svg {
+        width: 360px;
+        height: 360px;
+        margin-bottom: 32px;
+      }
+
+      .gate-status-text {
+        font-family: var(--font-mono);
+        font-size: 44px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--accent-gold);
+        margin-bottom: 16px;
+      }
+
+      .gate-sub-text {
+        font-size: 22px;
+        color: var(--text-dim);
+        max-width: 600px;
+        line-height: 1.5;
+      }
+
+      /* Scene 5: Task Routing & Closed-Loop Matrix */
+      .matrix-layout {
+        position: absolute;
+        inset: 220px 140px 240px 140px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 40px;
+      }
+
+      .matrix-box {
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+        padding: 40px;
+        backdrop-filter: blur(20px);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .matrix-box-title {
+        font-family: var(--font-mono);
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      .matrix-chip-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .matrix-chip {
+        background: rgba(14, 30, 50, 0.8);
+        border: 1px solid rgba(108, 233, 223, 0.2);
+        border-radius: 10px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .chip-name {
+        font-family: var(--font-mono);
+        font-size: 20px;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      .chip-status {
+        font-size: 16px;
+        color: var(--text-dimmer);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-width="3840" data-height="2160" data-start="0" data-duration="75">
+      <div class="bg-grid"></div>
+
+      <!-- Top Navigation -->
+      <header class="top-nav">
+        <div class="brand">
+          <div class="brand-badge"></div>
+          <div class="brand-text">Open Scientist · 金乌智研</div>
+          <div class="brand-tag">Autonomous Solar AI Scientist</div>
+        </div>
+        <div class="flow-steps">
+          <span class="flow-step" id="step-1">01 现象观测</span>
+          <span class="flow-step-arrow">→</span>
+          <span class="flow-step" id="step-2">02 系统架构</span>
+          <span class="flow-step-arrow">→</span>
+          <span class="flow-step" id="step-3">03 协同编排</span>
+          <span class="flow-step-arrow">→</span>
+          <span class="flow-step" id="step-4">04 证据门槛</span>
+          <span class="flow-step-arrow">→</span>
+          <span class="flow-step" id="step-5">05 闭环综合</span>
+        </div>
+        <div class="live-meta">
+          <div class="live-indicator">
+            <div class="live-dot"></div>
+            <span id="nav-target">TARGET: NOAA AR11158</span>
+          </div>
+          <div class="brand-tag" style="border-color: rgba(255,190,91,0.4); color: var(--accent-gold);">4K 60FPS MASTER</div>
+        </div>
+      </header>
+
+      <!-- Dynamic Camera Viewport Stage -->
+      <main id="camera-stage">
+        <!-- SVG Vector Circuit & Curve Lines -->
+        <svg id="svg-canvas" viewBox="0 0 3840 2160">
+          <defs>
+            <linearGradient id="grad-cyan-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6ce9df" stop-opacity="0.8" />
+              <stop offset="100%" stop-color="#ffbe5b" stop-opacity="0.8" />
+            </linearGradient>
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="8" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          <!-- Dynamic Connecting Stream Paths -->
+          <path id="path-main-stream" d="M 740 920 C 1200 920, 1400 650, 1920 650 S 2600 920, 3200 920" fill="none" stroke="url(#grad-cyan-gold)" stroke-width="4" stroke-linecap="round" opacity="0.4" />
+          <path id="path-loop-return" d="M 3200 920 C 3500 1300, 2200 1600, 1920 1600 C 1200 1600, 500 1400, 740 920" fill="none" stroke="rgba(108, 233, 223, 0.3)" stroke-width="3" stroke-dasharray="16 12" />
+
+          <!-- Dynamic Flying Data Packets -->
+          <circle id="flying-packet-1" cx="740" cy="920" r="10" fill="#6ce9df" filter="url(#glow)" opacity="0" />
+          <circle id="flying-packet-2" cx="1920" cy="650" r="14" fill="#ffbe5b" filter="url(#glow)" opacity="0" />
+        </svg>
+
+        <!-- Scene 1: Overview & Solar Phenomenon -->
+        <div id="scene-overview" class="scene-container">
+          <div class="sun-system" id="sun-anchor">
+            <div class="sun-core"></div>
+            <div class="sun-corona"></div>
+            <div class="sun-channel-tag" style="top: 140px; left: 100px; color: #ffbe5b; border: 1px solid #ffbe5b88;">AIA 171Å · 冕环足点</div>
+            <div class="sun-channel-tag" style="top: 240px; right: 80px; color: #6ce9df; border: 1px solid #6ce9df88;">AIA 193Å · 耀斑热冕</div>
+            <div class="sun-channel-tag" style="bottom: 160px; left: 160px; color: #f97316; border: 1px solid #f9731688;">HMI B_LOS · 光球矢量磁场</div>
+            <div class="sun-channel-tag" style="bottom: 260px; right: 120px; color: #c084fc; border: 1px solid #c084fc88;">AIA 304Å · 色球喷发</div>
+          </div>
+
+          <div class="hero-textbox" id="hero-text-block">
+            <div class="kicker-tag">
+              <span>SOLAR PHYSICS AUTONOMOUS AI SCIENTIST</span>
+            </div>
+            <h1 class="hero-headline">
+              让太阳物理假设<br />
+              <span>直面全链条真实证据推理</span>
+            </h1>
+            <p class="hero-desc">
+              以 NOAA AR11158 太阳活动区与 X2.2 级耀斑为标准基准，融合多波段极紫外 (EUV) 辐射及矢量磁图观测，构建全自动化假设提出、多智能体协同求证、严格门槛判别与闭环任务生成的科学家系统。
+            </p>
+            <div class="hero-cards-row">
+              <div class="hero-card">
+                <div class="hero-card-title">BENCHMARK EVENT</div>
+                <div class="hero-card-val">NOAA AR11158</div>
+                <div class="hero-card-sub">多波段热响应与磁剪切重联基准</div>
+              </div>
+              <div class="hero-card">
+                <div class="hero-card-title">DATA ARTIFACTS</div>
+                <div class="hero-card-val">120+ FITS Caches</div>
+                <div class="hero-card-sub">真实仪器校准数据与时序光变曲线</div>
+              </div>
+              <div class="hero-card">
+                <div class="hero-card-title">REASONING TRACE</div>
+                <div class="hero-card-val">100% Provenance</div>
+                <div class="hero-card-sub">每个结论保留完整处理链条与代码指纹</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scene 2: Layered System Architecture -->
+        <div id="scene-architecture" class="scene-container">
+          <div class="arch-layout" id="arch-box">
+            <div class="arch-col">
+              <div class="arch-col-header">
+                <div class="arch-col-title">API & RUNTIME</div>
+                <div class="arch-col-badge">LAYER 01</div>
+              </div>
+              <div class="pipeline-list">
+                <div class="pipe-node highlight">
+                  <div class="pipe-node-info">
+                    <div class="pipe-node-name">POST /runs</div>
+                    <div class="pipe-node-desc">现象输入触发与运行环境初始化</div>
+                  </div>
+                  <div class="pipe-node-status">SSE STREAM</div>
+                </div>
+                <div class="pipe-node">
+                  <div class="pipe-node-info">
+                    <div class="pipe-node-name">Workflow Engine</div>
+                    <div class="pipe-node-desc">异步编排调度与状态持久化记录</div>
+                  </div>
+                  <div class="pipe-node-status">CHECKPOINT</div>
+                </div>
+                <div class="pipe-node">
+                  <div class="pipe-node-info">
+                    <div class="pipe-node-name">State Replay</div>
+                    <div class="pipe-node-desc">全过程事件流与回放序列生成</div>
+                  </div>
+                  <div class="pipe-node-status">AUDITABLE</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="arch-col">
+              <div class="arch-col-header">
+                <div class="arch-col-title">LANGGRAPH ORCHESTRATION</div>
+                <div class="arch-col-badge">LAYER 02</div>
+              </div>
+              <div class="pipeline-list">
+                <div class="pipe-node">
+                  <div class="pipe-node-info">
+                    <div class="pipe-node-name">A.generate / A.verify</div>
+                    <div class="pipe-node-desc">物理假设生成与形式逻辑可证伪性检验</div>
+                  </div>
+                  <div class="pipe-node-status">HYPOTHESIS</div>
+                </div>
+                <div class="pipe-node highlight">
+                  <div class="pipe-node-info">
+                    <div class="pipe-node-name">B.run (Parallel Workers)</div>
+                    <div class="pipe-node-desc">分发 Looker / Explorer / Oracle 协同分析</div>
+                  </div>
+                  <div class="pipe-node-status">DISPATCH</div>
+                </div>
+                <div class="pipe-node">
+                  <div class="pipe-node-info">
+                    <div class="pipe-node-name">C.verify (Gate Check)</div>
+                    <div class="pipe-node-desc">严格多维判定门槛与结论有界收敛</div>
+                  </div>
+                  <div class="pipe-node-status">GATEKEEPER</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="arch-col">
+              <div class="arch-col-header">
+                <div class="arch-col-title">TOOLS & PROVENANCE</div>
+                <div class="arch-col-badge">LAYER 03</div>
+              </div>
+              <div class="pipeline-list">
+                <div class="pipe-node">
+                  <div class="pipe-node-info">
+                    <div class="pipe-node-name">MCP FITS Processor</div>
+                    <div class="pipe-node-desc">原生解析 AIA/HMI 遥感数据与 ROI 提取</div>
+                  </div>
+                  <div class="pipe-node-status">FITS ENGINE</div>
+                </div>
+                <div class="pipe-node highlight">
+                  <div class="pipe-node-info">
+                    <div class="pipe-node-name">Evidence Ledger</div>
+                    <div class="pipe-node-desc">量化指标、图像产物与论文出处绑定</div>
+                  </div>
+                  <div class="pipe-node-status">HASH TRACE</div>
+                </div>
+                <div class="pipe-node">
+                  <div class="pipe-node-info">
+                    <div class="pipe-node-name">Task Router (D.route)</div>
+                    <div class="pipe-node-desc">未知转译为下一轮条件验证任务</div>
+                  </div>
+                  <div class="pipe-node-status">FEEDBACK</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scene 3: Multi-Agent Parallel Orchestration -->
+        <div id="scene-agents" class="scene-container">
+          <div class="agent-grid-layout" id="agent-box">
+            <div class="agent-card">
+              <div class="agent-header">
+                <div class="agent-role">LOOKER AGENT</div>
+                <div class="agent-badge">CATALOG & META</div>
+              </div>
+              <div class="agent-tasks-box">
+                <div class="agent-task-item"><div class="agent-task-bullet"></div>检索 AR11158 观测元数据目录</div>
+                <div class="agent-task-item"><div class="agent-task-bullet"></div>多波段时序覆盖性与时间戳校准</div>
+                <div class="agent-task-item"><div class="agent-task-bullet"></div>定位耀斑爆发前后关键时间窗</div>
+              </div>
+              <div class="agent-metric-foot">
+                <span style="color: var(--text-dim);">TIMELINE SYNC</span>
+                <span style="color: var(--accent);">100% MATCH</span>
+              </div>
+            </div>
+
+            <div class="agent-card">
+              <div class="agent-header">
+                <div class="agent-role">EXPLORER AGENT</div>
+                <div class="agent-badge">IMAGE & ROI</div>
+              </div>
+              <div class="agent-tasks-box">
+                <div class="agent-task-item"><div class="agent-task-bullet"></div>多波段 EUV 差影图分析与亮化追踪</div>
+                <div class="agent-task-item"><div class="agent-task-bullet"></div>光球磁场中性线 (PIL) 磁通量积分</div>
+                <div class="agent-task-item"><div class="agent-task-bullet"></div>提取冕环足点重联微观特征结构</div>
+              </div>
+              <div class="agent-metric-foot">
+                <span style="color: var(--text-dim);">ROI RESOLUTION</span>
+                <span style="color: var(--accent);">0.6 arcsec/px</span>
+              </div>
+            </div>
+
+            <div class="agent-card oracle">
+              <div class="agent-header">
+                <div class="agent-role">ORACLE AGENT</div>
+                <div class="agent-badge" style="color: var(--accent-gold);">PHYSICS THEORY</div>
+              </div>
+              <div class="agent-tasks-box">
+                <div class="agent-task-item"><div class="agent-task-bullet" style="background: var(--accent-gold);"></div>对照 MHD 磁重联与标准耀斑模型</div>
+                <div class="agent-task-item"><div class="agent-task-bullet" style="background: var(--accent-gold);"></div>检验磁剪切释放与热响应时延</div>
+                <div class="agent-task-item"><div class="agent-task-bullet" style="background: var(--accent-gold);"></div>反例排除与竞争性假设对抗推演</div>
+              </div>
+              <div class="agent-metric-foot">
+                <span style="color: var(--text-dim);">MHD CONSISTENCY</span>
+                <span style="color: var(--accent-gold);">VERIFIED</span>
+              </div>
+            </div>
+
+            <div class="agent-card fact">
+              <div class="agent-header">
+                <div class="agent-role">FACT-CHECK AGENT</div>
+                <div class="agent-badge" style="color: var(--accent-purple);">PROVENANCE</div>
+              </div>
+              <div class="agent-tasks-box">
+                <div class="agent-task-item"><div class="agent-task-bullet" style="background: var(--accent-purple);"></div>校验定量指标与原始 FITS 统计</div>
+                <div class="agent-task-item"><div class="agent-task-bullet" style="background: var(--accent-purple);"></div>注入上下文溯源哈希与参数指纹</div>
+                <div class="agent-task-item"><div class="agent-task-bullet" style="background: var(--accent-purple);"></div>阻断幻觉输出，确保科学严密性</div>
+              </div>
+              <div class="agent-metric-foot">
+                <span style="color: var(--text-dim);">TRACE INTEGRITY</span>
+                <span style="color: var(--accent-purple);">PASS (32/32)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scene 4: Evidence Ledger & Rigorous Gate Check -->
+        <div id="scene-evidence" class="scene-container">
+          <div class="evidence-layout" id="evidence-box">
+            <div class="evidence-table-card">
+              <div class="arch-col-header">
+                <div class="arch-col-title">EVIDENCE REASONING LEDGER</div>
+                <div class="arch-col-badge">QUANTITATIVE AUDIT</div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="evidence-row-item">
+                  <div>
+                    <div class="evidence-id">EV-AR11158-EUV-01</div>
+                    <div class="evidence-type">AIA 131Å / 94Å 极高温度响应先于软X射线峰值 180s</div>
+                  </div>
+                  <div class="evidence-verdict verdict-support">SUPPORT (0.92)</div>
+                </div>
+                <div class="evidence-row-item">
+                  <div>
+                    <div class="evidence-id">EV-AR11158-MAG-02</div>
+                    <div class="evidence-type">光球强剪切带磁螺度注入率 dH/dt 显著突增</div>
+                  </div>
+                  <div class="evidence-verdict verdict-support">SUPPORT (0.89)</div>
+                </div>
+                <div class="evidence-row-item">
+                  <div>
+                    <div class="evidence-id">EV-AR11158-CORR-03</div>
+                    <div class="evidence-type">未发现全局冕洞高速流同步调制相关性</div>
+                  </div>
+                  <div class="evidence-verdict verdict-falsify">FALSIFIED (0.12)</div>
+                </div>
+                <div class="evidence-row-item">
+                  <div>
+                    <div class="evidence-id">EV-AR11158-CHRO-04</div>
+                    <div class="evidence-type">色球冷等离子体暗条爆发前兆波动周期确认</div>
+                  </div>
+                  <div class="evidence-verdict verdict-hold">NEEDS_DATA (HOLD)</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="gate-display-card">
+              <svg class="gate-ring-svg" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8" />
+                <circle id="gate-circle-progress" cx="100" cy="100" r="85" fill="none" stroke="#ffbe5b" stroke-width="8" stroke-dasharray="534" stroke-dashoffset="130" stroke-linecap="round" />
+              </svg>
+              <div class="gate-status-text">GATE: BOUNDED</div>
+              <div class="gate-sub-text">
+                支持结论绝非单一大模型自由发散，而是经过严格对照、反例排除与阈值检验后的受控收敛。缺少对照的数据明确标记 HOLD。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scene 5: Task Matrix & Closed-Loop Synthesis -->
+        <div id="scene-synthesis" class="scene-container">
+          <div class="matrix-layout" id="matrix-box">
+            <div class="matrix-box">
+              <div class="matrix-box-title">01 / VALIDATED HYPOTHESES</div>
+              <div class="matrix-chip-list">
+                <div class="matrix-chip">
+                  <div class="chip-name">H1: 磁中性线剪切触发快重联</div>
+                  <div class="chip-status" style="color: var(--accent);">VERIFIED</div>
+                </div>
+                <div class="matrix-chip">
+                  <div class="chip-name">H2: 极紫外高低温分层相继加热</div>
+                  <div class="chip-status" style="color: var(--accent);">VERIFIED</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="matrix-box">
+              <div class="matrix-box-title">02 / UNRESOLVED UNKNOWNS</div>
+              <div class="matrix-chip-list">
+                <div class="matrix-chip">
+                  <div class="chip-name">U1: 色球微弱喷流周期性扰动</div>
+                  <div class="chip-status" style="color: var(--accent-gold);">ROUTED TO TASK</div>
+                </div>
+                <div class="matrix-chip">
+                  <div class="chip-name">U2: 非势磁场能量衰减精确比率</div>
+                  <div class="chip-status" style="color: var(--accent-gold);">ROUTED TO TASK</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="matrix-box">
+              <div class="matrix-box-title">03 / NEXT ITERATION TASKS</div>
+              <div class="matrix-chip-list">
+                <div class="matrix-chip">
+                  <div class="chip-name">TASK-01: 调度 HMI 矢量磁场精细反演</div>
+                  <div class="chip-status" style="color: var(--accent-purple);">QUEUED</div>
+                </div>
+                <div class="matrix-chip">
+                  <div class="chip-name">TASK-02: 拓展跨区域活动区对比基准</div>
+                  <div class="chip-status" style="color: var(--accent-purple);">QUEUED</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Bottom HUD & Live Narrative -->
+      <footer class="bottom-hud">
+        <div class="progress-bar-wrap">
+          <div id="progress-bar"></div>
+        </div>
+        <div class="caption-row">
+          <div class="caption-content">
+            <div class="caption-prefix">
+              <span id="caption-phase">PHASE 01</span>
+              <span>//</span>
+              <span id="caption-topic">SOLAR PHENOMENON & VISION</span>
+            </div>
+            <div class="caption-text" id="caption-main">
+              从真实太阳物理观测出发，让每一个科学判断都建立在可复现、可追溯的数据与代码处理产物之上。
+            </div>
+            <div class="caption-note" id="caption-sub">
+              BENCHMARK: NOAA AR11158 · MULTI-WAVELENGTH EUV & VECTOR MAGNETOGRAM TRACE
+            </div>
+          </div>
+          <div class="metric-badge-hud">
+            <div class="hud-metric-item">
+              <div class="hud-metric-num" id="hud-hypotheses">3</div>
+              <div class="hud-metric-lbl">HYPOTHESES</div>
+            </div>
+            <div class="hud-metric-item" style="border-left: 1px solid rgba(255,255,255,0.1); padding-left: 36px;">
+              <div class="hud-metric-num" id="hud-evidence">32</div>
+              <div class="hud-metric-lbl">EVIDENCE</div>
+            </div>
+            <div class="hud-metric-item" style="border-left: 1px solid rgba(255,255,255,0.1); padding-left: 36px;">
+              <div class="hud-metric-num" id="hud-tasks">12</div>
+              <div class="hud-metric-lbl">NEXT TASKS</div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- GSAP Cinematic Timeline Script -->
+    <script>
+      (function() {
+        const tl = gsap.timeline({ paused: true, defaults: { ease: "power2.inOut" } });
+
+        // Helper text updates
+        const updateText = (id, txt) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = txt;
+        };
+
+        const updateNav = (stepIndex) => {
+          for (let i = 1; i <= 5; i++) {
+            const el = document.getElementById(`step-${i}`);
+            if (el) {
+              if (i === stepIndex) el.classList.add("active");
+              else el.classList.remove("active");
+            }
+          }
+        };
+
+        // Master 75-second timeline with '总-分-总' architecture
+        // 0s - 14s: Act I (总) - Project Vision & Solar Physics Grounding
+        // 14s - 28s: Act II (分) - System Architecture & Pipeline Runtime
+        // 28s - 44s: Act III (分) - LangGraph Multi-Agent Parallel Orchestration
+        // 44s - 58s: Act IV (分) - Evidence Reasoning Ledger & Strict Gatekeeper
+        // 58s - 75s: Act V (总) - Task Routing & Closed-Loop Autonomous Discovery
+
+        // Overall progress
+        tl.fromTo("#progress-bar", { scaleX: 0 }, { scaleX: 1, duration: 75, ease: "none" }, 0);
+
+        // --- ACT I: SOLAR OVERVIEW (0.0s - 14.0s) ---
+        tl.call(() => {
+          updateNav(1);
+          updateText("caption-phase", "01 / PHENOMENON INPUT");
+          updateText("caption-topic", "SOLAR PHENOMENON & AI VISION");
+          updateText("caption-main", "从真实太阳物理观测出发，让每一个科学判断都建立在可复现、可追溯的数据与代码处理产物之上。");
+          updateText("caption-sub", "BENCHMARK: NOAA AR11158 · MULTI-WAVELENGTH EUV & VECTOR MAGNETOGRAM TRACE");
+        }, null, 0.1);
+
+        tl.fromTo(".sun-core", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 2.5, ease: "power2.out" }, 0);
+        tl.fromTo(".sun-corona", { rotation: -30, opacity: 0 }, { rotation: 0, opacity: 1, duration: 3.5, ease: "power2.out" }, 0.5);
+        tl.fromTo(".sun-channel-tag", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, stagger: 0.25, ease: "back.out(1.5)" }, 1.2);
+        tl.fromTo("#hero-text-block", { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 2.0, ease: "power2.out" }, 1.0);
+        tl.fromTo(".hero-card", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 1.4, stagger: 0.2, ease: "back.out(1.2)" }, 2.5);
+
+        // Subtle dynamic float during scene 1
+        tl.to(".sun-core", { scale: 1.05, duration: 4.0, yoyo: true, repeat: 2, ease: "sine.inOut" }, 3.0);
+        tl.to("#flying-packet-1", { opacity: 1, duration: 0.5 }, 4.0);
+        tl.to("#flying-packet-1", { cx: 1920, cy: 650, duration: 6.0, ease: "power1.inOut" }, 4.0);
+
+        // Transition: Act I -> Act II (13.0s - 15.0s)
+        tl.to("#hero-text-block", { opacity: 0, x: -60, duration: 1.5 }, 12.5);
+        tl.to(".sun-system", { scale: 0.6, x: -100, opacity: 0.2, duration: 2.0 }, 12.5);
+        tl.to("#camera-stage", { scale: 1.05, duration: 2.0 }, 12.5);
+
+        // --- ACT II: SYSTEM ARCHITECTURE (14.0s - 28.0s) ---
+        tl.call(() => {
+          updateNav(2);
+          updateText("caption-phase", "02 / SYSTEM ARCHITECTURE");
+          updateText("caption-topic", "API SSE RUNTIME & MULTI-LAYER STATE");
+          updateText("caption-main", "观测进入 API、Workflow Runtime 和 Checkpoint，状态分发可审计，每一步推演皆可完整回放。");
+          updateText("caption-sub", "ARCHITECTURE: API (SSE) → WORKFLOW ENGINE → LANGGRAPH ORCHESTRATION → FITS TOOLS");
+        }, null, 14.0);
+
+        tl.to("#scene-overview", { opacity: 0, duration: 1.0 }, 13.5);
+        tl.to("#scene-architecture", { opacity: 1, duration: 1.2 }, 14.0);
+        tl.fromTo("#arch-box .arch-col", { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5, stagger: 0.3, ease: "power3.out" }, 14.2);
+        tl.fromTo(".pipe-node", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, stagger: 0.12, ease: "power2.out" }, 15.2);
+
+        // Highlight packets flowing through architecture
+        tl.to("#flying-packet-1", { cx: 2800, cy: 920, duration: 5.0, ease: "power2.inOut" }, 16.0);
+        tl.to(".pipe-node.highlight", { boxShadow: "0 0 50px rgba(108,233,223,0.5)", duration: 1.5, yoyo: true, repeat: 3 }, 17.0);
+
+        // Transition: Act II -> Act III (27.0s - 29.0s)
+        tl.to("#scene-architecture", { opacity: 0, scale: 0.95, duration: 1.2 }, 27.0);
+
+        // --- ACT III: MULTI-AGENT PARALLEL ORCHESTRATION (28.0s - 44.0s) ---
+        tl.call(() => {
+          updateNav(3);
+          updateText("caption-phase", "03 / MULTI-AGENT ORCHESTRATION");
+          updateText("caption-topic", "PARALLEL WORKERS & FALSIFICATION");
+          updateText("caption-main", "同一份科学状态并行分发给 Looker、Explorer、Oracle 与 Fact-Check 四大智能体，展开全方位求证。");
+          updateText("caption-sub", "AGENTS: LOOKER (CATALOG) · EXPLORER (IMAGE ROI) · ORACLE (THEORY) · FACT-CHECK (PROVENANCE)");
+        }, null, 28.5);
+
+        tl.to("#scene-agents", { opacity: 1, duration: 1.2 }, 28.2);
+        tl.fromTo("#agent-box .agent-card", { y: 60, opacity: 0, scale: 0.9 }, { y: 0, opacity: 1, scale: 1, duration: 1.2, stagger: 0.2, ease: "back.out(1.2)" }, 28.5);
+        tl.fromTo(".agent-task-item", { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: "power2.out" }, 30.0);
+
+        // Dynamic worker pulses
+        tl.to(".agent-card", { y: -8, duration: 2.2, stagger: 0.3, yoyo: true, repeat: 3, ease: "sine.inOut" }, 32.0);
+
+        // Transition: Act III -> Act IV (42.5s - 44.5s)
+        tl.to("#scene-agents", { opacity: 0, scale: 0.95, duration: 1.2 }, 42.5);
+
+        // --- ACT IV: EVIDENCE REASONING & GATE CHECK (44.0s - 58.0s) ---
+        tl.call(() => {
+          updateNav(4);
+          updateText("caption-phase", "04 / EVIDENCE GATEKEEPER");
+          updateText("caption-topic", "RIGOROUS VALIDATION & BOUNDED SYNTHESIS");
+          updateText("caption-main", "支持结论必须跨越严格的多维门槛；无充分对照的数据坚决置于 needs_data，杜绝科学幻觉。");
+          updateText("caption-sub", "VERIFICATION: QUANTITATIVE CORRELATION + FALSIFICATION CHECK + EVIDENCE INTEGRITY HASH");
+        }, null, 44.0);
+
+        tl.to("#scene-evidence", { opacity: 1, duration: 1.2 }, 44.0);
+        tl.fromTo(".evidence-table-card", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 1.2, ease: "power3.out" }, 44.2);
+        tl.fromTo(".gate-display-card", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 1.2, ease: "power3.out" }, 44.4);
+        tl.fromTo(".evidence-row-item", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.15, ease: "power2.out" }, 45.2);
+        tl.fromTo("#gate-circle-progress", { strokeDashoffset: 534 }, { strokeDashoffset: 140, duration: 3.5, ease: "power2.out" }, 45.5);
+
+        // Pulse gate verification
+        tl.to(".gate-status-text", { scale: 1.08, duration: 1.2, yoyo: true, repeat: 4, ease: "sine.inOut" }, 48.0);
+
+        // Transition: Act IV -> Act V (56.5s - 58.5s)
+        tl.to("#scene-evidence", { opacity: 0, scale: 0.95, duration: 1.2 }, 56.5);
+
+        // --- ACT V: SYNTHESIS & CLOSED-LOOP ITERATION (58.0s - 75.0s) ---
+        tl.call(() => {
+          updateNav(5);
+          updateText("caption-phase", "05 / CLOSED-LOOP DISCOVERY");
+          updateText("caption-topic", "AUTONOMOUS RESEARCH CLOSED LOOP");
+          updateText("caption-main", "未知转译为下一轮验证任务，数据、状态与证据汇聚成完整科研闭环，实现持续自主探索。");
+          updateText("caption-sub", "TOTAL SYNTHESIS: 3 VERIFIED HYPOTHESES · 32 EVIDENCE ARTIFACTS · 12 NEXT-ROUND TASKS");
+        }, null, 58.0);
+
+        tl.to("#scene-synthesis", { opacity: 1, duration: 1.2 }, 58.0);
+        tl.fromTo("#matrix-box .matrix-box", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, stagger: 0.25, ease: "back.out(1.2)" }, 58.3);
+        tl.fromTo(".matrix-chip", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8, stagger: 0.12, ease: "power2.out" }, 59.5);
+
+        // Return path & camera cinematic pull-out
+        tl.to("#path-loop-return", { opacity: 0.8, strokeDashoffset: 0, duration: 4.0, ease: "power2.out" }, 61.0);
+        tl.to("#flying-packet-2", { opacity: 1, duration: 0.5 }, 61.5);
+        tl.to("#flying-packet-2", { cx: 740, cy: 920, duration: 7.0, ease: "power2.inOut" }, 62.0);
+
+        // Grand finale lock
+        tl.to(".sun-system", { opacity: 0.35, scale: 0.8, x: 0, duration: 3.0 }, 64.0);
+        tl.to("#camera-stage", { scale: 1.0, duration: 4.0, ease: "power2.out" }, 65.0);
+
+        // Register timeline for HyperFrames
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

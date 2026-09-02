@@ -10,6 +10,9 @@ const base = {
   method: 'unregistered-analysis',
   sourceIds: ['observation-1'],
   sampleIds: [],
+  predictionIds: [],
+  falsificationConditionIds: [],
+  quantitativeResults: [],
   limitations: [],
   round: 1,
 }
@@ -66,6 +69,60 @@ describe('scientific evidence promotion gate', () => {
     })
   })
 
+  it('downgrades a support record with provenance but no bound samples', async () => {
+    const result = await promoteEvidence(
+      {
+        ...base,
+        status: 'support',
+        provenance: {
+          processingRunId: 'processing-1',
+          dataSnapshotIds: ['snapshot-1'],
+          artifactIds: ['artifact-1'],
+          generatedBy: 'analysis-agent',
+          deterministic: true,
+        },
+      },
+      {
+        stage: 'B',
+        round: 1,
+        hypothesisIds: ['h-1'],
+        agentId: 'analysis-agent',
+        verifyProvenance: () => true,
+      },
+    )
+
+    expect(result.evidence?.status).toBe('unknown')
+    expect(result.corrections[0]).toMatchObject({ kind: 'factual' })
+  })
+
+  it('downgrades decisive evidence that targets an unregistered hypothesis', async () => {
+    const result = await promoteEvidence(
+      {
+        ...base,
+        hypothesisId: 'h-not-registered',
+        status: 'support',
+        sampleIds: ['sample-1'],
+        provenance: {
+          processingRunId: 'processing-1',
+          dataSnapshotIds: ['snapshot-1'],
+          artifactIds: ['artifact-1'],
+          generatedBy: 'analysis-agent',
+          deterministic: true,
+        },
+      },
+      {
+        stage: 'B',
+        round: 1,
+        hypothesisIds: ['h-1'],
+        agentId: 'analysis-agent',
+        verifyProvenance: () => true,
+      },
+    )
+
+    expect(result.evidence?.status).toBe('unknown')
+    expect(result.corrections[0]).toMatchObject({ kind: 'factual' })
+  })
+
   it('keeps a fully traceable support record unchanged', async () => {
     const candidate = {
       ...base,
@@ -87,7 +144,11 @@ describe('scientific evidence promotion gate', () => {
       verifyProvenance: () => true,
     })
 
-    expect(result.evidence).toEqual(candidate)
+    expect(result.evidence).toEqual({
+      ...candidate,
+      evidenceRole: 'prediction_consistent',
+      contradictionScope: 'mechanism',
+    })
     expect(result.corrections).toEqual([])
   })
 })

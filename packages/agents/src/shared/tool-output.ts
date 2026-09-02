@@ -26,19 +26,33 @@ function parseJsonValue(value: string): unknown {
  * `[{...}], "rationale": "..."`. Re-wrap it as an object so JSON.parse can
  * recover every parameter without guessing at quoted content.
  */
-function parsePackedParameterValue(parameter: string, value: string): Record<string, unknown> | null {
+function parsePackedParameterValue(
+  parameter: string,
+  value: string,
+): Record<string, unknown> | null {
   const trimmed = value.trim().replace(/,\s*$/, '')
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null
-  try {
-    const parsed = JSON.parse(`{${JSON.stringify(parameter)}:${trimmed}}`) as unknown
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null
-  } catch {
-    return null
-  }
-}
 
+  // Qwen-compatible gateways have emitted both of these forms:
+  //   [{...}], "rationale": "..."
+  //   [{...}], "rationale": "..."}
+  // The second form already contains the closing brace for the reconstructed
+  // outer object. Only accept a candidate when the whole string is valid JSON;
+  // this keeps recovery deterministic and avoids slicing quoted content.
+  const prefix = `{${JSON.stringify(parameter)}:`
+  const candidates = [`${prefix}${trimmed}}`, `${prefix}${trimmed}`]
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as unknown
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>
+      }
+    } catch {
+      // Try the other provider representation.
+    }
+  }
+  return null
+}
 
 /**
  * Some OpenAI-compatible providers emit a multi-parameter tool call as one
@@ -105,6 +119,8 @@ export function extractSubmitResult<TOOLS extends ToolSet, T>(
   }
   if (fallback !== undefined) return fallback
   throw new Error(
-    'Agent did not call ' + toolName + ' — it hit the step limit without submitting a result. Check the agent tool calls and instructions.',
+    'Agent did not call ' +
+      toolName +
+      ' — it hit the step limit without submitting a result. Check the agent tool calls and instructions.',
   )
 }

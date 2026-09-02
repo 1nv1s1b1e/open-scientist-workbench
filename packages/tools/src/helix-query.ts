@@ -4,6 +4,10 @@ import { fileURLToPath } from 'node:url'
 import { createLogger } from '@open-scientist/logger'
 import { tool } from 'ai'
 import { z } from 'zod'
+import {
+  searchFreeAcademicLiterature,
+  type AcademicLiteratureRecord,
+} from './academic-literature.ts'
 
 const logger = createLogger('tools')
 interface LocalLiteratureRecord {
@@ -73,6 +77,66 @@ export async function searchVerifiedCoronalLiterature(query: string, k = 10): Pr
     }))
 }
 
+interface FederatedPaperResult extends helix.PaperNode {
+  sourceId: string
+  providers: string[]
+  sourceUrl?: string
+  retrievedAt?: string
+  cached?: boolean
+}
+
+function paperKey(paper: Pick<helix.PaperNode, 'doi' | 'title'>): string {
+  if (paper.doi) return `doi:${paper.doi.toLocaleLowerCase().replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '')}`
+  return `title:${paper.title.toLocaleLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, '')}`
+}
+
+function localPaper(paper: helix.PaperNode, provider: 'helix' | 'verified_local_corpus'): FederatedPaperResult {
+  return {
+    ...paper,
+    sourceId: `paper:${paper.id}`,
+    providers: [provider],
+  }
+}
+
+function onlinePaper(paper: AcademicLiteratureRecord): FederatedPaperResult {
+  return {
+    id: paper.id,
+    sourceId: paper.sourceId,
+    title: paper.title,
+    ...(paper.abstract ? { abstract: paper.abstract } : {}),
+    authors: paper.authors,
+    year: paper.year,
+    ...(paper.doi ? { doi: paper.doi } : {}),
+    sourceUrl: paper.sourceUrl,
+    providers: paper.providers,
+    retrievedAt: paper.retrievedAt,
+    cached: paper.cached,
+  }
+}
+
+/** Keep both the curated local corpus and live external discovery visible. */
+function interleavePapers(
+  local: readonly FederatedPaperResult[],
+  online: readonly FederatedPaperResult[],
+  k: number,
+): FederatedPaperResult[] {
+  const rows: FederatedPaperResult[] = []
+  const keys = new Set<string>()
+  const append = (paper: FederatedPaperResult | undefined) => {
+    if (!paper || rows.length >= k) return
+    const key = paperKey(paper)
+    if (keys.has(key)) return
+    keys.add(key)
+    rows.push(paper)
+  }
+  const length = Math.max(local.length, online.length)
+  for (let index = 0; index < length && rows.length < k; index += 1) {
+    append(local[index])
+    append(online[index])
+  }
+  return rows
+}
+
 
 // Shared id input schema — helix accepts string | number | bigint and converts
 // via BigInt() internally. We expose string | number to avoid zod bigint
@@ -85,7 +149,7 @@ const idInput = z.union([z.string(), z.number()]).describe('Node id (string or n
 
 export const searchPapersTool = tool({
   description:
-    'Search solar physics papers by text query (title + abstract). Returns top-k papers.',
+    'Federated solar-physics literature search across local Helix/verified corpus plus free OpenAlex and Crossref metadata APIs. Results retain provider, URL and cache provenance and are bibliographic context, never observational evidence.',
   inputSchema: z.object({
     query: z.string().describe('Search query text'),
     k: z.number().int().positive().default(10).describe('Number of results'),
@@ -99,26 +163,65 @@ export const searchPapersTool = tool({
         authors: z.array(z.string()),
         year: z.number(),
         doi: z.string().optional(),
+        sourceId: z.string().optional(),
+        sourceUrl: z.string().optional(),
+        providers: z.array(z.string()).optional(),
+        retrievedAt: z.string().optional(),
+        cached: z.boolean().optional(),
       }),
     ),
+    retrieval: z
+      .object({
+        localCount: z.number().int().nonnegative(),
+        onlineCount: z.number().int().nonnegative(),
+        providersAttempted: z.array(z.string()),
+        providersSucceeded: z.array(z.string()),
+        cacheStatus: z.enum(['fresh', 'updated', 'stale_fallback', 'miss']),
+        warnings: z.array(z.string()),
+      })
+      .optional(),
   }),
   execute: async ({ query, k }) => {
     logger.info({ query, k }, 'searchPapersTool: execute start')
-    let papers: helix.PaperNode[]
+    let localPapers: FederatedPaperResult[]
     try {
-      papers = await helix.searchPapers(query, k)
+      localPapers = (await helix.searchPapers(query, k)).map((paper) => localPaper(paper, 'helix'))
     } catch (error) {
       logger.warn({ query, error: error instanceof Error ? error.message : String(error) }, 'searchPapersTool: Helix unavailable; using verified local corpus')
-      papers = []
+      localPapers = []
     }
-    if (papers.length === 0) {
-      papers = await searchVerifiedCoronalLiterature(query, k)
+    if (localPapers.length === 0) {
+      localPapers = (await searchVerifiedCoronalLiterature(query, k)).map((paper) =>
+        localPaper(paper, 'verified_local_corpus'),
+      )
     }
+    const online = await searchFreeAcademicLiterature(query, { limit: Math.max(k, 10) })
+    const onlinePapers = online.papers.map(onlinePaper)
+    const papers = interleavePapers(localPapers, onlinePapers, k)
     logger.info(
-      { query, k, count: papers.length, firstTitle: papers[0]?.title?.slice(0, 60) },
+      {
+        query,
+        k,
+        count: papers.length,
+        localCount: localPapers.length,
+        onlineCount: onlinePapers.length,
+        onlineProviders: online.providersSucceeded,
+        cacheStatus: online.cacheStatus,
+        firstTitle: papers[0]?.title?.slice(0, 60),
+      },
       'searchPapersTool: execute done',
     )
-    return { papers }
+    return {
+      papers,
+      retrieval: {
+        localCount: localPapers.length,
+        onlineCount: onlinePapers.length,
+        providersAttempted: online.providersAttempted,
+        providersSucceeded: online.providersSucceeded,
+        cacheStatus: online.cacheStatus,
+        warnings: online.warnings,
+      },
+    }
   },
 })
 

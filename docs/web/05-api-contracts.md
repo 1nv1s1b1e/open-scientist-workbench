@@ -502,6 +502,64 @@ Headers:
 **Response 200**：`{ "ok": true, "runId": string, "status": "stopped' }`
 **Response 404**：同上
 
+### Human-in-the-loop 控制（可选交互面）
+
+> 设计不变量：科学闭环**不依赖人工参与**——默认 `humanGate: 'off'` 时，以下端点一个都不调用，
+> 循环也会自主完成（`workflowClosure=complete`）。人工参与只通过这些端点**选择性介入**：
+> 暂停/转向/审批。三者都**不能**写入证据、改写支持/淘汰门禁裁决或假设状态；
+> 审批只决定"是否继续下一轮"（拒绝 → `terminationReason: 'human_halted_at_plan_review'`，
+> 超时/中止 → fail-open 自动继续并留下审计记录）。
+>
+> 启动运行时通过 `POST /runs` 的 `humanGate: 'off' | 'plan_review'` 与
+> `humanGateTimeoutMs?: 1000..3600000` 配置；审批门挂在 D.route 的续轮决策处。
+
+#### `GET /api/projects/:name/runs/:runId/human`
+
+人工控制状态（供 UI 轮询）。
+
+**Response 200**：
+
+```json
+{
+  "runId": "run-...",
+  "gateMode": "plan_review",
+  "paused": false,
+  "pendingGate": { "gateId": "gate-...", "kind": "plan_review", "round": 1, "summary": "..." },
+  "gateDecisions": 0
+}
+```
+
+**Response 404**：run 未激活（已结束或不存在）。
+
+#### `POST /api/projects/:name/runs/:runId/steer`
+
+注入一条转向/追问消息，在下一个 A.generate 入口被消耗。model-assisted 模式将其作为候选生成
+的侧重参考；local-grounded 模式只登记不消费（保持确定性可复现）。
+
+**Request body**：`{ "content": string, "mode": "steering" | "follow-up" }`（mode 默认 steering）
+**Response 200**：`{ "ok": true, "runId": string, "message": { "messageId": string, ... } }`
+**Response 409**：run 已结束；**Response 404**：run 不存在。
+
+#### `POST /api/projects/:name/runs/:runId/pause` / `.../unpause`
+
+在**节点边界**协作式暂停/恢复（不打断正在执行的智能体步骤；`/stop` 仍可随时强制终止）。
+SSE 侧对应 `scientific.human-paused` / `scientific.human-resumed` 事件。
+
+**Response 200**：`{ "ok": true, "runId": string, "paused": boolean }`
+
+#### `POST /api/projects/:name/runs/:runId/approve`
+
+应答待决的 plan_review 审批门。`approved: false` 使循环以
+`terminationReason: 'human_halted_at_plan_review'` 结束（如实记录人工决定，不伪造任何科学裁决）。
+
+**Request body**：`{ "approved": boolean, "reason"?: string, "gateId"?: string }`
+**Response 200**：`{ "ok": true, "runId": string, "decision": { "gateId": string, "approved": boolean, "source": "human", "reason"?: string } }`
+**Response 409**：当前没有待决审批门。
+
+> 相关 SSE 自定义事件：`scientific.steering-injected`、`scientific.human-gate-request`、
+> `scientific.human-gate-result`、`scientific.human-paused`、`scientific.human-resumed`。
+> 运行结果的 `humanSteering` / `humanGates` 数组完整记录本轮实际发生的人工介入（未发生则缺省）。
+
 ---
 
 ## 7. Dev Probe（临时测试端点）

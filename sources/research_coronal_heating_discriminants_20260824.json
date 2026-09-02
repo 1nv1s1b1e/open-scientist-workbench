@@ -1,0 +1,48 @@
+{
+  "query_date": "2026-08-24",
+  "purpose": "Expand the verified retrieval corpus with mechanism-discriminating coronal-heating diagnostics. Literature defines predictions and counterexamples; it is not counted as local observational support.",
+  "queries": [
+    "Evidence of nonthermal particles in coronal loops heated impulsively by nanoflares DOI",
+    "Predicting observational signatures of coronal heating by Alfvén waves and nanoflares DOI",
+    "Energy release in the solar corona from spatially resolved magnetic braids DOI",
+    "Coronal non-thermal and Doppler plasma flows driven by photospheric flux in 28 active regions DOI"
+  ],
+  "verified_sources": [
+    {
+      "title": "Evidence of nonthermal particles in coronal loops heated impulsively by nanoflares",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25324396/",
+      "doi": "10.1126/science.1255724",
+      "use": "IRIS footpoint transients and model-comparison predictions"
+    },
+    {
+      "title": "Predicting observational signatures of coronal heating by Alfvén waves and nanoflares",
+      "url": "https://doi.org/10.1086/591998",
+      "doi": "10.1086/591998",
+      "use": "forward-model distinction using intensity, Doppler and line-width signatures"
+    },
+    {
+      "title": "Alfvénic waves with sufficient energy to power the quiet solar corona and fast solar wind",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/21796206/",
+      "doi": "10.1038/nature10235",
+      "use": "wave amplitude, phase speed and energy-flux benchmark with a quiet-Sun scope caveat"
+    },
+    {
+      "title": "Energy release in the solar corona from spatially resolved magnetic braids",
+      "url": "https://doi.org/10.1038/nature11772",
+      "doi": "10.1038/nature11772",
+      "use": "specific magnetic-braiding topology and energy-release predictions"
+    },
+    {
+      "title": "Detection of nanoflare-heated plasma in the solar corona by the FOXSI-2 sounding rocket",
+      "url": "https://www.nature.com/articles/s41550-017-0269-z",
+      "doi": "10.1038/s41550-017-0269-z",
+      "use": "hard-X-ray and very-hot-plasma prediction currently outside the local data pack"
+    },
+    {
+      "title": "Coronal Non-Thermal and Doppler Plasma Flows Driven by Photospheric Flux in 28 Active Regions",
+      "url": "https://doi.org/10.1093/pasj/psag024",
+      "doi": "10.1093/pasj/psag024",
+      "use": "multi-region HMI-EIS correlation benchmark and explicit non-uniqueness boundary"
+    }
+  ]
+}

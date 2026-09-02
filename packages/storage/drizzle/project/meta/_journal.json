@@ -29,6 +29,34 @@
       "when": 1786195275000,
       "tag": "0003_scientific_records",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786700000000,
+      "tag": "0004_scientific_run_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787200000000,
+      "tag": "0005_scientific_evidence_lineage",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787299200000,
+      "tag": "0006_submission_closure_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787462400000,
+      "tag": "0007_evidence_adjudication",
+      "breakpoints": true
     }
   ]
 }

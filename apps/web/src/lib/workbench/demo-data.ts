@@ -72,8 +72,16 @@ export const DEMO_HYPOTHESES: WorkbenchHypothesis[] = [
       { mechanism: '磁重联纳耀斑', role: 'dominant', contribution: 0.58 },
       { mechanism: '阿尔芬波耗散', role: 'coupled', contribution: 0.42 },
     ],
-    predictions: ['局部亮度突增先出现', '非热成分与温度响应具有短时关联', '沿环传播的热响应存在方向性'],
-    falsificationConditions: ['没有局部能量释放时标', '温度变化不能在多波段中复现', '传播响应与波动模型不一致'],
+    predictions: [
+      '局部亮度突增先出现',
+      '非热成分与温度响应具有短时关联',
+      '沿环传播的热响应存在方向性',
+    ],
+    falsificationConditions: [
+      '没有局部能量释放时标',
+      '温度变化不能在多波段中复现',
+      '传播响应与波动模型不一致',
+    ],
     sourceIds: ['demo-aia-euv', 'demo-goes-xray', 'demo-mhd-coupling'],
     status: 'candidate',
     round: 2,
@@ -163,7 +171,11 @@ export const DEMO_VALIDATION_TASKS: WorkbenchValidationTask[] = [
     status: 'planned',
     objective: '对齐 EUV 与软 X 射线时间序列，估计峰值时差及其置信区间。',
     triggeredBy: 'D · 区分局部释放与后续热传输',
-    discriminatingOutcomes: ['稳定的 EUV 领先时差', '无统计显著时差', '不同活动区之间时差方向不一致'],
+    discriminatingOutcomes: [
+      '稳定的 EUV 领先时差',
+      '无统计显著时差',
+      '不同活动区之间时差方向不一致',
+    ],
     round: 2,
   },
   {
@@ -207,13 +219,45 @@ export const DEMO_ORCHESTRATION: ScientificOrchestrationState = {
     { node: 'D.route', state: 'idle', round: 2 },
   ],
   agents: [
-    { agentId: 'looker-source-audit', label: 'Looker：数据来源审计', state: 'running', round: 2, message: '核对观测数据的来源与可复核性' },
-    { agentId: 'explorer-history-search', label: 'Explorer：历史资料与数据查找', state: 'completed', round: 2, message: '已找到可比较的历史活动区样本' },
-    { agentId: 'explorer-observation-analysis', label: 'Explorer：多波段观测分析', state: 'queued', round: 2 },
-    { agentId: 'oracle-counterexample-search', label: 'Oracle：反例与事实核验', state: 'queued', round: 2 },
-    { agentId: 'oracle-fact-check', label: 'Oracle：事实性校正', state: 'queued', round: 2 },
+    {
+      agentId: 'looker-source-audit',
+      label: 'Looker·观测质控智能体：数据来源审计',
+      state: 'running',
+      round: 2,
+      message: '核对观测数据的来源与可复核性',
+    },
+    {
+      agentId: 'explorer-history-search',
+      label: 'Explorer·物理诊断智能体：历史资料与数据查找',
+      state: 'completed',
+      round: 2,
+      message: '已找到可比较的历史活动区样本',
+    },
+    {
+      agentId: 'explorer-observation-analysis',
+      label: 'Explorer·物理诊断智能体：多波段观测分析',
+      state: 'queued',
+      round: 2,
+    },
+    {
+      agentId: 'oracle-counterexample-search',
+      label: 'Oracle·反证审计智能体：反例与事实核验',
+      state: 'queued',
+      round: 2,
+    },
+    {
+      agentId: 'oracle-fact-check',
+      label: 'Oracle·反证审计智能体：事实性校正',
+      state: 'queued',
+      round: 2,
+    },
   ],
-  latestRoute: { round: 2, continue: true, reason: '当前证据仍不足，优先补充 B 阶段数据处理。', nextRoute: 'B' },
+  latestRoute: {
+    round: 2,
+    continue: true,
+    reason: '当前证据仍不足，优先补充 B 阶段数据处理。',
+    nextRoute: 'B',
+  },
 }
 
 export const DEMO_SCIENTIFIC_STATE: ScientificWorkbenchState = {
@@ -221,6 +265,8 @@ export const DEMO_SCIENTIFIC_STATE: ScientificWorkbenchState = {
   inputDigest: 'demo-input-ar13664',
   round: 2,
   hypotheses: DEMO_HYPOTHESES,
+  verificationReports: [],
+  closureReports: [],
   retrieval: null,
   evidence: DEMO_EVIDENCE,
   processingResults: [],
@@ -242,7 +288,8 @@ export const DEMO_SCIENTIFIC_STATE: ScientificWorkbenchState = {
     },
     {
       round: 2,
-      conclusion: '当前更适合保留“重联主导、波动耦合”的候选假设；主导贡献仍需时差、传播和 MHD 参数扫描共同约束。',
+      conclusion:
+        '当前更适合保留“重联主导、波动耦合”的候选假设；主导贡献仍需时差、传播和 MHD 参数扫描共同约束。',
       evidenceSummary: { support: 1, contradict: 1, unknown: 2 },
     },
   ],
@@ -250,6 +297,12 @@ export const DEMO_SCIENTIFIC_STATE: ScientificWorkbenchState = {
   conclusion:
     '演示结论：现象同时包含局部突增和不同步的环结构响应，较适合用“磁重联主导、阿尔芬波耗散耦合”的候选组合继续检验。现有演示数据不能证明任何机制成立，下一步应优先完成多波段时差、传播追踪和 MHD 参数扫描。',
   terminationReason: 'demo_preview',
+  scientificStatus: 'inconclusive',
+  closureStatus: 'partial',
+  outcomeProfile: null,
+  workflowClosure: null,
+  operationalClosure: null,
+  hypothesisCoverage: null,
   status: 'completed',
 }
 
@@ -287,11 +340,29 @@ export const DEMO_AGENT_STATES: Partial<Record<AgentRole, AgentState>> = {
 
 export const DEMO_ORCHESTRATOR_EDGES: MessageEdgeData[] = [
   { source: 'sisyphus', target: 'librarian', kind: 'collab', active: true, label: '现象 → 假设池' },
-  { source: 'librarian', target: 'looker', kind: 'new-hypothesis', active: true, label: '提出可观测预测' },
+  {
+    source: 'librarian',
+    target: 'looker',
+    kind: 'new-hypothesis',
+    active: true,
+    label: '提出可观测预测',
+  },
   { source: 'looker', target: 'explore', kind: 'collab', active: true, label: '多波段特征' },
   { source: 'explore', target: 'oracle', kind: 'critique', active: false, label: '证据与反例' },
-  { source: 'oracle', target: 'prometheus', kind: 'new-hypothesis', active: false, label: '下一步验证' },
-  { source: 'prometheus', target: 'sisyphus', kind: 'steering', active: false, label: '反馈到下一轮' },
+  {
+    source: 'oracle',
+    target: 'prometheus',
+    kind: 'new-hypothesis',
+    active: false,
+    label: '下一步验证',
+  },
+  {
+    source: 'prometheus',
+    target: 'sisyphus',
+    kind: 'steering',
+    active: false,
+    label: '反馈到下一轮',
+  },
 ]
 
 export const DEMO_ORCHESTRATOR_DATA: OrchestratorData = {
@@ -315,7 +386,12 @@ export function scientificStateToRoundUpdate(
       predictions: hypothesis.predictions,
       falsificationConditions: hypothesis.falsificationConditions,
       sourceIds: hypothesis.sourceIds,
-      parentId: index === 0 ? null : hypothesis.id === state.hypotheses[2]?.id ? state.hypotheses[0]?.id ?? null : null,
+      parentId:
+        index === 0
+          ? null
+          : hypothesis.id === state.hypotheses[2]?.id
+            ? (state.hypotheses[0]?.id ?? null)
+            : null,
       round: hypothesis.round ?? state.round,
       f1: hypothesis.confidence ?? null,
       status: hypothesis.status,

@@ -7,7 +7,7 @@ const SUBMISSION_PHASE_INSTRUCTIONS = `【立即提交阶段】
 研究阶段已经结束。不得继续调用 bash、检索、文件或其他工具；当前唯一允许的动作是调用 submit_result。请根据已经取得的可核查资料填写工具 schema；未知内容使用 schema 允许的空值，不得编造来源、字段、数值或样本。所有自然语言字段使用中文。不要输出普通文本，立即调用 submit_result。`
 
 export const AGENT_EXECUTION_BUDGETS = {
-  librarian: { maxOutputTokens: 4096, submitAtStep: 8, maxSteps: 10 },
+  librarian: { maxOutputTokens: 8192, submitAtStep: 8, maxSteps: 10 },
   looker: { maxOutputTokens: 3072, submitAtStep: 6, maxSteps: 8 },
   explore: { maxOutputTokens: 4096, submitAtStep: 10, maxSteps: 12 },
   oracle: { maxOutputTokens: 4096, submitAtStep: 8, maxSteps: 10 },

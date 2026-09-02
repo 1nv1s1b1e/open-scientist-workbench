@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
 import {
   appendMessage,
+  appendRunChunk,
   closeProjectDb,
   createArtifact,
   createDataSnapshot,
@@ -19,11 +20,13 @@ import {
   getHypothesis,
   getProject,
   getRun,
+  getRunChunks,
   listHypothesesByRun,
   listArtifacts,
   listDataSnapshots,
   listMemoryEntries,
   listProcessingRuns,
+  listValidationTasks,
   updateValidationTask,
   updateHypothesisStatus,
   updateRunStatus,
@@ -382,16 +385,18 @@ describe('scientific loop memory and validation task repos', () => {
       taskId: 'task-1',
       triggeredBy: 'task-1',
       snapshotIds: ['snapshot-1'],
-      steps: [{
-        stepId: 'align-1',
-        name: '多波段时间对齐',
-        tool: 'alignment-pipeline',
-        toolVersion: '1.0.0',
-        parameters: { interpolation: 'nearest' },
-        inputArtifactIds: [],
-        outputArtifactIds: ['artifact-1'],
-        deterministic: true,
-      }],
+      steps: [
+        {
+          stepId: 'align-1',
+          name: '多波段时间对齐',
+          tool: 'alignment-pipeline',
+          toolVersion: '1.0.0',
+          parameters: { interpolation: 'nearest' },
+          inputArtifactIds: [],
+          outputArtifactIds: ['artifact-1'],
+          deterministic: true,
+        },
+      ],
       deterministic: true,
       status: 'completed',
       outputArtifactIds: ['artifact-1'],
@@ -429,6 +434,9 @@ describe('scientific loop memory and validation task repos', () => {
       route: 'B' as const,
       type: 'analysis' as const,
       objective: '比较活动区的高频功率谱',
+      hypothesisIds: [],
+      predictionIds: [],
+      falsificationConditionIds: [],
       requiredSourceIds: ['aia-171'],
       discriminatingOutcomes: ['连续谱衰减', '间歇性突发'],
       triggeredBy: 'mem-1',
@@ -452,6 +460,53 @@ describe('scientific loop memory and validation task repos', () => {
     })
     expect(updated?.status).toBe('completed')
     expect(updated?.resultEvidenceIds).toEqual(['e-1'])
+  })
+
+  it('scopes validation task fingerprints to a run and preserves executor bindings', async () => {
+    const secondRunId = (await createRun('proj-a', projectId)).id
+    const task = {
+      taskId: 'task-run-1',
+      executorId: 'coronal-timeseries-lag-v1',
+      route: 'B' as const,
+      type: 'analysis' as const,
+      objective: 'measure a registered lag diagnostic',
+      hypothesisIds: ['hypothesis-1'],
+      predictionIds: [],
+      falsificationConditionIds: [],
+      requiredSourceIds: ['aia-171'],
+      discriminatingOutcomes: ['lag detected', 'lag absent'],
+      triggeredBy: 'hypothesis-1',
+      status: 'planned' as const,
+      resultEvidenceIds: [],
+      round: 1,
+      fingerprint: 'shared-fingerprint',
+    }
+    await createValidationTask('proj-a', { ...task, projectId, runId })
+    await createValidationTask('proj-a', {
+      ...task,
+      taskId: 'task-run-2',
+      projectId,
+      runId: secondRunId,
+    })
+
+    expect(await listValidationTasks('proj-a', { runId })).toEqual([
+      expect.objectContaining({
+        taskId: 'task-run-1',
+        executorId: 'coronal-timeseries-lag-v1',
+      }),
+    ])
+    expect(await listValidationTasks('proj-a', { runId: secondRunId })).toEqual([
+      expect.objectContaining({ taskId: 'task-run-2' }),
+    ])
+  })
+
+  it('continues durable chunk sequence when a resumed writer restarts at zero', async () => {
+    expect(await appendRunChunk('proj-a', runId, 0, JSON.stringify({ part: 1 }))).toBe(0)
+    expect(await appendRunChunk('proj-a', runId, 0, JSON.stringify({ part: 2 }))).toBe(1)
+    expect(await getRunChunks('proj-a', runId)).toEqual([
+      { seq: 0, chunkJson: JSON.stringify({ part: 1 }) },
+      { seq: 1, chunkJson: JSON.stringify({ part: 2 }) },
+    ])
   })
 })
 

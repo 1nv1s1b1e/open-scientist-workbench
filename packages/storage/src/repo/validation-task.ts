@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { ValidationTaskSchema, type ValidationTask } from '@open-scientist/schema'
 import { createProjectDb } from '../db.ts'
 import { validationTasks } from '../schema/project.ts'
@@ -9,10 +9,24 @@ function fromRow(row: typeof validationTasks.$inferSelect): PersistedValidationT
   return {
     ...ValidationTaskSchema.parse({
       taskId: row.id,
+      ...(row.executorId ? { executorId: row.executorId } : {}),
       route: row.route,
       type: row.type,
       objective: row.objective,
+      hypothesisIds: JSON.parse(row.hypothesisIdsJson) as string[],
+      predictionIds: JSON.parse(row.predictionIdsJson) as string[],
+      falsificationConditionIds: JSON.parse(row.falsificationConditionIdsJson) as string[],
       requiredSourceIds: JSON.parse(row.requiredSourceIdsJson) as string[],
+      requiredData: JSON.parse(row.requiredDataJson) as string[],
+      requiredFacilities: JSON.parse(row.requiredFacilitiesJson) as string[],
+      ...(row.readiness ? { readiness: row.readiness } : {}),
+      ...(row.expectedDuration ? { expectedDuration: row.expectedDuration } : {}),
+      ...(row.estimatedStorageBytes !== null
+        ? { estimatedStorageBytes: row.estimatedStorageBytes }
+        : {}),
+      successCriteria: JSON.parse(row.successCriteriaJson) as string[],
+      failureCriteria: JSON.parse(row.failureCriteriaJson) as string[],
+      ...(row.blockedReason ? { blockedReason: row.blockedReason } : {}),
       discriminatingOutcomes: JSON.parse(row.discriminatingOutcomesJson) as string[],
       triggeredBy: row.triggeredBy,
       status: row.status,
@@ -34,19 +48,78 @@ export async function createValidationTask(
   const duplicate = db
     .select()
     .from(validationTasks)
-    .where(eq(validationTasks.fingerprint, parsed.fingerprint))
+    .where(
+      and(
+        eq(validationTasks.runId, task.runId),
+        eq(validationTasks.fingerprint, parsed.fingerprint),
+      ),
+    )
     .all()[0]
-  if (duplicate) return fromRow(duplicate)
+  if (duplicate) {
+    db.update(validationTasks)
+      .set({
+        executorId: parsed.executorId ?? null,
+        route: parsed.route,
+        type: parsed.type,
+        objective: parsed.objective,
+        hypothesisIdsJson: JSON.stringify(parsed.hypothesisIds),
+        predictionIdsJson: JSON.stringify(parsed.predictionIds),
+        falsificationConditionIdsJson: JSON.stringify(parsed.falsificationConditionIds),
+        requiredSourceIdsJson: JSON.stringify(parsed.requiredSourceIds),
+        requiredDataJson: JSON.stringify(parsed.requiredData ?? []),
+        requiredFacilitiesJson: JSON.stringify(parsed.requiredFacilities ?? []),
+        readiness: parsed.readiness ?? null,
+        expectedDuration: parsed.expectedDuration ?? null,
+        estimatedStorageBytes: parsed.estimatedStorageBytes ?? null,
+        successCriteriaJson: JSON.stringify(parsed.successCriteria ?? []),
+        failureCriteriaJson: JSON.stringify(parsed.failureCriteria ?? []),
+        blockedReason: parsed.blockedReason ?? null,
+        discriminatingOutcomesJson: JSON.stringify(parsed.discriminatingOutcomes),
+        triggeredBy: parsed.triggeredBy,
+        status: parsed.status,
+        resultEvidenceIdsJson: JSON.stringify(parsed.resultEvidenceIds),
+        round: parsed.round,
+      })
+      .where(eq(validationTasks.id, duplicate.id))
+      .run()
+    const updated = db
+      .select()
+      .from(validationTasks)
+      .where(eq(validationTasks.id, duplicate.id))
+      .all()[0]
+    return fromRow(updated!)
+  }
+
+  const idCollision = db
+    .select()
+    .from(validationTasks)
+    .where(eq(validationTasks.id, parsed.taskId))
+    .all()[0]
+  if (idCollision && idCollision.runId !== task.runId) {
+    throw new Error(`Validation task id collision across runs: ${parsed.taskId}`)
+  }
 
   db.insert(validationTasks)
     .values({
       id: parsed.taskId,
       projectId: task.projectId,
       runId: task.runId,
+      executorId: parsed.executorId ?? null,
       route: parsed.route,
       type: parsed.type,
       objective: parsed.objective,
+      hypothesisIdsJson: JSON.stringify(parsed.hypothesisIds),
+      predictionIdsJson: JSON.stringify(parsed.predictionIds),
+      falsificationConditionIdsJson: JSON.stringify(parsed.falsificationConditionIds),
       requiredSourceIdsJson: JSON.stringify(parsed.requiredSourceIds),
+      requiredDataJson: JSON.stringify(parsed.requiredData ?? []),
+      requiredFacilitiesJson: JSON.stringify(parsed.requiredFacilities ?? []),
+      readiness: parsed.readiness ?? null,
+      expectedDuration: parsed.expectedDuration ?? null,
+      estimatedStorageBytes: parsed.estimatedStorageBytes ?? null,
+      successCriteriaJson: JSON.stringify(parsed.successCriteria ?? []),
+      failureCriteriaJson: JSON.stringify(parsed.failureCriteria ?? []),
+      blockedReason: parsed.blockedReason ?? null,
       discriminatingOutcomesJson: JSON.stringify(parsed.discriminatingOutcomes),
       triggeredBy: parsed.triggeredBy,
       status: parsed.status,

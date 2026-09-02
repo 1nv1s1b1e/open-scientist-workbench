@@ -11,9 +11,7 @@ export interface EvidencePromotionContext {
   round: number
   hypothesisIds: readonly string[]
   agentId?: string
-  verifyProvenance?: (
-    evidence: EvidenceRecord,
-  ) => boolean | Promise<boolean>
+  verifyProvenance?: (evidence: EvidenceRecord) => boolean | Promise<boolean>
 }
 
 export interface EvidencePromotionResult {
@@ -27,7 +25,7 @@ function digest(value: unknown): string {
 
 function candidateObject(candidate: unknown): Record<string, unknown> {
   return typeof candidate === 'object' && candidate !== null
-    ? candidate as Record<string, unknown>
+    ? (candidate as Record<string, unknown>)
     : {}
 }
 
@@ -41,24 +39,24 @@ function correction(
 ): ScientificCorrection {
   const affectedIds = evidenceId ? [evidenceId] : []
   return ScientificCorrectionSchema.parse({
-    correctionId: 'correction-' + digest({
-      stage: context.stage,
-      kind,
-      severity,
-      message,
-      action,
-      affectedIds,
-      round: context.round,
-    }).slice(0, 16),
+    correctionId:
+      'correction-' +
+      digest({
+        stage: context.stage,
+        kind,
+        severity,
+        message,
+        action,
+        affectedIds,
+        round: context.round,
+      }).slice(0, 16),
     stage: context.stage,
     kind,
     severity,
     message,
     action,
     affectedIds,
-    triggeredBy: [
-      evidenceId ?? context.agentId ?? 'round-' + context.round,
-    ],
+    triggeredBy: [evidenceId ?? context.agentId ?? 'round-' + context.round],
     round: context.round,
     ...(context.agentId ? { agentId: context.agentId } : {}),
   })
@@ -82,6 +80,7 @@ function downgrade(
   const parsed = EvidenceRecordSchema.safeParse({
     ...candidate,
     status: 'unknown',
+    evidenceRole: 'diagnostic_boundary',
     limitations: [...limitations, message],
   })
   if (!parsed.success) {
@@ -147,6 +146,22 @@ export async function promoteEvidence(
   const evidence = parsed.data
   if (evidence.status === 'unknown') {
     return { evidence, corrections: [] }
+  }
+  if (!evidence.hypothesisId || !context.hypothesisIds.includes(evidence.hypothesisId)) {
+    return downgrade(
+      evidence,
+      context,
+      'Decisive evidence is not bound to a currently registered hypothesis and cannot be promoted.',
+      'factual',
+    )
+  }
+  if (evidence.status === 'support' && evidence.sampleIds.length === 0) {
+    return downgrade(
+      evidence,
+      context,
+      'Supporting evidence has no auditable sample IDs and cannot be promoted beyond unknown.',
+      'factual',
+    )
   }
   if (evidence.status === 'contradict' && evidence.sampleIds.length === 0) {
     return downgrade(
