@@ -30,7 +30,7 @@ export function SiteHeader({ children }: SiteHeaderProps) {
               {/* Static outer hairline */}
               <span className="absolute -inset-1 rounded-full border border-[var(--color-border)]" />
             </span>
-            <span className="font-mono text-[13px] font-normal uppercase tracking-[1.6px] text-white">
+            <span className="font-mono text-[14px] font-normal uppercase tracking-[1.6px] text-white">
               Open Scientist
             </span>
           </Link>
@@ -44,7 +44,7 @@ export function SiteHeader({ children }: SiteHeaderProps) {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    'rounded-full px-3 py-1 text-[13px] font-normal transition-colors',
+                    'rounded-full px-3 py-1 text-[14px] font-normal transition-colors',
                     active ? 'bg-white/[0.06] text-white' : 'text-muted hover:text-white',
                   )}
                 >

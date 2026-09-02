@@ -167,7 +167,8 @@ export async function deleteCredential(
 
 export interface ProjectListItem {
   name: string
-  createdAt: null
+  createdAt: string
+  summary: string | null
 }
 
 export interface ProjectDetail {

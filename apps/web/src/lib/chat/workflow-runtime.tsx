@@ -52,11 +52,16 @@ interface WorkflowRuntimeProviderProps {
   onMessagesChange?: (messages: RunMessage[]) => void
   onChunksChange?: (chunks: UIMessageChunk[]) => void
   onScientificStateChange?: (state: ScientificWorkbenchState) => void
+  /** 静态预览（示例项目）用：注入初始科学状态与智能体状态。 */
+  initialScientificState?: ScientificWorkbenchState
+  initialAgentStates?: Partial<Record<AgentRole, AgentState>>
+  /** 静态预览：跳过挂载时的历史加载，保留注入的初始状态。 */
+  skipHistoryLoad?: boolean
   children: ReactNode
 }
 
 export interface WorkflowControls {
-  submit: (text?: string) => Promise<void>
+  submit: (text?: string, phenomenonOverride?: PhenomenonInput) => Promise<void>
   stop: () => Promise<void>
   reset: () => void
   isRunning: boolean
@@ -83,6 +88,9 @@ export function WorkflowRuntimeProvider({
   onMessagesChange,
   onChunksChange,
   onScientificStateChange,
+  initialScientificState,
+  initialAgentStates,
+  skipHistoryLoad,
   children,
 }: WorkflowRuntimeProviderProps) {
   const [submittedText, setSubmittedText] = useState<string | null>(null)
@@ -99,6 +107,9 @@ export function WorkflowRuntimeProvider({
     reset,
   } = useRunStream({
     project,
+    initialScientificState,
+    initialAgentStates,
+    skipHistoryLoad,
     onFinish: () => console.log('[workflow] run finished'),
     onError: (e) => console.error('[workflow] run error', e),
   })
@@ -151,18 +162,25 @@ export function WorkflowRuntimeProvider({
     notifyScientificState(scientificState)
   }, [scientificState, notifyScientificState])
 
+  // 用户说明优先取本次会话输入；刷新/重连后，从 persisted scientific.phenomenon chunk 恢复
+  const userInputText =
+    submittedText ??
+    (scientificState?.phenomenon?.description?.trim() ||
+      scientificState?.phenomenon?.title?.trim() ||
+      null)
+
   // RunMessage[] + 用户说明 → ThreadMessageLike[] (filtered by selectedAgent / selectedRound / selectedHypoId)
   const threadMessages = useMemo(
     () =>
       toThreadMessages(
-        submittedText,
+        userInputText,
         messages,
         state,
         selectedAgent,
         selectedRound,
         selectedHypoId,
       ),
-    [submittedText, messages, state, selectedAgent, selectedRound, selectedHypoId],
+    [userInputText, messages, state, selectedAgent, selectedRound, selectedHypoId],
   )
 
   const isRunning = state === 'connecting' || state === 'streaming' || state === 'reconnecting'
@@ -170,12 +188,13 @@ export function WorkflowRuntimeProvider({
 
   // 统一提交入口：主工作台和 assistant-ui 都经过同一条运行链路。
   const submit = useCallback(
-    async (inputText?: string) => {
-      const text = inputText?.trim() || phenomenon?.description?.trim() || ''
-      if (!text && !phenomenon) throw new Error('请输入活动区现象')
-      setSubmittedText(text || phenomenon?.title || '活动区现象分析')
-      await start(phenomenon ? undefined : text, modelAlias, {
-        phenomenon,
+    async (inputText?: string, phenomenonOverride?: PhenomenonInput) => {
+      const resolved = phenomenonOverride ?? phenomenon
+      const text = inputText?.trim() || resolved?.description?.trim() || ''
+      if (!text && !resolved) throw new Error('请输入活动区现象')
+      setSubmittedText(text || resolved?.title || '活动区现象分析')
+      await start(resolved ? undefined : text, modelAlias, {
+        phenomenon: resolved,
         maxRounds,
         executionMode,
       })

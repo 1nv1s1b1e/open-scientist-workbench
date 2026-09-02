@@ -28,11 +28,11 @@ export function Reasoning({ text, isRunning = false }: ReasoningProps) {
         <ChevronRight
           className={`h-3 w-3 text-muted transition-transform ${open ? 'rotate-90' : ''}`}
         />
-        <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-cyan-100/70">
+        <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-cyan-100/70">
           模型工作摘要
         </span>
         {isRunning && (
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-sunset)]">
+          <span className="ml-auto font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-sunset)]">
             生成中…
           </span>
         )}

@@ -211,7 +211,7 @@ export const DEMO_ORCHESTRATION: ScientificOrchestrationState = {
   nodes: [
     { node: 'A.generate', state: 'completed', round: 1 },
     { node: 'A.verify', state: 'completed', round: 1 },
-    { node: 'B.run', state: 'running', round: 2 },
+    { node: 'B.run', state: 'completed', round: 2 },
     { node: 'BC.verify', state: 'idle', round: 2 },
     { node: 'C.synthesize', state: 'idle', round: 2 },
     { node: 'C.verify', state: 'idle', round: 2 },
@@ -222,7 +222,7 @@ export const DEMO_ORCHESTRATION: ScientificOrchestrationState = {
     {
       agentId: 'looker-source-audit',
       label: 'Looker·观测质控智能体：数据来源审计',
-      state: 'running',
+      state: 'completed',
       round: 2,
       message: '核对观测数据的来源与可复核性',
     },
@@ -330,10 +330,10 @@ export const DEMO_ROUND_UPDATE: RoundUpdatePayload = {
 }
 
 export const DEMO_AGENT_STATES: Partial<Record<AgentRole, AgentState>> = {
-  sisyphus: 'thinking',
-  librarian: 'thinking',
-  looker: 'executing-tool',
-  explore: 'executing-tool',
+  sisyphus: 'idle',
+  librarian: 'idle',
+  looker: 'idle',
+  explore: 'idle',
   oracle: 'idle',
   prometheus: 'idle',
 }

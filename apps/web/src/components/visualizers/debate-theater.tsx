@@ -166,26 +166,26 @@ export function DebateTheater({
         <div className="h-3 w-px bg-white/20" />
         {selectedAgent ? (
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] uppercase text-amber-400 font-bold">
+            <span className="font-mono text-[11px] uppercase text-amber-400 font-bold">
               已聚焦: {selectedAgent.toUpperCase()}
             </span>
             <button
               type="button"
               onClick={() => onSelectAgent?.(null)}
-              className="rounded-full bg-amber-500/20 px-2 py-0.5 font-mono text-[9px] text-amber-300 hover:bg-amber-500/30"
+              className="rounded-full bg-amber-500/20 px-2 py-0.5 font-mono text-[12px] text-amber-300 hover:bg-amber-500/30"
             >
               显示全部
             </button>
           </div>
         ) : (
-          <span className="font-mono text-[10px] uppercase text-white/50">
+          <span className="font-mono text-[11px] uppercase text-white/50">
             点击球体聚焦右侧 Agent 输出 · 拖动手感平移
           </span>
         )}
         <button
           type="button"
           onClick={handleReset}
-          className="ml-2 rounded-full bg-white/10 px-2.5 py-0.5 font-mono text-[10px] uppercase text-white/80 hover:bg-white/20"
+          className="ml-2 rounded-full bg-white/10 px-2.5 py-0.5 font-mono text-[11px] uppercase text-white/80 hover:bg-white/20"
         >
           重置视图
         </button>
@@ -213,10 +213,10 @@ export function DebateTheater({
           />
           <div className="h-24 w-24 rounded-full bg-gradient-to-tr from-amber-600/40 via-orange-500/20 to-transparent blur-xl" />
           <div className="relative flex flex-col items-center text-center">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[2px] text-amber-400">
+            <span className="font-mono text-[11px] font-bold uppercase tracking-[2px] text-amber-400">
               Solar Core
             </span>
-            <span className="mt-1 font-mono text-[11px] text-white/70">日冕加热演化核心</span>
+            <span className="mt-1 font-mono text-[12px] text-white/70">日冕加热演化核心</span>
           </div>
         </div>
 
@@ -298,14 +298,14 @@ export function DebateTheater({
                 }}
               >
                 <span className="text-xl">{config.icon}</span>
-                <span className="font-mono text-[11px] font-bold uppercase tracking-[1px] text-white">
+                <span className="font-mono text-[12px] font-bold uppercase tracking-[1px] text-white">
                   {config.name}
                 </span>
 
                 {/* Subtitle Badge */}
                 <span
                   className={cn(
-                    'mt-0.5 rounded-full px-1.5 py-0.2 font-mono text-[8px] font-semibold uppercase tracking-[0.5px]',
+                    'mt-0.5 rounded-full px-1.5 py-0.2 font-mono text-[11px] font-semibold uppercase tracking-[0.5px]',
                     isRunning ? 'bg-amber-400 text-black font-bold' : 'bg-white/20 text-white/80',
                   )}
                 >
@@ -320,7 +320,7 @@ export function DebateTheater({
                     initial={{ opacity: 0, y: 10, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.9 }}
-                    className="absolute -top-16 left-1/2 z-30 w-56 -translate-x-1/2 rounded-lg border border-amber-400/50 bg-black/95 p-2 text-[11px] text-amber-200 shadow-2xl backdrop-blur-xl"
+                    className="absolute -top-16 left-1/2 z-30 w-56 -translate-x-1/2 rounded-lg border border-amber-400/50 bg-black/95 p-2 text-[12px] text-amber-200 shadow-2xl backdrop-blur-xl"
                   >
                     💬 {activeSpeech.text}
                   </motion.div>
@@ -340,13 +340,13 @@ export function DebateTheater({
                       <span className="font-mono text-xs font-bold" style={{ color: config.color }}>
                         {config.name}
                       </span>
-                      <span className="font-mono text-[9px] uppercase text-white/50">
+                      <span className="font-mono text-[12px] uppercase text-white/50">
                         {state.toUpperCase()}
                       </span>
                     </div>
                     <div className="mt-1.5 font-medium text-xs text-white">{config.title}</div>
-                    <p className="mt-1 text-[10px] leading-relaxed text-white/70">{config.desc}</p>
-                    <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-1.5 font-mono text-[9px] text-white/50">
+                    <p className="mt-1 text-[11px] leading-relaxed text-white/70">{config.desc}</p>
+                    <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-1.5 font-mono text-[12px] text-white/50">
                       <span>STATUS</span>
                       <span className={isRunning ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
                         {isRunning ? 'EXECUTING STEP' : 'READY'}

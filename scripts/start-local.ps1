@@ -358,7 +358,7 @@ Write-Host ''
 Write-Host 'Open-Scientist started successfully.' -ForegroundColor Green
 if (-not $NoWeb) {
   Write-Host "Web:        http://localhost:$WebPort"
-  Write-Host "Demo:       http://localhost:$WebPort/projects/scientific-thinking-demo"
+  Write-Host "Demo:       http://localhost:$WebPort/projects/coronal-heating-demo"
 }
 Write-Host "API health: http://127.0.0.1:$ApiPort/api/health"
 Write-Host "State:      $StatePath"

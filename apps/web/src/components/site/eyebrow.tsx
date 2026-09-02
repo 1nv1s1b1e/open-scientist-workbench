@@ -11,8 +11,8 @@ export function Eyebrow({ children, size = 'sm', className, ...props }: EyebrowP
       className={cn(
         'inline-flex items-center gap-2 font-mono uppercase',
         size === 'sm'
-          ? 'text-[12px] tracking-[1.4px] text-muted'
-          : 'text-[14px] tracking-[1.4px] text-white',
+          ? 'text-[13px] tracking-[1.4px] text-muted'
+          : 'text-[15px] tracking-[1.4px] text-white',
         className,
       )}
       {...props}

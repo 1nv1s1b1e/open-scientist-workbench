@@ -41,6 +41,17 @@ const EMPTY_FORM: FormState = {
   promptsDir: '',
 }
 
+const PROJECT_SUMMARY_FALLBACKS: Record<string, string> = {
+  'coronal-heating-demo': '活动区出现不同步的多波段升温',
+}
+
+function compactProjectSummary(summary: string | null, name: string) {
+  const value = summary?.trim() || PROJECT_SUMMARY_FALLBACKS[name] || '尚未登记输入现象'
+  const normalized = value.replace(/\s+/g, ' ')
+  const firstSentence = normalized.match(/^.*?[。！？!?]/)?.[0] ?? normalized
+  return firstSentence.length > 25 ? `${firstSentence.slice(0, 25).trimEnd()}…` : firstSentence
+}
+
 function buildCreateBody(form: FormState): CreateProjectRequest {
   const config: CreateProjectRequest['config'] = {}
   if (form.mcpJson.trim()) {
@@ -66,34 +77,27 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 
 function ProjectCard({
   name,
+  summary,
   index,
   onOpen,
   onDelete,
   deleting,
 }: {
   name: string
+  summary: string | null
   index: number
   onOpen: () => void
   onDelete: () => void
   deleting: boolean
 }) {
-  // Deterministic accent color per project name (hash → hue)
-  const hues = [
-    { bar: '#3b82f6', glow: 'rgba(59,130,246,0.08)' },
-    { bar: '#10b981', glow: 'rgba(16,185,129,0.08)' },
-    { bar: '#06b6d4', glow: 'rgba(6,182,212,0.08)' },
-    { bar: '#8b5cf6', glow: 'rgba(139,92,246,0.08)' },
-    { bar: '#ef4444', glow: 'rgba(239,68,68,0.08)' },
-    { bar: '#f59e0b', glow: 'rgba(245,158,11,0.08)' },
-  ]
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0
-  const accent = hues[Math.abs(hash) % hues.length]!
+  // 统一项目固定色：暖橙（与主题一致），不再按名字哈希出多种红蓝绿。
+  const accent = { bar: '#ffc285', glow: 'rgba(255,194,133,0.08)' }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.35, delay: index * 0.06, ease: 'easeOut' }}
       whileHover={{ y: -2 }}
       className="project-card group relative overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] transition-colors hover:border-white/25"
@@ -107,7 +111,7 @@ function ProjectCard({
       <div className="relative p-6">
         {/* Top — index + delete */}
         <div className="flex items-start justify-between">
-          <span className="font-mono text-[10px] uppercase tracking-[1.4px] text-muted">
+          <span className="font-mono text-[11px] uppercase tracking-[1.4px] text-muted">
             项目 {String(index + 1).padStart(2, '0')}
           </span>
           <button
@@ -131,20 +135,18 @@ function ProjectCard({
           <h3 className="mt-4 truncate font-mono text-lg font-normal tracking-tight text-white">
             {name}
           </h3>
-          <p className="mt-1 font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
-            进入工作台
-          </p>
+          <p className="project-card-summary">{compactProjectSummary(summary, name)}</p>
         </button>
 
         {/* Bottom — enter pill */}
         <div className="mt-6 flex items-center justify-between border-t border-[var(--color-border)] pt-4">
-          <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
+          <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
             独立记录
           </span>
           <button
             type="button"
             onClick={onOpen}
-            className="group/btn flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[1.2px] text-muted transition-colors hover:text-white"
+            className="group/btn flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[1.2px] text-muted transition-colors hover:text-white"
           >
             打开
             <ArrowRight className="h-3 w-3 transition-transform group-hover/btn:translate-x-0.5" />
@@ -300,18 +302,19 @@ export function ProjectList({ onOpen }: ProjectListProps) {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)]">
               <FolderOpen className="h-5 w-5 text-muted" />
             </div>
-            <p className="mt-4 font-mono text-[11px] uppercase tracking-[1.4px] text-muted">
+            <p className="mt-4 font-mono text-[12px] uppercase tracking-[1.4px] text-muted">
               还没有项目
             </p>
             <p className="mt-1.5 text-xs text-muted">点击右上角「新建项目」开始</p>
           </div>
         )}
         {projectsQuery.data && projectsQuery.data.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {projectsQuery.data.map((p, i) => (
               <ProjectCard
                 key={p.name}
                 name={p.name}
+                summary={p.summary}
                 index={i}
                 onOpen={() => onOpen(p.name)}
                 onDelete={() => handleDelete(p.name)}

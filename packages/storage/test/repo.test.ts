@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
 import {
+  appendRunChunk,
   appendMessage,
   appendRunChunk,
   closeProjectDb,
@@ -18,6 +19,7 @@ import {
   createValidationTask,
   deleteProject,
   getHypothesis,
+  getLatestProjectPhenomenon,
   getProject,
   getRun,
   getRunChunks,
@@ -152,6 +154,47 @@ describe('run repo', () => {
       const got = await getRun('proj-a', run.id)
       expect((got as { endedAt: string | null }).endedAt).not.toBeNull()
     }
+  })
+})
+
+describe('project phenomenon summary', () => {
+  let baseDir: string
+  let runId: string
+
+  beforeEach(async () => {
+    baseDir = makeBaseDir('phenomenon-summary')
+    process.env.BASE_DIR = baseDir
+    const project = await createProject('proj-a')
+    runId = (await createRun('proj-a', project.id)).id
+  })
+
+  afterEach(() => {
+    closeProjectDb('proj-a')
+    rmSync(baseDir, { recursive: true, force: true })
+    delete process.env.BASE_DIR
+  })
+
+  it('reads the persisted scientific phenomenon from run chunks', async () => {
+    await appendRunChunk(
+      'proj-a',
+      runId,
+      0,
+      JSON.stringify({
+        type: 'custom',
+        kind: 'scientific.phenomenon',
+        phenomenon: {
+          phenomenonId: 'phenomenon-1',
+          title: '活动区出现多波段不同步升温',
+          description: '输入现象描述',
+          observations: [],
+          constraints: [],
+        },
+      }),
+    )
+
+    await expect(getLatestProjectPhenomenon('proj-a')).resolves.toMatchObject({
+      title: '活动区出现多波段不同步升温',
+    })
   })
 })
 

@@ -21,7 +21,7 @@ export const SteeringInjectedUI = makeAssistantDataUI({
   render: () => (
     <div className="my-1 flex items-center gap-2 rounded-sm border border-blue-500/30 bg-blue-500/5 px-3 py-2">
       <Radio className="h-3.5 w-3.5 text-blue-400" />
-      <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-blue-300">
+      <span className="font-mono text-[12px] uppercase tracking-[1.2px] text-blue-300">
         steering injected
       </span>
     </div>
@@ -35,7 +35,7 @@ export const RoundTransitionUI = makeAssistantDataUI({
     <div className="my-2 flex items-center gap-2">
       <div className="h-px flex-1 bg-[var(--color-border)]" />
       <GitBranch className="h-3.5 w-3.5 text-[var(--color-sunset)]" />
-      <span className="font-mono text-[10px] uppercase tracking-[1.4px] text-[var(--color-sunset)]">
+      <span className="font-mono text-[11px] uppercase tracking-[1.4px] text-[var(--color-sunset)]">
         round transition
       </span>
       <div className="h-px flex-1 bg-[var(--color-border)]" />
@@ -49,7 +49,7 @@ export const ConvergenceUI = makeAssistantDataUI({
   render: () => (
     <div className="my-1 flex items-center gap-2 rounded-sm border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
       <Target className="h-3.5 w-3.5 text-emerald-400" />
-      <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-emerald-300">
+      <span className="font-mono text-[12px] uppercase tracking-[1.2px] text-emerald-300">
         convergence detected
       </span>
     </div>

@@ -39,7 +39,7 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 function UsageStat({ label, value }: { label: string; value?: number }) {
   return (
     <div className="rounded-sm border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-5 py-4">
-      <p className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">{label}</p>
+      <p className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">{label}</p>
       <p className="mt-1.5 font-mono text-2xl tabular-nums text-white">{value ?? '—'}</p>
     </div>
   )
@@ -109,7 +109,7 @@ export function TestLlmPanel() {
       {/* Quick credential filler banner */}
       {credsQuery.data && credsQuery.data.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-6 py-3">
-          <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
+          <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
             快速填充凭证:
           </span>
           {credsQuery.data.map((c) => (
@@ -117,7 +117,7 @@ export function TestLlmPanel() {
               key={c.id}
               type="button"
               onClick={() => handleSelectCredential(c.id)}
-              className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 font-mono text-[11px] text-muted transition-colors hover:border-white/40 hover:text-white"
+              className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 font-mono text-[12px] text-muted transition-colors hover:border-white/40 hover:text-white"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
               {c.id}
@@ -158,7 +158,7 @@ export function TestLlmPanel() {
 
           {/* Quick preset model tags */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
+            <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
               Presets:
             </span>
             {PRESET_MODELS.map((m) => (
@@ -166,7 +166,7 @@ export function TestLlmPanel() {
                 key={m}
                 type="button"
                 onClick={() => setModel(m)}
-                className="rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-0.5 font-mono text-[11px] text-muted transition-colors hover:border-white/30 hover:text-white"
+                className="rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-0.5 font-mono text-[12px] text-muted transition-colors hover:border-white/30 hover:text-white"
               >
                 {m}
               </button>
@@ -219,7 +219,7 @@ export function TestLlmPanel() {
               测试连接
             </Button>
             {error && (
-              <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-red-400">
+              <span className="font-mono text-[12px] uppercase tracking-[1.2px] text-red-400">
                 {error}
               </span>
             )}
@@ -236,7 +236,7 @@ export function TestLlmPanel() {
                 <span className="absolute inset-6 rounded-full border border-white/[0.04]" />
                 <span className="h-2 w-2 rounded-full bg-[var(--color-border-strong)]" />
               </div>
-              <p className="mt-5 font-mono text-[11px] uppercase tracking-[1.4px] text-muted">
+              <p className="mt-5 font-mono text-[12px] uppercase tracking-[1.4px] text-muted">
                 Awaiting test
               </p>
               <p className="mt-1.5 text-xs text-muted">输入 Key / URL 后点击「测试连接」</p>
@@ -246,7 +246,7 @@ export function TestLlmPanel() {
           {testMutation.isPending && (
             <div className="flex h-full min-h-[400px] flex-col items-center justify-center">
               <Spinner className="mb-4" />
-              <p className="font-mono text-[11px] uppercase tracking-[1.4px] text-muted">
+              <p className="font-mono text-[12px] uppercase tracking-[1.4px] text-muted">
                 Calling model…
               </p>
             </div>
@@ -273,7 +273,7 @@ export function TestLlmPanel() {
                 )}
                 <div className="min-w-0 flex-1">
                   <p
-                    className={`font-mono text-[12px] uppercase tracking-[1.4px] ${
+                    className={`font-mono text-[13px] uppercase tracking-[1.4px] ${
                       result.ok ? 'text-emerald-400' : 'text-red-400'
                     }`}
                   >

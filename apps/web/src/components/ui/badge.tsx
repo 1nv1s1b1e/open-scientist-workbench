@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils/cn'
 
 // xAI badges — mono-uppercase, hairline border, pill or 6px
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-normal uppercase tracking-[1.2px] transition-colors focus:outline-none',
+  'inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[12px] font-normal uppercase tracking-[1.2px] transition-colors focus:outline-none',
   {
     variants: {
       variant: {

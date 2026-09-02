@@ -8,11 +8,11 @@ export function SiteFooter() {
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-sunset)]" />
             <span className="absolute inset-0 rounded-full border border-white/15" />
           </span>
-          <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
+          <span className="font-mono text-[12px] uppercase tracking-[1.2px] text-muted">
             Open Scientist · {year}
           </span>
         </div>
-        <div className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
+        <div className="flex items-center gap-6 font-mono text-[12px] uppercase tracking-[1.2px] text-muted">
           <span>Solar Physics · Multi-Agent</span>
           <span className="hidden sm:inline">Corona Heating · Track 1B</span>
         </div>

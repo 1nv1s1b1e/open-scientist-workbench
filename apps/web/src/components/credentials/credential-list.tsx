@@ -102,10 +102,10 @@ function CredentialCard({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
-              <span className="font-mono text-[11px] uppercase tracking-[1.4px]" style={{ color }}>
+              <span className="font-mono text-[12px] uppercase tracking-[1.4px]" style={{ color }}>
                 {cred.provider}
               </span>
-              <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
+              <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
                 · {cred.type}
               </span>
             </div>
@@ -126,7 +126,7 @@ function CredentialCard({
         {/* Detail rows */}
         <div className="mt-4 space-y-2.5 border-t border-[var(--color-border)] pt-4">
           <div className="flex items-center justify-between gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
+            <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
               base url
             </span>
             <span className="truncate font-mono text-xs text-body" title={cred.baseURL ?? ''}>
@@ -134,7 +134,7 @@ function CredentialCard({
             </span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
+            <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
               api key
             </span>
             {cred.hasKey ? (
@@ -148,7 +148,7 @@ function CredentialCard({
           </div>
           {cred.metadata && Object.keys(cred.metadata).length > 0 && (
             <div className="flex items-center justify-between gap-3">
-              <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">
+              <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
                 metadata
               </span>
               <span className="truncate font-mono text-xs text-body">
@@ -333,7 +333,7 @@ export function CredentialList() {
         )}
         {credsQuery.data && credsQuery.data.length === 0 && (
           <div className="rounded-sm border border-dashed border-[var(--color-border)] py-16 text-center">
-            <p className="font-mono text-[11px] uppercase tracking-[1.4px] text-muted">
+            <p className="font-mono text-[12px] uppercase tracking-[1.4px] text-muted">
               No credentials
             </p>
             <p className="mt-1 text-xs text-muted">添加第一个 credential 以开始</p>

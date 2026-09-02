@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1120" viewBox="0 0 1200 1120">
+  <rect width="1200" height="1120" fill="#ffffff"/>
+  <text x="600" y="54" text-anchor="middle" font-family="Microsoft YaHei, Arial, sans-serif" font-size="30" font-weight="700" fill="#123d7a">Open Scientist · 细粒度分析图标集</text>
+  <text x="600" y="88" text-anchor="middle" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#6b7b90">SVG sprite preview · icons.svg</text>
+  <g font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1d2a3a" text-anchor="middle">
+    <g transform="translate(35 115)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#abnormal" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">异常区域</text></g>
+    <g transform="translate(225 115)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#trend" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">演化趋势</text></g>
+    <g transform="translate(415 115)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#target" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">候选目标</text></g>
+    <g transform="translate(605 115)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#fits" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">FITS</text></g>
+    <g transform="translate(795 115)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#mp4" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">MP4</text></g>
+    <g transform="translate(985 115)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#time-alignment" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">时间对齐</text></g>
+
+    <g transform="translate(35 270)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#channel-registration" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">通道配准</text></g>
+    <g transform="translate(225 270)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#roi" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">ROI 切片</text></g>
+    <g transform="translate(415 270)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#layers" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">标准化对象</text></g>
+    <g transform="translate(605 270)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#wave" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">时序特征</text></g>
+    <g transform="translate(795 270)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#grid" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">空间特征</text></g>
+    <g transform="translate(985 270)"><rect width="170" height="130" rx="14" fill="#f4f8fd" stroke="#b8cce8"/><use href="icons.svg#cross-channel" x="53" y="16" width="64" height="64" style="color:#123d7a"/><text x="85" y="108">跨通道特征</text></g>
+
+    <g transform="translate(35 425)"><rect width="170" height="130" rx="14" fill="#f3fbf1" stroke="#a9d5a7"/><use href="icons.svg#target-window" x="53" y="16" width="64" height="64" style="color:#216b2a"/><text x="85" y="108">窗口切片</text></g>
+    <g transform="translate(225 425)"><rect width="170" height="130" rx="14" fill="#f3fbf1" stroke="#a9d5a7"/><use href="icons.svg#multichannel" x="53" y="16" width="64" height="64" style="color:#216b2a"/><text x="85" y="108">多通道分析</text></g>
+    <g transform="translate(415 425)"><rect width="170" height="130" rx="14" fill="#f3fbf1" stroke="#a9d5a7"/><use href="icons.svg#search" x="53" y="16" width="64" height="64" style="color:#216b2a"/><text x="85" y="108">相似事件检索</text></g>
+    <g transform="translate(605 425)"><rect width="170" height="130" rx="14" fill="#f3fbf1" stroke="#a9d5a7"/><use href="icons.svg#compare" x="53" y="16" width="64" height="64" style="color:#216b2a"/><text x="85" y="108">特征对比</text></g>
+    <g transform="translate(795 425)"><rect width="170" height="130" rx="14" fill="#f3fbf1" stroke="#a9d5a7"/><use href="icons.svg#evidence" x="53" y="16" width="64" height="64" style="color:#216b2a"/><text x="85" y="108">证据片段</text></g>
+    <g transform="translate(985 425)"><rect width="170" height="130" rx="14" fill="#f3fbf1" stroke="#a9d5a7"/><use href="icons.svg#library" x="53" y="16" width="64" height="64" style="color:#216b2a"/><text x="85" y="108">事件库</text></g>
+
+    <g transform="translate(35 580)"><rect width="170" height="130" rx="14" fill="#f7f5ff" stroke="#c5b8e8"/><use href="icons.svg#physical-channels" x="53" y="16" width="64" height="64" style="color:#6542a6"/><text x="85" y="108">物理特征</text></g>
+    <g transform="translate(225 580)"><rect width="170" height="130" rx="14" fill="#f7f5ff" stroke="#c5b8e8"/><use href="icons.svg#explore" x="53" y="16" width="64" height="64" style="color:#6542a6"/><text x="85" y="108">Explore</text></g>
+    <g transform="translate(415 580)"><rect width="170" height="130" rx="14" fill="#fff8ee" stroke="#f0bd8c"/><use href="icons.svg#shield" x="53" y="16" width="64" height="64" style="color:#bd6b13"/><text x="85" y="108">证据</text></g>
+    <g transform="translate(605 580)"><rect width="170" height="130" rx="14" fill="#fff8ee" stroke="#f0bd8c"/><use href="icons.svg#bulb" x="53" y="16" width="64" height="64" style="color:#bd6b13"/><text x="85" y="108">机制线索</text></g>
+    <g transform="translate(795 580)"><rect width="170" height="130" rx="14" fill="#fff8ee" stroke="#f0bd8c"/><use href="icons.svg#prediction" x="53" y="16" width="64" height="64" style="color:#bd6b13"/><text x="85" y="108">待验证预测</text></g>
+    <g transform="translate(985 580)"><rect width="170" height="130" rx="14" fill="#fff8ee" stroke="#f0bd8c"/><use href="icons.svg#oracle" x="53" y="16" width="64" height="64" style="color:#bd6b13"/><text x="85" y="108">Oracle</text></g>
+
+    <g transform="translate(35 735)"><rect width="170" height="130" rx="14" fill="#fff8ee" stroke="#f0bd8c"/><use href="icons.svg#prometheus" x="53" y="16" width="64" height="64" style="color:#bd6b13"/><text x="85" y="108">Prometheus</text></g>
+    <g transform="translate(225 735)"><rect width="170" height="130" rx="14" fill="#fff8ee" stroke="#f0bd8c"/><use href="icons.svg#next-task" x="53" y="16" width="64" height="64" style="color:#bd6b13"/><text x="85" y="108">下一轮任务</text></g>
+    <g transform="translate(415 735)"><rect width="170" height="130" rx="14" fill="#fff8ee" stroke="#f0bd8c"/><use href="icons.svg#telescope" x="53" y="16" width="64" height="64" style="color:#bd6b13"/><text x="85" y="108">观测提案</text></g>
+  </g>
+</svg>

@@ -1,6 +1,5 @@
 'use client'
 
-import type { PhenomenonInput } from '@open-scientist/schema'
 import {
   Activity,
   BookOpen,
@@ -19,7 +18,6 @@ import {
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import { EvidenceLedger } from './evidence-ledger'
-import { PhenomenonPanel } from './phenomenon-panel'
 import { ProcessingResults } from './processing-results'
 import { ValidationQueue } from './validation-queue'
 import { useWorkflowControls, type ExecutionMode } from '@/lib/chat/workflow-runtime'
@@ -50,7 +48,7 @@ const AGENT_STEPS: Array<{
   color: string
 }> = [
   { key: 'A', roles: ['librarian'], label: '形成假设', color: '#8ee8c2' },
-  { key: 'B', roles: ['looker', 'explore', 'oracle'], label: '寻找证据', color: '#8bd8ee' },
+  { key: 'B', roles: ['looker', 'explore', 'oracle'], label: '寻找证据', color: '#a0c3ec' },
   { key: 'C', roles: [], label: '整理结论', color: '#f6c77d' },
   { key: 'D', roles: ['prometheus'], label: '生成任务', color: '#c8a7ff' },
 ]
@@ -136,8 +134,8 @@ function StageRail({
               {current === 'finished' ? <Check className="h-3.5 w-3.5" /> : <span>{step.key}</span>}
             </div>
             <div className="min-w-0">
-              <div className="text-[11px] font-medium text-white">{step.label}</div>
-              <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+              <div className="text-[12px] font-medium text-white">{step.label}</div>
+              <div className="mt-0.5 font-mono text-[12px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
                 {current === 'active' ? '进行中' : current === 'finished' ? '已产出' : '等待'}
               </div>
             </div>
@@ -155,8 +153,6 @@ function StageRail({
 
 export function ScientificWorkbench({
   state,
-  phenomenon,
-  onPhenomenonChange,
   streamState,
   agentStates,
   runId,
@@ -166,8 +162,6 @@ export function ScientificWorkbench({
   onExecutionModeChange,
 }: {
   state: ScientificWorkbenchState
-  phenomenon: PhenomenonInput | undefined
-  onPhenomenonChange: (value: PhenomenonInput | undefined) => void
   streamState: string
   agentStates: Partial<Record<AgentRole, AgentState>>
   runId: string | null
@@ -247,13 +241,11 @@ export function ScientificWorkbench({
       ),
     [roundView.evidence, selectedHypothesis],
   )
-  const displayPhenomenon = state.phenomenon ?? phenomenon
   const effectiveStatus = state.status !== 'idle' ? state.status : streamState
   const workflow = useWorkflowControls()
   const isSubmitting =
     workflow?.isRunning ??
     ['connecting', 'running', 'streaming', 'reconnecting'].includes(effectiveStatus)
-  const observationCount = displayPhenomenon?.observations?.length ?? 0
   const supportingEvidenceCount = roundEvidenceCounts.support
   const contradictingEvidenceCount = roundEvidenceCounts.contradict
   const unknownEvidenceCount = roundEvidenceCounts.unknown
@@ -267,15 +259,6 @@ export function ScientificWorkbench({
   const hypothesisBlock = [...state.corrections]
     .reverse()
     .find((item) => item.stage === 'A' && (item.severity === 'error' || item.status === 'blocked'))
-  const handleSubmit = async () => {
-    if (!workflow || !displayPhenomenon?.description) return
-    if (workflow.hasStarted) workflow.reset()
-    await workflow.submit(displayPhenomenon.description)
-  }
-  const handleStop = async () => {
-    await workflow?.stop()
-  }
-
   return (
     <div className="workbench-shell">
       <div className="workbench-ambient workbench-ambient-one" />
@@ -288,7 +271,7 @@ export function ScientificWorkbench({
           </div>
           <div className="min-w-0">
             <div className="eyebrow-mono text-[var(--color-sunset-soft)]">活动区现象分析</div>
-            <h1 className="truncate text-lg font-medium tracking-[-0.02em] text-white">
+            <h1 className="truncate text-[1.45rem] font-semibold tracking-[-0.04em] text-white">
               科学工作台
             </h1>
           </div>
@@ -338,44 +321,19 @@ export function ScientificWorkbench({
       </header>
 
       <div className="workbench-scroll">
-        <section className="workbench-summary">
-          <div className="min-w-0">
-            <div className="eyebrow-mono text-[var(--color-breeze)]">当前项目</div>
-            <h2 className="mt-2 max-w-3xl text-2xl font-medium leading-tight tracking-[-0.035em] text-white md:text-3xl">
-              {displayPhenomenon?.title ?? '从一个活动区现象开始'}
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-text-muted)]">
-              {displayPhenomenon?.description
-                ? '本项目已登记一条自然语言现象；候选、来源、证据边界与后续任务会随真实运行更新。'
-                : '尚未登记分析现象。请在下方输入观测或模拟中实际看到的变化。'}
-            </p>
-          </div>
-          <div className="summary-meta">
-            <span className="summary-meta-item">
-              第 {Math.max(state.round, 1)} 轮 / {maxRounds}
-            </span>
-            <span className="summary-meta-item">
-              {observationCount > 0 ? `${observationCount} 条已登记资料` : '尚未登记资料'}
-            </span>
-          </div>
-        </section>
-
-        <section className="workbench-command-grid">
-          <PhenomenonPanel
-            value={displayPhenomenon}
-            onChange={onPhenomenonChange}
-            onSubmit={handleSubmit}
-            onStop={handleStop}
-            isSubmitting={isSubmitting}
-          />
-
+        <section className="workbench-run-section">
           <aside className="workbench-run-card" aria-label="本轮分析状态">
             <div className="workbench-run-card-header">
               <div>
                 <div className="eyebrow-mono text-cyan-200/70">本轮进度</div>
                 <h2>分析正在留下什么</h2>
               </div>
-              <Activity className={`h-4 w-4 ${isSubmitting ? 'text-cyan-200' : 'text-white/35'}`} />
+              <div className="flex items-center gap-2">
+                <span className="workbench-round-indicator">
+                  第 {Math.max(state.round, 1)} / {maxRounds} 轮
+                </span>
+                <Activity className={`h-4 w-4 ${isSubmitting ? 'text-cyan-200' : 'text-white/35'}`} />
+              </div>
             </div>
             <StageRail state={state} agentStates={agentStates} />
             <div className="workbench-run-facts">
@@ -432,22 +390,14 @@ export function ScientificWorkbench({
             </div>
             <div className="workbench-round-review">
               <div className="workbench-round-picker" aria-label="查看轮次">
-                {availableRounds.map((round) => (
-                  <button
-                    key={round}
-                    type="button"
-                    aria-pressed={resultRound === round}
-                    className={resultRound === round ? 'is-active' : ''}
-                    onClick={() => setSelectedResultRound(round)}
-                  >
-                    第 {round} 轮
-                  </button>
-                ))}
-                {selectedResultRound != null && selectedResultRound !== latestRound && (
-                  <button type="button" onClick={() => setSelectedResultRound(null)}>
-                    返回最新
-                  </button>
-                )}
+                <select
+                  value={resultRound}
+                  onChange={(event) => setSelectedResultRound(Number(event.target.value))}
+                >
+                  {availableRounds.map((round) => (
+                    <option key={round} value={round}>第 {round} 轮</option>
+                  ))}
+                </select>
               </div>
               <div className="workbench-result-counts">
                 <span className="text-emerald-200/80">
@@ -565,10 +515,11 @@ export function ScientificWorkbench({
                                     </span>
                                   ))}
                               </div>
-                              <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/[0.07] pt-3 text-[11px] text-[var(--color-text-muted)]">
+                              <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/[0.07] pt-3 text-[12px] text-[var(--color-text-muted)]">
                                 <span>
-                                  第 {hypothesis.round ?? 1} 轮提出 · 证据等级{' '}
-                                  {hypothesis.evidenceStrengthGrade ?? 'not_assessed'}（非概率）
+                                  第 {hypothesis.round ?? 1} 轮提出 · 第 {resultRound} 轮继续检验 ·
+                                  证据等级 {hypothesis.evidenceStrengthGrade ?? 'not_assessed'}
+                                  （非概率）
                                 </span>
                                 <span className="shrink-0 font-mono">
                                   {hypothesisEvidence.length} 证据 · {hypothesisCounts.support} 支持
@@ -885,19 +836,19 @@ export function ScientificWorkbench({
         </section>
 
         {!hasResults && state.status !== 'blocked' && (
-          <div className="workbench-footer-note mb-8 mt-4 flex items-center gap-2 text-[11px] text-[var(--color-text-muted)]">
+          <div className="workbench-footer-note mb-8 mt-4 flex items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
             <Database className="h-3.5 w-3.5" />
             尚未开始分析；填写现象后即可启动第一轮。
           </div>
         )}
         {state.status === 'blocked' ? (
-          <div className="workbench-footer-note mb-8 mt-4 flex items-center gap-2 text-[11px] text-amber-200/70">
+          <div className="workbench-footer-note mb-8 mt-4 flex items-center gap-2 text-[12px] text-amber-200/70">
             <Database className="h-3.5 w-3.5" />
             本轮已保存资料检索结果，并生成可继续执行的补充任务。
           </div>
         ) : (
           hasResults && (
-            <div className="workbench-footer-note mb-8 mt-4 flex items-center gap-2 text-[11px] text-[var(--color-text-muted)]">
+            <div className="workbench-footer-note mb-8 mt-4 flex items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
               <Database className="h-3.5 w-3.5" />
               每条记录都会区分已完成的数据检查、机制证据和下一步验证任务。
             </div>

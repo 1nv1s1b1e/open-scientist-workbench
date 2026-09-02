@@ -271,7 +271,7 @@ export function ConceptNet3D({ data }: { data?: ConceptNetData }) {
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
           <div className="rounded-lg border border-white/10 bg-black/80 px-6 py-4 text-center backdrop-blur-md">
             <p className="font-mono text-sm text-white/60">暂无知识图谱数据</p>
-            <p className="mt-1 font-mono text-[10px] text-white/40">
+            <p className="mt-1 font-mono text-[11px] text-white/40">
               启动 Tournament Run 后将实时显示概念网络
             </p>
           </div>
@@ -283,7 +283,7 @@ export function ConceptNet3D({ data }: { data?: ConceptNetData }) {
         <button
           type="button"
           onClick={() => setActiveCategory('all')}
-          className={`rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[1px] transition-colors ${
+          className={`rounded-full px-2.5 py-1 font-mono text-[11px] uppercase tracking-[1px] transition-colors ${
             activeCategory === 'all'
               ? 'bg-white text-black font-semibold'
               : 'text-white/60 hover:text-white'
@@ -296,7 +296,7 @@ export function ConceptNet3D({ data }: { data?: ConceptNetData }) {
             key={cat}
             type="button"
             onClick={() => setActiveCategory(cat)}
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[1px] transition-colors ${
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[11px] uppercase tracking-[1px] transition-colors ${
               activeCategory === cat
                 ? 'bg-white/20 text-white font-semibold'
                 : 'text-white/50 hover:text-white'
@@ -322,7 +322,7 @@ export function ConceptNet3D({ data }: { data?: ConceptNetData }) {
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-2">
               <span
-                className="rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[1px]"
+                className="rounded-full px-2 py-0.5 font-mono text-[11px] uppercase tracking-[1px]"
                 style={{
                   backgroundColor: `${CONCEPT_COLORS[selectedNode.category]}30`,
                   color: CONCEPT_COLORS[selectedNode.category],

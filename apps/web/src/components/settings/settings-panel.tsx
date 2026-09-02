@@ -32,7 +32,7 @@ function StatusMsg({ status }: { status: Status }) {
     <motion.span
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`font-mono text-[11px] uppercase tracking-[1.2px] ${
+      className={`font-mono text-[12px] uppercase tracking-[1.2px] ${
         status.type === 'success' ? 'text-emerald-400' : 'text-red-400'
       }`}
     >
@@ -107,7 +107,7 @@ function NumberField({
         onChange={(e) => onChange(Number(e.target.value))}
         className="font-mono tabular-nums"
       />
-      <p className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">{hint}</p>
+      <p className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">{hint}</p>
     </div>
   )
 }
@@ -228,7 +228,7 @@ export function SettingsPanel() {
           {/* Role config cards */}
           {Object.keys(models).length === 0 ? (
             <div className="rounded-sm border border-dashed border-[var(--color-border)] py-16 text-center">
-              <p className="font-mono text-[11px] uppercase tracking-[1.4px] text-muted">
+              <p className="font-mono text-[12px] uppercase tracking-[1.4px] text-muted">
                 No roles configured
               </p>
               <p className="mt-1 text-xs text-muted">添加第一个角色以开始</p>
@@ -359,7 +359,7 @@ export function SettingsPanel() {
           <div className="mt-8 border-t border-[var(--color-border)] pt-6">
             <Eyebrow>Model Aliases · read-only</Eyebrow>
             {Object.keys(aliases).length === 0 ? (
-              <p className="mt-3 font-mono text-[11px] uppercase tracking-[1.4px] text-muted">
+              <p className="mt-3 font-mono text-[12px] uppercase tracking-[1.4px] text-muted">
                 None
               </p>
             ) : (
@@ -373,10 +373,10 @@ export function SettingsPanel() {
                       {alias}
                     </span>
                     <span className="truncate font-mono text-xs text-muted">{cfg.model}</span>
-                    <span className="ml-auto rounded-full border border-[var(--color-border)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-muted">
+                    <span className="ml-auto rounded-full border border-[var(--color-border)] px-2 py-0.5 font-mono text-[11px] uppercase tracking-[1px] text-muted">
                       {cfg.thinkingLevel}
                     </span>
-                    <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-muted">
+                    <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 font-mono text-[11px] uppercase tracking-[1px] text-muted">
                       {cfg.apiMode}
                     </span>
                   </div>
@@ -521,7 +521,7 @@ export function SettingsPanel() {
                   </SelectContent>
                 </Select>
               </FieldGroup>
-              <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[1.2px] text-muted">
+              <p className="font-mono text-[11px] uppercase leading-relaxed tracking-[1.2px] text-muted">
                 one-at-a-time — 仅传给当前活跃 agent · all — 广播给全部
               </p>
             </div>

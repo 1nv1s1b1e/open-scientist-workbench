@@ -1,0 +1,1296 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Open Scientist · Coronal Heating</title>
+    <style>
+      :root { color-scheme: dark; background: #061014; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #061014; }
+      body { font-family: "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", Arial, sans-serif; }
+      #stage { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; background: #061014; }
+      #canvas { display: block; width: 100vw; height: 100vh; object-fit: contain; background: #061014; }
+    </style>
+  </head>
+  <body>
+    <main id="stage" data-composition-id="root" data-width="3840" data-height="2160" data-fps="60" data-duration="340">
+      <canvas id="canvas" aria-label="Open Scientist 日冕加热科研视频"></canvas>
+    </main>
+    <script>
+      'use strict';
+
+      // The composition is authored at the delivery resolution so that the same
+      // scene can be previewed in a browser and rendered deterministically.
+      const W = 3840;
+      const H = 2160;
+      const FPS = 60;
+      const DURATION = 340;
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d', { alpha: false, desynchronized: false });
+      canvas.width = W;
+      canvas.height = H;
+      let renderScale = 1;
+
+      const SAFE = {
+        left: 180,
+        right: 3660,
+        top: 110,
+        contentTop: 520,
+        contentBottom: 1740,
+        captionTop: 1850,
+        captionBottom: 2070,
+        bottom: 2110
+      };
+
+      const C = {
+        bg: '#061014',
+        bg2: '#091a1e',
+        ink: '#edf7f1',
+        white: '#fcfff9',
+        muted: '#9ab1a9',
+        faint: '#4b6864',
+        line: '#274944',
+        line2: '#345d58',
+        panel: '#0b1b1e',
+        panel2: '#10272a',
+        panel3: '#153336',
+        cyan: '#91e8dc',
+        cyan2: '#57c9c4',
+        blue: '#9cc8f2',
+        purple: '#c4a7ff',
+        green: '#98e5be',
+        amber: '#ffc583',
+        orange: '#f2a172',
+        yellow: '#f4d777',
+        red: '#f08d87',
+        pink: '#dc9edc'
+      };
+
+      const SHOTS = [
+        { n: 1, duration: 22, chapter: '总述', label: '未解之谜', kind: 'mystery', transition: 'match', title: '日冕加热：温度反转背后的未解问题', sub: '从观测到可检验机制，科学需要一条证据链。', caption: '日冕层温度高达一到三百万开尔文，却位于约六千开尔文的光球之上。为什么越往外越热，仍是太阳物理学的核心谜题。' },
+        { n: 2, duration: 21, chapter: '总述', label: '理论空间', kind: 'theory', transition: 'route', title: '一个现象，三种可能的物理解释', sub: '同一组观测，可能支持不同机制，也可能指向耦合。', caption: '阿尔芬波耗散、磁重联纳耀斑，以及二者耦合，都能解释部分加热特征；关键在于提出可区分的预测。' },
+        { n: 3, duration: 20, chapter: '总述', label: '科学流程', kind: 'scientificFlow', transition: 'pan', title: '从现象到结论，中间不能跳步', sub: '把每一次判断拆成可回溯、可检验、可修正的链路。', caption: '可靠的科学回答不是直接猜答案，而是让现象、证据、假设、检验和结论彼此对齐。' },
+        { n: 4, duration: 19, chapter: '项目', label: 'Workbench', kind: 'workbench', transition: 'split', title: 'Open Scientist：把研究过程变成可追踪工作流', sub: '让智能体协作处理文献、观测、计算与反例。', caption: 'Open Scientist 将一个开放问题组织成研究运行：输入现象，建立假设，调度证据与计算，并输出下一步可执行方案。' },
+        { n: 5, duration: 24, chapter: '项目', label: '四阶段', kind: 'stages', transition: 'growth', title: '四个阶段，构成一次可审计的科学运行', sub: 'A 定义问题，B 形成证据，C 组织推理，D 交付方案。', caption: '四阶段不是并列卡片，而是一条有状态的流水线：问题被结构化，证据被核验，推理被反驳，结果被转化为行动。' },
+        { n: 6, duration: 26, chapter: '项目', label: '六个 Agent', kind: 'agentMap', transition: 'node-handoff', title: '六个 agent，不是六张卡片，而是一条回路', sub: 'Sisyphus 统筹；Librarian、Looker、Explore、Oracle、Prometheus 分工接力。', caption: '主循环由 Sisyphus 调度 Librarian、Explore、Oracle 与 Prometheus；当任务包含图像或视频证据时，Looker 提供观测对齐能力，形成条件分支并回到计算。' },
+        { n: 7, duration: 15, chapter: 'Agent', label: 'Sisyphus', kind: 'sisyphus', transition: 'orbit', title: 'Sisyphus：让研究运行保持确定性', sub: '解析任务、安排轮次、记录状态，并把结果送回下一步。', caption: 'Sisyphus 是确定性的编排器：它不替代科学判断，而是保证每个 agent 在正确的上下文中运行，所有状态都能被追踪。' },
+        { n: 8, duration: 15, chapter: 'Agent', label: 'Librarian', kind: 'librarian', transition: 'route', title: 'Librarian：把开放问题变成假设空间', sub: '检索相关知识，提取机制、预测与证据缺口。', caption: 'Librarian 从文献与已有知识中建立候选假设，并为每个假设标出支持证据、未知量与可区分预测。' },
+        { n: 9, duration: 15, chapter: 'Agent', label: 'Looker', kind: 'looker', transition: 'scan', title: 'Looker：让观测证据对齐到同一坐标系', sub: '图像、视频、时间戳与 ROI 被整理为可计算对象。', caption: '当任务携带 FITS 或 MP4 证据时，Looker 对齐通道、时间与区域，输出带来源的观测摘要，再交给 Explore 计算。' },
+        { n: 10, duration: 15, chapter: 'Agent', label: 'Explore', kind: 'explore', transition: 'pan', title: 'Explore：用可复现计算检验预测', sub: '运行脚本、扫描数据、量化滞后与传播，并保留轨迹。', caption: 'Explore 把假设翻译成计算任务：批量扫描快照，测量 EUV 与软 X 射线的时序关系，并保留代码、参数与结果。' },
+        { n: 11, duration: 15, chapter: 'Agent', label: 'Oracle', kind: 'oracle', transition: 'route', title: 'Oracle：主动寻找反例与替代解释', sub: '不只问“能否解释”，还问“什么会让它失败”。', caption: 'Oracle 维护证据账本，寻找反例、混淆因素与替代机制；必要时修改、淘汰或重新组合假设。' },
+        { n: 12, duration: 15, chapter: 'Agent', label: 'Prometheus', kind: 'prometheus', transition: 'export', title: 'Prometheus：把推理变成下一步实验', sub: '综合证据，生成 MHD 配置与观测提案。', caption: 'Prometheus 将当前最可信的解释与剩余不确定性，转化为可运行的 MHD 参数、观测优先级和下一轮验证任务。' },
+        { n: 13, duration: 20, chapter: 'Demo', label: '输入现象', kind: 'demoInput', transition: 'submit', title: 'Demo：把一个活动区现象交给系统', sub: '现象不是一句提示词，而是一组带上下文的观测约束。', caption: '示例输入来自活动区 AR 13664：局部亮度突增，EUV 先于软 X 射线，环结构却不同步升温。系统从这里开始组织研究。' },
+        { n: 14, duration: 30, chapter: 'Demo', label: '假设与证据', kind: 'demoEvidence', transition: 'route', title: '证据进入假设空间，结论保持可修正', sub: '支持、未知与矛盾同时保留，不把单一信号当成证明。', caption: 'EUV 领先软 X 射线只提示局部释放或热传递；持续升温却没有明显脉冲，既不能简单证明纳耀斑，也不能直接排除波动耗散。' },
+        { n: 15, duration: 30, chapter: 'Demo', label: '迭代路径', kind: 'demoEvolution', transition: 'growth', title: '从争论到验证路径：任务由证据驱动生长', sub: 'Oracle 的反例改变假设权重，Prometheus 把缺口排成下一轮任务。', caption: '系统不停止在“哪个假设更像”，而是继续追问：需要什么数据来区分它们？哪些计算和观测能最快减少不确定性？' },
+        { n: 16, duration: 20, chapter: 'Demo', label: '输出', kind: 'demoOutput', transition: 'export', title: '输出不是一句答案，而是一份可执行方案', sub: '当前判断、证据边界、MHD 配置与观测提案一并交付。', caption: '最终输出包含假设排序、证据来源、未知项、可复现的 MHD 配置，以及下一步观测提案；每一条结论都带着边界。' },
+        { n: 17, duration: 18, chapter: '收束', label: '未来', kind: 'close', transition: 'pullback', title: '开放、可复现、持续进化的科学协作', sub: '让机器成为研究伙伴，让每个结论都通向下一次检验。', caption: 'Open Scientist 的意义，不是让机器替人宣布真理，而是把复杂研究变成可协作、可复现、可持续改进的科学过程。' }
+      ];
+
+      let cursor = 0;
+      SHOTS.forEach((shot) => { shot.start = cursor; cursor += shot.duration; shot.end = cursor; });
+
+      const TAU = Math.PI * 2;
+      const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+      const lerp = (a, b, t) => a + (b - a) * t;
+      const ease = (t) => t * t * (3 - 2 * t);
+      const pulse = (t, speed = 1) => (Math.sin(t * speed * TAU) + 1) / 2;
+      const fmt = (n) => String(n).padStart(2, '0');
+      const rgba = (hex, alpha) => {
+        const h = hex.replace('#', '');
+        const r = parseInt(h.slice(0, 2), 16);
+        const g = parseInt(h.slice(2, 4), 16);
+        const b = parseInt(h.slice(4, 6), 16);
+        return `rgba(${r},${g},${b},${alpha})`;
+      };
+
+      function rr(x, y, w, h, r = 18) {
+        const radius = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      }
+
+      function fillPanel(x, y, w, h, fill = C.panel, stroke = C.line, radius = 22, alpha = 1) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        rr(x, y, w, h, radius);
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function line(x1, y1, x2, y2, color = C.line, width = 3, alpha = 1, dash = []) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.setLineDash(dash);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function tx(value, x, y, size = 32, color = C.ink, options = {}) {
+        ctx.save();
+        ctx.globalAlpha = options.alpha ?? 1;
+        ctx.font = `${options.weight || 400} ${size}px "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", Arial, sans-serif`;
+        ctx.fillStyle = color;
+        ctx.textAlign = options.align || 'left';
+        ctx.textBaseline = options.baseline || 'alphabetic';
+        ctx.fillText(String(value), x, y);
+        ctx.restore();
+      }
+
+      function wrap(value, maxWidth, size = 32, weight = 400) {
+        ctx.save();
+        ctx.font = `${weight} ${size}px "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", Arial, sans-serif`;
+        const chars = Array.from(String(value));
+        const lines = [];
+        let current = '';
+        chars.forEach((ch) => {
+          if (ch === '\n') { lines.push(current); current = ''; return; }
+          const next = current + ch;
+          if (current && ctx.measureText(next).width > maxWidth) { lines.push(current); current = ch; }
+          else current = next;
+        });
+        if (current) lines.push(current);
+        ctx.restore();
+        return lines;
+      }
+
+      function paragraph(value, x, y, maxWidth, size = 32, color = C.muted, lineHeight = 48, options = {}) {
+        const lines = wrap(value, maxWidth, size, options.weight || 400);
+        lines.forEach((v, i) => tx(v, x, y + i * lineHeight, size, color, options));
+        return lines.length * lineHeight;
+      }
+
+      function dot(x, y, r, color, alpha = 1, glow = 0) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        if (glow) { ctx.shadowColor = color; ctx.shadowBlur = glow; }
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function circle(x, y, r, stroke = C.line2, width = 3, alpha = 1) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function badge(value, x, y, color = C.cyan, width = null) {
+        const w = width || Math.max(120, value.length * 25 + 48);
+        fillPanel(x, y - 32, w, 56, rgba(color, 0.10), rgba(color, 0.55), 28);
+        tx(value, x + w / 2, y + 6, 24, color, { align: 'center', weight: 600 });
+        return w;
+      }
+
+      function arrow(x1, y1, x2, y2, color = C.cyan, width = 4, alpha = 1, head = 15) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        line(x1, y1, x2, y2, color, width, alpha);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - Math.cos(angle - Math.PI / 6) * head, y2 - Math.sin(angle - Math.PI / 6) * head);
+        ctx.lineTo(x2 - Math.cos(angle + Math.PI / 6) * head, y2 - Math.sin(angle + Math.PI / 6) * head);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function pathStroke(points, color, width = 4, alpha = 1, dash = []) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.setLineDash(dash);
+        ctx.beginPath();
+        points.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function particleOnSegment(x1, y1, x2, y2, t, color, size = 8, alpha = 1) {
+        const p = ((t % 1) + 1) % 1;
+        dot(lerp(x1, x2, p), lerp(y1, y2, p), size, color, alpha, 15);
+      }
+
+      function particleOnPath(points, t, color, size = 8, alpha = 1) {
+        const lengths = [];
+        let total = 0;
+        for (let i = 1; i < points.length; i++) {
+          const len = Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]);
+          lengths.push(len); total += len;
+        }
+        let target = (((t % 1) + 1) % 1) * total;
+        for (let i = 0; i < lengths.length; i++) {
+          if (target <= lengths[i]) {
+            const p = target / lengths[i];
+            particleOnSegment(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1], p, color, size, alpha);
+            return;
+          }
+          target -= lengths[i];
+        }
+      }
+
+      function header(shot) {
+        tx(shot.chapter.toUpperCase(), SAFE.left, 128, 25, C.cyan, { weight: 700 });
+        tx(`${fmt(shot.n)} / ${SHOTS.length}`, SAFE.right, 128, 25, C.muted, { align: 'right', weight: 600 });
+        line(SAFE.left, 160, SAFE.right, 160, C.line, 2, 0.85);
+        tx(shot.title, SAFE.left, 282, 84, C.white, { weight: 700 });
+        tx(shot.sub, SAFE.left, 360, 36, C.muted);
+        badge(shot.label, SAFE.right - Math.max(170, shot.label.length * 26 + 55), 245, C.cyan);
+      }
+
+      function caption(shot, t) {
+        ctx.save();
+        ctx.fillStyle = rgba(C.bg, 0.90);
+        ctx.fillRect(0, SAFE.captionTop - 22, W, SAFE.captionBottom - SAFE.captionTop + 35);
+        ctx.restore();
+        line(SAFE.left, SAFE.captionTop, SAFE.right, SAFE.captionTop, C.line2, 2, 0.9);
+        tx('OPEN SCIENTIST  /  CORONAL HEATING', SAFE.left, SAFE.captionTop + 42, 22, C.faint, { weight: 700 });
+        const max = 2640;
+        paragraph(shot.caption, SAFE.left, SAFE.captionTop + 86, max, 30, C.ink, 43);
+        tx(`${Math.floor(t / 60)}:${fmt(Math.floor(t % 60))}`, SAFE.right, SAFE.captionTop + 44, 24, C.faint, { align: 'right' });
+      }
+
+      function drawBackground(t) {
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, C.bg2);
+        grad.addColorStop(0.55, C.bg);
+        grad.addColorStop(1, '#040b0e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.save();
+        ctx.globalAlpha = 0.16;
+        ctx.strokeStyle = C.line;
+        ctx.lineWidth = 1;
+        const drift = (t * 14) % 90;
+        for (let x = -90 + drift; x < W + 90; x += 90) { line(x, 0, x, H, C.line, 1, 0.35); }
+        for (let y = 20; y < H; y += 90) { line(0, y, W, y, C.line, 1, 0.30); }
+        ctx.restore();
+
+        for (let i = 0; i < 42; i++) {
+          const x = (i * 271 + 120) % W;
+          const y = 190 + ((i * 149) % 1430);
+          const a = 0.10 + 0.08 * pulse(t * 0.15 + i * 0.07, 1);
+          dot(x, y, i % 7 === 0 ? 3 : 2, i % 3 === 0 ? C.cyan : C.faint, a);
+        }
+
+        ctx.save();
+        const scan = ((t * 110) % (H + 180)) - 90;
+        ctx.globalAlpha = 0.035;
+        ctx.fillStyle = C.cyan;
+        ctx.fillRect(0, scan, W, 4);
+        ctx.restore();
+      }
+
+      function solar(x, y, r, t, scale = 1) {
+        const halo = ctx.createRadialGradient(x, y, r * 0.3, x, y, r * 2.2);
+        halo.addColorStop(0, rgba(C.orange, 0.28));
+        halo.addColorStop(0.35, rgba(C.amber, 0.10));
+        halo.addColorStop(1, rgba(C.orange, 0));
+        ctx.fillStyle = halo;
+        ctx.beginPath(); ctx.arc(x, y, r * 2.2, 0, TAU); ctx.fill();
+        const g = ctx.createRadialGradient(x - r * 0.22, y - r * 0.28, r * 0.05, x, y, r);
+        g.addColorStop(0, '#fff5c4');
+        g.addColorStop(0.20, '#ffc37d');
+        g.addColorStop(0.65, '#ec7e52');
+        g.addColorStop(1, '#9a3b36');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+        ctx.save();
+        ctx.globalAlpha = 0.36;
+        for (let i = 0; i < 18; i++) {
+          const a = i * 1.91 + t * 0.08;
+          const rr0 = r * (0.32 + ((i * 37) % 48) / 100);
+          dot(x + Math.cos(a) * rr0, y + Math.sin(a) * rr0, (i % 4) + 3, i % 2 ? C.yellow : C.orange, 0.65);
+        }
+        ctx.restore();
+        const flare = r * (1.14 + 0.07 * pulse(t * 0.3, 1));
+        pathStroke([
+          [x - r * 0.42, y - r * 0.78],
+          [x - r * 0.05, y - r * 1.12],
+          [x + r * 0.36, y - r * 0.82],
+          [x + r * 0.55, y - r * 0.42]
+        ], C.amber, 9 * scale, 0.8);
+        circle(x, y, flare, C.orange, 2, 0.12);
+      }
+
+      function temperatureAxis(x, y, w, t) {
+        line(x, y, x + w, y, C.line2, 3);
+        [0, 0.25, 0.5, 0.75, 1].forEach((p) => {
+          line(x + w * p, y - 13, x + w * p, y + 13, C.line2, 2);
+          tx(p === 0 ? '光球' : p === 1 ? '日冕' : '', x + w * p, y + 47, 22, C.muted, { align: 'center' });
+        });
+        const pts = [];
+        for (let i = 0; i <= 90; i++) {
+          const p = i / 90;
+          const wave = Math.sin(p * 12 + t * 0.7) * 12;
+          const temp = p < 0.58 ? 0.18 + p * 0.22 : 0.31 + Math.pow((p - 0.58) / 0.42, 0.55) * 0.68;
+          pts.push([x + w * p, y - temp * 260 + wave]);
+        }
+        pathStroke(pts, C.amber, 8, 0.95);
+        const p = (t * 0.08) % 1;
+        const temp = p < 0.58 ? 0.18 + p * 0.22 : 0.31 + Math.pow((p - 0.58) / 0.42, 0.55) * 0.68;
+        dot(x + w * p, y - temp * 260 + Math.sin(p * 12 + t * 0.7) * 12, 11, C.white, 1, 22);
+      }
+
+      function wave(points, color, t, phase = 0, width = 5, alpha = 1) {
+        const pts = [];
+        for (let i = 0; i <= 90; i++) {
+          const p = i / 90;
+          const baseX = lerp(points[0][0], points[1][0], p);
+          const baseY = lerp(points[0][1], points[1][1], p);
+          pts.push([baseX, baseY + Math.sin(p * TAU * 3.4 - t * 4.2 + phase) * 16]);
+        }
+        pathStroke(pts, color, width, alpha);
+      }
+
+      function miniChart(x, y, w, h, color, mode, t) {
+        fillPanel(x, y, w, h, rgba(C.panel2, 0.72), C.line, 18);
+        line(x + 42, y + h - 40, x + w - 24, y + h - 40, C.line2, 2);
+        line(x + 42, y + 24, x + 42, y + h - 40, C.line2, 2);
+        const pts = [];
+        for (let i = 0; i <= 70; i++) {
+          const p = i / 70;
+          let v = 0.5;
+          if (mode === 'lag') v = 0.38 + 0.15 * Math.sin(p * 18) + 0.29 * Math.exp(-Math.pow((p - 0.64) * 11, 2));
+          if (mode === 'wave') v = 0.45 + 0.20 * Math.sin(p * 29 - t * 1.8) + 0.06 * Math.sin(p * 61 + t);
+          if (mode === 'confidence') v = 0.18 + 0.6 * p + 0.08 * Math.sin(p * 16 + t);
+          if (mode === 'counter') v = 0.78 - 0.45 * p + 0.05 * Math.sin(p * 21 + t);
+          pts.push([x + 42 + p * (w - 66), y + h - 40 - v * (h - 85)]);
+        }
+        pathStroke(pts, color, 6, 0.95);
+        const scanP = (t * 0.12) % 1;
+        line(x + 42 + scanP * (w - 66), y + 22, x + 42 + scanP * (w - 66), y + h - 40, color, 2, 0.28);
+        dot(x + 42 + scanP * (w - 66), pts[Math.floor(scanP * 70)][1], 7, color, 1, 15);
+      }
+
+      function flowNode(x, y, w, h, label, sub, color, t, index, active = true) {
+        fillPanel(x, y, w, h, rgba(active ? color : C.panel2, active ? 0.12 : 0.72), active ? rgba(color, 0.62) : C.line, 18);
+        dot(x + 32, y + 34, 9, active ? color : C.faint, active ? 1 : 0.75, active ? 17 : 0);
+        tx(label, x + 58, y + 43, 28, active ? C.white : C.muted, { weight: 700 });
+        paragraph(sub, x + 30, y + 91, w - 60, 23, active ? C.muted : C.faint, 33);
+        const p = (t * 0.25 + index * 0.17) % 1;
+        line(x + 30, y + h - 22, x + w - 30, y + h - 22, C.line, 3);
+        line(x + 30, y + h - 22, x + 30 + (w - 60) * p, y + h - 22, active ? color : C.faint, 4, 0.9);
+      }
+
+      function drawMystery(shot, t) {
+        header(shot);
+        solar(790, 1075, 260, t);
+        const corona = [
+          [910, 850], [1130, 650], [1390, 590], [1650, 700], [1840, 930],
+          [1710, 1150], [1450, 1290], [1180, 1270], [965, 1130]
+        ];
+        pathStroke(corona, C.amber, 8, 0.8);
+        pathStroke(corona.map(([x, y]) => [x + 30, y + 24]), C.orange, 3, 0.45);
+        particleOnPath(corona, t * 0.12, C.yellow, 9, 0.9);
+        particleOnPath(corona, t * 0.12 + 0.46, C.orange, 7, 0.65);
+        tx('日冕', 1390, 610, 28, C.amber, { weight: 700 });
+        tx('1–3 MK', 1390, 650, 42, C.white, { weight: 700 });
+        tx('光球', 600, 1435, 28, C.muted, { weight: 700 });
+        tx('≈ 5780 K', 600, 1477, 38, C.white, { weight: 700 });
+
+        fillPanel(2080, 590, 1410, 1030, rgba(C.panel, 0.84), C.line, 26);
+        tx('TEMPERATURE INVERSION', 2140, 670, 24, C.cyan, { weight: 700 });
+        tx('越往外，温度却重新升高', 2140, 760, 54, C.white, { weight: 700 });
+        temperatureAxis(2190, 1330, 1170, t);
+        tx('观测事实', 2140, 940, 25, C.muted, { weight: 700 });
+        const facts = [
+          ['01', '光球向外温度下降', C.blue],
+          ['02', '日冕层温度陡升', C.amber],
+          ['03', '能量输运与耗散机制未知', C.red]
+        ];
+        facts.forEach((item, i) => {
+          const yy = 1020 + i * 95;
+          tx(item[0], 2160, yy, 25, item[2], { weight: 700 });
+          line(2240, yy - 10, 2280, yy - 10, item[2], 4);
+          tx(item[1], 2320, yy, 30, C.ink);
+        });
+        const qx = 2820 + Math.sin(t * 0.4) * 25;
+        const qy = 1080 + Math.cos(t * 0.32) * 18;
+        circle(qx, qy, 92, C.red, 4, 0.72);
+        tx('?', qx, qy + 34, 92, C.red, { align: 'center', weight: 700 });
+        tx('WHY?', qx, qy + 130, 25, C.red, { align: 'center', weight: 700 });
+        line(1990, 1100, 2080, 1100, C.cyan, 4, 0.65);
+        arrow(1990, 1100, 2070, 1100, C.cyan, 4, 0.65);
+      }
+
+      function drawTheory(shot, t) {
+        header(shot);
+        tx('ONE OBSERVATION', 210, 565, 24, C.cyan, { weight: 700 });
+        fillPanel(180, 620, 850, 875, rgba(C.panel2, 0.82), C.line2, 24);
+        tx('局部亮度突增', 250, 745, 50, C.white, { weight: 700 });
+        tx('EUV 先于软 X 射线', 250, 820, 34, C.amber, { weight: 600 });
+        tx('环结构不同步升温', 250, 880, 34, C.blue, { weight: 600 });
+        miniChart(250, 990, 690, 360, C.cyan, 'lag', t);
+        tx('同一个观测窗口', 250, 1410, 25, C.muted);
+
+        const x0 = 1220;
+        tx('COMPETING MECHANISMS', x0, 565, 24, C.cyan, { weight: 700 });
+        const rows = [
+          { y: 650, color: C.blue, code: 'A', name: '阿尔芬波耗散', sub: '传播 → 相位混合 → 热', pred: '连续 / 波动响应' },
+          { y: 900, color: C.amber, code: 'B', name: '磁重联纳耀斑', sub: '电流片 → 脉冲释放 → 热', pred: '脉冲 / 局部释放' },
+          { y: 1150, color: C.purple, code: 'A × B', name: '耦合机制', sub: '波动输运 × 局部重联', pred: '多尺度协同信号' }
+        ];
+        rows.forEach((r, i) => {
+          fillPanel(x0, r.y, 1360, 190, rgba(r.color, 0.08), rgba(r.color, 0.48), 20);
+          circle(x0 + 75, r.y + 95, 43, r.color, 5, 0.8);
+          tx(r.code, x0 + 75, r.y + 108, 25, r.color, { align: 'center', weight: 700 });
+          tx(r.name, x0 + 155, r.y + 72, 34, C.white, { weight: 700 });
+          tx(r.sub, x0 + 155, r.y + 119, 27, C.muted);
+          badge(`预测：${r.pred}`, x0 + 780, r.y + 100, r.color, 465);
+          const route = [[x0 + 1200, r.y + 96], [x0 + 1280, r.y + 96], [x0 + 1340, r.y + 56]];
+          pathStroke(route, r.color, 4, 0.7);
+          particleOnPath(route, t * 0.16 + i * 0.26, r.color, 7, 0.9);
+        });
+        const forkX = 2770;
+        line(1030, 1040, x0 - 40, 1040, C.line2, 3);
+        arrow(1040, 1040, x0 - 45, 1040, C.cyan, 3, 0.8);
+        tx('需要可区分的预测', 2550, 1515, 25, C.yellow, { weight: 700 });
+        const branch = [[forkX, 1450], [forkX + 180, 1450], [forkX + 320, 1375]];
+        pathStroke(branch, C.yellow, 4, 0.8);
+        particleOnPath(branch, t * 0.2, C.yellow, 8, 1);
+        line(forkX + 180, 1450, forkX + 320, 1525, C.yellow, 4, 0.8);
+        tx('观测', forkX + 350, 1385, 25, C.blue, { weight: 700 });
+        tx('计算', forkX + 350, 1535, 25, C.green, { weight: 700 });
+      }
+
+      function drawScientificFlow(shot, t) {
+        header(shot);
+        const steps = [
+          ['01', '现象', '结构化观测', C.cyan],
+          ['02', '证据', '来源与不确定性', C.blue],
+          ['03', '假设', '机制与预测', C.purple],
+          ['04', '检验', '计算与反例', C.amber],
+          ['05', '结论', '边界与下一步', C.green]
+        ];
+        const xs = [270, 940, 1610, 2280, 2950];
+        const y = 910;
+        const path = xs.map((x) => [x + 190, y + 100]);
+        pathStroke(path, C.line2, 8, 0.7);
+        pathStroke(path.map(([x, yy]) => [x + 2, yy - 4]), C.cyan, 2, 0.5);
+        particleOnPath(path, t * 0.14, C.white, 12, 1);
+        particleOnPath(path, t * 0.14 + 0.44, C.cyan, 7, 0.8);
+        steps.forEach((s, i) => {
+          const x = xs[i];
+          const lift = Math.sin(t * 1.8 + i * 0.9) * 6;
+          circle(x + 190, y + 100 + lift, 88, s[3], 6, 0.75);
+          dot(x + 190, y + 100 + lift, 13, s[3], 1, 22);
+          tx(s[0], x + 190, y + 90 + lift, 24, C.bg, { align: 'center', weight: 800 });
+          tx(s[1], x + 190, y + 220, 34, C.white, { align: 'center', weight: 700 });
+          tx(s[2], x + 190, y + 265, 25, C.muted, { align: 'center' });
+        });
+        fillPanel(510, 600, 2810, 190, rgba(C.cyan, 0.06), rgba(C.cyan, 0.32), 24);
+        tx('TRACEABLE RESEARCH STATE', 600, 675, 25, C.cyan, { weight: 700 });
+        tx('每一步都留下来源、参数、反例与下一步任务', 600, 744, 38, C.white, { weight: 600 });
+        const tags = [
+          ['source', C.blue], ['uncertainty', C.yellow], ['counterexample', C.red], ['next action', C.green]
+        ];
+        tags.forEach((tag, i) => badge(tag[0], 1660 + i * 360, 690, tag[1], 290));
+        tx('结论不是终点，而是下一轮研究的入口', 1920, 1510, 42, C.yellow, { align: 'center', weight: 700 });
+        line(920, 1570, 2920, 1570, C.line2, 3);
+        arrow(2920, 1570, 3000, 1570, C.green, 4, 0.8);
+      }
+
+      function drawWorkBenchUI(x, y, w, h, t) {
+        fillPanel(x, y, w, h, rgba(C.panel, 0.95), C.line2, 26);
+        ctx.save();
+        ctx.fillStyle = rgba(C.cyan, 0.06);
+        ctx.fillRect(x, y, w, 72);
+        ctx.restore();
+        dot(x + 35, y + 36, 8, C.red, 0.9);
+        dot(x + 62, y + 36, 8, C.amber, 0.9);
+        dot(x + 89, y + 36, 8, C.green, 0.9);
+        tx('OPEN SCIENTIST  /  RUN-AR13664', x + 130, y + 46, 23, C.muted, { weight: 700 });
+        badge('RUNNING', x + w - 300, y + 38, C.green, 200);
+        const left = x + 38;
+        const right = x + 690;
+        fillPanel(left, y + 110, 570, h - 150, rgba(C.panel2, 0.72), C.line, 18);
+        tx('PHENOMENON', left + 28, y + 165, 22, C.cyan, { weight: 700 });
+        tx('AR 13664 · 演示场景', left + 28, y + 220, 30, C.white, { weight: 700 });
+        tx('EUV → GOES', left + 28, y + 278, 26, C.amber, { weight: 600 });
+        tx('局部亮度突增 / 不同步升温', left + 28, y + 325, 24, C.muted);
+        miniChart(left + 28, y + 390, 510, 250, C.cyan, 'lag', t);
+        tx('PROVENANCE', left + 28, y + 710, 22, C.cyan, { weight: 700 });
+        ['SDO / AIA 171·193 Å', 'GOES / 1–8 Å', 'local MHD coupling'].forEach((v, i) => {
+          dot(left + 36, y + 766 + i * 43, 5, [C.blue, C.amber, C.purple][i]);
+          tx(v, left + 58, y + 775 + i * 43, 23, C.muted);
+        });
+        tx('AGENT WORKFLOW', right, y + 165, 22, C.cyan, { weight: 700 });
+        const list = [
+          ['Librarian', 'hypothesis space', C.blue],
+          ['Looker', 'alignment capability', C.purple],
+          ['Explore', 'reproducible tests', C.green],
+          ['Oracle', 'counterexamples', C.red],
+          ['Prometheus', 'next proposal', C.amber]
+        ];
+        list.forEach((v, i) => {
+          const yy = y + 220 + i * 104;
+          const phase = clamp((t * 0.45 - i * 0.12) % 1);
+          line(right, yy, right + 780, yy, C.line, 3);
+          line(right, yy, right + 780 * phase, yy, v[2], 5, 0.82);
+          dot(right + 780 * phase, yy, 9, v[2], 1, 18);
+          tx(v[0], right, yy - 22, 28, C.white, { weight: 700 });
+          tx(v[1], right + 255, yy - 22, 24, C.muted);
+        });
+        const logY = y + h - 120;
+        line(right, logY, x + w - 40, logY, C.line2, 2);
+        tx('event  /  evidence ledger updated  /  confidence remains bounded', right, logY + 46, 22, C.green);
+      }
+
+      function drawWorkbench(shot, t) {
+        header(shot);
+        drawWorkBenchUI(260, 540, 3320, 1030, t);
+        const labels = [
+          ['输入现象', 530, C.cyan], ['证据账本', 1280, C.blue], ['假设演化', 2030, C.purple], ['下一步', 2780, C.amber]
+        ];
+        labels.forEach(([s, x, c]) => {
+          dot(x, 1695, 8, c, 1, 18);
+          tx(s, x + 28, 1705, 25, c, { weight: 700 });
+        });
+        line(530, 1695, 3260, 1695, C.line2, 3, 0.8);
+        particleOnSegment(530, 1695, 3260, 1695, t * 0.10, C.white, 9, 0.95);
+      }
+
+      function drawStages(shot, t) {
+        header(shot);
+        const stages = [
+          { x: 250, label: 'A', title: '问题定义', sub: 'Phenomenon\nconstraints', color: C.cyan },
+          { x: 1080, label: 'B', title: '证据构建', sub: 'Observation\nledger', color: C.blue },
+          { x: 1910, label: 'C', title: '推理与反驳', sub: 'Hypothesis\nmutation', color: C.purple },
+          { x: 2740, label: 'D', title: '方案交付', sub: 'MHD +\nproposal', color: C.amber }
+        ];
+        const y = 740;
+        const stream = stages.map((s) => [s.x + 330, y + 180]);
+        pathStroke(stream, C.line2, 18, 0.55);
+        pathStroke(stream, C.cyan, 3, 0.55);
+        particleOnPath(stream, t * 0.11, C.white, 13, 1);
+        particleOnPath(stream, t * 0.11 + 0.34, C.cyan, 7, 0.7);
+        stages.forEach((s, i) => {
+          const dy = Math.sin(t * 1.2 + i) * 7;
+          fillPanel(s.x, y + dy, 660, 440, rgba(s.color, 0.08), rgba(s.color, 0.58), 26);
+          circle(s.x + 330, y + 120 + dy, 70, s.color, 5, 0.8);
+          tx(s.label, s.x + 330, y + 144 + dy, 52, s.color, { align: 'center', weight: 800 });
+          tx(s.title, s.x + 330, y + 250 + dy, 38, C.white, { align: 'center', weight: 700 });
+          const lines = s.sub.split('\n');
+          lines.forEach((v, j) => tx(v, s.x + 330, y + 305 + j * 37 + dy, 25, C.muted, { align: 'center' }));
+          const p = (t * 0.3 + i * 0.13) % 1;
+          line(s.x + 60, y + 405 + dy, s.x + 600, y + 405 + dy, C.line, 3);
+          line(s.x + 60, y + 405 + dy, s.x + 60 + p * 540, y + 405 + dy, s.color, 5);
+        });
+        const artifacts = [
+          ['structured phenomenon', 410, 600, C.cyan],
+          ['aligned evidence', 1250, 600, C.blue],
+          ['counterexample', 2070, 600, C.red],
+          ['actionable result', 2860, 600, C.green]
+        ];
+        artifacts.forEach(([v, x, yy, c], i) => {
+          badge(v, x, yy, c, 300);
+          arrow(x + 150, yy + 38, x + 150, y - 20, c, 3, 0.55);
+        });
+        tx('状态可回放  ·  来源可追踪  ·  失败可修正', 1920, 1515, 38, C.yellow, { align: 'center', weight: 700 });
+      }
+
+      const AGENTS = [
+        { key: 'sisyphus', name: 'Sisyphus', cn: '编排', x: 1920, y: 1120, color: C.cyan },
+        { key: 'librarian', name: 'Librarian', cn: '假设', x: 1150, y: 690, color: C.blue },
+        { key: 'looker', name: 'Looker', cn: '对齐', x: 2670, y: 690, color: C.purple },
+        { key: 'explore', name: 'Explore', cn: '计算', x: 3030, y: 1220, color: C.green },
+        { key: 'oracle', name: 'Oracle', cn: '反驳', x: 2500, y: 1490, color: C.red },
+        { key: 'prometheus', name: 'Prometheus', cn: '方案', x: 1340, y: 1490, color: C.amber }
+      ];
+
+      function agentNode(agent, t, active = true, large = false) {
+        const r = large ? 156 : 116;
+        const glow = active ? 26 : 0;
+        circle(agent.x, agent.y, r + 18, rgba(agent.color, 0.25), 3, active ? 0.8 : 0.35);
+        circle(agent.x, agent.y, r, agent.color, large ? 7 : 5, active ? 0.95 : 0.55);
+        dot(agent.x, agent.y, 14, agent.color, active ? 1 : 0.7, glow);
+        tx(agent.name, agent.x, agent.y - 30, large ? 34 : 29, C.white, { align: 'center', weight: 700 });
+        tx(agent.cn, agent.x, agent.y + 25, 25, agent.color, { align: 'center', weight: 700 });
+        tx(active ? 'READY' : 'IDLE', agent.x, agent.y + r + 52, 20, active ? C.green : C.faint, { align: 'center', weight: 700 });
+      }
+
+      function drawAgentMap(shot, t) {
+        header(shot);
+        const center = AGENTS[0];
+        const mainEdges = [
+          [center, AGENTS[1]], [AGENTS[1], AGENTS[3]], [AGENTS[3], AGENTS[4]], [AGENTS[4], AGENTS[5]], [AGENTS[5], center]
+        ];
+        mainEdges.forEach(([a, b], i) => {
+          line(a.x, a.y, b.x, b.y, C.line2, 10, 0.65);
+          line(a.x, a.y, b.x, b.y, a.color, 3, 0.62);
+          particleOnSegment(a.x, a.y, b.x, b.y, t * 0.07 + i * 0.19, C.white, 10, 0.9);
+        });
+        line(AGENTS[1].x, AGENTS[1].y, AGENTS[2].x, AGENTS[2].y, C.purple, 4, 0.6, [18, 18]);
+        line(AGENTS[2].x, AGENTS[2].y, AGENTS[3].x, AGENTS[3].y, C.purple, 4, 0.6, [18, 18]);
+        particleOnSegment(AGENTS[1].x, AGENTS[1].y, AGENTS[2].x, AGENTS[2].y, t * 0.05, C.purple, 8, 0.8);
+        particleOnSegment(AGENTS[2].x, AGENTS[2].y, AGENTS[3].x, AGENTS[3].y, t * 0.05 + 0.3, C.purple, 8, 0.8);
+        agentNode(center, t, true, true);
+        AGENTS.slice(1).forEach((agent, i) => agentNode(agent, t, i === Math.floor(t * 0.8) % 5));
+        fillPanel(500, 1660, 2840, 105, rgba(C.panel2, 0.82), C.line, 18);
+        tx('MAIN TOURNAMENT LOOP', 580, 1725, 23, C.cyan, { weight: 700 });
+        tx('Sisyphus → Librarian → Explore → Oracle → Prometheus → Sisyphus', 1150, 1725, 27, C.white, { weight: 600 });
+        tx('dashed route  /  media evidence alignment: Librarian → Looker → Explore', 580, 1800, 23, C.purple, { weight: 600 });
+        tx('Looker 在携带图像或视频证据的任务中接入', 2820, 1800, 23, C.muted, { align: 'right' });
+      }
+
+      function drawAgentHeader(shot, agent, t, phase) {
+        header(shot);
+        const x = 290;
+        const y = 700;
+        circle(x + 120, y + 120, 100, agent.color, 7, 0.86);
+        dot(x + 120, y + 120, 16, agent.color, 1, 30);
+        tx(agent.name, x + 120, y + 45, 29, agent.color, { align: 'center', weight: 700 });
+        tx(agent.cn, x + 120, y + 165, 34, C.white, { align: 'center', weight: 700 });
+        tx('AGENT ROLE', x + 120, y + 242, 21, C.faint, { align: 'center', weight: 700 });
+        const railX = 720;
+        tx('INPUT', railX, 620, 22, C.faint, { weight: 700 });
+        tx('PROCESS', railX + 990, 620, 22, C.faint, { weight: 700 });
+        tx('OUTPUT', railX + 2070, 620, 22, C.faint, { weight: 700 });
+        const p = clamp((t * 0.34 + phase) % 1);
+        line(railX, 930, railX + 2490, 930, C.line2, 12, 0.7);
+        line(railX, 930, railX + 2490 * p, 930, agent.color, 7, 0.85);
+        dot(railX + 2490 * p, 930, 14, agent.color, 1, 26);
+        return { x, y, railX };
+      }
+
+      function drawSisyphus(shot, t) {
+        const agent = AGENTS[0];
+        const q = drawAgentHeader(shot, agent, t, 0.02);
+        const boxes = [
+          ['task graph', 'parse phenomenon', C.cyan],
+          ['round state', 'route context', C.blue],
+          ['event log', 'record transition', C.green]
+        ];
+        boxes.forEach((b, i) => {
+          const x = q.railX + i * 830;
+          fillPanel(x, 1030, 650, 250, rgba(b[2], 0.08), rgba(b[2], 0.46), 20);
+          tx(b[0], x + 38, 1100, 30, C.white, { weight: 700 });
+          tx(b[1], x + 38, 1155, 25, C.muted);
+          const p = (t * 0.35 + i * 0.22) % 1;
+          line(x + 38, 1215, x + 600, 1215, C.line, 3);
+          line(x + 38, 1215, x + 38 + p * 562, 1215, b[2], 5);
+          dot(x + 38 + p * 562, 1215, 8, b[2], 1, 18);
+        });
+        const loop = [[q.railX + 330, 1330], [q.railX + 330, 1450], [q.railX + 2150, 1450], [q.railX + 2150, 1330]];
+        pathStroke(loop, C.cyan, 4, 0.64);
+        particleOnPath(loop, t * 0.12, C.white, 9, 0.95);
+        tx('when evidence changes → open next round', q.railX + 1240, 1515, 28, C.yellow, { align: 'center', weight: 700 });
+      }
+
+      function drawLibrarian(shot, t) {
+        const agent = AGENTS[1];
+        const q = drawAgentHeader(shot, agent, t, 0.14);
+        const root = { x: q.railX + 270, y: 1130 };
+        dot(root.x, root.y, 15, C.blue, 1, 25);
+        tx('phenomenon', root.x - 18, root.y - 34, 24, C.white, { align: 'center', weight: 700 });
+        const branches = [
+          { x: q.railX + 930, y: 1060, code: 'H1', title: 'nanoflare dominant', color: C.amber, score: '0.58' },
+          { x: q.railX + 930, y: 1240, code: 'H2', title: 'Alfvén dominant', color: C.blue, score: '0.42' },
+          { x: q.railX + 1540, y: 1060, code: 'E1', title: 'EUV leads GOES', color: C.cyan, score: 'support' },
+          { x: q.railX + 1540, y: 1240, code: 'E3', title: 'sustained heating', color: C.red, score: 'tension' }
+        ];
+        branches.forEach((b, i) => {
+          const parent = i < 2 ? root : { x: q.railX + 930, y: i === 2 ? 1060 : 1240 };
+          line(parent.x + 20, parent.y, b.x - 170, b.y, b.color, 4, 0.55);
+          fillPanel(b.x - 170, b.y - 55, 510, 110, rgba(b.color, 0.08), rgba(b.color, 0.45), 16);
+          tx(b.code, b.x - 130, b.y - 5, 23, b.color, { weight: 700 });
+          tx(b.title, b.x - 55, b.y - 5, 25, C.white, { weight: 600 });
+          tx(b.score, b.x + 240, b.y + 36, 22, b.color, { align: 'right', weight: 700 });
+          particleOnSegment(parent.x + 20, parent.y, b.x - 170, b.y, t * 0.14 + i * 0.16, b.color, 7, 0.85);
+        });
+        tx('mechanism  →  prediction  →  missing evidence', q.railX + 1440, 1475, 28, C.yellow, { align: 'center', weight: 700 });
+      }
+
+      function drawLooker(shot, t) {
+        const agent = AGENTS[2];
+        const q = drawAgentHeader(shot, agent, t, 0.24);
+        const left = q.railX;
+        const top = 1070;
+        const laneW = 850;
+        const laneH = 180;
+        ['FITS / SDO-AIA', 'MP4 / observation'].forEach((label, i) => {
+          const yy = top + i * 270;
+          fillPanel(left, yy, laneW, laneH, rgba(i ? C.purple : C.blue, 0.08), rgba(i ? C.purple : C.blue, 0.5), 18);
+          tx(label, left + 30, yy + 48, 25, i ? C.purple : C.blue, { weight: 700 });
+          for (let k = 0; k < 12; k++) {
+            const bw = 18 + ((k * 7 + i * 14) % 34);
+            const bh = 25 + ((k * 31) % 95);
+            ctx.fillStyle = rgba(i ? C.purple : C.blue, 0.35 + (k % 3) * 0.12);
+            ctx.fillRect(left + 36 + k * 62, yy + 137 - bh, bw, bh);
+          }
+          tx(i ? 'frame 000–240  /  ROI: loop-03' : 'channel 171 Å  /  t = 12:08:34', left + 30, yy + 155, 22, C.muted);
+        });
+        const alignX = left + 1000;
+        const alignY = 1190;
+        circle(alignX, alignY, 170, C.purple, 5, 0.7);
+        circle(alignX, alignY, 120, C.cyan, 3, 0.7);
+        line(alignX - 205, alignY, alignX + 205, alignY, C.line2, 3);
+        line(alignX, alignY - 205, alignX, alignY + 205, C.line2, 3);
+        dot(alignX + Math.sin(t * 1.5) * 118, alignY + Math.cos(t * 1.2) * 118, 11, C.cyan, 1, 24);
+        tx('ALIGN', alignX, alignY + 14, 28, C.white, { align: 'center', weight: 700 });
+        tx('time · channel · ROI', alignX, alignY + 55, 23, C.muted, { align: 'center' });
+        arrow(left + laneW + 40, top + 90, alignX - 190, alignY - 75, C.blue, 4, 0.7);
+        arrow(left + laneW + 40, top + 360, alignX - 190, alignY + 75, C.purple, 4, 0.7);
+        const outX = alignX + 390;
+        fillPanel(outX, 1080, 640, 220, rgba(C.green, 0.08), rgba(C.green, 0.5), 18);
+        tx('aligned evidence object', outX + 32, 1145, 28, C.white, { weight: 700 });
+        tx('source + uncertainty + ROI', outX + 32, 1200, 24, C.muted);
+        badge('→ Explore', outX + 32, 1260, C.green, 190);
+        arrow(alignX + 180, alignY, outX - 30, 1190, C.green, 4, 0.78);
+        tx('条件路径  /  有媒体证据时接入', 1920, 1500, 30, C.purple, { align: 'center', weight: 700 });
+      }
+
+      function drawExplore(shot, t) {
+        const agent = AGENTS[3];
+        const q = drawAgentHeader(shot, agent, t, 0.34);
+        const codeX = q.railX;
+        fillPanel(codeX, 1060, 850, 420, rgba(C.panel2, 0.9), C.line, 18);
+        tx('scan_lag.py', codeX + 36, 1120, 25, C.green, { weight: 700 });
+        const code = ['for snapshot in dataset:', '  lag = cross_correlation(', '    euv, goes, window=120)', '  save(lag, provenance=True)'];
+        code.forEach((v, i) => tx(v, codeX + 40, 1190 + i * 54, 24, i === 2 ? C.amber : C.muted));
+        badge('1.75M snapshots', codeX + 40, 1405, C.cyan, 260);
+        const chartX = codeX + 1010;
+        miniChart(chartX, 1060, 650, 420, C.cyan, 'lag', t);
+        tx('EUV → soft X lag', chartX + 32, 1120, 25, C.cyan, { weight: 700 });
+        const chart2X = chartX + 760;
+        miniChart(chart2X, 1060, 650, 420, C.green, 'wave', t);
+        tx('wave / propagation', chart2X + 32, 1120, 25, C.green, { weight: 700 });
+        const foot = ['parameters', 'code trace', 'result artifact'];
+        foot.forEach((v, i) => {
+          const x = codeX + i * 820;
+          badge(v, x, 1600, [C.blue, C.purple, C.green][i], 260);
+          if (i < 2) arrow(x + 280, 1600, x + 720, 1600, C.line2, 3, 0.8);
+        });
+      }
+
+      function drawOracle(shot, t) {
+        const agent = AGENTS[4];
+        const q = drawAgentHeader(shot, agent, t, 0.44);
+        const x = q.railX;
+        const y = 1080;
+        const points = [[x + 170, y + 260], [x + 760, y + 90], [x + 1350, y + 210], [x + 1940, y + 60], [x + 2460, y + 250]];
+        pathStroke(points, C.line2, 7, 0.8);
+        pathStroke(points.slice(0, 4), C.green, 6, 0.75);
+        pathStroke([[x + 1350, y + 210], [x + 1650, y + 480], [x + 2140, y + 420], [x + 2460, y + 250]], C.red, 7, 0.86);
+        points.forEach((p, i) => {
+          dot(p[0], p[1], 22, i === 2 ? C.red : C.green, 1, 20);
+          tx(['H1', 'E1', 'E3', 'counterexample', 'mutation'][i], p[0], p[1] - 42, 23, i === 2 || i === 3 ? C.red : C.muted, { align: 'center', weight: 700 });
+        });
+        particleOnPath(points.slice(0, 4), t * 0.16, C.white, 10, 0.95);
+        particleOnPath([[x + 1350, y + 210], [x + 1650, y + 480], [x + 2140, y + 420], [x + 2460, y + 250]], t * 0.13 + 0.3, C.red, 9, 0.95);
+        fillPanel(x + 820, 1470, 1120, 155, rgba(C.red, 0.09), rgba(C.red, 0.48), 18);
+        tx('COUNTEREXAMPLE', x + 870, 1532, 23, C.red, { weight: 700 });
+        tx('持续升温 ≠ 明显脉冲释放', x + 870, 1583, 31, C.white, { weight: 700 });
+        tx('→ 降低 H1 单独解释的置信度', x + 1540, 1583, 25, C.red, { weight: 600 });
+      }
+
+      function drawPrometheus(shot, t) {
+        const agent = AGENTS[5];
+        const q = drawAgentHeader(shot, agent, t, 0.54);
+        const x = q.railX;
+        const items = [
+          ['01', 'lag confidence interval', 'EUV / GOES', C.cyan],
+          ['02', 'wave tracking', 'propagation speed', C.blue],
+          ['03', 'MHD parameter scan', 'coupled heating', C.purple],
+          ['04', 'next observation', 'resolve unknown', C.amber]
+        ];
+        items.forEach((it, i) => {
+          const yy = 1050 + i * 132;
+          fillPanel(x, yy, 1180, 100, rgba(it[3], 0.07), rgba(it[3], 0.42), 15);
+          tx(it[0], x + 34, yy + 62, 23, it[3], { weight: 700 });
+          tx(it[1], x + 120, yy + 45, 28, C.white, { weight: 700 });
+          tx(it[2], x + 120, yy + 78, 22, C.muted);
+          const p = (t * 0.3 + i * 0.21) % 1;
+          line(x + 790, yy + 50, x + 1100, yy + 50, C.line, 4);
+          line(x + 790, yy + 50, x + 790 + p * 310, yy + 50, it[3], 6);
+          dot(x + 790 + p * 310, yy + 50, 8, it[3], 1, 16);
+        });
+        const outX = x + 1410;
+        fillPanel(outX, 1050, 1030, 610, rgba(C.amber, 0.08), rgba(C.amber, 0.5), 22);
+        tx('DELIVERABLE', outX + 38, 1120, 23, C.amber, { weight: 700 });
+        tx('MHD configuration', outX + 38, 1190, 34, C.white, { weight: 700 });
+        tx('observation proposal', outX + 38, 1242, 34, C.white, { weight: 700 });
+        line(outX + 38, 1290, outX + 950, 1290, C.line2, 2);
+        ['parameter ranges', 'predicted signature', 'unknowns + caveat'].forEach((v, i) => {
+          dot(outX + 48, 1360 + i * 68, 6, [C.purple, C.cyan, C.red][i]);
+          tx(v, outX + 80, 1368 + i * 68, 26, C.muted);
+        });
+        badge('→ next Sisyphus round', outX + 38, 1565, C.green, 330);
+      }
+
+      function floatingToken(value, x, y, targetX, targetY, start, t, color, width) {
+        const progress = ease(clamp((t - start) / 6));
+        const driftX = Math.sin(t * 1.25 + start) * (1 - progress) * 30;
+        const driftY = Math.cos(t * 1.05 + start) * (1 - progress) * 22;
+        const xx = lerp(x, targetX, progress) + driftX;
+        const yy = lerp(y, targetY, progress) + driftY;
+        fillPanel(xx - width / 2, yy - 28, width, 58, rgba(color, 0.12), rgba(color, 0.58), 28, 0.96);
+        tx(value, xx, yy + 8, 24, C.white, { align: 'center', weight: 600 });
+        if (progress > 0.08 && progress < 0.98) dot(xx + width / 2 + 20, yy, 5, color, 0.8, 13);
+      }
+
+      function drawDemoInput(shot, t) {
+        header(shot);
+        const boxX = 680, boxY = 740, boxW = 2480, boxH = 680;
+        tx('INPUT PHENOMENON', boxX, 625, 24, C.cyan, { weight: 700 });
+        fillPanel(boxX, boxY, boxW, boxH, rgba(C.panel2, 0.95), C.line2, 28);
+        ctx.save();
+        ctx.strokeStyle = rgba(C.cyan, 0.38);
+        ctx.lineWidth = 3;
+        rr(boxX + 44, boxY + 52, boxW - 88, 430, 18); ctx.stroke();
+        ctx.restore();
+        tx('描述你观察到的现象，Open Scientist 会把它转换成研究任务。', boxX + 80, boxY + 112, 25, C.faint);
+        const rows = [
+          '活动区 AR 13664 出现局部亮度突增',
+          'EUV 信号先于 GOES 软 X 射线响应',
+          '部分环结构温度升高并不同步发生'
+        ];
+        const charProgress = clamp((t - 5) / 7);
+        rows.forEach((row, i) => {
+          const count = Math.floor(row.length * (i === 0 ? clamp(charProgress * 1.3) : clamp((charProgress - i * 0.18) * 1.35)));
+          const visible = row.slice(0, Math.max(0, count));
+          tx(visible, boxX + 82, boxY + 205 + i * 82, 34, i === 0 ? C.white : i === 1 ? C.amber : C.blue, { weight: 600 });
+          if (i === 0 || count < row.length) {
+            const m = ctx.measureText(visible).width;
+            const blink = pulse(t * 1.8, 1) > 0.38 ? 1 : 0;
+            ctx.save(); ctx.globalAlpha = blink; ctx.fillStyle = C.cyan; ctx.fillRect(boxX + 84 + m, boxY + 170 + i * 82, 4, 44); ctx.restore();
+          }
+        });
+        const submitP = ease(clamp((t - 14) / 3));
+        fillPanel(boxX + 44, boxY + 530, 380, 72, submitP > 0.7 ? rgba(C.green, 0.18) : rgba(C.cyan, 0.10), submitP > 0.7 ? C.green : C.cyan, 18);
+        tx(submitP > 0.7 ? 'TASK CREATED' : 'CREATE RESEARCH TASK', boxX + 234, boxY + 576, 23, submitP > 0.7 ? C.green : C.cyan, { align: 'center', weight: 700 });
+        tx('AR13664 / DEMO', boxX + boxW - 75, boxY + 580, 23, C.faint, { align: 'right', weight: 700 });
+
+        const tokens = [
+          ['AR 13664', 440, 610, boxX + boxW - 330, boxY + 105, 2.2, C.cyan, 190],
+          ['EUV 先于 GOES', 3220, 650, boxX + boxW - 330, boxY + 205, 3.2, C.amber, 260],
+          ['局部亮度突增', 420, 1510, boxX + boxW - 330, boxY + 305, 4.1, C.orange, 240],
+          ['环结构不同步升温', 3260, 1510, boxX + boxW - 330, boxY + 405, 5.0, C.blue, 280]
+        ];
+        tokens.forEach((v) => floatingToken(v[0], v[1], v[2], v[3], v[4], v[5], t, v[6], v[7]));
+        const beam = clamp((t - 15) / 4);
+        if (beam > 0) {
+          line(boxX + 460, boxY + boxH + 75, boxX + 2000 * beam, boxY + boxH + 75, C.green, 5, 0.85);
+          dot(boxX + 2000 * beam, boxY + boxH + 75, 10, C.green, 1, 23);
+          tx('Sisyphus 解析任务上下文', boxX + 40, boxY + boxH + 120, 26, C.green, { weight: 700 });
+        }
+      }
+
+      function drawEvidenceRail(x, y, w, label, color, value, t, status) {
+        fillPanel(x, y, w, 142, rgba(color, 0.07), rgba(color, 0.42), 18);
+        circle(x + 58, y + 71, 31, color, 4, 0.8);
+        tx(label, x + 58, y + 81, 22, color, { align: 'center', weight: 700 });
+        tx(value, x + 120, y + 60, 27, C.white, { weight: 700 });
+        tx(status, x + 120, y + 99, 23, color, { weight: 600 });
+        const p = (t * 0.16 + label.length * 0.03) % 1;
+        line(x + w - 250, y + 71, x + w - 42, y + 71, C.line, 4);
+        line(x + w - 250, y + 71, x + w - 250 + p * 208, y + 71, color, 5);
+        dot(x + w - 250 + p * 208, y + 71, 7, color, 1, 16);
+      }
+
+      function drawDemoEvidence(shot, t) {
+        header(shot);
+        const left = 220, top = 565;
+        tx('HYPOTHESIS SPACE', left, top, 23, C.cyan, { weight: 700 });
+        drawEvidenceRail(left, 640, 1420, 'H1', C.amber, 'reconnection nanoflare dominant', t, 'candidate  /  contribution 0.58');
+        drawEvidenceRail(left, 815, 1420, 'H2', C.blue, 'Alfvén dissipation dominant', t + 1, 'uncertain  /  contribution 0.42');
+        drawEvidenceRail(left, 990, 1420, 'H3', C.red, 'reconnection-only', t + 2, 'revised  /  poor coverage');
+        line(left + 80, 1170, left + 80, 1450, C.line2, 3, 0.8);
+        arrow(left + 80, 1450, left + 80, 1510, C.cyan, 3, 0.8);
+        tx('not a verdict', left + 115, 1488, 23, C.yellow, { weight: 700 });
+        tx('EVIDENCE LEDGER', 1900, top, 23, C.cyan, { weight: 700 });
+        fillPanel(1900, 640, 1640, 890, rgba(C.panel2, 0.82), C.line, 22);
+        const heads = [['SOURCE', 1980], ['SIGNAL', 2330], ['INTERPRETATION', 2770], ['STATE', 3390]];
+        heads.forEach(([v, x]) => tx(v, x, 700, 21, C.faint, { weight: 700 }));
+        line(1960, 735, 3500, 735, C.line2, 2);
+        const rows = [
+          ['E1', 'SDO / AIA', 'EUV leads GOES', 'local release / transfer', 'SUPPORT', C.green],
+          ['E2', 'timing', 'propagation speed', 'not measured yet', 'UNKNOWN', C.yellow],
+          ['E3', 'thermal', 'sustained temperature', 'no obvious pulse', 'TENSION', C.red],
+          ['E4', 'MHD', 'local coupling', 'placeholder scan', 'UNKNOWN', C.yellow]
+        ];
+        rows.forEach((r, i) => {
+          const yy = 815 + i * 160;
+          const reveal = ease(clamp((t - i * 2.3) / 6));
+          ctx.save(); ctx.globalAlpha = 0.48 + 0.52 * reveal;
+          line(1960, yy + 80, 3500, yy + 80, C.line, 2);
+          tx(r[0], 1980, yy + 50, 25, r[5], { weight: 700 });
+          tx(r[1], 2160, yy + 50, 23, C.muted);
+          tx(r[2], 2330, yy + 50, 25, C.white, { weight: 600 });
+          tx(r[3], 2770, yy + 50, 23, C.muted);
+          badge(r[4], 3330, yy + 38, r[5], 150);
+          ctx.restore();
+          const bx = 1580 + reveal * 320;
+          arrow(bx, yy + 50, 1900, yy + 50, r[5], 3, 0.55 * reveal);
+        });
+        tx('SOURCE → CLAIM → LIMIT', 2760, 1590, 27, C.yellow, { align: 'center', weight: 700 });
+        line(2320, 1640, 3200, 1640, C.line2, 3);
+        particleOnSegment(2320, 1640, 3200, 1640, t * 0.12, C.white, 9, 0.95);
+      }
+
+      function drawDemoEvolution(shot, t) {
+        header(shot);
+        const x0 = 300, y0 = 820;
+        const nodes = [
+          { x: x0, label: '初始假设', sub: 'H1 / H2 / H3', color: C.purple },
+          { x: x0 + 850, label: '验证任务', sub: 'lag · wave · MHD', color: C.cyan },
+          { x: x0 + 1700, label: '新证据', sub: 'E1 · E3 · E4', color: C.red },
+          { x: x0 + 2550, label: '更新结论', sub: 'coupling remains', color: C.green }
+        ];
+        const pts = nodes.map((n) => [n.x + 170, y0 + 155]);
+        pathStroke(pts, C.line2, 14, 0.72);
+        particleOnPath(pts, t * 0.10, C.white, 12, 1);
+        nodes.forEach((n, i) => {
+          const dy = Math.sin(t * 1.2 + i) * 8;
+          circle(n.x + 170, y0 + 155 + dy, 92, n.color, 6, 0.82);
+          dot(n.x + 170, y0 + 155 + dy, 13, n.color, 1, 24);
+          tx(n.label, n.x + 170, y0 + 315, 32, C.white, { align: 'center', weight: 700 });
+          tx(n.sub, n.x + 170, y0 + 361, 24, n.color, { align: 'center', weight: 600 });
+        });
+        // The counterexample is a branch, not a red card that flashes in isolation.
+        const branch = [[x0 + 1870, y0 + 155], [x0 + 2010, y0 + 505], [x0 + 2360, y0 + 505], [x0 + 2550, y0 + 315]];
+        pathStroke(branch, C.red, 6, 0.9);
+        particleOnPath(branch, t * 0.14 + 0.18, C.red, 10, 1);
+        fillPanel(x0 + 1680, 1450, 720, 120, rgba(C.red, 0.10), rgba(C.red, 0.5), 18);
+        tx('Oracle  /  counterexample', x0 + 1720, 1500, 24, C.red, { weight: 700 });
+        tx('E3 lowers H1-alone confidence', x0 + 1720, 1540, 24, C.white, { weight: 600 });
+
+        const queueX = 740, queueY = 600;
+        fillPanel(queueX, queueY, 2360, 150, rgba(C.panel2, 0.86), C.line, 20);
+        tx('PROMETHEUS TASK QUEUE', queueX + 36, queueY + 50, 23, C.amber, { weight: 700 });
+        ['lag CI', 'wave tracking', 'MHD scan', 'observe next'].forEach((v, i) => {
+          const xx = queueX + 420 + i * 450;
+          const p = (t * 0.25 + i * 0.19) % 1;
+          badge(v, xx, queueY + 86, [C.cyan, C.blue, C.purple, C.amber][i], 250);
+          if (i < 3) arrow(xx + 270, queueY + 86, xx + 410, queueY + 86, C.line2, 3, 0.8);
+          line(xx, queueY + 126, xx + p * 250, queueY + 126, [C.cyan, C.blue, C.purple, C.amber][i], 4, 0.72);
+        });
+        tx('证据改变权重  →  下一轮任务改变  →  系统回到 Sisyphus', 1920, 1695, 35, C.yellow, { align: 'center', weight: 700 });
+      }
+
+      function drawDemoOutput(shot, t) {
+        header(shot);
+        const left = 240, top = 600;
+        fillPanel(left, top, 1740, 970, rgba(C.panel2, 0.9), C.line2, 24);
+        tx('MHD CONFIG  /  AR13664-DEMO', left + 42, top + 62, 24, C.amber, { weight: 700 });
+        const code = [
+          ['region', 'AR13664'],
+          ['heating.mode', 'coupled'],
+          ['alfven.dissipation', 'scan(0.20, 0.70)'],
+          ['reconnection.rate', 'scan(0.10, 0.60)'],
+          ['observable', 'EUV → GOES lag'],
+          ['uncertainty', 'E2 / E4 unresolved']
+        ];
+        code.forEach((v, i) => {
+          const yy = top + 145 + i * 104;
+          tx(v[0], left + 60, yy, 27, C.muted);
+          tx(v[1], left + 630, yy, 30, i === 5 ? C.red : C.green, { weight: 600 });
+          line(left + 60, yy + 30, left + 1630, yy + 30, C.line, 2);
+        });
+        badge('reproducible parameters', left + 60, top + 820, C.green, 340);
+        badge('provenance attached', left + 450, top + 820, C.blue, 310);
+
+        const right = 2130;
+        fillPanel(right, top, 1470, 970, rgba(C.panel, 0.94), C.line2, 24);
+        tx('OBSERVATION PROPOSAL', right + 42, top + 62, 24, C.cyan, { weight: 700 });
+        const tasks = [
+          ['01', 'EUV / GOES lag', 'confidence interval', C.cyan],
+          ['02', 'wave tracking', 'propagation speed', C.blue],
+          ['03', 'MHD coupled scan', 'temperature response', C.purple],
+          ['04', 'new observation', 'resolve E2 + E4', C.amber]
+        ];
+        tasks.forEach((v, i) => {
+          const yy = top + 160 + i * 150;
+          dot(right + 65, yy, 19, v[3], 1, 18);
+          tx(v[0], right + 65, yy + 8, 18, C.bg, { align: 'center', weight: 800 });
+          tx(v[1], right + 115, yy - 3, 29, C.white, { weight: 700 });
+          tx(v[2], right + 115, yy + 40, 24, C.muted);
+          line(right + 115, yy + 78, right + 1320, yy + 78, C.line, 3);
+          const p = (t * 0.22 + i * 0.17) % 1;
+          line(right + 115, yy + 78, right + 115 + p * 1205, yy + 78, v[3], 5);
+        });
+        line(right + 42, top + 790, right + 1425, top + 790, C.line2, 2);
+        tx('answer boundary', right + 42, top + 850, 23, C.faint, { weight: 700 });
+        tx('coupling is plausible; not yet proven', right + 42, top + 900, 30, C.yellow, { weight: 700 });
+        tx('RUN-AR13664  /  output package ready', 1920, 1700, 30, C.green, { align: 'center', weight: 700 });
+      }
+
+      function drawClose(shot, t) {
+        header(shot);
+        const nodes = [
+          { x: 520, label: 'OBSERVE', sub: 'real phenomenon', color: C.cyan },
+          { x: 1340, label: 'ALIGN', sub: 'traceable evidence', color: C.blue },
+          { x: 2160, label: 'REASON', sub: 'counterexample', color: C.purple },
+          { x: 2980, label: 'ACT', sub: 'next experiment', color: C.amber }
+        ];
+        const y = 940;
+        const pts = nodes.map((n) => [n.x, y]);
+        pathStroke(pts, C.line2, 13, 0.65);
+        particleOnPath(pts, t * 0.12, C.white, 13, 1);
+        nodes.forEach((n, i) => {
+          const dy = Math.sin(t * 1.3 + i * 0.8) * 10;
+          circle(n.x, y + dy, 108, n.color, 6, 0.85);
+          dot(n.x, y + dy, 15, n.color, 1, 27);
+          tx(n.label, n.x, y + 10 + dy, 27, C.white, { align: 'center', weight: 800 });
+          tx(n.sub, n.x, y + 185, 27, C.muted, { align: 'center', weight: 600 });
+        });
+        line(2980, y + 110, 2980, y + 330, C.amber, 5, 0.72);
+        line(2980, y + 330, 520, y + 330, C.amber, 5, 0.72);
+        arrow(520, y + 330, 520, y + 120, C.amber, 5, 0.72);
+        tx('每一次输出，都把新的问题带回起点', 1920, 1435, 40, C.yellow, { align: 'center', weight: 700 });
+        const values = [
+          ['多模态对齐', '把观测变成可计算对象', C.cyan],
+          ['反例驱动', '让结论保持可修正', C.red],
+          ['可执行输出', '让推理通向下一次实验', C.green]
+        ];
+        values.forEach((v, i) => {
+          const x = 550 + i * 950;
+          fillPanel(x, 1530, 760, 180, rgba(v[2], 0.07), rgba(v[2], 0.42), 18);
+          tx(v[0], x + 35, 1595, 29, v[2], { weight: 700 });
+          tx(v[1], x + 35, 1650, 25, C.white, { weight: 600 });
+        });
+        tx('OPEN SCIENTIST', 1920, 1815, 32, C.cyan, { align: 'center', weight: 700 });
+      }
+
+      function drawShot(shot, t) {
+        switch (shot.kind) {
+          case 'mystery': return drawMystery(shot, t);
+          case 'theory': return drawTheory(shot, t);
+          case 'scientificFlow': return drawScientificFlow(shot, t);
+          case 'workbench': return drawWorkbench(shot, t);
+          case 'stages': return drawStages(shot, t);
+          case 'agentMap': return drawAgentMap(shot, t);
+          case 'sisyphus': return drawSisyphus(shot, t);
+          case 'librarian': return drawLibrarian(shot, t);
+          case 'looker': return drawLooker(shot, t);
+          case 'explore': return drawExplore(shot, t);
+          case 'oracle': return drawOracle(shot, t);
+          case 'prometheus': return drawPrometheus(shot, t);
+          case 'demoInput': return drawDemoInput(shot, t);
+          case 'demoEvidence': return drawDemoEvidence(shot, t);
+          case 'demoEvolution': return drawDemoEvolution(shot, t);
+          case 'demoOutput': return drawDemoOutput(shot, t);
+          case 'close': return drawClose(shot, t);
+        }
+      }
+
+      function transitionDraw(previous, current, local) {
+        const span = 0.92;
+        const p = ease(clamp(local / span));
+        const kind = current.transition;
+        if (!previous || local >= span) { drawShot(current, local); return; }
+
+        if (kind === 'pan') {
+          ctx.save(); ctx.globalAlpha = 0.85; ctx.translate(-220 * p, 0); drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.translate(520 * (1 - p), 0); drawShot(current, local); ctx.restore();
+        } else if (kind === 'split') {
+          ctx.save(); ctx.globalAlpha = 0.72; drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W * p, H); ctx.clip(); drawShot(current, local); ctx.restore();
+          line(W * p, 0, W * p, H, C.cyan, 5, 0.3);
+        } else if (kind === 'route') {
+          ctx.save(); ctx.globalAlpha = 0.60; drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H * p); ctx.clip(); drawShot(current, local); ctx.restore();
+          line(0, H * p, W, H * p, C.cyan, 4, 0.7);
+        } else if (kind === 'growth') {
+          ctx.save(); ctx.globalAlpha = 0.52; drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(0.93 + p * 0.07, 0.93 + p * 0.07); ctx.translate(-W / 2, -H / 2); drawShot(current, local); ctx.restore();
+        } else if (kind === 'node-handoff' || kind === 'orbit') {
+          ctx.save(); ctx.globalAlpha = 0.48; drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.globalAlpha = p; ctx.translate(Math.sin(p * Math.PI) * 160, 0); drawShot(current, local); ctx.restore();
+          particleOnSegment(1780, 480, 2060, 480, p, C.cyan, 10, 0.9);
+        } else if (kind === 'scan') {
+          ctx.save(); ctx.globalAlpha = 0.45; drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.beginPath(); ctx.rect(W * p, 0, W * (1 - p), H); ctx.clip(); drawShot(current, local); ctx.restore();
+          line(W * p, 0, W * p, H, C.purple, 5, 0.68);
+        } else if (kind === 'submit') {
+          ctx.save(); ctx.globalAlpha = 0.42; drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.globalAlpha = p; drawShot(current, local); ctx.restore();
+          const bx = 1920 + Math.cos(p * Math.PI * 2) * 520;
+          const by = 1050 + Math.sin(p * Math.PI * 2) * 270;
+          dot(bx, by, 14, C.green, 1, 28);
+        } else if (kind === 'export') {
+          ctx.save(); ctx.globalAlpha = 0.38; drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.globalAlpha = p; drawShot(current, local); ctx.restore();
+          line(1400 + p * 1040, 480, 2440 + p * 1040, 480, C.amber, 4, 0.75);
+        } else if (kind === 'pullback') {
+          ctx.save(); ctx.globalAlpha = 0.25; drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.globalAlpha = p; drawShot(current, local); ctx.restore();
+          circle(1920, 1030, 160 + p * 240, C.cyan, 4, 0.34);
+        } else {
+          ctx.save(); ctx.globalAlpha = 1 - p; drawShot(previous, previous.duration); ctx.restore();
+          ctx.save(); ctx.globalAlpha = p; drawShot(current, local); ctx.restore();
+        }
+      }
+
+      function findShot(time) {
+        const safeTime = clamp(time, 0, DURATION - 0.0001);
+        return SHOTS.find((shot) => safeTime >= shot.start && safeTime < shot.end) || SHOTS[SHOTS.length - 1];
+      }
+
+      function render(time = 0) {
+        const currentTime = clamp(Number(time) || 0, 0, DURATION - 0.0001);
+        const shot = findShot(currentTime);
+        const local = currentTime - shot.start;
+        drawBackground(currentTime);
+        const previous = shot.n > 1 ? SHOTS[shot.n - 2] : null;
+        transitionDraw(previous, shot, local);
+        caption(shot, currentTime);
+      }
+
+      function resizeCanvas() {
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+      }
+
+      function setRenderScale(scale) {
+        renderScale = clamp(Number(scale) || 1, 0.25, 1);
+        canvas.width = Math.round(W * renderScale);
+        canvas.height = Math.round(H * renderScale);
+        ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+      }
+
+      window.__hfComposition = {
+        id: 'root', width: W, height: H, fps: FPS, duration: DURATION,
+        scenes: SHOTS.map(({ n, start, end, duration, kind, transition, label }) => ({ n, start, end, duration, kind, transition, label }))
+      };
+      window.__timelines = window.__timelines || {};
+      window.__timelines.root = { width: W, height: H, fps: FPS, duration: DURATION, scenes: SHOTS, render };
+      window.__hfRender = render;
+      window.__hfSeek = (seconds) => { render(seconds); return seconds; };
+      window.__hfMetadata = { safeArea: SAFE, resolution: '3840x2160', fps: 60, duration: DURATION };
+
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      const params = new URLSearchParams(location.search);
+      const queryTime = params.get('t');
+      const staticMode = params.has('static');
+      const recordMode = params.has('record');
+      const recordSeconds = clamp(Number(params.get('recordSeconds')) || DURATION, 0.5, DURATION);
+      let startWall = performance.now() - (Number(queryTime) || 0) * 1000;
+      function loop(now) {
+        const seconds = staticMode ? (Number(queryTime) || 0) : (now - startWall) / 1000;
+        render(seconds % DURATION);
+        if (!staticMode) requestAnimationFrame(loop);
+      }
+
+      function recordCanvas(seconds) {
+        if (!canvas.captureStream || !window.MediaRecorder) {
+          document.title = 'OPEN_SCIENTIST_RECORDING_UNSUPPORTED';
+          window.__hfRecordingStatus = 'unsupported';
+          return;
+        }
+        try {
+          setRenderScale(params.get('recordScale') || 1);
+          const mimeCandidates = [
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8',
+            'video/webm'
+          ];
+          const mimeType = mimeCandidates.find((mime) => MediaRecorder.isTypeSupported(mime));
+          const stream = canvas.captureStream(FPS);
+          const recorder = new MediaRecorder(stream, {
+            ...(mimeType ? { mimeType } : {}),
+            videoBitsPerSecond: 24000000
+          });
+          const chunks = [];
+          const uploadPort = params.get('uploadPort');
+          let chunkIndex = 0;
+          let uploadQueue = Promise.resolve();
+          window.__hfRecordingStatus = 'recording';
+          recorder.ondataavailable = (event) => {
+            if (!event.data || !event.data.size) return;
+            if (uploadPort) {
+              const currentIndex = chunkIndex++;
+              uploadQueue = uploadQueue.then(async () => {
+                const response = await fetch(`http://127.0.0.1:${uploadPort}/chunk?index=${currentIndex}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/octet-stream' },
+                  body: event.data
+                });
+                if (!response.ok) throw new Error(`chunk upload failed: ${response.status}`);
+              });
+            } else chunks.push(event.data);
+          };
+          recorder.onerror = (event) => {
+            window.__hfRecordingStatus = `error:${event.error?.message || 'MediaRecorder error'}`;
+            document.title = 'OPEN_SCIENTIST_RECORDING_ERROR';
+          };
+          recorder.onstop = async () => {
+            stream.getTracks().forEach((track) => track.stop());
+            if (uploadPort) {
+              try {
+                window.__hfRecordingStatus = 'uploading';
+                await uploadQueue;
+                const response = await fetch(`http://127.0.0.1:${uploadPort}/finish`, { method: 'POST' });
+                if (!response.ok) throw new Error(`finish upload failed: ${response.status}`);
+                window.__hfRecordingStatus = `uploaded:${chunkIndex}`;
+                document.title = `OPEN_SCIENTIST_RECORDING_DONE:${chunkIndex}`;
+              } catch (error) {
+                window.__hfRecordingStatus = `error:upload:${error.message}`;
+                document.title = 'OPEN_SCIENTIST_RECORDING_ERROR';
+              }
+            } else {
+              const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(blob);
+              link.download = 'open-scientist-4k60.webm';
+              link.style.display = 'none';
+              document.body.appendChild(link);
+              link.click();
+              window.__hfRecordingStatus = `done:${blob.size}`;
+              document.title = `OPEN_SCIENTIST_RECORDING_DONE:${blob.size}`;
+            }
+          };
+          render(0);
+          recorder.start(1000);
+          const wallStart = performance.now();
+          function recordLoop(now) {
+            const elapsed = (now - wallStart) / 1000;
+            render(Math.min(elapsed, seconds - 0.0001));
+            if (elapsed < seconds) requestAnimationFrame(recordLoop);
+            else setTimeout(() => recorder.stop(), 900);
+          }
+          requestAnimationFrame(recordLoop);
+        } catch (error) {
+          window.__hfRecordingStatus = `error:${error.message}`;
+          document.title = 'OPEN_SCIENTIST_RECORDING_ERROR';
+        }
+      }
+
+      window.__hfRecord = recordCanvas;
+      if (recordMode) {
+        document.title = 'OPEN_SCIENTIST_RECORDING';
+        setTimeout(() => recordCanvas(recordSeconds), 250);
+      } else {
+        requestAnimationFrame(loop);
+      }
+    </script>
+  </body>
+</html>

@@ -32,7 +32,7 @@ function renderInline(text: string, baseKey: string): React.ReactNode[] {
       nodes.push(
         <code
           key={`${baseKey}-c-${key}`}
-          className="rounded-sm bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[12px] text-[var(--color-sunset)]"
+          className="rounded-sm bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[13px] text-[var(--color-sunset)]"
         >
           {token.slice(1, -1)}
         </code>,
@@ -84,7 +84,7 @@ export function MarkdownText({ text }: MarkdownTextProps) {
 
   if (jsonBlock !== null) {
     return (
-      <pre className="overflow-x-auto rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] p-3 font-mono text-[11px] leading-relaxed text-muted">
+      <pre className="overflow-x-auto rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] p-3 font-mono text-[12px] leading-relaxed text-muted">
         {JSON.stringify(jsonBlock, null, 2)}
       </pre>
     )
@@ -97,7 +97,7 @@ export function MarkdownText({ text }: MarkdownTextProps) {
           return (
             <pre
               key={block.key}
-              className="overflow-x-auto rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] p-3 font-mono text-[12px] leading-relaxed text-muted"
+              className="overflow-x-auto rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] p-3 font-mono text-[13px] leading-relaxed text-muted"
             >
               {block.content}
             </pre>
