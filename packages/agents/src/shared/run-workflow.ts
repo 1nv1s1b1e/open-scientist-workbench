@@ -167,15 +167,18 @@ export async function runAgentWorkflow<TOutput>({
   await streamAgentOutput(result.fullStream, agent.tools, emitChunk)
   const telemetry = await persistAgentRun(projectId, runId, role, modelPrompt, result)
   if (telemetry && modelConfig && emitChunk) {
-    const usage = telemetry.usage && typeof telemetry.usage === 'object'
-      ? telemetry.usage as Record<string, unknown>
-      : {}
-    const outputDetails = usage.outputTokenDetails && typeof usage.outputTokenDetails === 'object'
-      ? usage.outputTokenDetails as Record<string, unknown>
-      : {}
-    const inputDetails = usage.inputTokenDetails && typeof usage.inputTokenDetails === 'object'
-      ? usage.inputTokenDetails as Record<string, unknown>
-      : {}
+    const usage =
+      telemetry.usage && typeof telemetry.usage === 'object'
+        ? (telemetry.usage as Record<string, unknown>)
+        : {}
+    const outputDetails =
+      usage.outputTokenDetails && typeof usage.outputTokenDetails === 'object'
+        ? (usage.outputTokenDetails as Record<string, unknown>)
+        : {}
+    const inputDetails =
+      usage.inputTokenDetails && typeof usage.inputTokenDetails === 'object'
+        ? (usage.inputTokenDetails as Record<string, unknown>)
+        : {}
     emitChunk({
       type: 'custom',
       kind: 'scientific.model-run',
@@ -188,9 +191,10 @@ export async function runAgentWorkflow<TOutput>({
       thinkingLevel: modelConfig.thinkingLevel,
       thinkingEnabled: modelConfig.thinkingLevel !== 'off',
       steps: telemetry.steps,
-      finishReason: typeof telemetry.finishReason === 'string'
-        ? telemetry.finishReason
-        : String(telemetry.finishReason ?? ''),
+      finishReason:
+        typeof telemetry.finishReason === 'string'
+          ? telemetry.finishReason
+          : String(telemetry.finishReason ?? ''),
       usage: {
         inputTokens: Number(usage.inputTokens ?? 0),
         outputTokens: Number(usage.outputTokens ?? 0),

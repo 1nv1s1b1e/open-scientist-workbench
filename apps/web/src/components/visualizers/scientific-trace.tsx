@@ -776,16 +776,26 @@ function TraceEntryCard({
   return (
     <article className={`trace-entry trace-entry-${entry.category} trace-entry-${entry.status}`}>
       <div className="trace-entry-rail" aria-hidden="true">
-        <span><TraceIcon category={entry.category} /></span>
+        <span>
+          <TraceIcon category={entry.category} />
+        </span>
         {!isLast && <i />}
       </div>
       <div className="trace-entry-card">
-        <button type="button" className="trace-entry-button" aria-expanded={open} aria-controls={detailId} onClick={onToggle}>
+        <button
+          type="button"
+          className="trace-entry-button"
+          aria-expanded={open}
+          aria-controls={detailId}
+          onClick={onToggle}
+        >
           <span className="trace-entry-meta">
             <em>{stageLabel(entry.stage)}</em>
             {entry.round != null && <em>R{entry.round}</em>}
             <em>{categoryLabel(entry.category)}</em>
-            <em className={`trace-status trace-status-${entry.status}`}>{statusLabel(entry.status)}</em>
+            <em className={`trace-status trace-status-${entry.status}`}>
+              {statusLabel(entry.status)}
+            </em>
           </span>
           <strong>{entry.title}</strong>
           <p>{entry.summary}</p>
@@ -798,10 +808,16 @@ function TraceEntryCard({
           <div id={detailId} className="trace-entry-details">
             {entry.details?.length ? (
               entry.details.map((detail, index) => (
-                <div key={`${detail.label}-${index}`}><span>{detail.label}</span><pre>{formatValue(detail.value)}</pre></div>
+                <div key={`${detail.label}-${index}`}>
+                  <span>{detail.label}</span>
+                  <pre>{formatValue(detail.value)}</pre>
+                </div>
               ))
             ) : (
-              <div><span>{COPY.details}</span><pre>{COPY.notAvailable}</pre></div>
+              <div>
+                <span>{COPY.details}</span>
+                <pre>{COPY.notAvailable}</pre>
+              </div>
             )}
           </div>
         )}
@@ -828,7 +844,10 @@ export function ScientificTrace({
   const [roundFilter, setRoundFilter] = useState<number | 'all'>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
   const rounds = useMemo(
-    () => [...new Set(entries.flatMap((entry) => (entry.round == null ? [] : [entry.round])))].sort((a, b) => a - b),
+    () =>
+      [...new Set(entries.flatMap((entry) => (entry.round == null ? [] : [entry.round])))].sort(
+        (a, b) => a - b,
+      ),
     [entries],
   )
   const visibleEntries = entries.filter((entry) => {
@@ -902,13 +921,37 @@ export function ScientificTrace({
           ))}
         </div>
         <div className="trace-view-controls">
-          <button type="button" className={scope === 'key' ? 'trace-filter trace-filter-active' : 'trace-filter'} onClick={() => setScope('key')}>关键节点</button>
-          <button type="button" className={scope === 'full' ? 'trace-filter trace-filter-active' : 'trace-filter'} onClick={() => setScope('full')}>完整事件</button>
-          <select value={roundFilter} onChange={(event) => setRoundFilter(event.target.value === 'all' ? 'all' : Number(event.target.value))} aria-label="轨迹轮次">
+          <button
+            type="button"
+            className={scope === 'key' ? 'trace-filter trace-filter-active' : 'trace-filter'}
+            onClick={() => setScope('key')}
+          >
+            关键节点
+          </button>
+          <button
+            type="button"
+            className={scope === 'full' ? 'trace-filter trace-filter-active' : 'trace-filter'}
+            onClick={() => setScope('full')}
+          >
+            完整事件
+          </button>
+          <select
+            value={roundFilter}
+            onChange={(event) =>
+              setRoundFilter(event.target.value === 'all' ? 'all' : Number(event.target.value))
+            }
+            aria-label="轨迹轮次"
+          >
             <option value="all">全部轮次</option>
-            {rounds.map((round) => <option key={round} value={round}>第 {round} 轮</option>)}
+            {rounds.map((round) => (
+              <option key={round} value={round}>
+                第 {round} 轮
+              </option>
+            ))}
           </select>
-          <span>{visibleEntries.length} / {entries.length} 条</span>
+          <span>
+            {visibleEntries.length} / {entries.length} 条
+          </span>
         </div>
       </div>
 
@@ -936,7 +979,10 @@ export function ScientificTrace({
           )}
           {groupedEntries.map(([round, roundEntries]) => (
             <section key={round} className="trace-round-group">
-              <header><span>{round === 0 ? '运行级事件' : `第 ${round} 轮`}</span><strong>{roundEntries.length} 条</strong></header>
+              <header>
+                <span>{round === 0 ? '运行级事件' : `第 ${round} 轮`}</span>
+                <strong>{roundEntries.length} 条</strong>
+              </header>
               {roundEntries.map((entry, index) => (
                 <TraceEntryCard
                   key={entry.id}

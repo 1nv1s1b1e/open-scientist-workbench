@@ -1,11 +1,4 @@
-import {
-  END,
-  ReducedValue,
-  Send,
-  START,
-  StateGraph,
-  StateSchema,
-} from '@langchain/langgraph'
+import { END, ReducedValue, Send, START, StateGraph, StateSchema } from '@langchain/langgraph'
 import {
   EvidenceRecordSchema,
   PhenomenonInputSchema,
@@ -43,12 +36,9 @@ const EvidenceSubgraphState = new StateSchema({
   round: z.number().int().min(0),
   workerAgentId: z.string().optional(),
   workerIndex: z.number().int().min(0).optional(),
-  workerExecutions: new ReducedValue(
-    z.array(OrderedExecutionSchema).default([]),
-    {
-      reducer: (current, next) => current.concat(next),
-    },
-  ),
+  workerExecutions: new ReducedValue(z.array(OrderedExecutionSchema).default([]), {
+    reducer: (current, next) => current.concat(next),
+  }),
   result: z.custom<EvidenceWorkgroupResult>().optional(),
 })
 
@@ -77,9 +67,7 @@ function assertUniqueAgentIds(agents: readonly EvidenceAgent[]): void {
   }
 }
 
-function aggregateExecutions(
-  ordered: readonly OrderedExecution[],
-): EvidenceWorkgroupResult {
+function aggregateExecutions(ordered: readonly OrderedExecution[]): EvidenceWorkgroupResult {
   const executions = [...ordered]
     .sort((left, right) => left.order - right.order)
     .map((item) => item.execution)
@@ -92,9 +80,7 @@ function aggregateExecutions(
 
   for (const execution of executions) {
     if (execution.status === 'failed') {
-      limitations.push(
-        `智能体 ${execution.label} 执行失败：${execution.error ?? '未知错误'}`,
-      )
+      limitations.push(`智能体 ${execution.label} 执行失败：${execution.error ?? '未知错误'}`)
       continue
     }
     if (execution.status !== 'completed' || !execution.output) continue
@@ -119,17 +105,18 @@ function aggregateExecutions(
   }
 }
 function summarizeWorkerOutput(output: NonNullable<EvidenceAgentExecution['output']>): string {
-  const primary = output.notes?.[0]
-    ?? output.limitations?.[0]
-    ?? output.evidence?.[0]?.observed
-    ?? output.evidence?.[0]?.claim
-    ?? '已完成本轮核验'
+  const primary =
+    output.notes?.[0] ??
+    output.limitations?.[0] ??
+    output.evidence?.[0]?.observed ??
+    output.evidence?.[0]?.claim ??
+    '已完成本轮核验'
   const evidenceCount = output.evidence?.length ?? 0
   const taskCount = output.validationTasks?.length ?? 0
-  const suffix = evidenceCount || taskCount ? `；证据 ${evidenceCount} 条；任务 ${taskCount} 项` : ''
+  const suffix =
+    evidenceCount || taskCount ? `；证据 ${evidenceCount} 条；任务 ${taskCount} 项` : ''
   return `${primary}${suffix}`.replace(/\s+/g, ' ').slice(0, 900)
 }
-
 
 export function createEvidenceSubgraph(
   agents: readonly EvidenceAgent[],
@@ -189,15 +176,17 @@ export function createEvidenceSubgraph(
             state: 'skipped',
           })
           return {
-            workerExecutions: [{
-              order,
-              execution: {
-                agentId: agent.id,
-                label: agent.label,
-                capabilities: [...agent.capabilities],
-                status: 'skipped',
+            workerExecutions: [
+              {
+                order,
+                execution: {
+                  agentId: agent.id,
+                  label: agent.label,
+                  capabilities: [...agent.capabilities],
+                  status: 'skipped',
+                },
               },
-            }],
+            ],
           }
         }
 
@@ -216,16 +205,18 @@ export function createEvidenceSubgraph(
           message: summarizeWorkerOutput(output),
         })
         return {
-          workerExecutions: [{
-            order,
-            execution: {
-              agentId: agent.id,
-              label: agent.label,
-              capabilities: [...agent.capabilities],
-              status: 'completed',
-              output,
+          workerExecutions: [
+            {
+              order,
+              execution: {
+                agentId: agent.id,
+                label: agent.label,
+                capabilities: [...agent.capabilities],
+                status: 'completed',
+                output,
+              },
             },
-          }],
+          ],
         }
       } catch (error) {
         if (options.signal?.aborted) throw error
@@ -237,16 +228,18 @@ export function createEvidenceSubgraph(
           message,
         })
         return {
-          workerExecutions: [{
-            order,
-            execution: {
-              agentId: agent.id,
-              label: agent.label,
-              capabilities: [...agent.capabilities],
-              status: 'failed',
-              error: message,
+          workerExecutions: [
+            {
+              order,
+              execution: {
+                agentId: agent.id,
+                label: agent.label,
+                capabilities: [...agent.capabilities],
+                status: 'failed',
+                error: message,
+              },
             },
-          }],
+          ],
         }
       }
     })
@@ -254,11 +247,10 @@ export function createEvidenceSubgraph(
       result: aggregateExecutions(state.workerExecutions),
     }))
     .addEdge(START, 'B.dispatch')
-    .addConditionalEdges(
-      'B.dispatch',
-      (state: EvidenceSubgraphStateValue) => {
-        if (agents.length === 0) return 'B.aggregate'
-        return agents.map((agent, order) =>
+    .addConditionalEdges('B.dispatch', (state: EvidenceSubgraphStateValue) => {
+      if (agents.length === 0) return 'B.aggregate'
+      return agents.map(
+        (agent, order) =>
           new Send('B.worker', {
             phenomenon: state.phenomenon,
             hypotheses: state.hypotheses,
@@ -268,9 +260,8 @@ export function createEvidenceSubgraph(
             workerAgentId: agent.id,
             workerIndex: order,
           }),
-        )
-      },
-    )
+      )
+    })
     .addEdge('B.worker', 'B.aggregate')
     .addEdge('B.aggregate', END)
     .compile()

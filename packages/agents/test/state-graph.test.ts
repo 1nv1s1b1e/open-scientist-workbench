@@ -5,7 +5,12 @@ import { GRAPH_END, StateGraph } from '../src/orchestration/state-graph.ts'
 describe('StateGraph', () => {
   it('runs conditional cycles and checkpoints every completed node', async () => {
     type State = { count: number; log: string[] }
-    const checkpoints: Array<{ currentNode: string; nextNode: string; step: number; state: State }> = []
+    const checkpoints: Array<{
+      currentNode: string
+      nextNode: string
+      step: number
+      state: State
+    }> = []
     const graph = new StateGraph<State>()
       .addNode('increment', (state) => ({
         count: state.count + 1,
@@ -14,14 +19,16 @@ describe('StateGraph', () => {
       .addNode('route', (state) => ({ log: [...state.log, 'route'] }))
       .setEntryPoint('increment')
       .addEdge('increment', 'route')
-      .addConditionalEdges('route', (state) =>
-        state.count < 2 ? 'increment' : GRAPH_END,
-      )
+      .addConditionalEdges('route', (state) => (state.count < 2 ? 'increment' : GRAPH_END))
       .compile()
 
     const result = await graph.run(
       { count: 0, log: [] },
-      { checkpoint: (checkpoint) => checkpoints.push(checkpoint) },
+      {
+        checkpoint: (checkpoint) => {
+          checkpoints.push(checkpoint)
+        },
+      },
     )
 
     expect(result.state).toEqual({
@@ -56,7 +63,11 @@ describe('StateGraph', () => {
 
     const result = await graph.run(
       { value: 0 },
-      { onEvent: (event) => events.push(event.type) },
+      {
+        onEvent: (event) => {
+          events.push(event.type)
+        },
+      },
     )
 
     expect(result.state.value).toBe(7)
@@ -92,11 +103,7 @@ describe('StateGraph', () => {
       .addEdge('cycle', 'cycle')
       .compile()
 
-    await expect(
-      graph.run({ count: 0 }, { signal: controller.signal }),
-    ).rejects.toThrow('aborted')
-    await expect(graph.run({ count: 0 }, { maxSteps: 2 })).rejects.toThrow(
-      'maximum step count',
-    )
+    await expect(graph.run({ count: 0 }, { signal: controller.signal })).rejects.toThrow('aborted')
+    await expect(graph.run({ count: 0 }, { maxSteps: 2 })).rejects.toThrow('maximum step count')
   })
 })

@@ -185,7 +185,6 @@ async function persistOnce(input: {
 }): Promise<LocalProcessingResult> {
   const identity = digest({
     runId: input.runId,
-    round: input.round,
     caseId: input.caseId,
     mode: input.mode,
     processor: PROCESSOR_VERSION,

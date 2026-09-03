@@ -12,7 +12,10 @@ import {
 import { hasToolCall, isStepCount, ToolLoopAgent, type ToolSet } from 'ai'
 import { assembleDefaultTools } from '../../shared/tool-assembly.ts'
 import { makeSubmitResultTool } from '../../shared/tool-output.ts'
-import { AGENT_EXECUTION_BUDGETS, createSubmitResultPrepareStep } from '../../shared/output-policy.ts'
+import {
+  AGENT_EXECUTION_BUDGETS,
+  createSubmitResultPrepareStep,
+} from '../../shared/output-policy.ts'
 
 export interface OracleAgentDeps {
   /**

@@ -329,6 +329,7 @@ describe('scoped cross-event mechanism discrimination', () => {
         independentEventCount: 2,
         minimumIndependentEventCount: 2,
         adequate: true,
+        assumptions: [],
       },
     }
     const gate = assessEliminationGate([record!, replicated], [completedTask], {

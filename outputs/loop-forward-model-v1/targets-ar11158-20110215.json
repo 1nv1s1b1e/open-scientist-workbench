@@ -1,0 +1,9 @@
+{
+  "targets": {
+    "lag_171_vs_193_s": 144.0
+  },
+  "source": "data/projects/coronal-live-0903/workspace/scientific-processing/run-1788432540976-d5202cf4/round-1/ar11158-window-20110215/coronal_metrics.json (aia-171-193-timeseries-v1 lagSpanSeconds, AR11158 2011-02-15 target window)",
+  "weights": {
+    "lag_171_vs_193_s": 1.0
+  }
+}

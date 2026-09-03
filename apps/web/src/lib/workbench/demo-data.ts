@@ -303,6 +303,12 @@ export const DEMO_SCIENTIFIC_STATE: ScientificWorkbenchState = {
   workflowClosure: null,
   operationalClosure: null,
   hypothesisCoverage: null,
+  roundBudget: {
+    maxRounds: 2,
+    roundsUsed: 2,
+    exhausted: true,
+    deferredTaskCount: 3,
+  },
   status: 'completed',
 }
 

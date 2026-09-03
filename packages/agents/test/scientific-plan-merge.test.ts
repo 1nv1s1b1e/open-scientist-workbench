@@ -25,6 +25,7 @@ function externalTask(
     discriminatingOutcomes: ['获得事件匹配观测后可区分候选'],
     triggeredBy: 'D.plan',
     status: 'planned',
+    resultEvidenceIds: [],
     round: 1,
     fingerprint: `fp-${id}`,
   }
@@ -33,15 +34,16 @@ function externalTask(
 describe('D.plan semantic requirement merging', () => {
   it('collapses alias spellings of the same future data need onto one key', () => {
     const a = externalTask('task-a', ['future:iris-spectroscopy-ar11158'], ['h-a:prediction:1'])
-    const b = externalTask('task-b', ['future:IRIS-EIS-spectroscopy-AR11158'], [
-      'h-b:prediction:1',
-    ])
+    const b = externalTask('task-b', ['future:IRIS-EIS-spectroscopy-AR11158'], ['h-b:prediction:1'])
     expect(externalTaskSemanticKey(a)).not.toBeNull()
     expect(externalTaskSemanticKey(a)).toBe(externalTaskSemanticKey(b))
   })
 
   it('does not merge executable local tasks or different data needs', () => {
-    const local = { ...externalTask('task-local', ['local:coronal-evidence-70gb-v1'], []), executorId: 'coronal-dem-inversion-v1' }
+    const local = {
+      ...externalTask('task-local', ['local:coronal-evidence-70gb-v1'], []),
+      executorId: 'coronal-dem-inversion-v1',
+    }
     expect(externalTaskSemanticKey(local)).toBeNull()
     const spectroscopy = externalTask('task-s', ['future:spectroscopy-ar11158'], [])
     const hardXray = externalTask('task-x', ['future:event-matched-hard-xray'], [])
@@ -50,9 +52,11 @@ describe('D.plan semantic requirement merging', () => {
 
   it('merges requirement coverage into the kept task without dropping bindings', () => {
     const kept = externalTask('task-a', ['future:iris-spectroscopy-ar11158'], ['h-a:prediction:1'])
-    const incoming = externalTask('task-b', ['future:IRIS-EIS-spectroscopy-AR11158'], [
-      'h-b:prediction:1',
-    ])
+    const incoming = externalTask(
+      'task-b',
+      ['future:IRIS-EIS-spectroscopy-AR11158'],
+      ['h-b:prediction:1'],
+    )
     const merged = mergeValidationTaskRequirements(kept, incoming)
     expect(merged.taskId).toBe('task-a')
     expect(merged.hypothesisIds).toEqual(expect.arrayContaining(['h-task-a', 'h-task-b']))

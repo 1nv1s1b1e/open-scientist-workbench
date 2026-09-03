@@ -105,8 +105,7 @@ export const EXECUTOR_CONTRACTS = [
     mechanismKey: 'dem_temperature',
     requestedPattern:
       /(?:六通道|94.*131.*171.*193.*211.*335|DEM).*(?:DEM|反演|温度|热结构)|(?:正则化.*DEM)/i,
-    inferencePattern:
-      /(?:六通道|94.*131.*171.*193.*211.*335|DEM).*(?:DEM|反演|温度|热结构)/i,
+    inferencePattern: /(?:六通道|94.*131.*171.*193.*211.*335|DEM).*(?:DEM|反演|温度|热结构)/i,
     inferable: true,
   },
   {

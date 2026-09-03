@@ -51,11 +51,8 @@ export function applyQwenChatRequestCompatibility(
   config: Pick<ModelArg, 'provider' | 'model' | 'apiMode' | 'thinkingLevel'>,
   requestBody: Record<string, unknown>,
 ): Record<string, unknown> {
-  if (
-    config.provider !== 'openai'
-    || config.apiMode !== 'chat'
-    || !/^qwen/i.test(config.model)
-  ) return requestBody
+  if (config.provider !== 'openai' || config.apiMode !== 'chat' || !/^qwen/i.test(config.model))
+    return requestBody
   const body = { ...requestBody }
   const thinkingBudget: Record<string, number> = {
     minimal: 512,
@@ -77,11 +74,7 @@ export function applyQwenChatRequestCompatibility(
 }
 
 function qwenCompatibilityFetch(config: ModelArg): FetchFunction | undefined {
-  if (
-    config.provider !== 'openai'
-    || config.apiMode !== 'chat'
-    || !/^qwen/i.test(config.model)
-  ) {
+  if (config.provider !== 'openai' || config.apiMode !== 'chat' || !/^qwen/i.test(config.model)) {
     return undefined
   }
   return async (input, init) => {

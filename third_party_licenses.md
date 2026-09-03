@@ -2,9 +2,9 @@
 
 Generated from the installed dependency graph locked by `pnpm-lock.yaml` using `pnpm licenses list --json`. Package license texts remain in their installed distributions and upstream repositories. Regenerate this file after any lockfile change.
 
-## Manual review required
+## Manual review resolutions (verified 2026-09-03)
 
-`@yuku-codegen/binding-win32-x64@0.5.48` and `@yuku-parser/binding-win32-x64@0.5.48` report `Unknown` in pnpm metadata. Their upstream terms must be verified or the packages removed before submission.
+`@yuku-codegen/binding-win32-x64@0.5.48` and `@yuku-parser/binding-win32-x64@0.5.48` report `Unknown` in `pnpm licenses list` because the published platform-binding tarballs ship no `license` field. Both packages are **development-only** transitive dependencies of the `vite-plus`/`vitest` toolchain (they never load at application runtime) and are published from the MIT-licensed [yuku-toolchain/yuku](https://github.com/yuku-toolchain/yuku) monorepo (repository `LICENSE` verified 2026-09-03). They are therefore recorded as **MIT (dev-only, upstream-verified)** in the table below.
 
 The Qwen-compatible model endpoint is a remotely configured service, not redistributed by this repository. The team must list its service/model terms separately in the competition P4 table. JSOC/SDO data-use terms must likewise be verified separately; they are not software dependency licenses.
 
@@ -472,5 +472,5 @@ The Qwen-compatible model endpoint is a remotely configured service, not redistr
 | zustand                                 |            4.5.7, 5.0.14 | MIT                                 | https://github.com/pmndrs/zustand                                                   |
 | lightningcss                            |                   1.32.0 | MPL-2.0                             | https://github.com/parcel-bundler/lightningcss#readme                               |
 | lightningcss-win32-x64-msvc             |                   1.32.0 | MPL-2.0                             | https://github.com/parcel-bundler/lightningcss#readme                               |
-| @yuku-codegen/binding-win32-x64         |                   0.5.48 | Unknown                             | https://github.com/yuku-toolchain/yuku#readme                                       |
-| @yuku-parser/binding-win32-x64          |                   0.5.48 | Unknown                             | https://github.com/yuku-toolchain/yuku#readme                                       |
+| @yuku-codegen/binding-win32-x64         |                   0.5.48 | MIT (dev-only, upstream-verified)   | https://github.com/yuku-toolchain/yuku#readme                                       |
+| @yuku-parser/binding-win32-x64          |                   0.5.48 | MIT (dev-only, upstream-verified)   | https://github.com/yuku-toolchain/yuku#readme                                       |

@@ -13,6 +13,7 @@
 ### Task 1: Establish a tested state-to-view model
 
 **Files:**
+
 - Create: `apps/web/src/lib/workbench/orchestration-view-model.ts`
 - Create: `apps/web/test/orchestration-view-model.test.ts`
 - Modify: `apps/web/src/lib/workbench/state.ts` only if a missing display-safe type is required
@@ -25,6 +26,7 @@
 ### Task 2: Rebuild the scientific workbench around user decisions
 
 **Files:**
+
 - Modify: `apps/web/src/components/workbench/scientific-workbench.tsx`
 - Modify: `apps/web/src/components/workbench/phenomenon-panel.tsx`
 - Modify: `apps/web/src/components/workbench/evidence-ledger.tsx`
@@ -40,6 +42,7 @@
 ### Task 3: Turn the orchestration page into an interactive control room
 
 **Files:**
+
 - Modify: `apps/web/src/components/visualizers/scientific-orchestration.tsx`
 - Modify: `apps/web/src/components/visualizers/index.ts` if its exported props change
 - Modify: `apps/web/src/app/projects/[project]/page.tsx`
@@ -54,6 +57,7 @@
 ### Task 4: Make project entry and run controls honest and low-friction
 
 **Files:**
+
 - Modify: `apps/web/src/app/page.tsx`
 - Modify: `apps/web/src/components/projects/project-list.tsx`
 - Modify: `apps/web/src/components/chat/chat-panel.tsx`
@@ -68,6 +72,7 @@
 ### Task 5: Verify and polish
 
 **Files:**
+
 - Modify only files above if verification identifies a localized defect.
 
 - [x] Run the focused web tests, full project tests, typecheck/build, and `git diff --check`.

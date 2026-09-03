@@ -1,0 +1,29 @@
+{
+  "forward_model_version": "loop-forward-model-v1",
+  "inputs": {
+    "cfg_sha256": "cb14fb04dc274d2a765878dda83ee93dc7cf6e6be0531881e8d4e5321478b23e",
+    "targets_sha256": "efdeb48d4fef67763b36451457143d8b76d39451cb4ff0989bb2199c90946486"
+  },
+  "limitations": [
+    "约化模型（单区能量平衡、日冕段质量封闭），用于场景判别，不替代 3D MHD 求解。",
+    "辐射损失采用 Cook et al. (1989) 风格粗表，AIA 响应为双分量对数正态近似；绝对 DEM 精度有限。",
+    "蒸发/凝聚的往复质量交换折叠进传导损失项（f_c=0.15 标定因子代表过渡区辐射回授）；绝对密度演化与多环几何不在本模型范围。",
+    "三个场景共享同一时间平均加热，差异归于时间轮廓而非能量预算。",
+    "单区模型无空间冷却传播，合成通道间时延系统性偏小；对目标量的比较仅支持场景间相对排序，不支持绝对时延预测。",
+    "cfg heating_rate=10000 超出日冕体积加热物理区间 (1e-06, 100.0) erg cm^-3 s^-1，按 MHD 码单位处理并回退到默认平均加热 0.002。"
+  ],
+  "outputs": {
+    "lightcurves.png": {
+      "bytes": 188090,
+      "sha256": "a436b0744750ab2f375679b89abbf437e19622ffe478f1e0e5b9376f29f93b51"
+    },
+    "scenarios.json": {
+      "bytes": 186242,
+      "sha256": "41db90eaa651e1b5657fe7c68cfda428d18846ed80f20d6b0622d364dd647888"
+    },
+    "summary.md": {
+      "bytes": 1579,
+      "sha256": "f48f8eab12700a470a5e1173e7b1cec4a75ada8f73bfdd262d6240c759712067"
+    }
+  }
+}

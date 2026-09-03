@@ -139,4 +139,3 @@
 3. Run the root required checks when their environment is available: `python -m pytest -q` and `python -m jinwu run --request examples/jwfd_demo_request.json`.
 4. Run one deterministic scientific-loop smoke test with fixture phenomenon data; report exact artifact paths, rounds, termination reason, and known limitations.
 5. Inspect `git diff` and `git status` to ensure no read-only dataset was moved/changed and no credential entered source, logs, fixtures, or documentation.
-

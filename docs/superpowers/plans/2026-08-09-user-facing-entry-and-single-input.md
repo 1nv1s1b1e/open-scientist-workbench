@@ -13,6 +13,7 @@
 ### Task 1: 将首页改成用户入口
 
 **Files:**
+
 - Modify: `apps/web/src/app/page.tsx`
 - Modify: `apps/web/src/components/projects/project-list.tsx`
 - Stop rendering: `apps/web/src/components/site/home-science-preview.tsx`
@@ -33,6 +34,7 @@
 ### Task 2: 让运行上下文同时覆盖主工作台与控制台
 
 **Files:**
+
 - Modify: `apps/web/src/lib/chat/workflow-runtime.tsx`
 - Modify: `apps/web/src/components/chat/chat-panel.tsx`
 - Modify: `apps/web/src/app/projects/[project]/page.tsx`
@@ -53,6 +55,7 @@
 ### Task 3: 将现象面板作为唯一提交入口
 
 **Files:**
+
 - Modify: `apps/web/src/components/workbench/phenomenon-panel.tsx`
 - Modify: `apps/web/src/components/workbench/scientific-workbench.tsx`
 
@@ -68,6 +71,7 @@
 ### Task 4: 将右侧控制台改为只读运行记录
 
 **Files:**
+
 - Modify: `apps/web/src/components/chat/chat-panel.tsx`
 - Modify: `apps/web/src/components/assistant-ui/thread.tsx`
 - Modify: `apps/web/src/app/globals.css`
@@ -88,6 +92,7 @@
 ### Task 5: 验证
 
 **Files:**
+
 - Test: existing project tests and browser checks
 
 - [ ] **Step 1: 静态检查**

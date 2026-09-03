@@ -520,82 +520,85 @@ export function useRunStream(opts: UseRunStreamOptions): UseRunStreamReturn {
     [handleChunk],
   )
 
-  const reconnect = useCallback(async (expectedGeneration?: number): Promise<void> => {
-    // 由过期退避定时器触发的重连：期间已 reset/start 新会话则直接放弃
-    if (expectedGeneration != null && expectedGeneration !== historyGenerationRef.current) return
-    const generation = historyGenerationRef.current
-    const id = runIdRef.current
-    if (!id || userStoppedRef.current) return
-    if (reconnectErrorsRef.current >= maxConsecutiveErrors) {
-      setState('error')
-      setError(new Error('Max consecutive reconnect errors reached'))
-      onErrorRef.current?.(new Error('Max consecutive reconnect errors reached'))
-      return
-    }
-
-    setState('reconnecting')
-    reconnectErrorsRef.current += 1
-    let controller = abortRef.current
-    if (!controller || controller.signal.aborted) {
-      controller = new AbortController()
-      abortRef.current = controller
-    }
-    try {
-      const { response } = await reconnectRunStream(
-        project,
-        id,
-        nextChunkIndexRef.current,
-        fetch,
-        controller.signal,
-      )
-      // 过期重连：期间已 reset/start 新会话
-      if (generation !== historyGenerationRef.current) return
-      reconnectErrorsRef.current = 0
-      setState('streaming')
-      await consumeStream(response, generation)
-    } catch (reconnectError) {
-      if (generation !== historyGenerationRef.current) return
-      if (userStoppedRef.current || controller.signal.aborted) return
-      // A run may finish while the transport is reconnecting.  Hydrate any
-      // persisted tail once, then stop reconnecting when storage is terminal.
-      try {
-        const status = await getRunStatus(project, id)
-        if (generation !== historyGenerationRef.current) return
-        if (
-          status.status === 'completed' ||
-          status.status === 'failed' ||
-          status.status === 'stopped'
-        ) {
-          const entries = await getRunChunks(project, id)
-          if (generation !== historyGenerationRef.current) return
-          const cursor = nextChunkIndexRef.current
-          for (const entry of entries) {
-            if (entry.seq >= cursor) handleChunk(entry.chunk as UIMessageChunk)
-          }
-          if (entries.length > 0) {
-            nextChunkIndexRef.current = Math.max(
-              nextChunkIndexRef.current,
-              entries[entries.length - 1]!.seq + 1,
-            )
-          }
-          setState(
-            status.status === 'completed'
-              ? 'done'
-              : status.status === 'stopped'
-                ? 'stopped'
-                : 'error',
-          )
-          if (status.status === 'completed') onFinishRef.current?.()
-          return
-        }
-      } catch {
-        // Status may be temporarily unavailable; use the normal backoff.
+  const reconnect = useCallback(
+    async (expectedGeneration?: number): Promise<void> => {
+      // 由过期退避定时器触发的重连：期间已 reset/start 新会话则直接放弃
+      if (expectedGeneration != null && expectedGeneration !== historyGenerationRef.current) return
+      const generation = historyGenerationRef.current
+      const id = runIdRef.current
+      if (!id || userStoppedRef.current) return
+      if (reconnectErrorsRef.current >= maxConsecutiveErrors) {
+        setState('error')
+        setError(new Error('Max consecutive reconnect errors reached'))
+        onErrorRef.current?.(new Error('Max consecutive reconnect errors reached'))
+        return
       }
-      // 重连失败，指数退避后重试（1s, 2s, 4s, 8s, 16s...）
-      const delay = Math.min(1000 * 2 ** (reconnectErrorsRef.current - 1), 30000)
-      setTimeout(() => void reconnect(generation), delay)
-    }
-  }, [project, maxConsecutiveErrors, consumeStream, handleChunk])
+
+      setState('reconnecting')
+      reconnectErrorsRef.current += 1
+      let controller = abortRef.current
+      if (!controller || controller.signal.aborted) {
+        controller = new AbortController()
+        abortRef.current = controller
+      }
+      try {
+        const { response } = await reconnectRunStream(
+          project,
+          id,
+          nextChunkIndexRef.current,
+          fetch,
+          controller.signal,
+        )
+        // 过期重连：期间已 reset/start 新会话
+        if (generation !== historyGenerationRef.current) return
+        reconnectErrorsRef.current = 0
+        setState('streaming')
+        await consumeStream(response, generation)
+      } catch (reconnectError) {
+        if (generation !== historyGenerationRef.current) return
+        if (userStoppedRef.current || controller.signal.aborted) return
+        // A run may finish while the transport is reconnecting.  Hydrate any
+        // persisted tail once, then stop reconnecting when storage is terminal.
+        try {
+          const status = await getRunStatus(project, id)
+          if (generation !== historyGenerationRef.current) return
+          if (
+            status.status === 'completed' ||
+            status.status === 'failed' ||
+            status.status === 'stopped'
+          ) {
+            const entries = await getRunChunks(project, id)
+            if (generation !== historyGenerationRef.current) return
+            const cursor = nextChunkIndexRef.current
+            for (const entry of entries) {
+              if (entry.seq >= cursor) handleChunk(entry.chunk as UIMessageChunk)
+            }
+            if (entries.length > 0) {
+              nextChunkIndexRef.current = Math.max(
+                nextChunkIndexRef.current,
+                entries[entries.length - 1]!.seq + 1,
+              )
+            }
+            setState(
+              status.status === 'completed'
+                ? 'done'
+                : status.status === 'stopped'
+                  ? 'stopped'
+                  : 'error',
+            )
+            if (status.status === 'completed') onFinishRef.current?.()
+            return
+          }
+        } catch {
+          // Status may be temporarily unavailable; use the normal backoff.
+        }
+        // 重连失败，指数退避后重试（1s, 2s, 4s, 8s, 16s...）
+        const delay = Math.min(1000 * 2 ** (reconnectErrorsRef.current - 1), 30000)
+        setTimeout(() => void reconnect(generation), delay)
+      }
+    },
+    [project, maxConsecutiveErrors, consumeStream, handleChunk],
+  )
 
   const loadHistory = useCallback(async (): Promise<void> => {
     reset()

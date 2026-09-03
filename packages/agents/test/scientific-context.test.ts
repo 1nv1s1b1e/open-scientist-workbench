@@ -14,6 +14,7 @@ function hypothesis(id: string): ScientificHypothesis {
     sourceIds: [],
     scope: '当前活动区',
     confidence: 0.4,
+    evidenceStrengthGrade: 'not_assessed',
     parentId: null,
     round: 1,
     status: 'candidate',
@@ -73,6 +74,18 @@ function state(): ScientificGraphState {
     round: 1,
     maxRounds: 3,
     hypotheses: [hypothesis('h-1'), hypothesis('h-2')],
+    hypothesisCoverage: {
+      mode: 'open_world',
+      exhaustiveClaim: false,
+      fixedMechanismCount: false,
+      candidateCount: 2,
+      retrievalSourceCount: 0,
+      retrievedMechanismFamilies: [],
+      representedMechanismFamilies: ['耦合加热'],
+      unrepresentedMechanismFamilies: [],
+      residualAlternativeAllowed: true,
+      limitations: ['尚未完成 A 阶段假设覆盖审计。'],
+    },
     evidence: [evidence('e-1', 'h-1'), evidence('e-2', 'h-2')],
     validationTasks: [task('task-1', 'e-1'), task('task-2', 'e-2')],
     verificationReports: [],
@@ -85,6 +98,7 @@ function state(): ScientificGraphState {
         status: 'completed',
         capabilities: ['history-search'],
         round: 1,
+        outputHypothesisIds: [],
         outputEvidenceIds: ['e-1'],
         outputTaskIds: [],
       },
@@ -95,6 +109,7 @@ function state(): ScientificGraphState {
     newTaskCount: 0,
     roundTaskIds: [],
     completedRounds: 0,
+    budgetDeferredTaskCount: 0,
     nextRoute: 'B',
     terminationReason: null,
   }
@@ -224,7 +239,7 @@ describe('scientific working-context projection', () => {
     const first = buildScientificContext({ stage: 'B', state: current })
     const second = buildScientificContext({
       stage: 'B',
-      state: first,
+      state: { ...first, corrections: [] },
       capabilities: ['timeseries-analysis'],
     })
 

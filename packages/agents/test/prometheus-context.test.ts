@@ -22,7 +22,9 @@ describe('formatWinningHypothesis', () => {
     const context = formatWinningHypothesis(hypothesis)
     expect(context).toContain('mechanism: alfven-wave-dissipation')
     expect(context).toContain('predictions: propagating EUV disturbances')
-    expect(context).toContain('falsificationConditions: no propagating disturbance in quality-controlled data')
+    expect(context).toContain(
+      'falsificationConditions: no propagating disturbance in quality-controlled data',
+    )
     expect(context).toContain('sourceIds: paper:alfven-1')
   })
 

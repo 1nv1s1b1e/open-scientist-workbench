@@ -28,30 +28,30 @@
 
 要求 Node.js 22+、FFmpeg 和可用的 Chrome/Chromium。请在 open-scientist 项目根目录运行：
 
-~~~powershell
+```powershell
 node .\demos\current-content-video\render-demo.mjs
-~~~
+```
 
 默认读取：
 
-~~~text
+```text
 outputs/ar11158-qwen-demo/scientific-result.json
-~~~
+```
 
 默认输出：
 
-~~~text
+```text
 demos/current-content-video/open-scientist-hyperframes-demo-v3.mp4
-~~~
+```
 
 脚本会先根据 JSON 生成 data.js，再调用 HyperFrames 的原生 render --composition hyperframes-compact.html --strict 逐帧渲染。旧的 hyperframes.html 和 index.html 均保留，便于对照。
 
 也可以指定输入结果和输出文件：
 
-~~~powershell
+```powershell
 $env:SCIENTIFIC_RESULT_PATH = 'C:\path\to\scientific-result.json'
 node .\demos\current-content-video\render-demo.mjs C:\path\to\demo.mp4
-~~~
+```
 
 ## 当前素材
 

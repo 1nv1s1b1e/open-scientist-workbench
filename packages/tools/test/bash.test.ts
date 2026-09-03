@@ -516,7 +516,10 @@ describe('createBashToolForHypothesis with fake spawn', () => {
     const { createBashToolForHypothesis } = await import('../src/bash.ts')
     const toolkit = await createBashToolForHypothesis('test-proj', 'run-1', 'h-1', spawnFn)
     const bashTool = toolkit.tools.bash as unknown as {
-      execute: (args: { command: string }, options?: { abortSignal?: AbortSignal }) => Promise<unknown>
+      execute: (
+        args: { command: string },
+        options?: { abortSignal?: AbortSignal },
+      ) => Promise<unknown>
     }
 
     await expect(

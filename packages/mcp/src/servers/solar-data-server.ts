@@ -106,19 +106,23 @@ async function dispatch(name: string, args: Record<string, unknown> | undefined)
       if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 6)) {
         throw new RangeError("'limit' must be an integer from 1 to 6")
       }
-      return textResult(await searchCoronalObservationCases({
-        activeRegion: optionalString(getArg(input, 'activeRegion'), 'activeRegion'),
-        query: optionalString(getArg(input, 'query'), 'query'),
-        ...(limit === undefined ? {} : { limit }),
-      }))
+      return textResult(
+        await searchCoronalObservationCases({
+          activeRegion: optionalString(getArg(input, 'activeRegion'), 'activeRegion'),
+          query: optionalString(getArg(input, 'query'), 'query'),
+          ...(limit === undefined ? {} : { limit }),
+        }),
+      )
     }
     case 'check_local_observation_coverage':
-      return textResult(await assessCoronalDataCoverage({
-        activeRegion: optionalString(getArg(input, 'activeRegion'), 'activeRegion'),
-        query: optionalString(getArg(input, 'query'), 'query'),
-        caseId: optionalString(getArg(input, 'caseId'), 'caseId'),
-        requirements: requirements(getArg(input, 'requirements')),
-      }))
+      return textResult(
+        await assessCoronalDataCoverage({
+          activeRegion: optionalString(getArg(input, 'activeRegion'), 'activeRegion'),
+          query: optionalString(getArg(input, 'query'), 'query'),
+          caseId: optionalString(getArg(input, 'caseId'), 'caseId'),
+          requirements: requirements(getArg(input, 'requirements')),
+        }),
+      )
     case 'get_local_observation_asset': {
       const asset = await getCoronalObservationAsset({
         assetId: asString(getArg(input, 'assetId'), 'assetId'),
@@ -141,11 +145,10 @@ export function createSolarDataServer(): Server {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }))
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const rawArgs = request.params.arguments
-    const args = rawArgs && typeof rawArgs === 'object'
-      ? rawArgs as Record<string, unknown>
-      : undefined
+    const args =
+      rawArgs && typeof rawArgs === 'object' ? (rawArgs as Record<string, unknown>) : undefined
     try {
-      return await dispatch(request.params.name, args) as CallToolResult
+      return (await dispatch(request.params.name, args)) as CallToolResult
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       return errorResult(`solar-data-mcp tool '${request.params.name}' failed: ${message}`)

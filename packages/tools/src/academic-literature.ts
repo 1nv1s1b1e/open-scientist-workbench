@@ -65,7 +65,10 @@ function stablePaperId(provider: AcademicLiteratureProvider, nativeId: string): 
 }
 
 function normalizeWhitespace(value: string): string {
-  return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  return value
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function optionalText(value: unknown): string | undefined {
@@ -82,7 +85,10 @@ function normalizedDoi(value: unknown): string | undefined {
 
 function recordKey(record: Pick<AcademicLiteratureRecord, 'doi' | 'title'>): string {
   if (record.doi) return `doi:${record.doi}`
-  return `title:${record.title.toLocaleLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, '')}`
+  return `title:${record.title
+    .toLocaleLowerCase()
+    .normalize('NFKC')
+    .replace(/[^\p{L}\p{N}]+/gu, '')}`
 }
 
 const SEARCH_STOP_WORDS = new Set([
@@ -166,11 +172,7 @@ function validYear(value: unknown): number {
     : 0
 }
 
-async function fetchJson(
-  fetchImpl: typeof fetch,
-  url: URL,
-  timeoutMs: number,
-): Promise<unknown> {
+async function fetchJson(fetchImpl: typeof fetch, url: URL, timeoutMs: number): Promise<unknown> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -385,7 +387,9 @@ export async function searchFreeAcademicLiterature(
   const cacheDir = options.cacheDir ?? join(getBaseDir(), 'literature-cache')
   const path = cacheFile(normalizedQuery, cacheDir)
   const cached = await readCache(path)
-  const age = cached ? now.getTime() - new Date(cached.fetchedAt).getTime() : Number.POSITIVE_INFINITY
+  const age = cached
+    ? now.getTime() - new Date(cached.fetchedAt).getTime()
+    : Number.POSITIVE_INFINITY
   const ttl = options.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS
   if (cached && Number.isFinite(age) && age >= 0 && age <= ttl) {
     return {
@@ -451,7 +455,9 @@ export async function searchFreeAcademicLiterature(
   }
 
   const interleaved: AcademicLiteratureRecord[] = []
-  const longest = Math.max(...succeeded.map((provider) => resultsByProvider.get(provider)?.length ?? 0))
+  const longest = Math.max(
+    ...succeeded.map((provider) => resultsByProvider.get(provider)?.length ?? 0),
+  )
   for (let index = 0; index < longest; index += 1) {
     for (const provider of succeeded) {
       const record = resultsByProvider.get(provider)?.[index]

@@ -30,11 +30,15 @@ export async function evaluatePythonFilter({
 
   try {
     await writeFile(filterPath, filterCode, 'utf8')
-    const { stdout, stderr } = await execFileAsync(process.env.PYTHON ?? 'python', [evalPath, filterPath], {
-      cwd: datasetDir,
-      env: { ...process.env, HYPO_ID: hypoId },
-      maxBuffer: 4 * 1024 * 1024,
-    })
+    const { stdout, stderr } = await execFileAsync(
+      process.env.PYTHON ?? 'python',
+      [evalPath, filterPath],
+      {
+        cwd: datasetDir,
+        env: { ...process.env, HYPO_ID: hypoId },
+        maxBuffer: 4 * 1024 * 1024,
+      },
+    )
     const output = stdout.trim().split(/\r?\n/).at(-1)
     if (!output) throw new Error(`deterministic evaluator returned no JSON; stderr: ${stderr}`)
     return EvalResultSchema.parse(JSON.parse(output))

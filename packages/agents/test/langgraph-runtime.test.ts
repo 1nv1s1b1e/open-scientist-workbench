@@ -12,9 +12,7 @@ const CounterState = new StateSchema({
   count: z.number(),
 })
 
-function counterGraph(
-  runtime: ReturnType<typeof createInMemoryScientificRuntime>,
-) {
+function counterGraph(runtime: ReturnType<typeof createInMemoryScientificRuntime>) {
   return new StateGraph(CounterState)
     .addNode('increment', ({ count }) => ({ count: count + 1 }))
     .addEdge(START, 'increment')
@@ -24,9 +22,7 @@ function counterGraph(
 
 describe('LangGraph scientific runtime', () => {
   it('uses a stable project and run scoped thread id', () => {
-    expect(scientificThreadId('project-a', 'run-a')).toBe(
-      'project-a:run-a',
-    )
+    expect(scientificThreadId('project-a', 'run-a')).toBe('project-a:run-a')
   })
 
   it('persists graph state under the same in-memory thread', async () => {
@@ -50,8 +46,6 @@ describe('LangGraph scientific runtime', () => {
     const snapshot = await graph.getState(config)
 
     expect(snapshot.values.count).toBe(5)
-    expect(snapshot.config.configurable?.thread_id).toBe(
-      'project-sqlite:run-sqlite',
-    )
+    expect(snapshot.config.configurable?.thread_id).toBe('project-sqlite:run-sqlite')
   })
 })

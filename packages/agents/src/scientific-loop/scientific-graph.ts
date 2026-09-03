@@ -478,18 +478,32 @@ function mapAgentExecution(
   round: number,
   evidenceIds: readonly string[],
   taskIds: readonly string[],
+  stage: AgentExecution['stage'] = 'B',
 ): AgentExecution {
   return AgentExecutionSchema.parse({
     agentId: execution.agentId,
     label: execution.label,
-    stage: 'B',
+    stage,
     status: execution.status,
     capabilities: execution.capabilities,
     round,
     ...(execution.error ? { error: execution.error } : {}),
+    outputHypothesisIds: [],
     outputEvidenceIds: uniqueStrings(evidenceIds),
     outputTaskIds: uniqueStrings(taskIds),
   })
+}
+
+function appendStageExecution(
+  state: ScientificGraphState,
+  execution: AgentExecution,
+): AgentExecution[] {
+  const parsed = AgentExecutionSchema.parse(execution)
+  const key = `${parsed.agentId}:${parsed.stage}:${parsed.round}`
+  const existing = new Set(
+    state.agentExecutions.map((item) => `${item.agentId}:${item.stage}:${item.round}`),
+  )
+  return existing.has(key) ? state.agentExecutions : [...state.agentExecutions, parsed]
 }
 
 function safeHypotheses(
@@ -762,6 +776,14 @@ function resultFromState(state: ScientificGraphState): ScientificGraphResult {
               : terminationReason === 'no_executable_validation_task' || hasExternalWork
                 ? ('needs_external_validation' as const)
                 : ('inconclusive' as const)
+  const roundBudget = {
+    maxRounds: state.maxRounds,
+    roundsUsed: state.completedRounds,
+    // The budget can be fully consumed even when a stronger scientific stop
+    // (for example, no executable validation task) wins the termination reason.
+    exhausted: state.completedRounds >= state.maxRounds,
+    deferredTaskCount: state.budgetDeferredTaskCount,
+  }
   const parsed = ScientificLoopResultSchema.parse({
     runId: state.runId,
     status: terminationReason === 'no_valid_hypotheses' ? 'blocked' : 'completed',
@@ -783,6 +805,7 @@ function resultFromState(state: ScientificGraphState): ScientificGraphResult {
     hypothesisCoverage: state.hypothesisCoverage,
     outcomeProfile: buildOutcomeProfile(state.hypotheses),
     dataReadiness,
+    roundBudget,
     conclusion,
     nextValidationPlan: state.validationTasks.filter((task) => task.status === 'planned'),
     terminationReason,
@@ -897,7 +920,9 @@ function buildVerificationReport(input: {
   // versus "covered by gate-valid mechanism support" (covered). Conflating
   // them made prediction-consistent runs read as if nothing had been tested.
   const requiredPredictionIds = uniqueStrings(
-    input.hypothesis.predictions.map((_, index) => scientificPredictionId(input.hypothesis.id, index)),
+    input.hypothesis.predictions.map((_, index) =>
+      scientificPredictionId(input.hypothesis.id, index),
+    ),
   )
   const testedPredictionIds = uniqueStrings(
     (input.testedPredictionIds ?? []).filter((predictionId) =>
@@ -1062,6 +1087,17 @@ export function createScientificLoopGraph(
           hypotheses,
           hypothesisCoverage: currentCoverage,
           validationTasks,
+          agentExecutions: appendStageExecution(state, {
+            agentId: 'librarian',
+            label: '文献溯源智能体：候选机制生成',
+            stage: 'A',
+            status: 'completed',
+            capabilities: ['literature-retrieval', 'observation-analysis', 'fact-check'],
+            round: state.round,
+            outputHypothesisIds: checked.hypotheses.map((item) => item.id),
+            outputEvidenceIds: [],
+            outputTaskIds: [],
+          }),
           corrections: appendCorrections(input, state.corrections, [
             ...generationCorrections,
             ...checked.corrections,
@@ -1259,11 +1295,19 @@ export function createScientificLoopGraph(
           }
         }
         corrections = appendCorrections(input, corrections, taskCorrections)
-        const emittedEvidenceIds = new Set(promoted.map((item) => item.evidenceId))
+        const currentIds = new Set(state.evidence.map((item) => item.evidenceId))
+        // Only stream evidence that was absent before this B pass. Existing
+        // records are already in the durable ledger and re-emitting them on
+        // every round made the UI look like the scientific result was growing
+        // even when no new observation had been produced.
+        const emittedEvidenceIds = new Set(
+          promoted
+            .filter((item) => !currentIds.has(item.evidenceId))
+            .map((item) => item.evidenceId),
+        )
         for (const item of evidence.filter((record) => emittedEvidenceIds.has(record.evidenceId))) {
           emit(input, 'scientific.evidence', { round: state.round, evidence: item })
         }
-        const currentIds = new Set(state.evidence.map((item) => item.evidenceId))
         const newEvidenceCount = promoted.filter((item) => !currentIds.has(item.evidenceId)).length
         const executions = workgroup.executions.map((item) => {
           const outputIds = item.output?.evidence?.map((evidence) => evidence.evidenceId) ?? []
@@ -1567,7 +1611,8 @@ export function createScientificLoopGraph(
         }
         const promotable = outcomes.filter(
           (outcome) =>
-            outcome.preliminary === 'deferred_requires_data' && outcome.gate.supportRecords.length > 0,
+            outcome.preliminary === 'deferred_requires_data' &&
+            outcome.gate.supportRecords.length > 0,
         )
         const provisionalWinner = promotable
           .slice()
@@ -1694,6 +1739,17 @@ export function createScientificLoopGraph(
           })
         }
         const hasDecisiveEvidence = hasCorroboratedSupport || hasAuditableContradiction
+        const adjudicationExecution = {
+          agentId: 'sisyphus',
+          label: '闭环协调智能体：证据门禁与裁决',
+          stage: 'C' as const,
+          status: 'completed' as const,
+          capabilities: ['cross-validation', 'fact-check'],
+          round: state.round,
+          outputHypothesisIds: hypotheses.map((item) => item.id),
+          outputEvidenceIds: evidence.map((item) => item.evidenceId),
+          outputTaskIds: [],
+        }
         if (
           !hasDecisiveEvidence &&
           /已证明|已证实|确认.*主导|机制成立|得到支持|支持.*机制/.test(state.conclusion)
@@ -1718,6 +1774,7 @@ export function createScientificLoopGraph(
             evidence,
             verificationReports,
             validationTasks,
+            agentExecutions: appendStageExecution(state, adjudicationExecution),
           }
         }
         return {
@@ -1725,6 +1782,7 @@ export function createScientificLoopGraph(
           evidence,
           verificationReports,
           validationTasks,
+          agentExecutions: appendStageExecution(state, adjudicationExecution),
           corrections,
           limitations: appendLimitations(state.limitations, verificationLimitations),
         }
@@ -1938,7 +1996,22 @@ export function createScientificLoopGraph(
           validationTasks: finalValidationTasks,
           roundTaskIds: executableTasks.map((task) => task.taskId),
           newTaskCount: executableTasks.length,
+          budgetDeferredTaskCount: Math.max(
+            state.budgetDeferredTaskCount,
+            omittedExecutableTasks.length,
+          ),
           completedRounds: Math.max(state.completedRounds, state.round),
+          agentExecutions: appendStageExecution(state, {
+            agentId: 'prometheus',
+            label: '验证设计智能体：任务规划与预算审计',
+            stage: 'D',
+            status: 'completed',
+            capabilities: ['cross-validation', 'fact-check'],
+            round: state.round,
+            outputHypothesisIds: [],
+            outputEvidenceIds: [],
+            outputTaskIds: newTasks.map((task) => task.taskId),
+          }),
           corrections,
         }
       }),
@@ -1946,11 +2019,15 @@ export function createScientificLoopGraph(
     .addNode('D.route', async (state) =>
       node(state, 'D.route', async () => {
         const roundTaskIds = new Set(state.roundTaskIds)
-        const hasDeferredTask = state.validationTasks.some(
+        const hasBlockingDeferredTask = state.validationTasks.some(
           (task) =>
             task.round === state.round &&
             task.status === 'planned' &&
-            !roundTaskIds.has(task.taskId),
+            !roundTaskIds.has(task.taskId) &&
+            // A human-review item is an intentional external handoff. It is
+            // reported in dataReadiness, but does not override the run's
+            // computational budget when no human channel is attached.
+            task.readiness !== 'human_review',
         )
         const decision = shouldContinueScientificLoop({
           round: state.round,
@@ -1958,7 +2035,7 @@ export function createScientificLoopGraph(
           newEvidence: state.newEvidenceCount,
           newTasks: state.newTaskCount,
           hasExecutableTask: state.roundTaskIds.length > 0,
-          hasDeferredTask,
+          hasDeferredTask: hasBlockingDeferredTask,
         })
         const nextRoute = state.roundTaskIds
           .map((taskId) => state.validationTasks.find((task) => task.taskId === taskId))
@@ -2082,6 +2159,7 @@ export async function runScientificLoopGraph(
       conclusion: '',
       newEvidenceCount: 0,
       newTaskCount: 0,
+      budgetDeferredTaskCount: 0,
       roundTaskIds: [],
       completedRounds: 0,
       nextRoute: 'B' as const,

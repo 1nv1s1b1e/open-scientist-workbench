@@ -63,6 +63,7 @@ Not every box is an LLM Agent. Validation, routing, checksum verification, metri
 ### Task 1: Replace Agent-memory semantics with State and Context projection
 
 **Files:**
+
 - Create: `packages/agents/src/scientific-loop/context-policy.ts`
 - Create: `packages/agents/src/scientific-loop/context-builder.ts`
 - Modify: `packages/agents/src/scientific-loop/evidence-subgraph.ts`
@@ -107,8 +108,7 @@ export interface AgentContextProjection {
   round: number
 }
 
-export function buildAgentContext(input: BuildAgentContextInput):
-  AgentContextProjection
+export function buildAgentContext(input: BuildAgentContextInput): AgentContextProjection
 ```
 
 Policies are keyed first by capability and stage, not by mutable display name. They control read projection only; Agents do not write personal memory.
@@ -124,6 +124,7 @@ Run: `corepack pnpm exec vp test run packages/agents/test/scientific-context.tes
 ### Task 2: Complete the A—B—C—D LangGraph root
 
 **Files:**
+
 - Modify: `packages/agents/src/scientific-loop/graph-state.ts`
 - Create: `packages/agents/src/scientific-loop/services.ts`
 - Create: `packages/agents/src/scientific-loop/evidence-promotion.ts`
@@ -183,6 +184,7 @@ Run: `corepack pnpm exec vp test run packages/agents/test/scientific-graph.test.
 ### Task 3: Implement the default stateless scientific-agent registry
 
 **Files:**
+
 - Create: `packages/agents/src/scientific-loop/default-agents.ts`
 - Create: `packages/agents/src/scientific-loop/default-services.ts`
 - Modify: `packages/agents/src/scientific-loop/workflow.ts`
@@ -195,8 +197,7 @@ Given a natural-language-only phenomenon, assert the registry schedules literatu
 - [ ] **Step 2: Register capability-based workers**
 
 ```ts
-export function createDefaultEvidenceAgents(input: WorkflowRuntimeInput):
-  EvidenceAgent[] {
+export function createDefaultEvidenceAgents(input: WorkflowRuntimeInput): EvidenceAgent[] {
   return [
     createSourceAuditAgent(input),
     createHistorySearchAgent(input),
@@ -224,6 +225,7 @@ Run: `corepack pnpm exec vp test run packages/agents/test/default-scientific-age
 ### Task 4: Connect canonical records and data-processing provenance
 
 **Files:**
+
 - Create: `packages/storage/src/repo/scientific-record.ts`
 - Modify: `packages/storage/src/repo/data-processing.ts`
 - Modify: `packages/storage/src/index.ts`
@@ -254,6 +256,7 @@ Run: `corepack pnpm exec vp test run packages/storage/test/scientific-record.tes
 ### Task 5: Durable resume and API lifecycle
 
 **Files:**
+
 - Modify: `packages/agents/src/scientific-loop/scientific-graph.ts`
 - Modify: `packages/agents/src/scientific-loop/workflow.ts`
 - Modify: `apps/api/src/lib/run-stream.ts`
@@ -280,6 +283,7 @@ Run: `corepack pnpm exec vp test run packages/agents/test/scientific-checkpoint.
 ### Task 6: SSE observability and frontend graph projection
 
 **Files:**
+
 - Modify: `apps/web/src/lib/types/sse-events.ts`
 - Modify: `apps/web/src/lib/workbench/state.ts`
 - Modify: `apps/web/src/components/workbench/scientific-workbench.tsx`
@@ -304,6 +308,7 @@ Run: `corepack pnpm exec vp test run apps/web/test/scientific-workbench-state.te
 ### Task 7: Remove dual orchestration and verify the complete boundary
 
 **Files:**
+
 - Delete: `packages/agents/src/orchestration/state-graph.ts`
 - Delete: `packages/agents/test/state-graph.test.ts`
 - Modify: `packages/agents/src/orchestration/index.ts`

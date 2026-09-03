@@ -99,7 +99,10 @@ describe('supplement analysis product contracts', () => {
   })
 
   it('maps EIS products onto interval-carrying quantitative results', () => {
-    const results = supplementProductQuantitativeResults('eis-versioned-line-fitting-v2', eisFixture())
+    const results = supplementProductQuantitativeResults(
+      'eis-versioned-line-fitting-v2',
+      eisFixture(),
+    )
     const metrics = results.map((result) => result.metric)
     expect(metrics).toContain('eis_six_258_261_intensity_ratio')
     expect(metrics).toContain('eis_six_log10_electron_density')
@@ -232,10 +235,7 @@ describe('supplement analysis product contracts', () => {
       countRateProductsAvailable: true,
       boundaries: ['livetime-corrected count rates are not physical fluxes.'],
     }
-    const results = supplementProductQuantitativeResults(
-      'nustar-hxr-solar-geometry-v2',
-      payload,
-    )
+    const results = supplementProductQuantitativeResults('nustar-hxr-solar-geometry-v2', payload)
     expect(results).toHaveLength(1)
     expect(results[0]?.metric).toBe('nustar_80414202001_B_soft_2_6_keV_count_rate_upper_limit')
     expect(results[0]?.upperBound).toBeCloseTo(0.384623)
@@ -262,7 +262,10 @@ describe('supplement analysis product contracts', () => {
     const eis = diagnostics.products.find((product) =>
       product.kind.startsWith('eis-versioned-line-fitting-v2'),
     )
-    expect(eis?.quantitativeResults.map((r) => r.metric), 'eis metrics').toContain('eis_six_log10_electron_density')
+    expect(
+      eis?.quantitativeResults.map((r) => r.metric),
+      'eis metrics',
+    ).toContain('eis_six_log10_electron_density')
     expect(diagnostics.mechanismEvidencePermitted).toBe(false)
   })
 })

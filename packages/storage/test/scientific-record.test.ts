@@ -31,6 +31,7 @@ const hypothesis: ScientificHypothesis = {
   sourceIds: [],
   scope: '当前活动区',
   confidence: 0.4,
+  evidenceStrengthGrade: 'not_assessed',
   priority: 'high',
   priorityReason: '本地数据可直接检验第一条预测',
   confidenceBasis: [

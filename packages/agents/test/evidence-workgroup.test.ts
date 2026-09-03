@@ -52,13 +52,8 @@ describe('B evidence agent workgroup', () => {
     )
 
     expect(maxActive).toBe(2)
-    expect(result.executions.map((item) => item.agentId)).toEqual([
-      'history',
-      'counterexample',
-    ])
-    expect(result.executions.every((item) => item.status === 'completed')).toBe(
-      true,
-    )
+    expect(result.executions.map((item) => item.agentId)).toEqual(['history', 'counterexample'])
+    expect(result.executions.every((item) => item.status === 'completed')).toBe(true)
     expect(result.notes).toEqual(['history-done', 'counterexample-done'])
   })
 
@@ -108,9 +103,9 @@ describe('B evidence agent workgroup', () => {
       ],
       context(),
       {
-        onAgentState: (event) => states.push(
-          `${event.agentId}:${event.state}`,
-        ),
+        onAgentState: (event) => {
+          states.push(`${event.agentId}:${event.state}`)
+        },
       },
     )
 
@@ -135,8 +130,8 @@ describe('B evidence agent workgroup', () => {
       run: async () => ({}),
     }
 
-    await expect(
-      runEvidenceWorkgroup([duplicate, duplicate], context()),
-    ).rejects.toThrow('duplicate evidence agent id')
+    await expect(runEvidenceWorkgroup([duplicate, duplicate], context())).rejects.toThrow(
+      'duplicate evidence agent id',
+    )
   })
 })

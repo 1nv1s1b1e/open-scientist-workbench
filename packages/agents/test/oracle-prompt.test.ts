@@ -55,7 +55,9 @@ describe('buildHypothesesBlock', () => {
     const block = buildHypothesesBlock([makeHypothesis()], [])
     expect(block).toContain('mechanism: alfven-wave-dissipation')
     expect(block).toContain('predictions: coherent propagating EUV disturbances')
-    expect(block).toContain('falsificationConditions: no propagating signal in a quality-controlled time series')
+    expect(block).toContain(
+      'falsificationConditions: no propagating signal in a quality-controlled time series',
+    )
     expect(block).toContain('sourceIds: paper:alfven-1')
   })
 

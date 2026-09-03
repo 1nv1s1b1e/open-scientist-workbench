@@ -7,10 +7,7 @@ import {
   type EvidenceAgentContext,
 } from '../src/scientific-loop/index.ts'
 
-function memory(
-  memoryId: string,
-  overrides: Partial<MemoryEntry> = {},
-): MemoryEntry {
+function memory(memoryId: string, overrides: Partial<MemoryEntry> = {}): MemoryEntry {
   return {
     memoryId,
     layer: 'semantic',
@@ -77,16 +74,10 @@ describe('LangGraph B evidence subgraph', () => {
       },
     })
 
-    const result = await runLangGraphEvidenceWorkgroup(
-      [agent('first'), agent('second')],
-      context(),
-    )
+    const result = await runLangGraphEvidenceWorkgroup([agent('first'), agent('second')], context())
 
     expect(maxActive).toBe(2)
-    expect(result.executions.map((item) => item.agentId)).toEqual([
-      'first',
-      'second',
-    ])
+    expect(result.executions.map((item) => item.agentId)).toEqual(['first', 'second'])
     expect(result.notes).toEqual(['first-done', 'second-done'])
   })
 
@@ -122,14 +113,16 @@ describe('LangGraph B evidence subgraph', () => {
   it('preserves a worker failure as an explicit limitation', async () => {
     const states: string[] = []
     const result = await runLangGraphEvidenceWorkgroup(
-      [{
-        id: 'broken',
-        label: '失败分析器',
-        capabilities: ['observation-analysis'],
-        run: async () => {
-          throw new Error('data adapter unavailable')
+      [
+        {
+          id: 'broken',
+          label: '失败分析器',
+          capabilities: ['observation-analysis'],
+          run: async () => {
+            throw new Error('data adapter unavailable')
+          },
         },
-      }],
+      ],
       context(),
       {
         onAgentState: (event) => {
@@ -143,9 +136,7 @@ describe('LangGraph B evidence subgraph', () => {
       status: 'failed',
       error: 'data adapter unavailable',
     })
-    expect(result.limitations).toContain(
-      '智能体 失败分析器 执行失败：data adapter unavailable',
-    )
+    expect(result.limitations).toContain('智能体 失败分析器 执行失败：data adapter unavailable')
     expect(states).toContain('broken:failed')
   })
 })

@@ -21,6 +21,7 @@ const hypothesis: ScientificHypothesis = {
   sourceIds: [],
   scope: '当前活动区和观测窗口',
   confidence: 0.4,
+  evidenceStrengthGrade: 'not_assessed',
   parentId: null,
   round: 1,
   status: 'candidate',

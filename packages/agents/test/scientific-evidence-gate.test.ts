@@ -53,10 +53,12 @@ function records(): EvidenceRecord[] {
 
 describe('scientific support gate', () => {
   it('audits raw-fingerprint reuse across nominally independent event groups', () => {
-    const inconsistent = records().slice(0, 2).map((item) => ({
-      ...item,
-      lineage: { ...item.lineage!, rawDataFingerprint: 'raw-shared-across-events' },
-    }))
+    const inconsistent = records()
+      .slice(0, 2)
+      .map((item) => ({
+        ...item,
+        lineage: { ...item.lineage!, rawDataFingerprint: 'raw-shared-across-events' },
+      }))
 
     const issues = auditIndependenceConsistency(inconsistent)
 
@@ -69,17 +71,19 @@ describe('scientific support gate', () => {
   })
 
   it('audits fingerprint drift within an equivalent event/method lineage', () => {
-    const drift = records().slice(0, 2).map((item, index) => ({
-      ...item,
-      lineage: {
-        ...item.lineage!,
-        eventGroupId: 'same-event',
-        rawDataFingerprint: `drift-${index}`,
-        observableFamily: 'wave_timing' as const,
-        methodFamily: 'same-method',
-        analysisSplit: 'validation' as const,
-      },
-    }))
+    const drift = records()
+      .slice(0, 2)
+      .map((item, index) => ({
+        ...item,
+        lineage: {
+          ...item.lineage!,
+          eventGroupId: 'same-event',
+          rawDataFingerprint: `drift-${index}`,
+          observableFamily: 'wave_timing' as const,
+          methodFamily: 'same-method',
+          analysisSplit: 'validation' as const,
+        },
+      }))
 
     expect(auditIndependenceConsistency(drift)).toEqual([
       expect.objectContaining({ kind: 'lineage_fingerprint_drift' }),
@@ -110,9 +114,7 @@ describe('scientific support gate', () => {
     expect(assessment.auditableConsistentRecords).toHaveLength(1)
     expect(assessment.evidenceStrengthGrade).toBe('limited')
     expect(assessment.reasons).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('lift the ordinal grade to limited'),
-      ]),
+      expect.arrayContaining([expect.stringContaining('lift the ordinal grade to limited')]),
     )
   })
 
@@ -126,7 +128,8 @@ describe('scientific support gate', () => {
           ...item.lineage!,
           eventGroupId: `consistent-event-${index}`,
           rawDataFingerprint: `consistent-raw-${index}`,
-          observableFamily: index === 0 ? ('thermal_variability' as const) : ('magnetic_evolution' as const),
+          observableFamily:
+            index === 0 ? ('thermal_variability' as const) : ('magnetic_evolution' as const),
           methodFamily: index === 0 ? 'regularized-dem' : 'sharp-vector-proxy',
         },
       }))
@@ -291,17 +294,19 @@ describe('scientific support gate', () => {
   })
 
   it('eliminates only after a pre-registered falsification is independently replicated with adequate detectability', () => {
-    const contradictionRecords = records().slice(0, 2).map((item, index) => ({
-      ...item,
-      evidenceId: `e-fatal-${index + 1}`,
-      status: 'contradict' as const,
-      predictionIds: [],
-      falsificationConditionIds: ['h-1:falsification:1'],
-      lineage: {
-        ...item.lineage!,
-        analysisSplit: index === 1 ? ('holdout' as const) : ('validation' as const),
-      },
-    }))
+    const contradictionRecords = records()
+      .slice(0, 2)
+      .map((item, index) => ({
+        ...item,
+        evidenceId: `e-fatal-${index + 1}`,
+        status: 'contradict' as const,
+        predictionIds: [],
+        falsificationConditionIds: ['h-1:falsification:1'],
+        lineage: {
+          ...item.lineage!,
+          analysisSplit: index === 1 ? ('holdout' as const) : ('validation' as const),
+        },
+      }))
     const task: ValidationTask = {
       taskId: 'task-fatal-test',
       executorId: 'test-counterexample-executor',
@@ -337,9 +342,7 @@ describe('scientific support gate', () => {
     })
 
     expect(assessment.eliminated).toBe(true)
-    expect(assessment.decisiveFalsificationConditionIds).toEqual([
-      'h-1:falsification:1',
-    ])
+    expect(assessment.decisiveFalsificationConditionIds).toEqual(['h-1:falsification:1'])
     expect(assessment.adequateTaskIds).toEqual(['task-fatal-test'])
   })
 

@@ -414,7 +414,11 @@ export async function steerRun(
       apiEndpoint(
         `/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/steer`,
       ),
-      { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content, mode }) },
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content, mode }),
+      },
     ),
   )
 }
@@ -464,7 +468,11 @@ export async function approveRunGate(
       apiEndpoint(
         `/api/projects/${encodeURIComponent(project)}/runs/${encodeURIComponent(runId)}/approve`,
       ),
-      { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) },
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(input),
+      },
     ),
   )
 }

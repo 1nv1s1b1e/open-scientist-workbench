@@ -8,10 +8,7 @@ import {
   selectMemoryForStage,
 } from '../src/scientific-loop/memory-policy.ts'
 
-function memory(
-  memoryId: string,
-  overrides: Partial<MemoryEntry> = {},
-): MemoryEntry {
+function memory(memoryId: string, overrides: Partial<MemoryEntry> = {}): MemoryEntry {
   return {
     memoryId,
     layer: 'semantic',
@@ -60,10 +57,7 @@ describe('four-layer scientific memory policy', () => {
       2,
     )
 
-    expect(selected.map((entry) => entry.memoryId)).toEqual([
-      'counterexample',
-      'revision',
-    ])
+    expect(selected.map((entry) => entry.memoryId)).toEqual(['counterexample', 'revision'])
   })
 
   it('scopes an agent read to declared layers and kinds', () => {
@@ -89,10 +83,7 @@ describe('four-layer scientific memory policy', () => {
       policy,
     )
 
-    expect(selected.map((entry) => entry.memoryId)).toEqual([
-      'snapshot',
-      'processing',
-    ])
+    expect(selected.map((entry) => entry.memoryId)).toEqual(['snapshot', 'processing'])
   })
 
   it('rejects writes outside the agent policy instead of persisting them', () => {
@@ -105,9 +96,7 @@ describe('four-layer scientific memory policy', () => {
       policy,
     )
 
-    expect(result.accepted.map((entry) => entry.memoryId)).toEqual([
-      'historical-evidence',
-    ])
+    expect(result.accepted.map((entry) => entry.memoryId)).toEqual(['historical-evidence'])
     expect(result.rejected).toEqual([
       expect.objectContaining({
         memoryId: 'unauthorized-hypothesis',

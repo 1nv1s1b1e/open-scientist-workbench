@@ -11,22 +11,26 @@ describe('scientific round view', () => {
   it('separates the round where a task was proposed from the round where it ran', () => {
     const state = emptyScientificWorkbenchState()
     state.round = 2
-    state.validationTasks = [{
-      taskId: 'task-1',
-      route: 'B',
-      status: 'completed',
-      objective: 'measure lag',
-      round: 1,
-      resultEvidenceIds: ['e-result'],
-    }]
-    state.evidence = [{
-      evidenceId: 'e-result',
-      taskId: 'task-1',
-      hypothesisId: 'h-1',
-      status: 'unknown',
-      claim: 'lag is not discriminating',
-      round: 2,
-    }]
+    state.validationTasks = [
+      {
+        taskId: 'task-1',
+        route: 'B',
+        status: 'completed',
+        objective: 'measure lag',
+        round: 1,
+        resultEvidenceIds: ['e-result'],
+      },
+    ]
+    state.evidence = [
+      {
+        evidenceId: 'e-result',
+        taskId: 'task-1',
+        hypothesisId: 'h-1',
+        status: 'unknown',
+        claim: 'lag is not discriminating',
+        round: 2,
+      },
+    ]
 
     expect(scientificRounds(state)).toEqual([1, 2])
     expect(scientificRoundView(state, 1).tasksProposed.map((item) => item.taskId)).toEqual([

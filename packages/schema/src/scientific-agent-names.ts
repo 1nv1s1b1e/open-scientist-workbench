@@ -47,8 +47,7 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
     displayName: '观测质控智能体',
     englishName: 'Observation Quality Agent',
     stage: 'B',
-    responsibility:
-      '审计数据覆盖、质量标记与预处理边界，拒绝不合格输入进入证据层并登记缺失维度。',
+    responsibility: '审计数据覆盖、质量标记与预处理边界，拒绝不合格输入进入证据层并登记缺失维度。',
   },
   {
     key: 'explore',
@@ -65,8 +64,7 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
     displayName: '反证审计智能体',
     englishName: 'Counter-Evidence Auditor',
     stage: 'B',
-    responsibility:
-      '构造同区背景对照与反例搜索，检验候选机制是否具有机制区分力而非共同预测。',
+    responsibility: '构造同区背景对照与反例搜索，检验候选机制是否具有机制区分力而非共同预测。',
   },
   {
     key: 'prometheus',
@@ -83,16 +81,16 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
     displayName: '闭环协调智能体',
     englishName: 'Loop Coordinator Agent',
     stage: 'C',
-    responsibility:
-      '驱动支持/淘汰门禁评估，综合有限结论并保持科学状态与工作流闭环状态分离。',
+    responsibility: '驱动支持/淘汰门禁评估，综合有限结论并保持科学状态与工作流闭环状态分离。',
   },
 ] as const satisfies readonly ScientificAgentIdentity[]
 
 /** Legacy display-name map retained for older callers. */
 export const SCIENTIFIC_AGENT_DISPLAY_NAMES: Record<ScientificAgentRoleKey, string> =
-  Object.fromEntries(
-    SCIENTIFIC_AGENTS.map((agent) => [agent.key, agent.displayName]),
-  ) as Record<ScientificAgentRoleKey, string>
+  Object.fromEntries(SCIENTIFIC_AGENTS.map((agent) => [agent.key, agent.displayName])) as Record<
+    ScientificAgentRoleKey,
+    string
+  >
 
 export function scientificAgentIdentity(
   key: string | null | undefined,

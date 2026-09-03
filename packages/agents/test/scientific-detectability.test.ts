@@ -21,7 +21,7 @@ function record(index: number, halfWidth: number, event = `event-${index}`): Evi
     taskId: 'task-1',
     status: 'unknown',
     evidenceRole: 'diagnostic_boundary',
-    contradictionScope: 'none',
+    contradictionScope: 'mechanism',
     claim: 'registered diagnostic result',
     observed: 'finite interval',
     method: 'deterministic-test',

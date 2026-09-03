@@ -47,15 +47,26 @@ export function shouldContinueScientificLoop({
   newTasks: number
   hasExecutableTask?: boolean
   hasDeferredTask?: boolean
-}): { continue: boolean; reason: 'max_rounds_reached' | 'no_executable_validation_task' | 'no_new_evidence_or_tasks' | 'new_evidence' | 'new_task' } {
-  if (round >= maxRounds) return { continue: false, reason: 'max_rounds_reached' }
-  if (!hasExecutableTask) {
+}): {
+  continue: boolean
+  reason:
+    | 'max_rounds_reached'
+    | 'no_executable_validation_task'
+    | 'no_new_evidence_or_tasks'
+    | 'new_evidence'
+    | 'new_task'
+} {
+  // A deferred task is a stronger scientific stop than the budget: it tells
+  // the caller why another automatic round cannot produce information.
+  if (!hasExecutableTask && hasDeferredTask) {
     return {
       continue: false,
-      reason: hasDeferredTask
-        ? 'no_executable_validation_task'
-        : 'no_new_evidence_or_tasks',
+      reason: 'no_executable_validation_task',
     }
+  }
+  if (round >= maxRounds) return { continue: false, reason: 'max_rounds_reached' }
+  if (!hasExecutableTask) {
+    return { continue: false, reason: 'no_new_evidence_or_tasks' }
   }
   if (newEvidence === 0 && newTasks === 0) {
     return { continue: false, reason: 'no_new_evidence_or_tasks' }

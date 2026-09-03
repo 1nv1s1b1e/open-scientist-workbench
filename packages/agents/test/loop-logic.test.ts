@@ -7,10 +7,7 @@ import {
   getRevisionTriggers,
 } from '../src/legacy/sisyphus/loop-logic.ts'
 
-function hypothesis(
-  id: string,
-  overrides: Partial<Hypothesis> = {},
-): Hypothesis {
+function hypothesis(id: string, overrides: Partial<Hypothesis> = {}): Hypothesis {
   return {
     id,
     statement: `${id} statement`,

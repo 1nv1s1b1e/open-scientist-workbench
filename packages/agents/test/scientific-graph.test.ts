@@ -8,6 +8,7 @@ import {
   type ScientificGraphDependencies,
   type ScientificGraphInput,
 } from '../src/scientific-loop/scientific-graph.ts'
+import type { EvidenceAgent } from '../src/scientific-loop/evidence-workgroup.ts'
 
 const hypothesis: ScientificHypothesis = {
   id: 'h-coupled',
@@ -21,6 +22,7 @@ const hypothesis: ScientificHypothesis = {
   sourceIds: [],
   scope: '当前活动区和观测窗口',
   confidence: 0.4,
+  evidenceStrengthGrade: 'not_assessed',
   parentId: null,
   round: 1,
   status: 'candidate',
@@ -165,6 +167,22 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     expect(result.hypotheses).toHaveLength(1)
     expect(result.evidence[0]?.status).toBe('unknown')
     expect(result.terminationReason).toBe('max_rounds_reached')
+    expect(new Set(result.agentExecutions.map((execution) => execution.stage))).toEqual(
+      new Set(['A', 'B', 'C', 'D']),
+    )
+    expect(result.agentExecutions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ agentId: 'librarian', stage: 'A' }),
+        expect.objectContaining({ agentId: 'sisyphus', stage: 'C' }),
+        expect.objectContaining({ agentId: 'prometheus', stage: 'D' }),
+      ]),
+    )
+    expect(result.roundBudget).toEqual({
+      maxRounds: 1,
+      roundsUsed: 1,
+      exhausted: true,
+      deferredTaskCount: 0,
+    })
     expect(result.closureStatus).toBe('partial')
     expect(result.hypothesisCoverage).toEqual(
       expect.objectContaining({
@@ -214,6 +232,41 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
         requiresDataTaskIds: [dataTask.taskId],
       }),
     )
+  })
+
+  it('makes maxRounds observable when the final planner finds executable work', async () => {
+    const finalRoundTask: ValidationTask = {
+      taskId: 'task-final-round-budget',
+      executorId: 'test-round-executor',
+      route: 'B',
+      type: 'analysis',
+      objective: '在最终轮登记一项可执行的时序复核',
+      hypothesisIds: [hypothesis.id],
+      predictionIds: [],
+      falsificationConditionIds: [],
+      requiredSourceIds: [],
+      discriminatingOutcomes: ['得到可重复指标', '仍然未知'],
+      triggeredBy: hypothesis.id,
+      status: 'planned',
+      resultEvidenceIds: [],
+      round: 1,
+      fingerprint: 'task-final-round-budget-fingerprint',
+      readiness: 'executable_now',
+    }
+    const result = await runScientificLoopGraph(
+      input(undefined, 1),
+      dependencies({ planValidation: async () => [finalRoundTask] }),
+    )
+
+    expect(result.terminationReason).toBe('max_rounds_reached')
+    expect(result.roundBudget).toEqual({
+      maxRounds: 1,
+      roundsUsed: 1,
+      exhausted: true,
+      deferredTaskCount: 1,
+    })
+    expect(result.validationTasks).toHaveLength(0)
+    expect(result.corrections.some((item) => item.message.includes('最终轮规划器'))).toBe(true)
   })
 
   it('downgrades decisive evidence that lacks processing provenance', async () => {
@@ -857,20 +910,20 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
 
   it('deduplicates the same correction re-observed in different stages', async () => {
     const duplicateMessage = '同一来源边界问题只应记录一次。'
-    const correctingAgent = (id: string, stage: string) => ({
+    const correctingAgent = (id: string, stage: 'B' | 'memory'): EvidenceAgent => ({
       id,
       label: id,
-      capabilities: ['fact-check'] as const,
+      capabilities: ['fact-check'],
       run: async () => ({
         corrections: [
           {
             stage,
-            kind: 'provenance' as const,
-            severity: 'warning' as const,
+            kind: 'provenance',
+            severity: 'warning',
             message: duplicateMessage,
             action: '保持来源边界。',
             affectedIds: ['e-shared-boundary'],
-            evidenceAction: 'none' as const,
+            evidenceAction: 'none',
           },
         ],
       }),

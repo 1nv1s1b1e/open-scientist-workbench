@@ -17,6 +17,8 @@ function hypothesis(id: string, predictions: string[]): ScientificHypothesis {
     falsificationConditions: ['冻结处理后没有对应变化'],
     sourceIds: ['paper:1'],
     scope: '测试作用域',
+    confidence: 0.4,
+    evidenceStrengthGrade: 'not_assessed',
     parentId: null,
     round: 1,
     status: 'candidate',
@@ -28,9 +30,7 @@ describe('executor capability contract', () => {
     const statement = '94/131 Å 峰值先于 171/193 Å，冷却时滞为 5–15 分钟'
     expect(predictionRequiredFamilies(statement)).toEqual(['cooling_sequence'])
     expect(executorSupportsPrediction('coronal-cooling-sequence-v2', statement)).toBe(true)
-    expect(executorSupportsPrediction('coronal-hot-channel-variability-v1', statement)).toBe(
-      false,
-    )
+    expect(executorSupportsPrediction('coronal-hot-channel-variability-v1', statement)).toBe(false)
   })
 
   it('distributes compound predictions across executors that each measure one aspect', () => {
@@ -40,9 +40,7 @@ describe('executor capability contract', () => {
     expect(required).toContain('dem_thermal_structure')
     expect(executorSupportsPrediction('coronal-cooling-sequence-v2', statement)).toBe(true)
     expect(executorSupportsPrediction('coronal-dem-inversion-v1', statement)).toBe(true)
-    expect(executorSupportsPrediction('coronal-hot-channel-variability-v1', statement)).toBe(
-      false,
-    )
+    expect(executorSupportsPrediction('coronal-hot-channel-variability-v1', statement)).toBe(false)
   })
 
   it('rejects propagation claims by executors without spatial capability', () => {
@@ -54,17 +52,13 @@ describe('executor capability contract', () => {
 
   it('keeps plain intermittency claims with hot-channel executors only', () => {
     const statement = '94/131 Å ROI 强度时序中应出现间歇且可重复的热通道增强'
-    expect(executorSupportsPrediction('coronal-hot-channel-variability-v1', statement)).toBe(
-      true,
-    )
+    expect(executorSupportsPrediction('coronal-hot-channel-variability-v1', statement)).toBe(true)
     expect(executorSupportsPrediction('coronal-cooling-sequence-v2', statement)).toBe(false)
   })
 
   it('stays permissive for unconstrained statements and unknown executors', () => {
     expect(predictionRequiredFamilies('未登记的新诊断要求')).toEqual([])
-    expect(executorSupportsPrediction('coronal-dem-inversion-v1', '未登记的新诊断要求')).toBe(
-      true,
-    )
+    expect(executorSupportsPrediction('coronal-dem-inversion-v1', '未登记的新诊断要求')).toBe(true)
     expect(executorSupportsPrediction('some-unknown-executor', '冷却时滞')).toBe(true)
     expect(executorSupportsPrediction(null, '冷却时滞')).toBe(true)
   })
@@ -81,9 +75,9 @@ describe('executor capability contract', () => {
     const ids = test.predictions.map((_s, index) => scientificPredictionId('h-1', index))
     expect(ids[0]).toBe('h-1:prediction:1')
     expect(predictionStatementForId(test, ids[0]!)).toBe(test.predictions[0])
-    expect(filterPredictionIdsByCapability('coronal-hot-channel-variability-v1', test, ids)).toEqual(
-      ['h-1:prediction:2'],
-    )
+    expect(
+      filterPredictionIdsByCapability('coronal-hot-channel-variability-v1', test, ids),
+    ).toEqual(['h-1:prediction:2'])
     expect(filterPredictionIdsByCapability('coronal-cooling-sequence-v2', test, ids)).toEqual([
       'h-1:prediction:1',
     ])

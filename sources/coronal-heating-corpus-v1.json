@@ -50,7 +50,20 @@
     {
       "id": "van-doorsselaere-et-al-2020",
       "title": "Coronal heating by MHD waves",
-      "authors": ["Tom Van Doorsselaere", "Abhishek K. Srivastava", "Patrick Antolin", "Norbert Magyar", "Soheil Vasheghani Farahani", "Hui Tian", "Dmitrii Y. Kolotkov", "Leon Ofman", "Mingzhe Guo", "Iñigo Arregui", "Ineke De Moortel", "David Pascoe"],
+      "authors": [
+        "Tom Van Doorsselaere",
+        "Abhishek K. Srivastava",
+        "Patrick Antolin",
+        "Norbert Magyar",
+        "Soheil Vasheghani Farahani",
+        "Hui Tian",
+        "Dmitrii Y. Kolotkov",
+        "Leon Ofman",
+        "Mingzhe Guo",
+        "Iñigo Arregui",
+        "Ineke De Moortel",
+        "David Pascoe"
+      ],
       "year": 2020,
       "doi": "10.1007/s11214-020-00770-y",
       "source_url": "https://doi.org/10.1007/s11214-020-00770-y",
@@ -67,7 +80,14 @@
       "doi": "10.1007/s41116-018-0015-3",
       "source_url": "https://doi.org/10.1007/s41116-018-0015-3",
       "kind": "diagnostic review",
-      "topics": ["spectral diagnostics", "光谱诊断", "EUV", "X-ray", "non-thermal line width", "非热线宽"],
+      "topics": [
+        "spectral diagnostics",
+        "光谱诊断",
+        "EUV",
+        "X-ray",
+        "non-thermal line width",
+        "非热线宽"
+      ],
       "annotation": "文章概述太阳紫外和 X 射线光谱诊断、仪器标定和原子数据库依赖。它说明为何仅凭宽带 EUV 成像难以区分加热机制，并为引入 EIS 或 IRIS 光谱约束提供方法学依据。",
       "evidence_boundary": "光谱反演对标定、线混叠、背景和视线积分敏感，未经质量控制的线宽或温度结果不能直接写入结论。"
     },
@@ -103,7 +123,13 @@
       "doi": "10.1088/0004-637X/758/1/53",
       "source_url": "https://doi.org/10.1088/0004-637X/758/1/53",
       "kind": "simulation-derived diagnostic",
-      "topics": ["emission measure", "发射量", "low-frequency nanoflares", "低频纳耀斑", "active-region core"],
+      "topics": [
+        "emission measure",
+        "发射量",
+        "low-frequency nanoflares",
+        "低频纳耀斑",
+        "active-region core"
+      ],
       "annotation": "文章从数值模型讨论活动区核心发射量分布对低频纳耀斑加热时变性的诊断潜力。它可提供可检验的模型预测，并应与观测处理和误差传播配套使用。",
       "evidence_boundary": "模拟预测需要与同一仪器响应、观测几何和不确定度下的结果对照，不能直接等同于真实太阳机制。"
     },
@@ -146,7 +172,13 @@
     {
       "id": "antolin-et-al-2008",
       "title": "Predicting observational signatures of coronal heating by Alfvén waves and nanoflares",
-      "authors": ["Patrick Antolin", "Kazunari Shibata", "Takahiro Kudoh", "Daiko Shiota", "David Brooks"],
+      "authors": [
+        "Patrick Antolin",
+        "Kazunari Shibata",
+        "Takahiro Kudoh",
+        "Daiko Shiota",
+        "David Brooks"
+      ],
       "year": 2008,
       "doi": "10.1086/591998",
       "source_url": "https://doi.org/10.1086/591998",
@@ -158,19 +190,38 @@
     {
       "id": "mcintosh-et-al-2011",
       "title": "Alfvénic waves with sufficient energy to power the quiet solar corona and fast solar wind",
-      "authors": ["Scott W. McIntosh", "Bart De Pontieu", "Mats Carlsson", "Viggo Hansteen", "Petter Boerner", "Marcel Goossens"],
+      "authors": [
+        "Scott W. McIntosh",
+        "Bart De Pontieu",
+        "Mats Carlsson",
+        "Viggo Hansteen",
+        "Petter Boerner",
+        "Marcel Goossens"
+      ],
       "year": 2011,
       "doi": "10.1038/nature10235",
       "source_url": "https://pubmed.ncbi.nlm.nih.gov/21796206/",
       "kind": "observational energy-flux constraint",
-      "topics": ["Alfvénic waves", "energy flux", "quiet corona", "phase speed", "transverse motion"],
+      "topics": [
+        "Alfvénic waves",
+        "energy flux",
+        "quiet corona",
+        "phase speed",
+        "transverse motion"
+      ],
       "annotation": "论文报告宁静太阳大气中的横向阿尔芬性运动并估计能流。它为波传播速度、振幅和能流闭合提供量级与分析结构。",
       "evidence_boundary": "结论针对宁静太阳和快速太阳风，不能直接证明活动区核心由波加热；活动区候选仍需本地密度、相速度、阻尼长度与辐射损失闭合。"
     },
     {
       "id": "cirtain-et-al-2013",
       "title": "Energy release in the solar corona from spatially resolved magnetic braids",
-      "authors": ["Jonathan W. Cirtain", "Leon Golub", "Amy R. Winebarger", "Bart De Pontieu", "Ken Kobayashi"],
+      "authors": [
+        "Jonathan W. Cirtain",
+        "Leon Golub",
+        "Amy R. Winebarger",
+        "Bart De Pontieu",
+        "Ken Kobayashi"
+      ],
       "year": 2013,
       "doi": "10.1038/nature11772",
       "source_url": "https://doi.org/10.1038/nature11772",
@@ -182,7 +233,13 @@
     {
       "id": "ishikawa-et-al-2017",
       "title": "Detection of nanoflare-heated plasma in the solar corona by the FOXSI-2 sounding rocket",
-      "authors": ["Shin-nosuke Ishikawa", "Lindsay Glesener", "Säm Krucker", "Steven Christe", "Juan Camilo Buitrago-Casas"],
+      "authors": [
+        "Shin-nosuke Ishikawa",
+        "Lindsay Glesener",
+        "Säm Krucker",
+        "Steven Christe",
+        "Juan Camilo Buitrago-Casas"
+      ],
       "year": 2017,
       "doi": "10.1038/s41550-017-0269-z",
       "source_url": "https://www.nature.com/articles/s41550-017-0269-z",
@@ -206,12 +263,25 @@
     {
       "id": "mckevitt-et-al-2026",
       "title": "Coronal Non-Thermal and Doppler Plasma Flows Driven by Photospheric Flux in 28 Active Regions",
-      "authors": ["James McKevitt", "Sarah Matthews", "Deborah Baker", "Hamish A. S. Reid", "David H. Brooks"],
+      "authors": [
+        "James McKevitt",
+        "Sarah Matthews",
+        "Deborah Baker",
+        "Hamish A. S. Reid",
+        "David H. Brooks"
+      ],
       "year": 2026,
       "doi": "10.1093/pasj/psag024",
       "source_url": "https://doi.org/10.1093/pasj/psag024",
       "kind": "multi-active-region observational constraint",
-      "topics": ["HMI", "Hinode/EIS", "non-thermal velocity", "Doppler", "magnetic flux", "Poynting flux"],
+      "topics": [
+        "HMI",
+        "Hinode/EIS",
+        "non-thermal velocity",
+        "Doppler",
+        "magnetic flux",
+        "Poynting flux"
+      ],
       "annotation": "28 个活动区的 HMI 磁通与 EIS 非热速度研究为跨事件磁场—光谱关联提供基准，并明确指出这些诊断难以单独区分波加热与磁编织加热。",
       "evidence_boundary": "相关性与供能一致性不是唯一机制指纹；本项目不得由 HMI 磁通和单一线宽相关直接升级某一具体机制。"
     },
@@ -254,7 +324,13 @@
     {
       "id": "winebarger-et-al-2011",
       "title": "Using a Differential Emission Measure and Density Measurements in an Active Region Core to Test a Steady Heating Model",
-      "authors": ["Amy R. Winebarger", "Joan T. Schmelz", "Harry P. Warren", "Steve H. Saar", "Vinay L. Kashyap"],
+      "authors": [
+        "Amy R. Winebarger",
+        "Joan T. Schmelz",
+        "Harry P. Warren",
+        "Steve H. Saar",
+        "Vinay L. Kashyap"
+      ],
       "year": 2011,
       "doi": "10.1088/0004-637X/740/1/2",
       "source_url": "https://arxiv.org/abs/1106.5057",
@@ -278,12 +354,26 @@
     {
       "id": "dahlburg-et-al-2016",
       "title": "Observational Signatures of Coronal Loop Heating and Cooling Driven by Footpoint Shuffling",
-      "authors": ["R. B. Dahlburg", "G. Einaudi", "B. D. Taylor", "I. Ugarte-Urra", "H. P. Warren", "A. F. Rappazzo", "M. Velli"],
+      "authors": [
+        "R. B. Dahlburg",
+        "G. Einaudi",
+        "B. D. Taylor",
+        "I. Ugarte-Urra",
+        "H. P. Warren",
+        "A. F. Rappazzo",
+        "M. Velli"
+      ],
       "year": 2016,
       "doi": "10.3847/0004-637X/817/1/47",
       "source_url": "https://arxiv.org/abs/1512.03079",
       "kind": "3D MHD forward-model mechanism prediction",
-      "topics": ["footpoint shuffling", "current sheets", "MHD", "synthetic spectra", "multi-thermal plasma"],
+      "topics": [
+        "footpoint shuffling",
+        "current sheets",
+        "MHD",
+        "synthetic spectra",
+        "multi-thermal plasma"
+      ],
       "annotation": "三维 MHD 模拟将随机足点扰动、电流片耗散和合成 EIS 发射联系起来，提供磁编织/湍流候选的前向观测预测。",
       "evidence_boundary": "相似的 DEM 或多热结构不是唯一指纹；必须进行同仪器响应卷积并比较替代驱动模型。"
     },
@@ -295,19 +385,37 @@
       "doi": "10.1086/528786",
       "source_url": "https://arxiv.org/abs/0709.3687",
       "kind": "reduced-MHD mechanism model",
-      "topics": ["Parker scenario", "magnetic braiding", "MHD turbulence", "Poynting flux", "current sheets"],
+      "topics": [
+        "Parker scenario",
+        "magnetic braiding",
+        "MHD turbulence",
+        "Poynting flux",
+        "current sheets"
+      ],
       "annotation": "足点运动驱动的 Poynting 能流、各向异性湍流级联和间歇电流片构成磁编织候选的物理链条，并给出随环参数变化的标度关系。",
       "evidence_boundary": "HMI 磁通、磁梯度或 PIL 邻域相关性只能提供磁环境约束；没有高分辨拓扑和能量闭合时不能证明 Parker 机制。"
     },
     {
       "id": "froment-et-al-2020",
       "title": "Multi-scale Observations of Thermal Non-equilibrium Cycles in Coronal Loops",
-      "authors": ["Clara Froment", "Patrick Antolin", "V. M. J. Henriques", "Petra Kohutova", "L. H. M. Rouppe van der Voort"],
+      "authors": [
+        "Clara Froment",
+        "Patrick Antolin",
+        "V. M. J. Henriques",
+        "Petra Kohutova",
+        "L. H. M. Rouppe van der Voort"
+      ],
       "year": 2020,
       "doi": "10.1051/0004-6361/201936717",
       "source_url": "https://arxiv.org/abs/1911.09710",
       "kind": "multi-instrument alternative-process observation",
-      "topics": ["thermal non-equilibrium", "coronal rain", "long-period pulsations", "SDO/AIA", "SST"],
+      "topics": [
+        "thermal non-equilibrium",
+        "coronal rain",
+        "long-period pulsations",
+        "SDO/AIA",
+        "SST"
+      ],
       "annotation": "把准恒定且足点集中的加热、长周期强度脉动和蒸发—凝结循环联系起来，为有序冷却和日冕雨提供脉冲加热之外的替代解释。",
       "evidence_boundary": "TNE 特征也依赖加热空间分布和环几何；没有周期、日冕雨与光谱联合诊断时不能反向确认 TNE。"
     },
@@ -329,7 +437,13 @@
       "year": 2020,
       "source_url": "https://arxiv.org/abs/2009.00132",
       "kind": "coupled MHD-HD forward-model constraint",
-      "topics": ["nanoflare diagnostics", "3D MHD", "hydrodynamics", "emission measure", "forward model"],
+      "topics": [
+        "nanoflare diagnostics",
+        "3D MHD",
+        "hydrodynamics",
+        "emission measure",
+        "forward model"
+      ],
       "annotation": "将三维 MHD 重联场线的加热分布输入一维流体模型并生成发射量预测，为磁驱动—热响应的联合前向建模提供方法。",
       "evidence_boundary": "模型产生的低频加热不能覆盖全部活动区核心观测范围；局部匹配不能升级为完整机制闭合。"
     },
@@ -341,7 +455,13 @@
       "doi": "10.1086/166485",
       "source_url": "https://doi.org/10.1086/166485",
       "kind": "foundational nanoflare theory",
-      "topics": ["nanoflare", "magnetic braiding", "current sheets", "X-ray corona", "foundational theory"],
+      "topics": [
+        "nanoflare",
+        "magnetic braiding",
+        "current sheets",
+        "X-ray corona",
+        "foundational theory"
+      ],
       "annotation": "提出由缓慢足点运动形成切向不连续和大量小尺度能量释放事件的经典纳耀斑图景。适合定义磁编织—电流片—脉冲加热候选的物理链条与事件统计预期。",
       "evidence_boundary": "理论可行性和能量尺度不是观测验证；必须用事件匹配的磁拓扑、热响应、非热粒子或前向模型检验。"
     },
@@ -353,14 +473,28 @@
       "doi": "10.1007/s11207-006-0055-z",
       "source_url": "https://doi.org/10.1007/s11207-006-0055-z",
       "kind": "foundational diagnostic framework",
-      "topics": ["coronal heating", "diagnostic framework", "energy balance", "observational constraints", "model comparison"],
+      "topics": [
+        "coronal heating",
+        "diagnostic framework",
+        "energy balance",
+        "observational constraints",
+        "model comparison"
+      ],
       "annotation": "把日冕加热问题拆成供能、转换、等离子体响应和观测诊断，并强调仅识别热过程不足以确定微观机制。用于约束本项目的分层结论与能量闭合要求。",
       "evidence_boundary": "框架性论文不提供任一活动区的本地支持记录，也不能替代预注册的反例检验。"
     },
     {
       "id": "tomczyk-et-al-2007",
       "title": "Alfvén Waves in the Solar Corona",
-      "authors": ["S. Tomczyk", "S. W. McIntosh", "S. L. Keil", "P. G. Judge", "T. Schad", "D. H. Seeley", "J. Edmondson"],
+      "authors": [
+        "S. Tomczyk",
+        "S. W. McIntosh",
+        "S. L. Keil",
+        "P. G. Judge",
+        "T. Schad",
+        "D. H. Seeley",
+        "J. Edmondson"
+      ],
       "year": 2007,
       "doi": "10.1126/science.1143304",
       "source_url": "https://doi.org/10.1126/science.1143304",
@@ -372,12 +506,33 @@
     {
       "id": "de-pontieu-et-al-2007",
       "title": "Chromospheric Alfvénic Waves Strong Enough to Power the Solar Wind",
-      "authors": ["Bart De Pontieu", "Scott W. McIntosh", "Mats Carlsson", "Viggo H. Hansteen", "Theodore D. Tarbell", "Carolus J. Schrijver", "Alan M. Title", "Richard A. Shine", "Saku Tsuneta", "Yukio Katsukawa", "Kiyoshi Ichimoto", "Yoshinori Suematsu", "Toshifumi Shimizu", "Shin'ichi Nagata"],
+      "authors": [
+        "Bart De Pontieu",
+        "Scott W. McIntosh",
+        "Mats Carlsson",
+        "Viggo H. Hansteen",
+        "Theodore D. Tarbell",
+        "Carolus J. Schrijver",
+        "Alan M. Title",
+        "Richard A. Shine",
+        "Saku Tsuneta",
+        "Yukio Katsukawa",
+        "Kiyoshi Ichimoto",
+        "Yoshinori Suematsu",
+        "Toshifumi Shimizu",
+        "Shin'ichi Nagata"
+      ],
       "year": 2007,
       "doi": "10.1126/science.1151747",
       "source_url": "https://doi.org/10.1126/science.1151747",
       "kind": "chromospheric wave energy observation",
-      "topics": ["chromospheric Alfvénic waves", "Hinode", "spicules", "energy flux", "transmission"],
+      "topics": [
+        "chromospheric Alfvénic waves",
+        "Hinode",
+        "spicules",
+        "energy flux",
+        "transmission"
+      ],
       "annotation": "给出色球细结构中的横向阿尔芬型运动和能流量级，适合约束从光球/色球向日冕输运能量的入口条件。",
       "evidence_boundary": "色球层可用能流不等于进入特定活动区日冕的净能流；跨过过渡区的透射、反射和局地耗散仍需独立测量。"
     },
@@ -389,19 +544,40 @@
       "doi": "10.1086/527297",
       "source_url": "https://doi.org/10.1086/527297",
       "kind": "nanoflare counterexample study",
-      "topics": ["nanoflare", "counterexample", "cooling delay", "loop heating", "model falsification"],
+      "topics": [
+        "nanoflare",
+        "counterexample",
+        "cooling delay",
+        "loop heating",
+        "model falsification"
+      ],
       "annotation": "以观测时序和模型预期不一致为依据挑战一类日冕纳耀斑加热模型，为 Oracle 提供如何把反例绑定到具体预测与假设空间的案例。",
       "evidence_boundary": "论文标题中的“disproves”只适用于其数据、模型族和假设；不能外推为所有纳耀斑、重联或耦合机制均被排除。"
     },
     {
       "id": "hannah-et-al-2011",
       "title": "Microflares and the Statistics of X-ray Flares",
-      "authors": ["I. G. Hannah", "H. S. Hudson", "M. Battaglia", "S. Christe", "J. Kašparová", "S. Krucker", "M. R. Kundu", "A. Veronig"],
+      "authors": [
+        "I. G. Hannah",
+        "H. S. Hudson",
+        "M. Battaglia",
+        "S. Christe",
+        "J. Kašparová",
+        "S. Krucker",
+        "M. R. Kundu",
+        "A. Veronig"
+      ],
       "year": 2011,
       "doi": "10.1007/s11214-010-9705-4",
       "source_url": "https://doi.org/10.1007/s11214-010-9705-4",
       "kind": "X-ray event-statistics review",
-      "topics": ["microflare", "hard X-ray", "event frequency distribution", "power law", "non-thermal electrons"],
+      "topics": [
+        "microflare",
+        "hard X-ray",
+        "event frequency distribution",
+        "power law",
+        "non-thermal electrons"
+      ],
       "annotation": "总结微耀斑的硬 X 射线、热/非热性质和事件频率统计，可用于规定纳耀斑候选需要的事件分布、完备性校正和高能观测约束。",
       "evidence_boundary": "由可探测微耀斑外推到未分辨纳耀斑依赖选择函数和低能端截断；有限样本幂律斜率不能单独证明能量预算。"
     },
@@ -413,7 +589,13 @@
       "doi": "10.1088/0004-637X/795/2/111",
       "source_url": "https://doi.org/10.1088/0004-637X/795/2/111",
       "kind": "spectroscopic wave-damping constraint",
-      "topics": ["quiet Sun", "Hinode/EIS", "non-thermal line width", "wave damping", "energy deposition"],
+      "topics": [
+        "quiet Sun",
+        "Hinode/EIS",
+        "non-thermal line width",
+        "wave damping",
+        "energy deposition"
+      ],
       "annotation": "利用随高度变化的光谱非热线宽和密度估计波能量变化，为波动耗散位置和能量沉积提供可检验观测形式。",
       "evidence_boundary": "适用范围主要是静区且依赖散射光、密度和线宽分解；不能直接迁移为活动区环的阿尔芬波加热证明。"
     },
@@ -425,7 +607,13 @@
       "doi": "10.1086/426063",
       "source_url": "https://arxiv.org/abs/astro-ph/0407266",
       "kind": "data-informed 3D MHD forward model",
-      "topics": ["3D MHD", "photospheric driver", "Poynting flux", "synthetic EUV", "magnetic dissipation"],
+      "topics": [
+        "3D MHD",
+        "photospheric driver",
+        "Poynting flux",
+        "synthetic EUV",
+        "magnetic dissipation"
+      ],
       "annotation": "从磁图、光球速度驱动、热传导和辐射损失出发构造三维日冕模型，并生成 TRACE 波段合成观测，是观测驱动模拟—仪器响应比较的基础案例。",
       "evidence_boundary": "模拟能够维持百万度日冕只说明该驱动链在模型内可行；分辨率、数值耗散、边界条件和观测匹配仍决定机制区分力。"
     },
@@ -437,7 +625,13 @@
       "doi": "10.1051/0004-6361/201016019",
       "source_url": "https://doi.org/10.1051/0004-6361/201016019",
       "kind": "3D MHD intermittent-heating model",
-      "topics": ["3D MHD", "Ohmic heating", "footpoint driving", "intermittency", "synthetic observables"],
+      "topics": [
+        "3D MHD",
+        "Ohmic heating",
+        "footpoint driving",
+        "intermittency",
+        "synthetic observables"
+      ],
       "annotation": "模拟足点运动驱动磁应力和间歇欧姆耗散，连接空间分布、时间尺度与日冕热结构，为磁驱动候选提供可前向生成的比较量。",
       "evidence_boundary": "数值欧姆耗散受网格和电阻率处方影响；必须用相同 ROI、时间采样和仪器响应与波模型及观测共同比较。"
     },
@@ -449,7 +643,13 @@
       "doi": "10.1051/0004-6361/201219473",
       "source_url": "https://doi.org/10.1051/0004-6361/201219473",
       "kind": "synthetic-observation morphology constraint",
-      "topics": ["coronal loops", "3D MHD", "synthetic emission", "loop geometry", "line-of-sight effects"],
+      "topics": [
+        "coronal loops",
+        "3D MHD",
+        "synthetic emission",
+        "loop geometry",
+        "line-of-sight effects"
+      ],
       "annotation": "通过三维 MHD 合成发射解释为何磁通管扩张不必表现为 EUV 环截面扩张，提醒机制比较必须经过发射响应和视线积分。",
       "evidence_boundary": "EUV 形态是热结构与仪器选择共同产物；环宽或外观相似不能作为加热机制的唯一指纹。"
     },
@@ -461,7 +661,13 @@
       "doi": "10.1088/0004-637X/759/2/141",
       "source_url": "https://doi.org/10.1088/0004-637X/759/2/141",
       "kind": "multi-active-region high-temperature constraint",
-      "topics": ["active regions", "high-temperature emission", "Hinode/EIS", "emission measure", "nanoflare frequency"],
+      "topics": [
+        "active regions",
+        "high-temperature emission",
+        "Hinode/EIS",
+        "emission measure",
+        "nanoflare frequency"
+      ],
       "annotation": "系统调查活动区核心高温发射和发射量分布，为低频脉冲加热、高频加热及选择效应提供跨事件比较基准。",
       "evidence_boundary": "高温尾与多种脉冲或复合过程相容；没有事件级时序、密度和前向模型时只属于非唯一预测。"
     },
@@ -473,7 +679,13 @@
       "doi": "10.3847/1538-4357/834/1/10",
       "source_url": "https://doi.org/10.3847/1538-4357/834/1/10",
       "kind": "radiative MHD simulation method",
-      "topics": ["MURaM", "radiative MHD", "coronal simulation", "thermal conduction", "numerical method"],
+      "topics": [
+        "MURaM",
+        "radiative MHD",
+        "coronal simulation",
+        "thermal conduction",
+        "numerical method"
+      ],
       "annotation": "给出把辐射 MHD 从对流层扩展到日冕的数值方法，包括各向异性热传导和日冕能量项，为匹配观测的跨层模拟提供实现基线。",
       "evidence_boundary": "数值框架本身不选择阿尔芬波或重联机制；驱动、耗散项、分辨率和合成观测消融必须显式登记。"
     },
@@ -485,49 +697,665 @@
       "doi": "10.1007/s41614-023-00118-3",
       "source_url": "https://doi.org/10.1007/s41614-023-00118-3",
       "kind": "wave-dissipation review and counterconstraint",
-      "topics": ["Alfvénic waves", "inhomogeneous plasma", "resonant absorption", "phase mixing", "turbulence", "diagnostic limits"],
+      "topics": [
+        "Alfvénic waves",
+        "inhomogeneous plasma",
+        "resonant absorption",
+        "phase mixing",
+        "turbulence",
+        "diagnostic limits"
+      ],
       "annotation": "综合讨论分层和横向非均匀介质中的反射、共振吸收、相混合、湍流与不稳定性，并汇总实际加热率可能不足或阻尼证据含混的结果。",
       "evidence_boundary": "综述覆盖静区、冕洞和部分活动区模型；具体数值不能跨磁环境直接迁移，且观测到阻尼仍需证明耗散能量转化为局地热。"
     },
-    {"id":"ruderman-roberts-2002","title":"The Damping of Coronal Loop Oscillations","authors":["M. S. Ruderman","B. Roberts"],"year":2002,"doi":"10.1086/342130","source_url":"https://doi.org/10.1086/342130","kind":"wave theory and forward-model diagnostic","topics":["kink waves","resonant absorption","damping length","coronal heating"],"annotation":"建立横向环振荡通过共振吸收衰减的定量模型，为频率、阻尼时间和横向非均匀层宽度之间的预测绑定提供基础。","evidence_boundary":"振荡衰减不自动等于局地热化；还要证明能量从全局模态转入小尺度并最终耗散，且排除几何和视线效应。"},
-    {"id":"nakariakov-verwichte-2005","title":"Coronal Waves and Oscillations","authors":["Valery M. Nakariakov","Erwin Verwichte"],"year":2005,"doi":"10.12942/lrsp-2005-3","source_url":"https://doi.org/10.12942/lrsp-2005-3","kind":"foundational wave review","topics":["MHD waves","coronal seismology","phase speed","damping"],"annotation":"系统整理日冕波模态、传播、阻尼和日冕地震学反演量，用于约束可执行的波动预测。","evidence_boundary":"综述给出诊断框架而非任何特定事件的机制判决；模态识别、密度和几何误差必须进入不确定度。"},
-    {"id":"van-ballegooijen-et-al-2011","title":"Heating of the Solar Chromosphere and Corona by Alfvén Wave Turbulence","authors":["A. A. van Ballegooijen","M. Asgari-Targhi","S. R. Cranmer","E. E. DeLuca"],"year":2011,"doi":"10.1088/0004-637X/736/1/3","source_url":"https://doi.org/10.1088/0004-637X/736/1/3","kind":"wave-turbulence forward simulation","topics":["Alfvén wave turbulence","energy flux","reflection","synthetic heating"],"annotation":"给出低频阿尔芬波反射、非线性级联和耗散产生温度结构的前向模型，可形成能流闭合与高度分布预测。","evidence_boundary":"模型结果依赖足点驱动谱、反射率和耗散闭合；必须卷积同一仪器响应并与替代驱动模型比较。"},
-    {"id":"morton-tomczyk-pinto-2015","title":"Investigating Alfvénic wave propagation in coronal open-field regions","authors":["R. J. Morton","S. Tomczyk","R. Pinto"],"year":2015,"doi":"10.1038/ncomms8813","source_url":"https://doi.org/10.1038/ncomms8813","kind":"wave observational energy-flux constraint","topics":["CoMP","Alfvénic waves","phase speed","power spectrum","energy flux"],"annotation":"以日冕开放场中的传播方向、频谱和相速度约束阿尔芬性扰动的输运与反射，是波能流计算的观测基准。","evidence_boundary":"开放场结果不能直接迁移到活动区闭合环；CoMP 的空间欠分辨还会低估振幅与能流。"},
-    {"id":"verth-terradas-goossens-2010","title":"Observational Evidence of Resonantly Damped Propagating Kink Waves in the Solar Corona","authors":["G. Verth","J. Terradas","M. Goossens"],"year":2010,"doi":"10.1088/2041-8205/718/2/L102","source_url":"https://doi.org/10.1088/2041-8205/718/2/L102","kind":"wave damping observational diagnostic","topics":["propagating kink waves","resonant absorption","frequency-dependent damping"],"annotation":"将传播波功率随高度和频率的变化与共振吸收预测联系起来，提供比单一周期峰更有区分力的阻尼检验。","evidence_boundary":"功率下降还可能来自视线叠加、几何扩张或驱动变化；需要传播路径、密度和背景控制。"},
-    {"id":"soler-terradas-2015","title":"Magnetohydrodynamic Kink Waves in Nonuniform Solar Flux Tubes: Phase Mixing and Energy Cascade to Small Scales","authors":["Roberto Soler","Jaume Terradas"],"year":2015,"doi":"10.1088/0004-637X/803/1/43","source_url":"https://doi.org/10.1088/0004-637X/803/1/43","kind":"wave forward simulation","topics":["kink waves","phase mixing","energy cascade","nonuniform flux tubes"],"annotation":"模拟横向非均匀磁通管中 kink 波向小尺度的能量级联，为空间相干衰减和横向速度结构生成预测。","evidence_boundary":"小尺度级联是中间过程，不等同于足以平衡辐射与传导损失的不可逆加热。"},
-    {"id":"antolin-shibata-2010","title":"The Role of Torsional Alfvén Waves in Coronal Heating","authors":["Patrick Antolin","Kazunari Shibata"],"year":2010,"doi":"10.1088/0004-637X/712/1/494","source_url":"https://doi.org/10.1088/0004-637X/712/1/494","kind":"wave-heating forward simulation","topics":["torsional Alfvén waves","nonlinear mode conversion","coronal heating","synthetic spectra"],"annotation":"研究扭转阿尔芬波的非线性传播、冲击和加热，补充仅看横向位移时遗漏的谱线宽度与扭转预测。","evidence_boundary":"模型驱动振幅与磁通管结构需由观测约束；线宽增加并非扭转波的唯一指纹。"},
-    {"id":"hahn-landi-savin-2012","title":"Evidence of Wave Damping at Low Heights in a Polar Coronal Hole","authors":["Michael Hahn","Enrico Landi","Daniel W. Savin"],"year":2012,"doi":"10.1088/0004-637X/753/1/36","source_url":"https://doi.org/10.1088/0004-637X/753/1/36","kind":"spectroscopic wave-damping constraint","topics":["Hinode/EIS","non-thermal width","density","wave energy flux"],"annotation":"联合密度与非热线宽随高度的变化估计波能流衰减，为能量沉积而非仅波存在提供诊断。","evidence_boundary":"极区冕洞与活动区环的磁几何和辐射损失不同；谱线宽还混合温度、视线和仪器宽度。"},
-    {"id":"de-moortel-pascoe-2012","title":"The Effects of Line-of-sight Integration on Multistrand Coronal Loop Oscillations","authors":["Ineke De Moortel","David J. Pascoe"],"year":2012,"doi":"10.1088/0004-637X/746/1/31","source_url":"https://doi.org/10.1088/0004-637X/746/1/31","kind":"wave diagnostic limitation and counterexample","topics":["line-of-sight integration","multistrand loops","apparent damping","synthetic observables"],"annotation":"前向计算多股环与视线积分如何改变可见振幅和相位，用作自动波动检测的系统误差模型。","evidence_boundary":"成像时序中的弱振幅或衰减可能是可见度变化，而非真实能量耗散；必须用合成观测校正。"},
-    {"id":"antolin-yokoyama-vandoorsselaere-2014","title":"Fine Strand-like Structure in the Solar Corona from Magnetohydrodynamic Transverse Oscillations","authors":["Patrick Antolin","Takaaki Yokoyama","Tom Van Doorsselaere"],"year":2014,"doi":"10.1088/2041-8205/787/2/L22","source_url":"https://doi.org/10.1088/2041-8205/787/2/L22","kind":"wave synthetic-observation counterexample","topics":["transverse waves","Kelvin-Helmholtz instability","strand-like structure","synthetic emission"],"annotation":"说明波动诱发的横向不稳定性可产生表观细丝结构，为把细丝直接解释成独立磁股或重联产物提供反例。","evidence_boundary":"形态相似不区分波动与磁拓扑机制；需要速度、温度和相位联合预测。"},
-    {"id":"mathioudakis-jess-erdelyi-2013","title":"Alfvén Waves in the Solar Atmosphere","authors":["Mihalis Mathioudakis","David B. Jess","Robertus Erdélyi"],"year":2013,"doi":"10.1007/s11214-012-9944-7","source_url":"https://doi.org/10.1007/s11214-012-9944-7","kind":"wave review and diagnostic limitation","topics":["Alfvén waves","mode identification","energy transport","spectropolarimetry"],"annotation":"汇总阿尔芬波观测、模态混淆和能量估计方法，为波候选的最小证据字段提供依据。","evidence_boundary":"横向运动常是 kink/Alfvénic 而非纯阿尔芬模；模态命名错误会直接污染能流计算。"},
-    {"id":"pascoe-wright-demoortel-2010","title":"Coupled Alfvén and Kink Oscillations in Coronal Loops","authors":["David J. Pascoe","Andrew N. Wright","Ineke De Moortel"],"year":2010,"doi":"10.1088/0004-637X/711/2/990","source_url":"https://doi.org/10.1088/0004-637X/711/2/990","kind":"coupled-wave forward simulation","topics":["Alfvén-kink coupling","coronal loops","phase mixing","mode conversion"],"annotation":"给出 kink 与局地阿尔芬振荡耦合的前向预测，支持系统生成耦合候选而不是把所有波动归入单一机制。","evidence_boundary":"耦合可解释相似的衰减信号；没有横向结构与相位信息时不能唯一拆分各分量。"},
-    {"id":"hansteen-et-al-2015","title":"Numerical Simulations of Coronal Heating through Footpoint Braiding","authors":["Viggo Hansteen","Nuno Guerreiro","Bart De Pontieu","Mats Carlsson"],"year":2015,"doi":"10.1088/0004-637X/811/2/106","source_url":"https://doi.org/10.1088/0004-637X/811/2/106","kind":"magnetic-braiding 3D MHD forward simulation","topics":["footpoint braiding","3D MHD","synthetic observables","current dissipation"],"annotation":"将光球足点驱动、三维磁结构和加热响应连接起来，是磁编织候选的观测匹配前向模型基准。","evidence_boundary":"数值耗散尺度远大于真实等离子体尺度；只有同几何、同仪器卷积和留出事件比较才具机制区分力。"},
-    {"id":"pontin-et-al-2011","title":"Dynamics of Braided Coronal Loops","authors":["David I. Pontin","Alison L. Wilmot-Smith","Gunnar Hornig","Klaus Galsgaard"],"year":2011,"doi":"10.1051/0004-6361/201014544","source_url":"https://doi.org/10.1051/0004-6361/201014544","kind":"magnetic-braiding MHD simulation","topics":["braided loops","current sheets","reconnection","heating distribution"],"annotation":"追踪编织磁场松弛、薄电流层形成和间歇耗散，为拓扑与热响应的联合预测提供模型。","evidence_boundary":"编织初态和电阻率处方会影响耗散统计；观测到间歇增亮本身不能反推唯一拓扑。"},
-    {"id":"de-pontieu-et-al-2022-muse-heating","title":"Probing the Physics of the Solar Atmosphere with the Multi-slit Solar Explorer (MUSE). I. Coronal Heating","authors":["Bart De Pontieu","Paola Testa","Juan Martínez-Sykora","Patrick Antolin","Konstantinos Karampelas","Viggo Hansteen","Matthias Rempel","Mark C. M. Cheung"],"year":2022,"doi":"10.3847/1538-4357/ac4222","source_url":"https://doi.org/10.3847/1538-4357/ac4222","kind":"mechanism-comparison synthetic forward model","topics":["MUSE","coronal heating","synthetic spectroscopy","MHD","mechanism discrimination"],"annotation":"用多种数值模型生成高时空分辨光谱预测，明确展示如何以 Doppler、线宽和强度演化区分加热场景。","evidence_boundary":"这是未来观测与模拟的判别设计；当前项目没有 MUSE 数据，相关预测只能作为任务规范。"},
-    {"id":"de-pontieu-et-al-2020-multislit","title":"The Multi-slit Approach to Coronal Spectroscopy with the Multi-slit Solar Explorer (MUSE)","authors":["Bart De Pontieu","Juan Martínez-Sykora","Paola Testa","Amy R. Winebarger","Adrian Daw","Viggo Hansteen","Mark C. M. Cheung","Patrick Antolin"],"year":2020,"doi":"10.3847/1538-4357/ab5b03","source_url":"https://doi.org/10.3847/1538-4357/ab5b03","kind":"spectroscopy forward-model method","topics":["multi-slit spectroscopy","synthetic spectra","line blending","inversion uncertainty"],"annotation":"给出多狭缝光谱的前向混叠和反演方法，可用于设计高通量光谱与成像联合诊断。","evidence_boundary":"仪器与反演方法论文不构成加热机制证据；必须在事件数据上验证混叠、噪声和标定。"},
-    {"id":"pontin-priest-2022","title":"Magnetic Reconnection: MHD Theory and Modelling","authors":["David I. Pontin","Eric R. Priest"],"year":2022,"doi":"10.1007/s41116-022-00032-9","source_url":"https://doi.org/10.1007/s41116-022-00032-9","kind":"foundational reconnection theory review","topics":["magnetic reconnection","3D topology","current sheets","MHD modelling"],"annotation":"系统整理二维与三维重联、拓扑和数值建模，为重联假设拆分成可证伪预测提供理论边界。","evidence_boundary":"磁梯度、PIL 或电流代理只能说明储能条件；缺少拓扑变化与能量预算时不能证明发生了目标重联。"},
-    {"id":"mandrini-demoulin-klimchuk-2000","title":"Magnetic Field and Plasma Scaling Laws: Their Implications for Coronal Heating Models","authors":["Cristina H. Mandrini","Pascal Démoulin","James A. Klimchuk"],"year":2000,"doi":"10.1086/308398","source_url":"https://doi.org/10.1086/308398","kind":"mechanism-scaling observational constraint","topics":["magnetic scaling laws","coronal heating","loop pressure","model comparison"],"annotation":"比较不同加热模型对磁场、环长和等离子体量的标度预测，适合跨事件而非单帧机制比较。","evidence_boundary":"相关标度可能受样本选择和共同变量驱动；相关性不等于微观耗散机制的因果确认。"},
-    {"id":"longcope-2005","title":"Topological Methods for the Analysis of Solar Magnetic Fields","authors":["Dana W. Longcope"],"year":2005,"doi":"10.12942/lrsp-2005-7","source_url":"https://doi.org/10.12942/lrsp-2005-7","kind":"magnetic-topology review and limitation","topics":["magnetic topology","separatrices","null points","connectivity"],"annotation":"提供磁拓扑、分离面和连接度分析的理论工具，用于把 HMI 代理升级为可检验的拓扑预测。","evidence_boundary":"光球边界外推存在非唯一性；不同外推方法的一致性和对扰动的敏感性必须报告。"},
-    {"id":"wiegelmann-petrie-riley-2017","title":"Coronal Magnetic Field Models","authors":["Thomas Wiegelmann","Gordon J. D. Petrie","Pete Riley"],"year":2017,"doi":"10.1007/s11214-015-0178-3","source_url":"https://doi.org/10.1007/s11214-015-0178-3","kind":"magnetic-field model review and uncertainty","topics":["NLFFF","potential field","MHD","boundary uncertainty"],"annotation":"比较势场、无力场和 MHD 日冕磁场模型及其边界条件，指导磁拓扑证据的模型族敏感性分析。","evidence_boundary":"单一 NLFFF 解不能视为真实拓扑；需跨方法、跨边界误差稳定并与日冕结构共配准。"},
-    {"id":"klimchuk-karpen-antiochos-2010","title":"Can Thermal Nonequilibrium Explain Coronal Loops?","authors":["James A. Klimchuk","Judy T. Karpen","Spiro K. Antiochos"],"year":2010,"doi":"10.1088/0004-637X/714/2/1239","source_url":"https://doi.org/10.1088/0004-637X/714/2/1239","kind":"thermal alternative and counterexample simulation","topics":["thermal nonequilibrium","steady footpoint heating","coronal loops","condensation"],"annotation":"检验热非平衡能否解释常见环结构，为冷却时延和日冕雨之外的稳态足点加热替代解释建立边界。","evidence_boundary":"出现冷凝或长周期变化并不唯一支持某种加热机制；几何、足点集中度和循环稳定性都必须匹配。"},
-    {"id":"antolin-froment-2022","title":"Multi-Scale Variability of Coronal Loops Set by Thermal Non-Equilibrium and Instability as a Probe for Coronal Heating","authors":["Patrick Antolin","Clara Froment"],"year":2022,"doi":"10.3389/fspas.2022.820116","source_url":"https://doi.org/10.3389/fspas.2022.820116","kind":"thermal alternative review and diagnostic limitation","topics":["thermal nonequilibrium","thermal instability","coronal rain","long-period pulsations"],"annotation":"连接热非平衡、热不稳定、日冕雨和长周期脉动，提供对脉冲加热解释的系统替代模型。","evidence_boundary":"相似的冷却序列可由不同加热频率和空间分布产生；必须使用多尺度周期、冷凝和几何联合检验。"},
-    {"id":"bradshaw-klimchuk-2011","title":"What Dominates the Coronal Emission Spectrum during the Cycle of Impulsive Heating and Cooling?","authors":["Stephen J. Bradshaw","James A. Klimchuk"],"year":2011,"doi":"10.1088/0067-0049/194/2/26","source_url":"https://doi.org/10.1088/0067-0049/194/2/26","kind":"hydrodynamic forward simulation and diagnostic limitation","topics":["impulsive heating","nonequilibrium ionization","synthetic spectrum","cooling"],"annotation":"计算脉冲加热冷却周期中的发射线贡献和非平衡电离效应，为 EIS/DEM 温度解释提供前向修正。","evidence_boundary":"平衡电离假设会隐藏或移动高温成分；未检验非平衡电离时不能把弱高温线直接量化为事件能量。"},
-    {"id":"tripathi-klimchuk-mason-2011","title":"Emission Measure Distribution and Heating of Two Active Region Cores","authors":["Durgesh Tripathi","James A. Klimchuk","Helen E. Mason"],"year":2011,"doi":"10.1088/0004-637X/740/2/111","source_url":"https://doi.org/10.1088/0004-637X/740/2/111","kind":"spectroscopic thermal observational constraint","topics":["emission measure","active region core","Hinode/EIS","heating frequency"],"annotation":"利用活动区核的光谱发射量分布约束温度结构和加热频率，是本地 EIS 密度/温度诊断的比较基准。","evidence_boundary":"少量活动区和视线混合限制外推；DEM 斜率不是纳耀斑、波动或稳态加热的唯一指纹。"},
-    {"id":"warren-et-al-2008-eis-loops","title":"Observations of Active Region Loops with the EUV Imaging Spectrometer on Hinode","authors":["Harry P. Warren","Ignacio Ugarte-Urra","George A. Doschek","David H. Brooks","David R. Williams"],"year":2008,"doi":"10.1086/592960","source_url":"https://doi.org/10.1086/592960","kind":"spectroscopic loop observational constraint","topics":["Hinode/EIS","active region loops","density","temperature","Doppler"],"annotation":"展示 EIS 对活动区环的温度、密度和速度测量，为成像推断增加独立光谱维度。","evidence_boundary":"单次 raster 混合空间扫描和时间演化；与 AIA 对比时需传播扫描时间和配准误差。"},
-    {"id":"de-pontieu-mcintosh-2010","title":"Quasi-periodic Propagating Signals in the Solar Corona: The Signature of Magnetoacoustic Waves or High-velocity Upflows?","authors":["Bart De Pontieu","Scott W. McIntosh"],"year":2010,"doi":"10.1088/0004-637X/722/2/1013","source_url":"https://doi.org/10.1088/0004-637X/722/2/1013","kind":"wave-versus-flow counterexample and diagnostic limitation","topics":["propagating disturbances","magnetoacoustic waves","upflows","line asymmetry"],"annotation":"直接提出传播亮度扰动可能来自波或准周期高速上流，是波候选必须执行光谱反例检索的关键文献。","evidence_boundary":"仅凭 AIA 时距图无法区分两者；需 Doppler、蓝翼非对称、相位关系和多温度响应。"},
-    {"id":"doschek-et-al-2007","title":"Nonthermal Velocities in Solar Active Regions Observed with the Extreme-Ultraviolet Imaging Spectrometer on Hinode","authors":["George A. Doschek","John T. Mariska","Harry P. Warren","Charles M. Brown","John L. Culhane","Hirohisa Hara","Takayuki Watanabe","Peter R. Young"],"year":2007,"doi":"10.1086/522087","source_url":"https://doi.org/10.1086/522087","kind":"spectroscopic non-thermal observational constraint","topics":["Hinode/EIS","non-thermal velocity","active regions","line width"],"annotation":"建立 EIS 活动区非热线宽的观测分布，用于比较波动、未解析流和湍动预测。","evidence_boundary":"扣除仪器宽度和热宽度后的剩余项仍是混合量；不能由非零非热线宽直接推出波加热。"},
-    {"id":"de-pontieu-et-al-2021-iris-review","title":"A New View of the Solar Interface Region from the Interface Region Imaging Spectrograph (IRIS)","authors":["Bart De Pontieu","Vanessa Polito","Viggo Hansteen","Paola Testa","Katharine K. Reeves","Patrick Antolin","Daniel Elias Nóbrega-Siverio","Adam F. Kowalski"],"year":2021,"doi":"10.1007/s11207-021-01826-0","source_url":"https://doi.org/10.1007/s11207-021-01826-0","kind":"spectroscopy review and diagnostic framework","topics":["IRIS","transition region","Doppler","non-thermal width","forward models"],"annotation":"总结 IRIS 强度、速度、线宽和辐射流体前向模型的诊断能力，为多个独立光谱事件的统一处理提供依据。","evidence_boundary":"过渡区响应受非平衡电离、光学厚度和几何影响；不能单独代表日冕能量释放位置。"},
-    {"id":"testa-et-al-2023","title":"High-resolution Observations of the Low Atmospheric Response to Small Coronal Heating Events in an Active Region Core","authors":["Paola Testa","Helle Bakke","Luc Rouppe van der Voort","Bart De Pontieu"],"year":2023,"doi":"10.3847/1538-4357/acf4f1","source_url":"https://doi.org/10.3847/1538-4357/acf4f1","kind":"small-event discriminating observation and model comparison","topics":["IRIS","active region core","small heating events","chromospheric response"],"annotation":"以高分辨率低层大气响应约束小尺度日冕加热事件，补充 AR11890 正控之外的独立观测模式。","evidence_boundary":"文献事件可定义预测但不能移接为本地事件证据；本地复现需要对应原始数据和冻结 ROI。"},
-    {"id":"polito-et-al-2016","title":"Simultaneous IRIS and Hinode/EIS Observations and Modeling of the 2014 October 27 X2.0 Class Flare","authors":["Vanessa Polito","Jeffrey W. Reep","Katharine K. Reeves","Paulo J. A. Simões","Jaroslav Dudík","Giulio Del Zanna","Helen E. Mason","Leon Golub"],"year":2016,"doi":"10.3847/0004-637X/816/2/89","source_url":"https://doi.org/10.3847/0004-637X/816/2/89","kind":"joint-spectroscopy observational-model comparison","topics":["IRIS","Hinode/EIS","chromospheric evaporation","line fitting"],"annotation":"展示 IRIS/EIS 共时光谱与流体模型联合推断速度和能量输运的方法，可作为本地 EIS 拟合质量控制参考。","evidence_boundary":"强耀斑蒸发不等同于非耀斑日冕加热；只借用方法和误差处理，不迁移物理结论。"},
-    {"id":"hannah-et-al-2016-nustar","title":"The First X-Ray Imaging Spectroscopy of Quiescent Solar Active Regions with NuSTAR","authors":["Iain G. Hannah","Brian W. Grefenstette","David M. Smith","Lindsay Glesener","Säm Krucker","Hugh S. Hudson","Kristin K. Madsen","Andrew Marsh"],"year":2016,"doi":"10.3847/2041-8205/820/1/L14","source_url":"https://doi.org/10.3847/2041-8205/820/1/L14","kind":"hard-X-ray observational upper-limit constraint","topics":["NuSTAR","quiescent active regions","hot plasma","non-thermal upper limit"],"annotation":"给出静态活动区高温和非热成分的严格上限，说明无显著 HXR 也可以形成可量化反例而非 unknown。","evidence_boundary":"上限依赖有效曝光、livetime、ghost rays、响应和背景；未完成这些校正时不得声称排除纳耀斑。"},
-    {"id":"kuhar-et-al-2017","title":"Evidence of Significant Energy Input in the Late Phase of a Solar Flare from NuSTAR X-Ray Observations","authors":["Matej Kuhar","Säm Krucker","Iain G. Hannah","Lindsay Glesener","Pascal Saint-Hilaire","Brian W. Grefenstette","Hugh S. Hudson","Stephen M. White"],"year":2017,"doi":"10.3847/1538-4357/835/1/6","source_url":"https://doi.org/10.3847/1538-4357/835/1/6","kind":"hard-X-ray thermal observational-model constraint","topics":["NuSTAR","AR 12222","late-phase heating","AIA","FOXSI"],"annotation":"对应本地 ObsID 20001005001，联合 NuSTAR、AIA 和 FOXSI 约束持续能量输入及冷却，是事件级复现锚点。","evidence_boundary":"该事件是耀斑晚相而非静态日冕；能支持持续热输入过程，不能直接证明普遍纳耀斑加热。"},
-    {"id":"cooper-et-al-2020","title":"NuSTAR Observation of a Minuscule Microflare in a Solar Active Region","authors":["Kristopher Cooper","Iain G. Hannah","Brian W. Grefenstette","Lindsay Glesener","Säm Krucker","Hugh S. Hudson","Stephen M. White","David M. Smith"],"year":2020,"doi":"10.3847/2041-8213/ab873e","source_url":"https://doi.org/10.3847/2041-8213/ab873e","kind":"hard-X-ray discriminating observation and upper limit","topics":["NuSTAR","AR 12721","microflare","non-thermal upper limit","AIA Fe XVIII"],"annotation":"对应本地 2018-09-09 序列，给出 11:04 UT 微耀斑的热谱、能量和非热上限，是独立 HXR 留出案例。","evidence_boundary":"这是微耀斑正控而非整个活动区加热率；非热未检出必须以响应校正后的上限表达。"},
-    {"id":"wright-et-al-2017","title":"Microflare Heating of a Solar Active Region Observed with NuSTAR, Hinode/XRT, and SDO/AIA","authors":["Paul J. Wright","Iain G. Hannah","Brian W. Grefenstette","Lindsay Glesener","Säm Krucker","Hugh S. Hudson","David M. Smith","Andrew J. Marsh"],"year":2017,"doi":"10.3847/1538-4357/aa7a59","source_url":"https://doi.org/10.3847/1538-4357/aa7a59","kind":"multi-instrument hard-X-ray observational constraint","topics":["NuSTAR","Hinode/XRT","SDO/AIA","microflare","energy budget"],"annotation":"展示 NuSTAR 与 XRT/AIA 的微耀斑温度、发射量和能量预算联合分析，为本地 HXR 管线定义交叉校验。","evidence_boundary":"温度与能量依赖源区、背景和等温假设；只有一致的源区与响应处理才能跨仪器比较。"},
-    {"id":"pascoe-wright-demoortel-2011","title":"Propagating Coupled Alfvén and Kink Oscillations in an Arbitrary Inhomogeneous Corona","authors":["David J. Pascoe","Andrew N. Wright","Ineke De Moortel"],"year":2011,"doi":"10.1088/0004-637X/731/1/73","source_url":"https://doi.org/10.1088/0004-637X/731/1/73","kind":"coupled-wave forward simulation","topics":["propagating waves","Alfvén-kink coupling","inhomogeneous corona","phase mixing"],"annotation":"将耦合波传播推广到任意横向非均匀结构，为不同环路径上的相位与振幅演化提供模型族。","evidence_boundary":"同一传播图样可由不同横向结构产生；需用密度剖面和多路径数据约束退化。"},
-    {"id":"antolin-et-al-2015-resonant-heating","title":"Resonant Absorption of Transverse Oscillations and Associated Heating in a Solar Prominence. II. Numerical Aspects","authors":["Patrick Antolin","Takenori J. Okamoto","Bart De Pontieu","Han Uitenbroek","Tom Van Doorsselaere","Takaaki Yokoyama"],"year":2015,"doi":"10.1088/0004-637X/809/1/72","source_url":"https://doi.org/10.1088/0004-637X/809/1/72","kind":"wave-heating synthetic forward simulation","topics":["resonant absorption","Kelvin-Helmholtz instability","heating","synthetic spectra"],"annotation":"模拟共振吸收、横向不稳定性和热化的合成光谱特征，连接波衰减与可观测局地加热。","evidence_boundary":"模型对象为日珥且参数特定；迁移到活动区环必须重新设定密度对比、温度和仪器响应。"},
-    {"id":"chen-et-al-2021-campfires","title":"Transient Small-scale Brightenings in the Quiet Solar Corona: A Model for Campfires Observed with Solar Orbiter","authors":["Yajie Chen","Damien Przybylski","Hardi Peter","Hui Tian","Frédéric Auchère","David Berghmans"],"year":2021,"doi":"10.1051/0004-6361/202140638","source_url":"https://doi.org/10.1051/0004-6361/202140638","kind":"3D MHD synthetic-observation model comparison","topics":["campfires","magnetic reconnection","synthetic EUV","quiet corona"],"annotation":"从三维 MHD 合成小尺度 EUV 增亮，为事件形态、温度和磁演化的联合比较提供实例。","evidence_boundary":"quiet-Sun campfire 不能替代活动区纳耀斑；模型与观测相似只构成候选一致性。"},
-    {"id":"wyper-et-al-2016","title":"Three-dimensional Simulations of Tearing and Intermittency in Coronal Jets","authors":["Peter F. Wyper","C. Richard DeVore","Judith T. Karpen","Benjamin J. Lynch"],"year":2016,"doi":"10.3847/0004-637X/827/1/4","source_url":"https://doi.org/10.3847/0004-637X/827/1/4","kind":"3D reconnection MHD simulation", "topics":["tearing instability","intermittent reconnection","coronal jets","current sheets"],"annotation":"展示三维电流层撕裂如何产生间歇重联和喷流，为重联候选的时空碎裂预测提供模型。","evidence_boundary":"喷流模型不等同于闭合活动区环加热；必须匹配拓扑、流速和能量预算。"},
-    {"id":"liu-et-al-2011-fan-spine","title":"Chromospheric Jet and Growing Loop Observed by Hinode: New Evidence of Fan-spine Magnetic Topology Resulting from Flux Emergence","authors":["Wei Liu","Thomas E. Berger","Alan M. Title","Theodore D. Tarbell","B. C. Low"],"year":2011,"doi":"10.1088/0004-637X/728/2/103","source_url":"https://doi.org/10.1088/0004-637X/728/2/103","kind":"magnetic-topology discriminating observation","topics":["fan-spine topology","flux emergence","jet","Hinode"],"annotation":"以扇脊拓扑、磁通涌现和喷流/环响应的共时关系展示比 PIL 梯度更具体的重联证据结构。","evidence_boundary":"事件形态仍需磁场外推与不确定度；不能用任何喷流或亮环替代拓扑检验。"},
-    {"id":"baker-et-al-2009-qsl","title":"Magnetic Reconnection along Quasi-separatrix Layers as a Driver of Ubiquitous Active Region Outflows","authors":["Deborah Baker","Lidia van Driel-Gesztelyi","Cristina H. Mandrini","Pascal Démoulin","Michael J. Murray"],"year":2009,"doi":"10.1088/0004-637X/705/1/926","source_url":"https://doi.org/10.1088/0004-637X/705/1/926","kind":"topology-spectroscopy observational constraint","topics":["quasi-separatrix layers","active region outflows","magnetic reconnection","Hinode/EIS"],"annotation":"联合 QSL 拓扑与 EIS 外流，为重联候选提供磁连接度—速度的事件级绑定范式。","evidence_boundary":"QSL 与外流共位不独占重联解释；需时序、能量和跨事件复现，并检验压力驱动流等替代机制。"}
+    {
+      "id": "ruderman-roberts-2002",
+      "title": "The Damping of Coronal Loop Oscillations",
+      "authors": ["M. S. Ruderman", "B. Roberts"],
+      "year": 2002,
+      "doi": "10.1086/342130",
+      "source_url": "https://doi.org/10.1086/342130",
+      "kind": "wave theory and forward-model diagnostic",
+      "topics": ["kink waves", "resonant absorption", "damping length", "coronal heating"],
+      "annotation": "建立横向环振荡通过共振吸收衰减的定量模型，为频率、阻尼时间和横向非均匀层宽度之间的预测绑定提供基础。",
+      "evidence_boundary": "振荡衰减不自动等于局地热化；还要证明能量从全局模态转入小尺度并最终耗散，且排除几何和视线效应。"
+    },
+    {
+      "id": "nakariakov-verwichte-2005",
+      "title": "Coronal Waves and Oscillations",
+      "authors": ["Valery M. Nakariakov", "Erwin Verwichte"],
+      "year": 2005,
+      "doi": "10.12942/lrsp-2005-3",
+      "source_url": "https://doi.org/10.12942/lrsp-2005-3",
+      "kind": "foundational wave review",
+      "topics": ["MHD waves", "coronal seismology", "phase speed", "damping"],
+      "annotation": "系统整理日冕波模态、传播、阻尼和日冕地震学反演量，用于约束可执行的波动预测。",
+      "evidence_boundary": "综述给出诊断框架而非任何特定事件的机制判决；模态识别、密度和几何误差必须进入不确定度。"
+    },
+    {
+      "id": "van-ballegooijen-et-al-2011",
+      "title": "Heating of the Solar Chromosphere and Corona by Alfvén Wave Turbulence",
+      "authors": ["A. A. van Ballegooijen", "M. Asgari-Targhi", "S. R. Cranmer", "E. E. DeLuca"],
+      "year": 2011,
+      "doi": "10.1088/0004-637X/736/1/3",
+      "source_url": "https://doi.org/10.1088/0004-637X/736/1/3",
+      "kind": "wave-turbulence forward simulation",
+      "topics": ["Alfvén wave turbulence", "energy flux", "reflection", "synthetic heating"],
+      "annotation": "给出低频阿尔芬波反射、非线性级联和耗散产生温度结构的前向模型，可形成能流闭合与高度分布预测。",
+      "evidence_boundary": "模型结果依赖足点驱动谱、反射率和耗散闭合；必须卷积同一仪器响应并与替代驱动模型比较。"
+    },
+    {
+      "id": "morton-tomczyk-pinto-2015",
+      "title": "Investigating Alfvénic wave propagation in coronal open-field regions",
+      "authors": ["R. J. Morton", "S. Tomczyk", "R. Pinto"],
+      "year": 2015,
+      "doi": "10.1038/ncomms8813",
+      "source_url": "https://doi.org/10.1038/ncomms8813",
+      "kind": "wave observational energy-flux constraint",
+      "topics": ["CoMP", "Alfvénic waves", "phase speed", "power spectrum", "energy flux"],
+      "annotation": "以日冕开放场中的传播方向、频谱和相速度约束阿尔芬性扰动的输运与反射，是波能流计算的观测基准。",
+      "evidence_boundary": "开放场结果不能直接迁移到活动区闭合环；CoMP 的空间欠分辨还会低估振幅与能流。"
+    },
+    {
+      "id": "verth-terradas-goossens-2010",
+      "title": "Observational Evidence of Resonantly Damped Propagating Kink Waves in the Solar Corona",
+      "authors": ["G. Verth", "J. Terradas", "M. Goossens"],
+      "year": 2010,
+      "doi": "10.1088/2041-8205/718/2/L102",
+      "source_url": "https://doi.org/10.1088/2041-8205/718/2/L102",
+      "kind": "wave damping observational diagnostic",
+      "topics": ["propagating kink waves", "resonant absorption", "frequency-dependent damping"],
+      "annotation": "将传播波功率随高度和频率的变化与共振吸收预测联系起来，提供比单一周期峰更有区分力的阻尼检验。",
+      "evidence_boundary": "功率下降还可能来自视线叠加、几何扩张或驱动变化；需要传播路径、密度和背景控制。"
+    },
+    {
+      "id": "soler-terradas-2015",
+      "title": "Magnetohydrodynamic Kink Waves in Nonuniform Solar Flux Tubes: Phase Mixing and Energy Cascade to Small Scales",
+      "authors": ["Roberto Soler", "Jaume Terradas"],
+      "year": 2015,
+      "doi": "10.1088/0004-637X/803/1/43",
+      "source_url": "https://doi.org/10.1088/0004-637X/803/1/43",
+      "kind": "wave forward simulation",
+      "topics": ["kink waves", "phase mixing", "energy cascade", "nonuniform flux tubes"],
+      "annotation": "模拟横向非均匀磁通管中 kink 波向小尺度的能量级联，为空间相干衰减和横向速度结构生成预测。",
+      "evidence_boundary": "小尺度级联是中间过程，不等同于足以平衡辐射与传导损失的不可逆加热。"
+    },
+    {
+      "id": "antolin-shibata-2010",
+      "title": "The Role of Torsional Alfvén Waves in Coronal Heating",
+      "authors": ["Patrick Antolin", "Kazunari Shibata"],
+      "year": 2010,
+      "doi": "10.1088/0004-637X/712/1/494",
+      "source_url": "https://doi.org/10.1088/0004-637X/712/1/494",
+      "kind": "wave-heating forward simulation",
+      "topics": [
+        "torsional Alfvén waves",
+        "nonlinear mode conversion",
+        "coronal heating",
+        "synthetic spectra"
+      ],
+      "annotation": "研究扭转阿尔芬波的非线性传播、冲击和加热，补充仅看横向位移时遗漏的谱线宽度与扭转预测。",
+      "evidence_boundary": "模型驱动振幅与磁通管结构需由观测约束；线宽增加并非扭转波的唯一指纹。"
+    },
+    {
+      "id": "hahn-landi-savin-2012",
+      "title": "Evidence of Wave Damping at Low Heights in a Polar Coronal Hole",
+      "authors": ["Michael Hahn", "Enrico Landi", "Daniel W. Savin"],
+      "year": 2012,
+      "doi": "10.1088/0004-637X/753/1/36",
+      "source_url": "https://doi.org/10.1088/0004-637X/753/1/36",
+      "kind": "spectroscopic wave-damping constraint",
+      "topics": ["Hinode/EIS", "non-thermal width", "density", "wave energy flux"],
+      "annotation": "联合密度与非热线宽随高度的变化估计波能流衰减，为能量沉积而非仅波存在提供诊断。",
+      "evidence_boundary": "极区冕洞与活动区环的磁几何和辐射损失不同；谱线宽还混合温度、视线和仪器宽度。"
+    },
+    {
+      "id": "de-moortel-pascoe-2012",
+      "title": "The Effects of Line-of-sight Integration on Multistrand Coronal Loop Oscillations",
+      "authors": ["Ineke De Moortel", "David J. Pascoe"],
+      "year": 2012,
+      "doi": "10.1088/0004-637X/746/1/31",
+      "source_url": "https://doi.org/10.1088/0004-637X/746/1/31",
+      "kind": "wave diagnostic limitation and counterexample",
+      "topics": [
+        "line-of-sight integration",
+        "multistrand loops",
+        "apparent damping",
+        "synthetic observables"
+      ],
+      "annotation": "前向计算多股环与视线积分如何改变可见振幅和相位，用作自动波动检测的系统误差模型。",
+      "evidence_boundary": "成像时序中的弱振幅或衰减可能是可见度变化，而非真实能量耗散；必须用合成观测校正。"
+    },
+    {
+      "id": "antolin-yokoyama-vandoorsselaere-2014",
+      "title": "Fine Strand-like Structure in the Solar Corona from Magnetohydrodynamic Transverse Oscillations",
+      "authors": ["Patrick Antolin", "Takaaki Yokoyama", "Tom Van Doorsselaere"],
+      "year": 2014,
+      "doi": "10.1088/2041-8205/787/2/L22",
+      "source_url": "https://doi.org/10.1088/2041-8205/787/2/L22",
+      "kind": "wave synthetic-observation counterexample",
+      "topics": [
+        "transverse waves",
+        "Kelvin-Helmholtz instability",
+        "strand-like structure",
+        "synthetic emission"
+      ],
+      "annotation": "说明波动诱发的横向不稳定性可产生表观细丝结构，为把细丝直接解释成独立磁股或重联产物提供反例。",
+      "evidence_boundary": "形态相似不区分波动与磁拓扑机制；需要速度、温度和相位联合预测。"
+    },
+    {
+      "id": "mathioudakis-jess-erdelyi-2013",
+      "title": "Alfvén Waves in the Solar Atmosphere",
+      "authors": ["Mihalis Mathioudakis", "David B. Jess", "Robertus Erdélyi"],
+      "year": 2013,
+      "doi": "10.1007/s11214-012-9944-7",
+      "source_url": "https://doi.org/10.1007/s11214-012-9944-7",
+      "kind": "wave review and diagnostic limitation",
+      "topics": ["Alfvén waves", "mode identification", "energy transport", "spectropolarimetry"],
+      "annotation": "汇总阿尔芬波观测、模态混淆和能量估计方法，为波候选的最小证据字段提供依据。",
+      "evidence_boundary": "横向运动常是 kink/Alfvénic 而非纯阿尔芬模；模态命名错误会直接污染能流计算。"
+    },
+    {
+      "id": "pascoe-wright-demoortel-2010",
+      "title": "Coupled Alfvén and Kink Oscillations in Coronal Loops",
+      "authors": ["David J. Pascoe", "Andrew N. Wright", "Ineke De Moortel"],
+      "year": 2010,
+      "doi": "10.1088/0004-637X/711/2/990",
+      "source_url": "https://doi.org/10.1088/0004-637X/711/2/990",
+      "kind": "coupled-wave forward simulation",
+      "topics": ["Alfvén-kink coupling", "coronal loops", "phase mixing", "mode conversion"],
+      "annotation": "给出 kink 与局地阿尔芬振荡耦合的前向预测，支持系统生成耦合候选而不是把所有波动归入单一机制。",
+      "evidence_boundary": "耦合可解释相似的衰减信号；没有横向结构与相位信息时不能唯一拆分各分量。"
+    },
+    {
+      "id": "hansteen-et-al-2015",
+      "title": "Numerical Simulations of Coronal Heating through Footpoint Braiding",
+      "authors": ["Viggo Hansteen", "Nuno Guerreiro", "Bart De Pontieu", "Mats Carlsson"],
+      "year": 2015,
+      "doi": "10.1088/0004-637X/811/2/106",
+      "source_url": "https://doi.org/10.1088/0004-637X/811/2/106",
+      "kind": "magnetic-braiding 3D MHD forward simulation",
+      "topics": ["footpoint braiding", "3D MHD", "synthetic observables", "current dissipation"],
+      "annotation": "将光球足点驱动、三维磁结构和加热响应连接起来，是磁编织候选的观测匹配前向模型基准。",
+      "evidence_boundary": "数值耗散尺度远大于真实等离子体尺度；只有同几何、同仪器卷积和留出事件比较才具机制区分力。"
+    },
+    {
+      "id": "pontin-et-al-2011",
+      "title": "Dynamics of Braided Coronal Loops",
+      "authors": ["David I. Pontin", "Alison L. Wilmot-Smith", "Gunnar Hornig", "Klaus Galsgaard"],
+      "year": 2011,
+      "doi": "10.1051/0004-6361/201014544",
+      "source_url": "https://doi.org/10.1051/0004-6361/201014544",
+      "kind": "magnetic-braiding MHD simulation",
+      "topics": ["braided loops", "current sheets", "reconnection", "heating distribution"],
+      "annotation": "追踪编织磁场松弛、薄电流层形成和间歇耗散，为拓扑与热响应的联合预测提供模型。",
+      "evidence_boundary": "编织初态和电阻率处方会影响耗散统计；观测到间歇增亮本身不能反推唯一拓扑。"
+    },
+    {
+      "id": "de-pontieu-et-al-2022-muse-heating",
+      "title": "Probing the Physics of the Solar Atmosphere with the Multi-slit Solar Explorer (MUSE). I. Coronal Heating",
+      "authors": [
+        "Bart De Pontieu",
+        "Paola Testa",
+        "Juan Martínez-Sykora",
+        "Patrick Antolin",
+        "Konstantinos Karampelas",
+        "Viggo Hansteen",
+        "Matthias Rempel",
+        "Mark C. M. Cheung"
+      ],
+      "year": 2022,
+      "doi": "10.3847/1538-4357/ac4222",
+      "source_url": "https://doi.org/10.3847/1538-4357/ac4222",
+      "kind": "mechanism-comparison synthetic forward model",
+      "topics": [
+        "MUSE",
+        "coronal heating",
+        "synthetic spectroscopy",
+        "MHD",
+        "mechanism discrimination"
+      ],
+      "annotation": "用多种数值模型生成高时空分辨光谱预测，明确展示如何以 Doppler、线宽和强度演化区分加热场景。",
+      "evidence_boundary": "这是未来观测与模拟的判别设计；当前项目没有 MUSE 数据，相关预测只能作为任务规范。"
+    },
+    {
+      "id": "de-pontieu-et-al-2020-multislit",
+      "title": "The Multi-slit Approach to Coronal Spectroscopy with the Multi-slit Solar Explorer (MUSE)",
+      "authors": [
+        "Bart De Pontieu",
+        "Juan Martínez-Sykora",
+        "Paola Testa",
+        "Amy R. Winebarger",
+        "Adrian Daw",
+        "Viggo Hansteen",
+        "Mark C. M. Cheung",
+        "Patrick Antolin"
+      ],
+      "year": 2020,
+      "doi": "10.3847/1538-4357/ab5b03",
+      "source_url": "https://doi.org/10.3847/1538-4357/ab5b03",
+      "kind": "spectroscopy forward-model method",
+      "topics": [
+        "multi-slit spectroscopy",
+        "synthetic spectra",
+        "line blending",
+        "inversion uncertainty"
+      ],
+      "annotation": "给出多狭缝光谱的前向混叠和反演方法，可用于设计高通量光谱与成像联合诊断。",
+      "evidence_boundary": "仪器与反演方法论文不构成加热机制证据；必须在事件数据上验证混叠、噪声和标定。"
+    },
+    {
+      "id": "pontin-priest-2022",
+      "title": "Magnetic Reconnection: MHD Theory and Modelling",
+      "authors": ["David I. Pontin", "Eric R. Priest"],
+      "year": 2022,
+      "doi": "10.1007/s41116-022-00032-9",
+      "source_url": "https://doi.org/10.1007/s41116-022-00032-9",
+      "kind": "foundational reconnection theory review",
+      "topics": ["magnetic reconnection", "3D topology", "current sheets", "MHD modelling"],
+      "annotation": "系统整理二维与三维重联、拓扑和数值建模，为重联假设拆分成可证伪预测提供理论边界。",
+      "evidence_boundary": "磁梯度、PIL 或电流代理只能说明储能条件；缺少拓扑变化与能量预算时不能证明发生了目标重联。"
+    },
+    {
+      "id": "mandrini-demoulin-klimchuk-2000",
+      "title": "Magnetic Field and Plasma Scaling Laws: Their Implications for Coronal Heating Models",
+      "authors": ["Cristina H. Mandrini", "Pascal Démoulin", "James A. Klimchuk"],
+      "year": 2000,
+      "doi": "10.1086/308398",
+      "source_url": "https://doi.org/10.1086/308398",
+      "kind": "mechanism-scaling observational constraint",
+      "topics": ["magnetic scaling laws", "coronal heating", "loop pressure", "model comparison"],
+      "annotation": "比较不同加热模型对磁场、环长和等离子体量的标度预测，适合跨事件而非单帧机制比较。",
+      "evidence_boundary": "相关标度可能受样本选择和共同变量驱动；相关性不等于微观耗散机制的因果确认。"
+    },
+    {
+      "id": "longcope-2005",
+      "title": "Topological Methods for the Analysis of Solar Magnetic Fields",
+      "authors": ["Dana W. Longcope"],
+      "year": 2005,
+      "doi": "10.12942/lrsp-2005-7",
+      "source_url": "https://doi.org/10.12942/lrsp-2005-7",
+      "kind": "magnetic-topology review and limitation",
+      "topics": ["magnetic topology", "separatrices", "null points", "connectivity"],
+      "annotation": "提供磁拓扑、分离面和连接度分析的理论工具，用于把 HMI 代理升级为可检验的拓扑预测。",
+      "evidence_boundary": "光球边界外推存在非唯一性；不同外推方法的一致性和对扰动的敏感性必须报告。"
+    },
+    {
+      "id": "wiegelmann-petrie-riley-2017",
+      "title": "Coronal Magnetic Field Models",
+      "authors": ["Thomas Wiegelmann", "Gordon J. D. Petrie", "Pete Riley"],
+      "year": 2017,
+      "doi": "10.1007/s11214-015-0178-3",
+      "source_url": "https://doi.org/10.1007/s11214-015-0178-3",
+      "kind": "magnetic-field model review and uncertainty",
+      "topics": ["NLFFF", "potential field", "MHD", "boundary uncertainty"],
+      "annotation": "比较势场、无力场和 MHD 日冕磁场模型及其边界条件，指导磁拓扑证据的模型族敏感性分析。",
+      "evidence_boundary": "单一 NLFFF 解不能视为真实拓扑；需跨方法、跨边界误差稳定并与日冕结构共配准。"
+    },
+    {
+      "id": "klimchuk-karpen-antiochos-2010",
+      "title": "Can Thermal Nonequilibrium Explain Coronal Loops?",
+      "authors": ["James A. Klimchuk", "Judy T. Karpen", "Spiro K. Antiochos"],
+      "year": 2010,
+      "doi": "10.1088/0004-637X/714/2/1239",
+      "source_url": "https://doi.org/10.1088/0004-637X/714/2/1239",
+      "kind": "thermal alternative and counterexample simulation",
+      "topics": [
+        "thermal nonequilibrium",
+        "steady footpoint heating",
+        "coronal loops",
+        "condensation"
+      ],
+      "annotation": "检验热非平衡能否解释常见环结构，为冷却时延和日冕雨之外的稳态足点加热替代解释建立边界。",
+      "evidence_boundary": "出现冷凝或长周期变化并不唯一支持某种加热机制；几何、足点集中度和循环稳定性都必须匹配。"
+    },
+    {
+      "id": "antolin-froment-2022",
+      "title": "Multi-Scale Variability of Coronal Loops Set by Thermal Non-Equilibrium and Instability as a Probe for Coronal Heating",
+      "authors": ["Patrick Antolin", "Clara Froment"],
+      "year": 2022,
+      "doi": "10.3389/fspas.2022.820116",
+      "source_url": "https://doi.org/10.3389/fspas.2022.820116",
+      "kind": "thermal alternative review and diagnostic limitation",
+      "topics": [
+        "thermal nonequilibrium",
+        "thermal instability",
+        "coronal rain",
+        "long-period pulsations"
+      ],
+      "annotation": "连接热非平衡、热不稳定、日冕雨和长周期脉动，提供对脉冲加热解释的系统替代模型。",
+      "evidence_boundary": "相似的冷却序列可由不同加热频率和空间分布产生；必须使用多尺度周期、冷凝和几何联合检验。"
+    },
+    {
+      "id": "bradshaw-klimchuk-2011",
+      "title": "What Dominates the Coronal Emission Spectrum during the Cycle of Impulsive Heating and Cooling?",
+      "authors": ["Stephen J. Bradshaw", "James A. Klimchuk"],
+      "year": 2011,
+      "doi": "10.1088/0067-0049/194/2/26",
+      "source_url": "https://doi.org/10.1088/0067-0049/194/2/26",
+      "kind": "hydrodynamic forward simulation and diagnostic limitation",
+      "topics": ["impulsive heating", "nonequilibrium ionization", "synthetic spectrum", "cooling"],
+      "annotation": "计算脉冲加热冷却周期中的发射线贡献和非平衡电离效应，为 EIS/DEM 温度解释提供前向修正。",
+      "evidence_boundary": "平衡电离假设会隐藏或移动高温成分；未检验非平衡电离时不能把弱高温线直接量化为事件能量。"
+    },
+    {
+      "id": "tripathi-klimchuk-mason-2011",
+      "title": "Emission Measure Distribution and Heating of Two Active Region Cores",
+      "authors": ["Durgesh Tripathi", "James A. Klimchuk", "Helen E. Mason"],
+      "year": 2011,
+      "doi": "10.1088/0004-637X/740/2/111",
+      "source_url": "https://doi.org/10.1088/0004-637X/740/2/111",
+      "kind": "spectroscopic thermal observational constraint",
+      "topics": ["emission measure", "active region core", "Hinode/EIS", "heating frequency"],
+      "annotation": "利用活动区核的光谱发射量分布约束温度结构和加热频率，是本地 EIS 密度/温度诊断的比较基准。",
+      "evidence_boundary": "少量活动区和视线混合限制外推；DEM 斜率不是纳耀斑、波动或稳态加热的唯一指纹。"
+    },
+    {
+      "id": "warren-et-al-2008-eis-loops",
+      "title": "Observations of Active Region Loops with the EUV Imaging Spectrometer on Hinode",
+      "authors": [
+        "Harry P. Warren",
+        "Ignacio Ugarte-Urra",
+        "George A. Doschek",
+        "David H. Brooks",
+        "David R. Williams"
+      ],
+      "year": 2008,
+      "doi": "10.1086/592960",
+      "source_url": "https://doi.org/10.1086/592960",
+      "kind": "spectroscopic loop observational constraint",
+      "topics": ["Hinode/EIS", "active region loops", "density", "temperature", "Doppler"],
+      "annotation": "展示 EIS 对活动区环的温度、密度和速度测量，为成像推断增加独立光谱维度。",
+      "evidence_boundary": "单次 raster 混合空间扫描和时间演化；与 AIA 对比时需传播扫描时间和配准误差。"
+    },
+    {
+      "id": "de-pontieu-mcintosh-2010",
+      "title": "Quasi-periodic Propagating Signals in the Solar Corona: The Signature of Magnetoacoustic Waves or High-velocity Upflows?",
+      "authors": ["Bart De Pontieu", "Scott W. McIntosh"],
+      "year": 2010,
+      "doi": "10.1088/0004-637X/722/2/1013",
+      "source_url": "https://doi.org/10.1088/0004-637X/722/2/1013",
+      "kind": "wave-versus-flow counterexample and diagnostic limitation",
+      "topics": ["propagating disturbances", "magnetoacoustic waves", "upflows", "line asymmetry"],
+      "annotation": "直接提出传播亮度扰动可能来自波或准周期高速上流，是波候选必须执行光谱反例检索的关键文献。",
+      "evidence_boundary": "仅凭 AIA 时距图无法区分两者；需 Doppler、蓝翼非对称、相位关系和多温度响应。"
+    },
+    {
+      "id": "doschek-et-al-2007",
+      "title": "Nonthermal Velocities in Solar Active Regions Observed with the Extreme-Ultraviolet Imaging Spectrometer on Hinode",
+      "authors": [
+        "George A. Doschek",
+        "John T. Mariska",
+        "Harry P. Warren",
+        "Charles M. Brown",
+        "John L. Culhane",
+        "Hirohisa Hara",
+        "Takayuki Watanabe",
+        "Peter R. Young"
+      ],
+      "year": 2007,
+      "doi": "10.1086/522087",
+      "source_url": "https://doi.org/10.1086/522087",
+      "kind": "spectroscopic non-thermal observational constraint",
+      "topics": ["Hinode/EIS", "non-thermal velocity", "active regions", "line width"],
+      "annotation": "建立 EIS 活动区非热线宽的观测分布，用于比较波动、未解析流和湍动预测。",
+      "evidence_boundary": "扣除仪器宽度和热宽度后的剩余项仍是混合量；不能由非零非热线宽直接推出波加热。"
+    },
+    {
+      "id": "de-pontieu-et-al-2021-iris-review",
+      "title": "A New View of the Solar Interface Region from the Interface Region Imaging Spectrograph (IRIS)",
+      "authors": [
+        "Bart De Pontieu",
+        "Vanessa Polito",
+        "Viggo Hansteen",
+        "Paola Testa",
+        "Katharine K. Reeves",
+        "Patrick Antolin",
+        "Daniel Elias Nóbrega-Siverio",
+        "Adam F. Kowalski"
+      ],
+      "year": 2021,
+      "doi": "10.1007/s11207-021-01826-0",
+      "source_url": "https://doi.org/10.1007/s11207-021-01826-0",
+      "kind": "spectroscopy review and diagnostic framework",
+      "topics": ["IRIS", "transition region", "Doppler", "non-thermal width", "forward models"],
+      "annotation": "总结 IRIS 强度、速度、线宽和辐射流体前向模型的诊断能力，为多个独立光谱事件的统一处理提供依据。",
+      "evidence_boundary": "过渡区响应受非平衡电离、光学厚度和几何影响；不能单独代表日冕能量释放位置。"
+    },
+    {
+      "id": "testa-et-al-2023",
+      "title": "High-resolution Observations of the Low Atmospheric Response to Small Coronal Heating Events in an Active Region Core",
+      "authors": ["Paola Testa", "Helle Bakke", "Luc Rouppe van der Voort", "Bart De Pontieu"],
+      "year": 2023,
+      "doi": "10.3847/1538-4357/acf4f1",
+      "source_url": "https://doi.org/10.3847/1538-4357/acf4f1",
+      "kind": "small-event discriminating observation and model comparison",
+      "topics": ["IRIS", "active region core", "small heating events", "chromospheric response"],
+      "annotation": "以高分辨率低层大气响应约束小尺度日冕加热事件，补充 AR11890 正控之外的独立观测模式。",
+      "evidence_boundary": "文献事件可定义预测但不能移接为本地事件证据；本地复现需要对应原始数据和冻结 ROI。"
+    },
+    {
+      "id": "polito-et-al-2016",
+      "title": "Simultaneous IRIS and Hinode/EIS Observations and Modeling of the 2014 October 27 X2.0 Class Flare",
+      "authors": [
+        "Vanessa Polito",
+        "Jeffrey W. Reep",
+        "Katharine K. Reeves",
+        "Paulo J. A. Simões",
+        "Jaroslav Dudík",
+        "Giulio Del Zanna",
+        "Helen E. Mason",
+        "Leon Golub"
+      ],
+      "year": 2016,
+      "doi": "10.3847/0004-637X/816/2/89",
+      "source_url": "https://doi.org/10.3847/0004-637X/816/2/89",
+      "kind": "joint-spectroscopy observational-model comparison",
+      "topics": ["IRIS", "Hinode/EIS", "chromospheric evaporation", "line fitting"],
+      "annotation": "展示 IRIS/EIS 共时光谱与流体模型联合推断速度和能量输运的方法，可作为本地 EIS 拟合质量控制参考。",
+      "evidence_boundary": "强耀斑蒸发不等同于非耀斑日冕加热；只借用方法和误差处理，不迁移物理结论。"
+    },
+    {
+      "id": "hannah-et-al-2016-nustar",
+      "title": "The First X-Ray Imaging Spectroscopy of Quiescent Solar Active Regions with NuSTAR",
+      "authors": [
+        "Iain G. Hannah",
+        "Brian W. Grefenstette",
+        "David M. Smith",
+        "Lindsay Glesener",
+        "Säm Krucker",
+        "Hugh S. Hudson",
+        "Kristin K. Madsen",
+        "Andrew Marsh"
+      ],
+      "year": 2016,
+      "doi": "10.3847/2041-8205/820/1/L14",
+      "source_url": "https://doi.org/10.3847/2041-8205/820/1/L14",
+      "kind": "hard-X-ray observational upper-limit constraint",
+      "topics": ["NuSTAR", "quiescent active regions", "hot plasma", "non-thermal upper limit"],
+      "annotation": "给出静态活动区高温和非热成分的严格上限，说明无显著 HXR 也可以形成可量化反例而非 unknown。",
+      "evidence_boundary": "上限依赖有效曝光、livetime、ghost rays、响应和背景；未完成这些校正时不得声称排除纳耀斑。"
+    },
+    {
+      "id": "kuhar-et-al-2017",
+      "title": "Evidence of Significant Energy Input in the Late Phase of a Solar Flare from NuSTAR X-Ray Observations",
+      "authors": [
+        "Matej Kuhar",
+        "Säm Krucker",
+        "Iain G. Hannah",
+        "Lindsay Glesener",
+        "Pascal Saint-Hilaire",
+        "Brian W. Grefenstette",
+        "Hugh S. Hudson",
+        "Stephen M. White"
+      ],
+      "year": 2017,
+      "doi": "10.3847/1538-4357/835/1/6",
+      "source_url": "https://doi.org/10.3847/1538-4357/835/1/6",
+      "kind": "hard-X-ray thermal observational-model constraint",
+      "topics": ["NuSTAR", "AR 12222", "late-phase heating", "AIA", "FOXSI"],
+      "annotation": "对应本地 ObsID 20001005001，联合 NuSTAR、AIA 和 FOXSI 约束持续能量输入及冷却，是事件级复现锚点。",
+      "evidence_boundary": "该事件是耀斑晚相而非静态日冕；能支持持续热输入过程，不能直接证明普遍纳耀斑加热。"
+    },
+    {
+      "id": "cooper-et-al-2020",
+      "title": "NuSTAR Observation of a Minuscule Microflare in a Solar Active Region",
+      "authors": [
+        "Kristopher Cooper",
+        "Iain G. Hannah",
+        "Brian W. Grefenstette",
+        "Lindsay Glesener",
+        "Säm Krucker",
+        "Hugh S. Hudson",
+        "Stephen M. White",
+        "David M. Smith"
+      ],
+      "year": 2020,
+      "doi": "10.3847/2041-8213/ab873e",
+      "source_url": "https://doi.org/10.3847/2041-8213/ab873e",
+      "kind": "hard-X-ray discriminating observation and upper limit",
+      "topics": ["NuSTAR", "AR 12721", "microflare", "non-thermal upper limit", "AIA Fe XVIII"],
+      "annotation": "对应本地 2018-09-09 序列，给出 11:04 UT 微耀斑的热谱、能量和非热上限，是独立 HXR 留出案例。",
+      "evidence_boundary": "这是微耀斑正控而非整个活动区加热率；非热未检出必须以响应校正后的上限表达。"
+    },
+    {
+      "id": "wright-et-al-2017",
+      "title": "Microflare Heating of a Solar Active Region Observed with NuSTAR, Hinode/XRT, and SDO/AIA",
+      "authors": [
+        "Paul J. Wright",
+        "Iain G. Hannah",
+        "Brian W. Grefenstette",
+        "Lindsay Glesener",
+        "Säm Krucker",
+        "Hugh S. Hudson",
+        "David M. Smith",
+        "Andrew J. Marsh"
+      ],
+      "year": 2017,
+      "doi": "10.3847/1538-4357/aa7a59",
+      "source_url": "https://doi.org/10.3847/1538-4357/aa7a59",
+      "kind": "multi-instrument hard-X-ray observational constraint",
+      "topics": ["NuSTAR", "Hinode/XRT", "SDO/AIA", "microflare", "energy budget"],
+      "annotation": "展示 NuSTAR 与 XRT/AIA 的微耀斑温度、发射量和能量预算联合分析，为本地 HXR 管线定义交叉校验。",
+      "evidence_boundary": "温度与能量依赖源区、背景和等温假设；只有一致的源区与响应处理才能跨仪器比较。"
+    },
+    {
+      "id": "pascoe-wright-demoortel-2011",
+      "title": "Propagating Coupled Alfvén and Kink Oscillations in an Arbitrary Inhomogeneous Corona",
+      "authors": ["David J. Pascoe", "Andrew N. Wright", "Ineke De Moortel"],
+      "year": 2011,
+      "doi": "10.1088/0004-637X/731/1/73",
+      "source_url": "https://doi.org/10.1088/0004-637X/731/1/73",
+      "kind": "coupled-wave forward simulation",
+      "topics": [
+        "propagating waves",
+        "Alfvén-kink coupling",
+        "inhomogeneous corona",
+        "phase mixing"
+      ],
+      "annotation": "将耦合波传播推广到任意横向非均匀结构，为不同环路径上的相位与振幅演化提供模型族。",
+      "evidence_boundary": "同一传播图样可由不同横向结构产生；需用密度剖面和多路径数据约束退化。"
+    },
+    {
+      "id": "antolin-et-al-2015-resonant-heating",
+      "title": "Resonant Absorption of Transverse Oscillations and Associated Heating in a Solar Prominence. II. Numerical Aspects",
+      "authors": [
+        "Patrick Antolin",
+        "Takenori J. Okamoto",
+        "Bart De Pontieu",
+        "Han Uitenbroek",
+        "Tom Van Doorsselaere",
+        "Takaaki Yokoyama"
+      ],
+      "year": 2015,
+      "doi": "10.1088/0004-637X/809/1/72",
+      "source_url": "https://doi.org/10.1088/0004-637X/809/1/72",
+      "kind": "wave-heating synthetic forward simulation",
+      "topics": [
+        "resonant absorption",
+        "Kelvin-Helmholtz instability",
+        "heating",
+        "synthetic spectra"
+      ],
+      "annotation": "模拟共振吸收、横向不稳定性和热化的合成光谱特征，连接波衰减与可观测局地加热。",
+      "evidence_boundary": "模型对象为日珥且参数特定；迁移到活动区环必须重新设定密度对比、温度和仪器响应。"
+    },
+    {
+      "id": "chen-et-al-2021-campfires",
+      "title": "Transient Small-scale Brightenings in the Quiet Solar Corona: A Model for Campfires Observed with Solar Orbiter",
+      "authors": [
+        "Yajie Chen",
+        "Damien Przybylski",
+        "Hardi Peter",
+        "Hui Tian",
+        "Frédéric Auchère",
+        "David Berghmans"
+      ],
+      "year": 2021,
+      "doi": "10.1051/0004-6361/202140638",
+      "source_url": "https://doi.org/10.1051/0004-6361/202140638",
+      "kind": "3D MHD synthetic-observation model comparison",
+      "topics": ["campfires", "magnetic reconnection", "synthetic EUV", "quiet corona"],
+      "annotation": "从三维 MHD 合成小尺度 EUV 增亮，为事件形态、温度和磁演化的联合比较提供实例。",
+      "evidence_boundary": "quiet-Sun campfire 不能替代活动区纳耀斑；模型与观测相似只构成候选一致性。"
+    },
+    {
+      "id": "wyper-et-al-2016",
+      "title": "Three-dimensional Simulations of Tearing and Intermittency in Coronal Jets",
+      "authors": ["Peter F. Wyper", "C. Richard DeVore", "Judith T. Karpen", "Benjamin J. Lynch"],
+      "year": 2016,
+      "doi": "10.3847/0004-637X/827/1/4",
+      "source_url": "https://doi.org/10.3847/0004-637X/827/1/4",
+      "kind": "3D reconnection MHD simulation",
+      "topics": [
+        "tearing instability",
+        "intermittent reconnection",
+        "coronal jets",
+        "current sheets"
+      ],
+      "annotation": "展示三维电流层撕裂如何产生间歇重联和喷流，为重联候选的时空碎裂预测提供模型。",
+      "evidence_boundary": "喷流模型不等同于闭合活动区环加热；必须匹配拓扑、流速和能量预算。"
+    },
+    {
+      "id": "liu-et-al-2011-fan-spine",
+      "title": "Chromospheric Jet and Growing Loop Observed by Hinode: New Evidence of Fan-spine Magnetic Topology Resulting from Flux Emergence",
+      "authors": [
+        "Wei Liu",
+        "Thomas E. Berger",
+        "Alan M. Title",
+        "Theodore D. Tarbell",
+        "B. C. Low"
+      ],
+      "year": 2011,
+      "doi": "10.1088/0004-637X/728/2/103",
+      "source_url": "https://doi.org/10.1088/0004-637X/728/2/103",
+      "kind": "magnetic-topology discriminating observation",
+      "topics": ["fan-spine topology", "flux emergence", "jet", "Hinode"],
+      "annotation": "以扇脊拓扑、磁通涌现和喷流/环响应的共时关系展示比 PIL 梯度更具体的重联证据结构。",
+      "evidence_boundary": "事件形态仍需磁场外推与不确定度；不能用任何喷流或亮环替代拓扑检验。"
+    },
+    {
+      "id": "baker-et-al-2009-qsl",
+      "title": "Magnetic Reconnection along Quasi-separatrix Layers as a Driver of Ubiquitous Active Region Outflows",
+      "authors": [
+        "Deborah Baker",
+        "Lidia van Driel-Gesztelyi",
+        "Cristina H. Mandrini",
+        "Pascal Démoulin",
+        "Michael J. Murray"
+      ],
+      "year": 2009,
+      "doi": "10.1088/0004-637X/705/1/926",
+      "source_url": "https://doi.org/10.1088/0004-637X/705/1/926",
+      "kind": "topology-spectroscopy observational constraint",
+      "topics": [
+        "quasi-separatrix layers",
+        "active region outflows",
+        "magnetic reconnection",
+        "Hinode/EIS"
+      ],
+      "annotation": "联合 QSL 拓扑与 EIS 外流，为重联候选提供磁连接度—速度的事件级绑定范式。",
+      "evidence_boundary": "QSL 与外流共位不独占重联解释；需时序、能量和跨事件复现，并检验压力驱动流等替代机制。"
+    }
   ]
 }

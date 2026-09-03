@@ -73,25 +73,31 @@ const FULL_TOURNAMENT = {
 
 describe('Qwen chat reasoning compatibility', () => {
   it('explicitly disables Qwen thinking for off', () => {
-    expect(applyQwenChatRequestCompatibility(
-      { provider: 'openai', model: 'qwen3.5-plus', apiMode: 'chat', thinkingLevel: 'off' },
-      { reasoning_effort: 'high', thinking_budget: 999, messages: [] },
-    )).toEqual({ enable_thinking: false, messages: [] })
+    expect(
+      applyQwenChatRequestCompatibility(
+        { provider: 'openai', model: 'qwen3.5-plus', apiMode: 'chat', thinkingLevel: 'off' },
+        { reasoning_effort: 'high', thinking_budget: 999, messages: [] },
+      ),
+    ).toEqual({ enable_thinking: false, messages: [] })
   })
 
   it('enables bounded native Qwen thinking for scientific agents', () => {
-    expect(applyQwenChatRequestCompatibility(
-      { provider: 'openai', model: 'qwen3.5-plus', apiMode: 'chat', thinkingLevel: 'high' },
-      { reasoning_effort: 'high', messages: [] },
-    )).toEqual({ enable_thinking: true, thinking_budget: 4096, messages: [] })
+    expect(
+      applyQwenChatRequestCompatibility(
+        { provider: 'openai', model: 'qwen3.5-plus', apiMode: 'chat', thinkingLevel: 'high' },
+        { reasoning_effort: 'high', messages: [] },
+      ),
+    ).toEqual({ enable_thinking: true, thinking_budget: 4096, messages: [] })
   })
 
   it('does not alter non-Qwen requests', () => {
     const body = { reasoning_effort: 'high', messages: [] }
-    expect(applyQwenChatRequestCompatibility(
-      { provider: 'openai', model: 'gpt-5', apiMode: 'chat', thinkingLevel: 'high' },
-      body,
-    )).toBe(body)
+    expect(
+      applyQwenChatRequestCompatibility(
+        { provider: 'openai', model: 'gpt-5', apiMode: 'chat', thinkingLevel: 'high' },
+        body,
+      ),
+    ).toBe(body)
   })
 })
 

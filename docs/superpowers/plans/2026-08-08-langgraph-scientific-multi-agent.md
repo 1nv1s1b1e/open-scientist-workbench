@@ -17,6 +17,7 @@
 ### Task 1: LangGraph runtime and durable thread contract
 
 **Files:**
+
 - Modify: `packages/agents/package.json`
 - Modify: `pnpm-lock.yaml`
 - Create: `packages/agents/src/orchestration/langgraph-runtime.ts`
@@ -70,6 +71,7 @@ Expected: PASS and a retrievable checkpoint for the same `thread_id`.
 ### Task 2: Scientific state, four-layer memory, and data-processing contracts
 
 **Files:**
+
 - Modify: `packages/schema/src/scientific-loop.ts`
 - Create: `packages/schema/src/data-processing.ts`
 - Create: `packages/agents/src/scientific-loop/graph-state.ts`
@@ -85,17 +87,19 @@ Expected: PASS and a retrievable checkpoint for the same `thread_id`.
 - [ ] **Step 1: Write failing contract tests**
 
 ```ts
-expect(EvidenceRecordSchema.safeParse({
-  evidenceId: 'e-1',
-  status: 'support',
-  sourceIds: ['obs-1'],
-  provenance: {
-    dataSnapshotId: 'snapshot-1',
-    artifactPath: 'runs/r1/evidence/e-1.json',
-    generatedBy: 'timeseries-agent',
-    deterministic: true,
-  },
-}).success).toBe(true)
+expect(
+  EvidenceRecordSchema.safeParse({
+    evidenceId: 'e-1',
+    status: 'support',
+    sourceIds: ['obs-1'],
+    provenance: {
+      dataSnapshotId: 'snapshot-1',
+      artifactPath: 'runs/r1/evidence/e-1.json',
+      generatedBy: 'timeseries-agent',
+      deterministic: true,
+    },
+  }).success,
+).toBe(true)
 ```
 
 Assert that corrections contain `stage`, `triggeredBy`, `action`, and affected IDs; memory contains namespace, agent ID, phenomenon ID, verification status, artifact IDs, and triggers.
@@ -109,7 +113,10 @@ Add `EvidenceProvenanceSchema`, `ScientificCorrectionSchema`, `AgentExecutionSch
 ```ts
 const POLICY = {
   A: { read: ['phenomenon', 'hypothesis', 'counterexample', 'lesson'], limit: 8 },
-  B: { read: ['hypothesis', 'evidence', 'counterexample', 'validation-task', 'failure'], limit: 12 },
+  B: {
+    read: ['hypothesis', 'evidence', 'counterexample', 'validation-task', 'failure'],
+    limit: 12,
+  },
   C: { read: ['evidence', 'counterexample', 'revision'], limit: 12 },
   D: { read: ['evidence', 'counterexample', 'decision', 'failure'], limit: 12 },
 } satisfies Record<ScientificStage, StageMemoryPolicy>
@@ -128,6 +135,7 @@ Run: `corepack pnpm exec vp test run packages/schema/test/scientific-loop-contra
 ### Task 3: Dynamic B evidence-agent subgraph
 
 **Files:**
+
 - Modify: `packages/agents/src/scientific-loop/evidence-workgroup.ts`
 - Create: `packages/agents/src/scientific-loop/evidence-subgraph.ts`
 - Modify: `packages/agents/src/scientific-loop/index.ts`
@@ -166,6 +174,7 @@ Run: `corepack pnpm exec vp test run packages/agents/test/evidence-workgroup.tes
 ### Task 4: A—B—C—D root graph and factual guards
 
 **Files:**
+
 - Create: `packages/agents/src/scientific-loop/services.ts`
 - Create: `packages/agents/src/scientific-loop/default-services.ts`
 - Create: `packages/agents/src/scientific-loop/scientific-graph.ts`
@@ -200,6 +209,7 @@ Run: `corepack pnpm exec vp test run packages/agents/test/scientific-graph.test.
 ### Task 5: SQLite checkpoint resume and API integration
 
 **Files:**
+
 - Modify: `packages/agents/src/scientific-loop/workflow.ts`
 - Modify: `apps/api/src/lib/run-stream.ts`
 - Modify: `apps/api/src/routes/runs.ts`
@@ -225,6 +235,7 @@ Run: `corepack pnpm exec vp test run packages/agents/test/scientific-checkpoint.
 ### Task 6: SSE observability and workbench graph state
 
 **Files:**
+
 - Modify: `apps/web/src/lib/types/sse-events.ts`
 - Modify: `apps/web/src/lib/workbench/state.ts`
 - Modify: `apps/web/src/components/workbench/scientific-workbench.tsx`
@@ -249,6 +260,7 @@ Run: `corepack pnpm exec vp test run apps/web/test/scientific-workbench-state.te
 ### Task 7: Remove dual runtime and verify
 
 **Files:**
+
 - Delete: `packages/agents/src/orchestration/state-graph.ts`
 - Delete: `packages/agents/test/state-graph.test.ts`
 - Modify: `packages/agents/src/orchestration/index.ts`

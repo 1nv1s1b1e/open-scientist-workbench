@@ -736,6 +736,16 @@ export function ScientificWorkbench({
                             : '部分完成'}
                       </span>
                     )}
+                    {resultRound === latestRound && state.roundBudget && (
+                      <span>
+                        计算预算：{state.roundBudget.roundsUsed}/{state.roundBudget.maxRounds} 轮；
+                        {state.roundBudget.exhausted
+                          ? '已达到上限'
+                          : state.roundBudget.deferredTaskCount > 0
+                            ? `仍有 ${state.roundBudget.deferredTaskCount} 项任务等待数据或执行器`
+                            : '按无可执行新任务提前停止'}
+                      </span>
+                    )}
                   </article>
                   <article className="workbench-boundary-card">
                     <div className="flex items-center gap-2 text-xs text-[var(--color-body)]">

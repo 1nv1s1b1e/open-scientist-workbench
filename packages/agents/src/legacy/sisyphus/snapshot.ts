@@ -37,7 +37,13 @@ export interface RoundSnapshot {
  * (no VM sandbox; uses host fs directly).
  */
 export async function snapshotStep(snapshot: RoundSnapshot): Promise<{ path: string }> {
-  const dir = join(getProjectDir(snapshot.projectId), 'runs', snapshot.runId, 'rounds', String(snapshot.round))
+  const dir = join(
+    getProjectDir(snapshot.projectId),
+    'runs',
+    snapshot.runId,
+    'rounds',
+    String(snapshot.round),
+  )
   await mkdir(dir, { recursive: true })
   const path = join(dir, 'snapshot.json')
   await writeFile(path, JSON.stringify(snapshot, null, 2), 'utf-8')

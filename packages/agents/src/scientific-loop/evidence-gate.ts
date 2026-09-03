@@ -1,8 +1,4 @@
-import type {
-  EvidenceRecord,
-  EvidenceStrengthGrade,
-  ValidationTask,
-} from '@open-scientist/schema'
+import type { EvidenceRecord, EvidenceStrengthGrade, ValidationTask } from '@open-scientist/schema'
 
 export interface SupportGatePolicy {
   /** Stable prediction ids that must each be covered by auditable support. */
@@ -300,9 +296,7 @@ export function assessEliminationGate(
   const resolvedPolicy: ResolvedEliminationGatePolicy = {
     ...DEFAULT_STRONG_ELIMINATION_POLICY,
     ...policy,
-    requiredFalsificationConditionIds: unique(
-      policy.requiredFalsificationConditionIds ?? [],
-    ),
+    requiredFalsificationConditionIds: unique(policy.requiredFalsificationConditionIds ?? []),
   }
   const validContradictionRecords = records.filter(
     (item) => item.status === 'contradict' && isGateReadyContradiction(item),
@@ -346,8 +340,7 @@ export function assessEliminationGate(
       eventGroupIds.length >= resolvedPolicy.minIndependentEvents &&
       rawFingerprints.length >= resolvedPolicy.minIndependentEvents
     const hasHoldout = !resolvedPolicy.requireHoldout || splits.includes('holdout')
-    const hasPower =
-      !resolvedPolicy.requireAdequateDetectability || adequateTasks.length > 0
+    const hasPower = !resolvedPolicy.requireAdequateDetectability || adequateTasks.length > 0
     if (enoughRecords && enoughEvents && hasHoldout && hasPower) {
       decisiveFalsificationConditionIds.push(conditionId)
       for (const record of conditionRecords) decisiveEvidenceIds.add(record.evidenceId)
@@ -355,9 +348,7 @@ export function assessEliminationGate(
       continue
     }
     const gaps = [
-      ...(enoughRecords
-        ? []
-        : [`少于 ${resolvedPolicy.minContradictionRecords} 条可审计反例`]),
+      ...(enoughRecords ? [] : [`少于 ${resolvedPolicy.minContradictionRecords} 条可审计反例`]),
       ...(enoughEvents
         ? []
         : [`少于 ${resolvedPolicy.minIndependentEvents} 个独立事件/原始数据谱系`]),
@@ -373,9 +364,7 @@ export function assessEliminationGate(
   const eliminated =
     requiredIds.length > 0 &&
     (resolvedPolicy.requireAllFalsificationConditions
-      ? requiredIds.every((conditionId) =>
-          decisiveFalsificationConditionIds.includes(conditionId),
-        )
+      ? requiredIds.every((conditionId) => decisiveFalsificationConditionIds.includes(conditionId))
       : decisiveFalsificationConditionIds.length > 0)
   const eliminationEvidenceRecords = validContradictionRecords.filter((record) =>
     decisiveEvidenceIds.has(record.evidenceId),
@@ -388,8 +377,7 @@ export function assessEliminationGate(
         ...(validContradictionRecords.length === 0
           ? ['没有可挑战机制或关键预测的可审计反例。']
           : []),
-        ...(coveredFalsificationConditionIds.length === 0 &&
-        validContradictionRecords.length > 0
+        ...(coveredFalsificationConditionIds.length === 0 && validContradictionRecords.length > 0
           ? ['现有反例未绑定任何预注册证伪条件，不能用于淘汰。']
           : []),
         ...conditionReasons,
@@ -546,9 +534,9 @@ export function assessSupportGate(
       : supported
         ? 'strong'
         : (validSupportRecords.length >= 2 &&
-            eventGroupIds.length >= 2 &&
-            observableFamilies.length >= 2 &&
-            methodFamilies.length >= 2) ||
+              eventGroupIds.length >= 2 &&
+              observableFamilies.length >= 2 &&
+              methodFamilies.length >= 2) ||
             consistentModerateTier
           ? 'moderate'
           : validSupportRecords.length > 0 || auditableConsistentRecords.length > 0

@@ -195,6 +195,7 @@ export interface ScientificWorkbenchState {
   workflowClosure: WorkflowClosureSummary | null
   operationalClosure: OperationalClosureSummary | null
   hypothesisCoverage: HypothesisCoverageAudit | null
+  roundBudget: ScientificLoopResult['roundBudget'] | null
   processingResults: WorkbenchProcessingResult[]
   status: 'idle' | 'running' | 'completed' | 'blocked' | 'failed'
 }
@@ -225,6 +226,7 @@ export function emptyScientificWorkbenchState(): ScientificWorkbenchState {
     workflowClosure: null,
     operationalClosure: null,
     hypothesisCoverage: null,
+    roundBudget: null,
     status: 'idle',
     processingResults: [],
   }
@@ -551,6 +553,10 @@ export function reduceScientificChunk(
       result?.hypothesisCoverage && typeof result.hypothesisCoverage === 'object'
         ? (result.hypothesisCoverage as HypothesisCoverageAudit)
         : state.hypothesisCoverage
+    const roundBudget =
+      result?.roundBudget && typeof result.roundBudget === 'object'
+        ? (result.roundBudget as ScientificLoopResult['roundBudget'])
+        : state.roundBudget
     return {
       ...state,
       round:
@@ -575,6 +581,7 @@ export function reduceScientificChunk(
       workflowClosure,
       operationalClosure,
       hypothesisCoverage,
+      roundBudget,
     }
   }
   return state

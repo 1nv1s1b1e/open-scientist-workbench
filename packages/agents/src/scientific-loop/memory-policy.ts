@@ -1,8 +1,4 @@
-import type {
-  MemoryEntry,
-  MemoryKind,
-  MemoryLayer,
-} from '@open-scientist/schema'
+import type { MemoryEntry, MemoryKind, MemoryLayer } from '@open-scientist/schema'
 
 export type ScientificLoopStage = 'A' | 'B' | 'C' | 'D'
 
@@ -23,14 +19,7 @@ export interface RejectedMemoryWrite {
 const STAGE_POLICIES: Record<ScientificLoopStage, ScientificMemoryPolicy> = {
   A: {
     readLayers: ['working', 'semantic'],
-    readKinds: [
-      'phenomenon',
-      'hypothesis',
-      'evidence',
-      'counterexample',
-      'revision',
-      'lesson',
-    ],
+    readKinds: ['phenomenon', 'hypothesis', 'evidence', 'counterexample', 'revision', 'lesson'],
     writeLayers: ['semantic', 'episodic'],
     writeKinds: ['hypothesis', 'revision', 'failure', 'lesson'],
     requireVerified: true,
@@ -94,13 +83,7 @@ const AGENT_POLICIES: Record<string, ScientificMemoryPolicy> = {
   'history-search': {
     ...STAGE_POLICIES.B,
     readLayers: ['working', 'semantic'],
-    readKinds: [
-      'phenomenon',
-      'hypothesis',
-      'evidence',
-      'counterexample',
-      'validation-task',
-    ],
+    readKinds: ['phenomenon', 'hypothesis', 'evidence', 'counterexample', 'validation-task'],
     writeLayers: ['semantic', 'episodic'],
     writeKinds: ['evidence', 'counterexample', 'validation-task', 'failure'],
     maxItems: 16,
@@ -134,13 +117,7 @@ const AGENT_POLICIES: Record<string, ScientificMemoryPolicy> = {
       'artifact',
     ],
     writeLayers: ['semantic', 'procedural-data', 'episodic'],
-    writeKinds: [
-      'evidence',
-      'counterexample',
-      'processing-run',
-      'artifact',
-      'failure',
-    ],
+    writeKinds: ['evidence', 'counterexample', 'processing-run', 'artifact', 'failure'],
     maxItems: 20,
   },
   'counterexample-search': {
@@ -177,9 +154,7 @@ function sortMemory(entries: readonly MemoryEntry[]): MemoryEntry[] {
   })
 }
 
-export function memoryPolicyForStage(
-  stage: ScientificLoopStage,
-): ScientificMemoryPolicy {
+export function memoryPolicyForStage(stage: ScientificLoopStage): ScientificMemoryPolicy {
   return STAGE_POLICIES[stage]
 }
 

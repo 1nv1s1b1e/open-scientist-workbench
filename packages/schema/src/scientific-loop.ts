@@ -584,6 +584,7 @@ export const AgentExecutionSchema = z.object({
   capabilities: z.array(z.string().min(1)).default([]),
   round: z.number().int().min(0),
   error: z.string().min(1).optional(),
+  outputHypothesisIds: z.array(z.string().min(1)).default([]),
   outputEvidenceIds: z.array(z.string().min(1)).default([]),
   outputTaskIds: z.array(z.string().min(1)).default([]),
 })
@@ -660,6 +661,14 @@ export const ScientificLoopResultSchema = z.object({
   hypothesisCoverage: HypothesisCoverageAuditSchema.optional(),
   outcomeProfile: ScientificOutcomeProfileSchema.optional(),
   dataReadiness: DataReadinessSummarySchema.optional(),
+  roundBudget: z
+    .object({
+      maxRounds: z.number().int().min(1),
+      roundsUsed: z.number().int().min(0),
+      exhausted: z.boolean(),
+      deferredTaskCount: z.number().int().min(0),
+    })
+    .optional(),
   conclusion: z.string().min(1),
   nextValidationPlan: z.array(ValidationTaskSchema),
   terminationReason: z.string().min(1),

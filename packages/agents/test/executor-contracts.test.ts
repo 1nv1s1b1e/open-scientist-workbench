@@ -101,9 +101,7 @@ describe('executor contracts registry (P1-7 single source)', () => {
 
   it('documents every contract with a metric attribution policy', () => {
     for (const contract of EXECUTOR_CONTRACTS as readonly LocalExecutorContract[]) {
-      expect(typeof contract.metricPrefix === 'string' || contract.metricPrefix === null).toBe(
-        true,
-      )
+      expect(typeof contract.metricPrefix === 'string' || contract.metricPrefix === null).toBe(true)
       expect(contract.requestedPattern instanceof RegExp).toBe(true)
     }
   })

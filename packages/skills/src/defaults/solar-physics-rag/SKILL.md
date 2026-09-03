@@ -28,7 +28,6 @@ and must not be presented as a scientific result.
 
 ## Legacy JW-FD demonstration path
 
-
 Use RAG tools to retrieve relevant papers and existing hypotheses. Keep claims
 calibrated: the local JW-FD directory is a labeled demonstration subset, not
 the complete JW-FD release.

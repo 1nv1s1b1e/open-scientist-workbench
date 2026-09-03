@@ -27,7 +27,11 @@ import type { UIMessageChunk } from '@/lib/types/sse-events'
 import type { AgentRole, AgentState } from '@/lib/types/visualizers'
 import { WorkflowRuntimeProvider, type ExecutionMode } from '@/lib/chat/workflow-runtime'
 import { emptyScientificWorkbenchState, type ScientificWorkbenchState } from '@/lib/workbench/state'
-import { DEMO_AGENT_STATES, DEMO_PHENOMENON, DEMO_SCIENTIFIC_STATE } from '@/lib/workbench/demo-data'
+import {
+  DEMO_AGENT_STATES,
+  DEMO_PHENOMENON,
+  DEMO_SCIENTIFIC_STATE,
+} from '@/lib/workbench/demo-data'
 
 type View = 'workbench' | 'orchestration' | 'trace' | 'concept-net' | 'evolution'
 

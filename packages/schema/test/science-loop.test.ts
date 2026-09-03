@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import {
-  createScienceLoopState,
-  transitionScienceLoop,
-} from '../src/science-loop.ts'
+import { createScienceLoopState, transitionScienceLoop } from '../src/science-loop.ts'
 
 describe('science loop harness', () => {
   it('allows the complete question-to-validation lifecycle', () => {

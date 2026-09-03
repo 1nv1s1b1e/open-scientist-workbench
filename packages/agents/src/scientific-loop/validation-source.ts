@@ -9,7 +9,12 @@ export function canonicalValidationSourceId(sourceId: string): string {
   if (!normalized.startsWith('future:')) return normalized
   const region = normalized.match(/(?:^|-)ar-?(\d+)(?:-|$)/)?.[1]
   const suffix = region ? `-ar${region}` : ''
-  if (region && /spectro/.test(normalized) && /energy/.test(normalized) && /flux/.test(normalized)) {
+  if (
+    region &&
+    /spectro/.test(normalized) &&
+    /energy/.test(normalized) &&
+    /flux/.test(normalized)
+  ) {
     return `future:spectroscopy-energy-flux${suffix}`
   }
   if (region && /spectro/.test(normalized) && /(?:iris|eis)/.test(normalized)) {

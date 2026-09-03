@@ -40,11 +40,7 @@ function phenomenonFromChunk(chunkJson: string): PhenomenonInput | null {
 export async function getLatestProjectPhenomenon(name: string): Promise<PhenomenonInput | null> {
   if (!existsSync(getProjectDbPath(name))) return null
   const { db } = createProjectDb(name)
-  const projectRuns = db
-    .select({ id: runs.id })
-    .from(runs)
-    .orderBy(desc(runs.startedAt))
-    .all()
+  const projectRuns = db.select({ id: runs.id }).from(runs).orderBy(desc(runs.startedAt)).all()
 
   for (const run of projectRuns) {
     const chunks = db

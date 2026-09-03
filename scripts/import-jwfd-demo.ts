@@ -39,7 +39,11 @@ async function main(): Promise<void> {
   await Promise.all([
     writeFile(resolve(outputDir, 'snapshots.jsonl'), snapshotsText, 'utf8'),
     writeFile(resolve(outputDir, 'targets.jsonl'), targetsText, 'utf8'),
-    writeFile(resolve(outputDir, 'dataset_manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8'),
+    writeFile(
+      resolve(outputDir, 'dataset_manifest.json'),
+      `${JSON.stringify(manifest, null, 2)}\n`,
+      'utf8',
+    ),
     writeFile(resolve(outputDir, 'eval.py'), renderJwfdEvalScript(), 'utf8'),
   ])
 

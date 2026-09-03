@@ -220,8 +220,10 @@ export function buildJwfdSnapshotArtifacts(
   if (rows.length < 2) throw new Error('JW-FD CSV must contain a header and at least one row')
 
   const headers = rows[0]!.map((header) => header.trim())
-  if (headers.some((header) => header.length === 0)) throw new Error('JW-FD CSV contains an empty column name')
-  if (new Set(headers).size !== headers.length) throw new Error('JW-FD CSV contains duplicate column names')
+  if (headers.some((header) => header.length === 0))
+    throw new Error('JW-FD CSV contains an empty column name')
+  if (new Set(headers).size !== headers.length)
+    throw new Error('JW-FD CSV contains duplicate column names')
 
   const idIndex = headers.indexOf('image_filename')
   const targetIndex = headers.indexOf(targetColumn)
@@ -241,7 +243,8 @@ export function buildJwfdSnapshotArtifacts(
     }
 
     const snapshotId = values[idIndex]!.trim()
-    if (!snapshotId) throw new Error(`JW-FD CSV row ${rowNumber + 2} has an empty sample identifier`)
+    if (!snapshotId)
+      throw new Error(`JW-FD CSV row ${rowNumber + 2} has an empty sample identifier`)
     if (seenIds.has(snapshotId)) throw new Error(`duplicate sample identifier: ${snapshotId}`)
     seenIds.add(snapshotId)
 

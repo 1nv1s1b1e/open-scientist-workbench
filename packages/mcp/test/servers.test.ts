@@ -3,7 +3,12 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolResultSchema, ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
-import { createFitsServer, createHelixServer, createSandboxServer, createSolarDataServer } from '../src/index.ts'
+import {
+  createFitsServer,
+  createHelixServer,
+  createSandboxServer,
+  createSolarDataServer,
+} from '../src/index.ts'
 
 // ------------------------------------------------------------
 // Helpers：用 in-memory transport 连 client ↔ server，避免 stdio
@@ -182,11 +187,9 @@ describe('solar-data-mcp server', () => {
       expect(coverage.isError).toBeFalsy()
       const parsed = JSON.parse(textContent(coverage) || '{}')
       expect(parsed.status).toBe('ready')
-      expect(parsed.satisfied).toEqual(expect.arrayContaining([
-        'thermal-evolution',
-        'magnetic-context',
-        'wave-timescale',
-      ]))
+      expect(parsed.satisfied).toEqual(
+        expect.arrayContaining(['thermal-evolution', 'magnetic-context', 'wave-timescale']),
+      )
       expect(parsed.unavailable).toContain('spectroscopy')
       await client.close()
     },

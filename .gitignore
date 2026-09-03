@@ -25,3 +25,9 @@ __oracle__/
 __pycache__/
 *.pyc
 filter.py
+.tmp/
+.playwright-cli/
+tmp/
+docs/*.docx
+docs/~$*.docx
+outputs/

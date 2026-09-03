@@ -13,6 +13,7 @@
 ### Task 1: Normalize the project-root startup commands
 
 **Files:**
+
 - Modify: `C:\vscode_project\ali_competition\STARTUP.md`
 - Modify: `C:\vscode_project\ali_competition\scientist_code\open-scientist\README.md`
 - Modify: `C:\vscode_project\ali_competition\scientist_code\open-scientist\.env.example`
@@ -25,6 +26,7 @@
 ### Task 2: Keep the verified Node.js runtime local and optional
 
 **Files:**
+
 - Modify: `C:\vscode_project\ali_competition\STARTUP.md`
 - Modify: `C:\vscode_project\ali_competition\scientist_code\open-scientist\README.md`
 - Create: `C:\Users\12201\.local\node-v26.5.0-win-x64\` from the official Node.js archive
@@ -35,6 +37,7 @@
 ### Task 3: Initialize and start the local Helix instance
 
 **Files:**
+
 - Create local ignored state: `C:\vscode_project\ali_competition\scientist_code\open-scientist\helix.toml`
 - Create local ignored state: `C:\vscode_project\ali_competition\scientist_code\open-scientist\.helix\`
 
@@ -46,6 +49,7 @@
 ### Task 4: Install dependencies and prepare the Explore environment
 
 **Files:**
+
 - Local dependency state under `C:\vscode_project\ali_competition\scientist_code\open-scientist\node_modules\`
 - Local venv under `C:\vscode_project\ali_competition\scientist_code\open-scientist\data\dataset\.venv\`
 
@@ -56,6 +60,7 @@
 ### Task 5: Run fresh verification and record remaining external inputs
 
 **Files:**
+
 - No source-code changes.
 
 - [ ] Run `C:\vscode_project\ali_competition\scientist_code\open-scientist\node_modules\.bin\vp.CMD lint`.

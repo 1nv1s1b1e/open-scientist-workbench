@@ -39,12 +39,20 @@ function localLiterature(): Promise<LocalLiteratureRecord[]> {
 }
 
 function queryTerms(query: string): string[] {
-  return [...new Set(
-    query.toLowerCase().split(/[^a-z0-9\u4e00-\u9fff]+/).filter((term) => term.length > 1),
-  )]
+  return [
+    ...new Set(
+      query
+        .toLowerCase()
+        .split(/[^a-z0-9\u4e00-\u9fff]+/)
+        .filter((term) => term.length > 1),
+    ),
+  ]
 }
 
-export async function searchVerifiedCoronalLiterature(query: string, k = 10): Promise<helix.PaperNode[]> {
+export async function searchVerifiedCoronalLiterature(
+  query: string,
+  k = 10,
+): Promise<helix.PaperNode[]> {
   const terms = queryTerms(query)
   const records = await localLiterature()
   return records
@@ -53,10 +61,11 @@ export async function searchVerifiedCoronalLiterature(query: string, k = 10): Pr
       const topics = record.topics.join(' ').toLowerCase()
       const annotation = record.annotation.toLowerCase()
       const score = terms.reduce(
-        (total, term) => total
-          + (title.includes(term) ? 4 : 0)
-          + (topics.includes(term) ? 2 : 0)
-          + (annotation.includes(term) ? 1 : 0),
+        (total, term) =>
+          total +
+          (title.includes(term) ? 4 : 0) +
+          (topics.includes(term) ? 2 : 0) +
+          (annotation.includes(term) ? 1 : 0),
         0,
       )
       return { record, index, score }
@@ -86,11 +95,18 @@ interface FederatedPaperResult extends helix.PaperNode {
 }
 
 function paperKey(paper: Pick<helix.PaperNode, 'doi' | 'title'>): string {
-  if (paper.doi) return `doi:${paper.doi.toLocaleLowerCase().replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '')}`
-  return `title:${paper.title.toLocaleLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, '')}`
+  if (paper.doi)
+    return `doi:${paper.doi.toLocaleLowerCase().replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '')}`
+  return `title:${paper.title
+    .toLocaleLowerCase()
+    .normalize('NFKC')
+    .replace(/[^\p{L}\p{N}]+/gu, '')}`
 }
 
-function localPaper(paper: helix.PaperNode, provider: 'helix' | 'verified_local_corpus'): FederatedPaperResult {
+function localPaper(
+  paper: helix.PaperNode,
+  provider: 'helix' | 'verified_local_corpus',
+): FederatedPaperResult {
   return {
     ...paper,
     sourceId: `paper:${paper.id}`,
@@ -136,7 +152,6 @@ function interleavePapers(
   }
   return rows
 }
-
 
 // Shared id input schema — helix accepts string | number | bigint and converts
 // via BigInt() internally. We expose string | number to avoid zod bigint
@@ -187,7 +202,10 @@ export const searchPapersTool = tool({
     try {
       localPapers = (await helix.searchPapers(query, k)).map((paper) => localPaper(paper, 'helix'))
     } catch (error) {
-      logger.warn({ query, error: error instanceof Error ? error.message : String(error) }, 'searchPapersTool: Helix unavailable; using verified local corpus')
+      logger.warn(
+        { query, error: error instanceof Error ? error.message : String(error) },
+        'searchPapersTool: Helix unavailable; using verified local corpus',
+      )
       localPapers = []
     }
     if (localPapers.length === 0) {
@@ -250,7 +268,10 @@ export const searchHypothesesTool = tool({
     try {
       hypotheses = await helix.searchHypotheses(query, k)
     } catch (error) {
-      logger.warn({ query, error: error instanceof Error ? error.message : String(error) }, 'searchHypothesesTool: Helix unavailable; returning empty history')
+      logger.warn(
+        { query, error: error instanceof Error ? error.message : String(error) },
+        'searchHypothesesTool: Helix unavailable; returning empty history',
+      )
       hypotheses = []
     }
     logger.info({ query, k, count: hypotheses.length }, 'searchHypothesesTool: execute done')

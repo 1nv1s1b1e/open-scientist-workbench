@@ -14,8 +14,9 @@ artifacts.get('/api/projects/:project/artifacts/:artifactId/content', async (c) 
     return c.json({ error: 'not_found', message: `Project "${projectName}" not found` }, 404)
   }
   const artifactId = c.req.param('artifactId')
-  const artifact = (await listArtifacts(projectName, { limit: 500 }))
-    .find((item) => item.artifactId === artifactId)
+  const artifact = (await listArtifacts(projectName, { limit: 500 })).find(
+    (item) => item.artifactId === artifactId,
+  )
   if (!artifact) {
     return c.json({ error: 'not_found', message: `Artifact "${artifactId}" not found` }, 404)
   }
@@ -23,7 +24,10 @@ artifacts.get('/api/projects/:project/artifacts/:artifactId/content', async (c) 
   const artifactPath = resolve(artifact.path)
   const withinProject = relative(projectRoot, artifactPath)
   if (withinProject.startsWith('..') || resolve(projectRoot, withinProject) !== artifactPath) {
-    return c.json({ error: 'forbidden', message: 'Artifact path is outside the project directory' }, 403)
+    return c.json(
+      { error: 'forbidden', message: 'Artifact path is outside the project directory' },
+      403,
+    )
   }
   const bytes = await readFile(artifactPath)
   c.header('Content-Type', artifact.mediaType ?? 'application/octet-stream')

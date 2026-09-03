@@ -32,38 +32,34 @@ export type DiagnosticCapabilityFamily =
  * scheduled for every run, so the capability contract never rejects their
  * bindings.
  */
-const CAPABILITY_EXEMPT_EXECUTORS: ReadonlySet<string> = new Set([
-  'coronal-wcs-unified-roi-v2',
-])
+const CAPABILITY_EXEMPT_EXECUTORS: ReadonlySet<string> = new Set(['coronal-wcs-unified-roi-v2'])
 
 /** Capability families each registered local executor can actually measure. */
-export const EXECUTOR_CAPABILITIES: Readonly<Record<string, readonly DiagnosticCapabilityFamily[]>> =
-  {
-    'coronal-wcs-unified-roi-v2': ['wcs_registration'],
-    'coronal-timeseries-lag-v1': ['timeseries_lag'],
-    'coronal-hot-channel-variability-v1': ['hot_channel_variability'],
-    'coronal-background-variability-v1': ['background_contrast', 'hot_channel_variability'],
-    'coronal-dem-inversion-v1': ['dem_thermal_structure'],
-    'coronal-cooling-sequence-v2': ['cooling_sequence'],
-    'coronal-event-threshold-sensitivity-v2': [
-      'hot_channel_variability',
-      'event_threshold_stability',
-    ],
-    'coronal-hmi-magnetic-audit-v2': ['magnetic_evolution'],
-    'coronal-spatial-wave-v1': ['spatial_wave_propagation'],
-    'coronal-event-fluence-distribution-v1': [
-      'event_energy_distribution',
-      'hot_channel_variability',
-    ],
-    'coronal-hmi-sharp-vector-v1': ['vector_magnetic_proxies'],
-    'coronal-aia-hmi-temporal-association-v1': ['magnetic_thermal_association'],
-    'coronal-iris-spectroscopy-v1': ['iris_spectroscopy'],
-    'coronal-cross-event-holdout-v1': [
-      'cross_event_holdout',
-      'timeseries_lag',
-      'hot_channel_variability',
-    ],
-  }
+export const EXECUTOR_CAPABILITIES: Readonly<
+  Record<string, readonly DiagnosticCapabilityFamily[]>
+> = {
+  'coronal-wcs-unified-roi-v2': ['wcs_registration'],
+  'coronal-timeseries-lag-v1': ['timeseries_lag'],
+  'coronal-hot-channel-variability-v1': ['hot_channel_variability'],
+  'coronal-background-variability-v1': ['background_contrast', 'hot_channel_variability'],
+  'coronal-dem-inversion-v1': ['dem_thermal_structure'],
+  'coronal-cooling-sequence-v2': ['cooling_sequence'],
+  'coronal-event-threshold-sensitivity-v2': [
+    'hot_channel_variability',
+    'event_threshold_stability',
+  ],
+  'coronal-hmi-magnetic-audit-v2': ['magnetic_evolution'],
+  'coronal-spatial-wave-v1': ['spatial_wave_propagation'],
+  'coronal-event-fluence-distribution-v1': ['event_energy_distribution', 'hot_channel_variability'],
+  'coronal-hmi-sharp-vector-v1': ['vector_magnetic_proxies'],
+  'coronal-aia-hmi-temporal-association-v1': ['magnetic_thermal_association'],
+  'coronal-iris-spectroscopy-v1': ['iris_spectroscopy'],
+  'coronal-cross-event-holdout-v1': [
+    'cross_event_holdout',
+    'timeseries_lag',
+    'hot_channel_variability',
+  ],
+}
 
 /**
  * Decisive requirements: when one of these matches, the prediction cannot be
@@ -81,7 +77,8 @@ const DECISIVE_CAPABILITY_RULES: ReadonlyArray<{
     family: 'cooling_sequence',
   },
   {
-    pattern: /(?:传播速度|表观传播|相位差|空间相干|时距|time.?distance|驻波|节点|反节点|沿环传播|波列)/i,
+    pattern:
+      /(?:传播速度|表观传播|相位差|空间相干|时距|time.?distance|驻波|节点|反节点|沿环传播|波列)/i,
     family: 'spatial_wave_propagation',
   },
   {
@@ -128,7 +125,8 @@ const WEAK_CAPABILITY_RULES: ReadonlyArray<{
     family: 'magnetic_evolution',
   },
   {
-    pattern: /(?:94|131|热通道)[^。]{0,20}(?:间歇|峰|变异|增亮)|(?:间歇|峰|变异|增亮)[^。]{0,20}(?:94|131|热通道)/i,
+    pattern:
+      /(?:94|131|热通道)[^。]{0,20}(?:间歇|峰|变异|增亮)|(?:间歇|峰|变异|增亮)[^。]{0,20}(?:94|131|热通道)/i,
     family: 'hot_channel_variability',
   },
   {
@@ -138,7 +136,9 @@ const WEAK_CAPABILITY_RULES: ReadonlyArray<{
 ]
 
 /** Families a prediction requires. Empty = no local constraint. */
-export function predictionRequiredFamilies(statement: string): readonly DiagnosticCapabilityFamily[] {
+export function predictionRequiredFamilies(
+  statement: string,
+): readonly DiagnosticCapabilityFamily[] {
   const required = new Set<DiagnosticCapabilityFamily>()
   for (const rule of DECISIVE_CAPABILITY_RULES) {
     if (rule.pattern.test(statement)) required.add(rule.family)
@@ -216,6 +216,8 @@ export function firstSupportedPredictionId(
 ): string {
   const id = hypothesis.predictions
     .map((_statement, index) => scientificPredictionId(hypothesis.id, index))
-    .find((id) => executorSupportsPrediction(executorId, predictionStatementForId(hypothesis, id) ?? ''))
+    .find((id) =>
+      executorSupportsPrediction(executorId, predictionStatementForId(hypothesis, id) ?? ''),
+    )
   return id ?? ''
 }

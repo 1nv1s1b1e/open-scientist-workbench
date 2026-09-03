@@ -14,9 +14,7 @@ export function applyEvaluationResults(
   return hypotheses.map((hypothesis) => {
     if (hypothesis.status === 'eliminated') return hypothesis
     const result = byId.get(hypothesis.id)
-    return result
-      ? { ...hypothesis, f1: result.f1, status: 'evaluated' as const }
-      : hypothesis
+    return result ? { ...hypothesis, f1: result.f1, status: 'evaluated' as const } : hypothesis
   })
 }
 
@@ -42,9 +40,7 @@ export function applyOracleRevision(
   for (const mutation of oracleOutput.mutations) {
     const child = mutation.mutatedHypothesis
     if (!existingIds.has(mutation.parentHypoId)) {
-      throw new Error(
-        `Oracle mutation parent is unknown: ${mutation.parentHypoId} -> ${child.id}`,
-      )
+      throw new Error(`Oracle mutation parent is unknown: ${mutation.parentHypoId} -> ${child.id}`)
     }
     if (existingIds.has(child.id) || childIds.has(child.id)) {
       throw new Error(`Oracle mutation reuses hypothesis id: ${child.id}`)

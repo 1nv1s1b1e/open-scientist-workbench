@@ -10,7 +10,6 @@ phenomenon backed by `coronal-starter-v1`; that path uses the local solar-data
 tools and must retain `unknown` until a calibrated observation-analysis product
 exists.
 
-
 Use this skill for Explore evaluation. The dataset is selected by the workflow
 prompt; do not assume a fixed sample count, source, label, or feature name.
 

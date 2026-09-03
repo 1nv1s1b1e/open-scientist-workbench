@@ -39,6 +39,7 @@ export const ScientificGraphStateSchema = new StateSchema({
   conclusion: z.string().default(''),
   newEvidenceCount: z.number().int().min(0).default(0),
   newTaskCount: z.number().int().min(0).default(0),
+  budgetDeferredTaskCount: z.number().int().min(0).default(0),
   roundTaskIds: z.array(z.string().min(1)).default([]),
   completedRounds: z.number().int().min(0).default(0),
   nextRoute: z.enum(['A', 'B', 'END']).default('B'),

@@ -1,8 +1,4 @@
-import type {
-  ScientificWorkbenchState,
-  WorkbenchEvidence,
-  WorkbenchValidationTask,
-} from './state'
+import type { ScientificWorkbenchState, WorkbenchEvidence, WorkbenchValidationTask } from './state'
 
 export interface ScientificRoundView {
   round: number

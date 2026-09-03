@@ -13,6 +13,7 @@
 ### Task 1: Lock down the scientific orchestration contract
 
 **Files:**
+
 - Modify: `apps/web/src/lib/types/sse-events.ts`
 - Modify: `apps/web/src/lib/workbench/state.ts`
 - Test: `apps/web/test/scientific-workbench-state.test.ts`
@@ -26,6 +27,7 @@
 ### Task 2: Fix the project-page scroll owner
 
 **Files:**
+
 - Modify: `apps/web/src/app/projects/[project]/page.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
@@ -36,6 +38,7 @@
 ### Task 3: Replace the legacy topology view with the real graph view
 
 **Files:**
+
 - Create: `apps/web/src/components/visualizers/scientific-orchestration.tsx`
 - Modify: `apps/web/src/app/projects/[project]/page.tsx`
 - Modify: `apps/web/src/app/globals.css`
@@ -50,6 +53,7 @@
 ### Task 4: Recompose the homepage as a usable product entry
 
 **Files:**
+
 - Modify: `apps/web/src/app/page.tsx`
 - Modify: `apps/web/src/components/projects/project-list.tsx`
 - Modify: `apps/web/src/app/globals.css`
@@ -62,6 +66,7 @@
 ### Task 5: Verify the complete path
 
 **Files:**
+
 - Test artifact: `output/playwright/`
 
 - [ ] Run `corepack pnpm --filter @open-scientist/web typecheck`.

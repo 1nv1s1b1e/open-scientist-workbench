@@ -1,10 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { RunnableConfig } from '@langchain/core/runnables'
-import {
-  MemorySaver,
-  type BaseCheckpointSaver,
-} from '@langchain/langgraph'
+import { MemorySaver, type BaseCheckpointSaver } from '@langchain/langgraph'
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite'
 import { getProjectDir } from '@open-scientist/config'
 
@@ -54,9 +51,7 @@ export function scientificCheckpointPath(projectId: string): string {
   return join(getProjectDir(projectId), 'langgraph-checkpoints.sqlite')
 }
 
-export function createProjectScientificRuntime(
-  projectId: string,
-): ScientificGraphRuntime {
+export function createProjectScientificRuntime(projectId: string): ScientificGraphRuntime {
   const projectDir = getProjectDir(projectId)
   mkdirSync(projectDir, { recursive: true })
   return createSqliteScientificRuntime(scientificCheckpointPath(projectId))

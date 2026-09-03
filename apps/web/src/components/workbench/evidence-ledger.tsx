@@ -37,10 +37,22 @@ export function EvidenceLedger({
       </div>
       {evidence.length > 0 && (
         <div className="evidence-scope-summary">
-          <div><span>支持性指标</span><strong>{counts.support}</strong></div>
-          <div><span>反例 / 不一致</span><strong>{counts.contradict}</strong></div>
-          <div><span>不足以判定</span><strong>{counts.unknown}</strong></div>
-          <div><span>确定性溯源</span><strong>{counts.deterministic}</strong></div>
+          <div>
+            <span>支持性指标</span>
+            <strong>{counts.support}</strong>
+          </div>
+          <div>
+            <span>反例 / 不一致</span>
+            <strong>{counts.contradict}</strong>
+          </div>
+          <div>
+            <span>不足以判定</span>
+            <strong>{counts.unknown}</strong>
+          </div>
+          <div>
+            <span>确定性溯源</span>
+            <strong>{counts.deterministic}</strong>
+          </div>
           <p>
             “证据不足”表示该记录已经过处理或审阅，但现有指标不具区分性、缺少必要测量，不能据此支持或反驳假设；不等于任务尚未执行。
           </p>

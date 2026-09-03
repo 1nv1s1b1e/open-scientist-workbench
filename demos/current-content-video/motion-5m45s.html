@@ -6,9 +6,18 @@
     <title>Open Scientist / 5m45s Architecture Motion</title>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <style>
-      @font-face { font-family: "Microsoft YaHei UI"; src: local("Microsoft YaHei UI"); }
-      @font-face { font-family: "Bahnschrift SemiCondensed"; src: local("Bahnschrift SemiCondensed"); }
-      @font-face { font-family: "Cascadia Mono"; src: local("Cascadia Mono"); }
+      @font-face {
+        font-family: 'Microsoft YaHei UI';
+        src: local('Microsoft YaHei UI');
+      }
+      @font-face {
+        font-family: 'Bahnschrift SemiCondensed';
+        src: local('Bahnschrift SemiCondensed');
+      }
+      @font-face {
+        font-family: 'Cascadia Mono';
+        src: local('Cascadia Mono');
+      }
 
       :root {
         --bg: #030911;
@@ -24,31 +33,59 @@
         --violet: #bba7ff;
         --warn: #e4c75b;
         --red: #ed716e;
-        --line: rgba(103, 231, 222, .18);
-        --line-strong: rgba(103, 231, 222, .45);
-        --panel: rgba(5, 20, 30, .91);
+        --line: rgba(103, 231, 222, 0.18);
+        --line-strong: rgba(103, 231, 222, 0.45);
+        --panel: rgba(5, 20, 30, 0.91);
       }
 
-      * { box-sizing: border-box; }
-      html, body {
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
         width: 1920px;
         height: 1080px;
         margin: 0;
         overflow: hidden;
         background: var(--bg);
         color: var(--paper);
-        font-family: "Microsoft YaHei UI", sans-serif;
+        font-family: 'Microsoft YaHei UI', sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      body { background: var(--bg); }
-      h1, h2, h3, p { margin: 0; }
-      h1, h2, h3, b, .metric-number { font-family: "Bahnschrift SemiCondensed", "Microsoft YaHei UI", sans-serif; }
-      .mono { font-family: "Cascadia Mono", Consolas, monospace; }
-      .cyan { color: var(--cyan); }
-      .solar { color: var(--hot); }
-      .violet { color: var(--violet); }
-      .warn { color: var(--warn); }
-      .red { color: var(--red); }
+      body {
+        background: var(--bg);
+      }
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+      h1,
+      h2,
+      h3,
+      b,
+      .metric-number {
+        font-family: 'Bahnschrift SemiCondensed', 'Microsoft YaHei UI', sans-serif;
+      }
+      .mono {
+        font-family: 'Cascadia Mono', Consolas, monospace;
+      }
+      .cyan {
+        color: var(--cyan);
+      }
+      .solar {
+        color: var(--hot);
+      }
+      .violet {
+        color: var(--violet);
+      }
+      .warn {
+        color: var(--warn);
+      }
+      .red {
+        color: var(--red);
+      }
 
       #root {
         position: relative;
@@ -56,44 +93,100 @@
         height: 1080px;
         overflow: hidden;
         background:
-          radial-gradient(circle at 79% 39%, rgba(21, 112, 123, .18), transparent 33%),
-          radial-gradient(circle at 23% 43%, rgba(255, 166, 74, .10), transparent 24%),
+          radial-gradient(circle at 79% 39%, rgba(21, 112, 123, 0.18), transparent 33%),
+          radial-gradient(circle at 23% 43%, rgba(255, 166, 74, 0.1), transparent 24%),
           linear-gradient(135deg, #071b29 0%, #030911 67%, #06141e 100%);
       }
       #root::before {
-        content: "";
+        content: '';
         position: absolute;
         inset: 0;
         z-index: 0;
         background-image:
-          linear-gradient(rgba(103, 231, 222, .11) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(103, 231, 222, .11) 1px, transparent 1px);
+          linear-gradient(rgba(103, 231, 222, 0.11) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(103, 231, 222, 0.11) 1px, transparent 1px);
         background-size: 80px 80px;
-        opacity: .20;
-        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .8), transparent 92%);
+        opacity: 0.2;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 92%);
       }
       #root::after {
-        content: "";
+        content: '';
         position: absolute;
         width: 940px;
         height: 940px;
         right: -480px;
         top: 110px;
         z-index: 0;
-        border: 1px solid rgba(255, 184, 97, .16);
+        border: 1px solid rgba(255, 184, 97, 0.16);
         border-radius: 50%;
-        box-shadow: 0 0 130px rgba(255, 155, 54, .07), inset 0 0 100px rgba(255, 184, 97, .03);
+        box-shadow:
+          0 0 130px rgba(255, 155, 54, 0.07),
+          inset 0 0 100px rgba(255, 184, 97, 0.03);
       }
 
-      .ambient { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
-      .ambient-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); opacity: .55; box-shadow: 0 0 18px currentColor; }
-      .ambient-dot:nth-child(1) { left: 14%; top: 24%; color: var(--cyan); }
-      .ambient-dot:nth-child(2) { left: 36%; top: 78%; color: var(--solar); width: 4px; height: 4px; }
-      .ambient-dot:nth-child(3) { left: 58%; top: 18%; color: var(--violet); width: 4px; height: 4px; }
-      .ambient-dot:nth-child(4) { left: 83%; top: 67%; color: var(--cyan); width: 5px; height: 5px; }
-      .ambient-dot:nth-child(5) { left: 72%; top: 30%; color: var(--solar); width: 3px; height: 3px; }
-      .ambient-dot:nth-child(6) { left: 18%; top: 64%; color: var(--paper); width: 3px; height: 3px; }
-      .ambient-dot:nth-child(7) { left: 91%; top: 23%; color: var(--paper); width: 3px; height: 3px; }
+      .ambient {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .ambient-dot {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--cyan);
+        opacity: 0.55;
+        box-shadow: 0 0 18px currentColor;
+      }
+      .ambient-dot:nth-child(1) {
+        left: 14%;
+        top: 24%;
+        color: var(--cyan);
+      }
+      .ambient-dot:nth-child(2) {
+        left: 36%;
+        top: 78%;
+        color: var(--solar);
+        width: 4px;
+        height: 4px;
+      }
+      .ambient-dot:nth-child(3) {
+        left: 58%;
+        top: 18%;
+        color: var(--violet);
+        width: 4px;
+        height: 4px;
+      }
+      .ambient-dot:nth-child(4) {
+        left: 83%;
+        top: 67%;
+        color: var(--cyan);
+        width: 5px;
+        height: 5px;
+      }
+      .ambient-dot:nth-child(5) {
+        left: 72%;
+        top: 30%;
+        color: var(--solar);
+        width: 3px;
+        height: 3px;
+      }
+      .ambient-dot:nth-child(6) {
+        left: 18%;
+        top: 64%;
+        color: var(--paper);
+        width: 3px;
+        height: 3px;
+      }
+      .ambient-dot:nth-child(7) {
+        left: 91%;
+        top: 23%;
+        color: var(--paper);
+        width: 3px;
+        height: 3px;
+      }
 
       .topbar {
         position: absolute;
@@ -105,18 +198,64 @@
         align-items: center;
         justify-content: space-between;
         color: var(--muted);
-        font: 600 13px/1 "Cascadia Mono", monospace;
-        letter-spacing: .105em;
+        font:
+          600 13px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.105em;
       }
-      .brand { display: flex; align-items: center; gap: 13px; color: var(--paper); }
-      .brand-mark { position: relative; width: 28px; height: 28px; border: 2px solid var(--solar); border-radius: 50%; box-shadow: 0 0 18px rgba(255, 184, 97, .45); }
-      .brand-mark::before, .brand-mark::after { content: ""; position: absolute; inset: 5px -7px; border-top: 1px solid var(--cyan); border-bottom: 1px solid var(--cyan); border-radius: 50%; transform: rotate(-23deg); }
-      .brand-mark::after { transform: rotate(23deg); }
-      .top-status { display: flex; align-items: center; gap: 24px; }
-      .top-status span:first-child { color: var(--cyan); }
-      .top-status span:first-child::before { content: ""; display: inline-block; width: 7px; height: 7px; margin: 0 8px 1px 0; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 14px var(--cyan); }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        color: var(--paper);
+      }
+      .brand-mark {
+        position: relative;
+        width: 28px;
+        height: 28px;
+        border: 2px solid var(--solar);
+        border-radius: 50%;
+        box-shadow: 0 0 18px rgba(255, 184, 97, 0.45);
+      }
+      .brand-mark::before,
+      .brand-mark::after {
+        content: '';
+        position: absolute;
+        inset: 5px -7px;
+        border-top: 1px solid var(--cyan);
+        border-bottom: 1px solid var(--cyan);
+        border-radius: 50%;
+        transform: rotate(-23deg);
+      }
+      .brand-mark::after {
+        transform: rotate(23deg);
+      }
+      .top-status {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .top-status span:first-child {
+        color: var(--cyan);
+      }
+      .top-status span:first-child::before {
+        content: '';
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        margin: 0 8px 1px 0;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 14px var(--cyan);
+      }
 
-      #camera-world { position: absolute; z-index: 10; inset: 0; transform-origin: 960px 535px; will-change: transform; }
+      #camera-world {
+        position: absolute;
+        z-index: 10;
+        inset: 0;
+        transform-origin: 960px 535px;
+        will-change: transform;
+      }
 
       .chapter-strip {
         position: absolute;
@@ -127,11 +266,17 @@
         display: flex;
         justify-content: space-between;
         color: var(--faint);
-        font: 600 12px/1 "Cascadia Mono", monospace;
-        letter-spacing: .13em;
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.13em;
       }
-      #chapter-label { color: var(--cyan); }
-      #shot-index { color: var(--muted); }
+      #chapter-label {
+        color: var(--cyan);
+      }
+      #shot-index {
+        color: var(--muted);
+      }
 
       .copy-pane {
         position: absolute;
@@ -141,17 +286,62 @@
         width: 566px;
         min-height: 550px;
         padding: 26px 38px 32px 0;
-        border-right: 1px solid rgba(103, 231, 222, .09);
+        border-right: 1px solid rgba(103, 231, 222, 0.09);
         transform-origin: left center;
         will-change: transform, opacity;
       }
-      .copy-pane::before { content: ""; position: absolute; left: 0; top: 0; width: 3px; height: 74px; background: linear-gradient(var(--solar), transparent); box-shadow: 0 0 18px rgba(255, 184, 97, .32); }
-      .copy-kicker { color: var(--cyan); font: 600 14px/1.2 "Cascadia Mono", monospace; letter-spacing: .16em; }
-      .copy-title { max-width: 525px; margin-top: 22px; color: var(--paper); font-size: 67px; line-height: .98; letter-spacing: -.035em; text-wrap: balance; }
-      .copy-title strong { color: var(--hot); font-weight: inherit; }
-      .copy-body { max-width: 505px; margin-top: 25px; color: var(--soft); font-size: 21px; line-height: 1.52; }
-      .copy-meta { max-width: 500px; margin-top: 29px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font: 500 12px/1.55 "Cascadia Mono", monospace; letter-spacing: .03em; }
-      .copy-meta::before { content: "// "; color: var(--solar); }
+      .copy-pane::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 3px;
+        height: 74px;
+        background: linear-gradient(var(--solar), transparent);
+        box-shadow: 0 0 18px rgba(255, 184, 97, 0.32);
+      }
+      .copy-kicker {
+        color: var(--cyan);
+        font:
+          600 14px/1.2 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.16em;
+      }
+      .copy-title {
+        max-width: 525px;
+        margin-top: 22px;
+        color: var(--paper);
+        font-size: 67px;
+        line-height: 0.98;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+      .copy-title strong {
+        color: var(--hot);
+        font-weight: inherit;
+      }
+      .copy-body {
+        max-width: 505px;
+        margin-top: 25px;
+        color: var(--soft);
+        font-size: 21px;
+        line-height: 1.52;
+      }
+      .copy-meta {
+        max-width: 500px;
+        margin-top: 29px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font:
+          500 12px/1.55 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.03em;
+      }
+      .copy-meta::before {
+        content: '// ';
+        color: var(--solar);
+      }
 
       #visual-pane {
         position: absolute;
@@ -163,235 +353,1463 @@
         overflow: hidden;
         transform-origin: 50% 50%;
       }
-      .view { position: absolute; inset: 0; opacity: 0; visibility: hidden; will-change: transform, opacity; }
-      .view-shell { position: absolute; inset: 0; padding: 12px 18px 12px 18px; }
-      .view-label { color: var(--muted); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .14em; }
-      .panel { position: absolute; background: linear-gradient(145deg, rgba(9, 36, 47, .94), rgba(3, 14, 23, .88)); border: 1px solid var(--line-strong); box-shadow: 0 24px 70px rgba(0, 0, 0, .28); }
-      .panel::before { content: ""; position: absolute; left: -1px; top: -1px; width: 72px; height: 2px; background: var(--solar); box-shadow: 0 0 16px var(--solar); }
-      .small-label { color: var(--muted); font: 600 11px/1.2 "Cascadia Mono", monospace; letter-spacing: .10em; }
-      .micro { color: var(--muted); font: 500 12px/1.45 "Cascadia Mono", monospace; }
-      .hairline { height: 1px; background: var(--line); }
+      .view {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        visibility: hidden;
+        will-change: transform, opacity;
+      }
+      .view-shell {
+        position: absolute;
+        inset: 0;
+        padding: 12px 18px 12px 18px;
+      }
+      .view-label {
+        color: var(--muted);
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.14em;
+      }
+      .panel {
+        position: absolute;
+        background: linear-gradient(145deg, rgba(9, 36, 47, 0.94), rgba(3, 14, 23, 0.88));
+        border: 1px solid var(--line-strong);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+      }
+      .panel::before {
+        content: '';
+        position: absolute;
+        left: -1px;
+        top: -1px;
+        width: 72px;
+        height: 2px;
+        background: var(--solar);
+        box-shadow: 0 0 16px var(--solar);
+      }
+      .small-label {
+        color: var(--muted);
+        font:
+          600 11px/1.2 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
+      }
+      .micro {
+        color: var(--muted);
+        font:
+          500 12px/1.45 'Cascadia Mono',
+          monospace;
+      }
+      .hairline {
+        height: 1px;
+        background: var(--line);
+      }
 
       /* Overview visual */
-      .overview-sun { position: absolute; left: 70px; top: 202px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #fff7ba 0%, #ffc567 20%, #e77735 49%, #8d3840 75%, #32162a 100%); box-shadow: 0 0 32px rgba(255, 184, 97, .75), 0 0 110px rgba(240, 100, 48, .28), inset -18px -20px 34px rgba(74, 18, 45, .45); }
-      .overview-sun::after { content: "AR11158"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: rgba(58, 26, 32, .76); font: 700 13px/1 "Cascadia Mono", monospace; letter-spacing: .1em; }
-      .overview-orbit { position: absolute; left: 9px; top: 139px; width: 340px; height: 350px; border: 1px solid rgba(103, 231, 222, .38); border-radius: 50%; transform: rotate(-24deg); }
-      .overview-orbit::after { content: ""; position: absolute; left: 82%; top: 11%; width: 9px; height: 9px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 18px var(--cyan); }
-      .overview-orbit.b { left: 43px; top: 167px; width: 290px; height: 290px; border-color: rgba(255, 184, 97, .46); transform: rotate(30deg); }
-      .overview-loop { position: absolute; left: 395px; top: 176px; width: 655px; height: 300px; }
-      .loop-line { position: absolute; left: 43px; right: 38px; top: 110px; height: 2px; background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet), var(--cyan)); box-shadow: 0 0 14px rgba(103, 231, 222, .36); transform-origin: left center; }
-      .loop-line::after { content: ""; position: absolute; right: -3px; top: -5px; border-left: 11px solid var(--cyan); border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-      .loop-node { position: absolute; top: 62px; width: 132px; height: 102px; padding: 17px 16px; background: rgba(5, 22, 31, .94); border: 1px solid var(--line-strong); box-shadow: 0 14px 35px rgba(0, 0, 0, .25); }
-      .loop-node:nth-of-type(3) { left: 0; }
-      .loop-node:nth-of-type(4) { left: 174px; }
-      .loop-node:nth-of-type(5) { left: 348px; }
-      .loop-node:nth-of-type(6) { left: 522px; }
-      .loop-node b { display: block; font-size: 20px; line-height: 1; color: var(--paper); }
-      .loop-node span { display: block; margin-top: 13px; color: var(--muted); font: 500 11px/1.2 "Cascadia Mono", monospace; }
-      .loop-node[data-tone="solar"] { border-top: 2px solid var(--solar); }
-      .loop-node[data-tone="cyan"] { border-top: 2px solid var(--cyan); }
-      .loop-node[data-tone="violet"] { border-top: 2px solid var(--violet); }
-      .loop-node[data-tone="warn"] { border-top: 2px solid var(--warn); }
-      .loop-packet { position: absolute; left: 23px; top: 104px; width: 12px; height: 12px; border-radius: 50%; background: var(--hot); box-shadow: 0 0 20px var(--hot); }
-      .overview-stamp { position: absolute; left: 395px; top: 518px; padding: 12px 15px; border-left: 2px solid var(--cyan); color: var(--soft); font: 500 13px/1 "Cascadia Mono", monospace; letter-spacing: .06em; }
+      .overview-sun {
+        position: absolute;
+        left: 70px;
+        top: 202px;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 34% 30%,
+          #fff7ba 0%,
+          #ffc567 20%,
+          #e77735 49%,
+          #8d3840 75%,
+          #32162a 100%
+        );
+        box-shadow:
+          0 0 32px rgba(255, 184, 97, 0.75),
+          0 0 110px rgba(240, 100, 48, 0.28),
+          inset -18px -20px 34px rgba(74, 18, 45, 0.45);
+      }
+      .overview-sun::after {
+        content: 'AR11158';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: rgba(58, 26, 32, 0.76);
+        font:
+          700 13px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
+      }
+      .overview-orbit {
+        position: absolute;
+        left: 9px;
+        top: 139px;
+        width: 340px;
+        height: 350px;
+        border: 1px solid rgba(103, 231, 222, 0.38);
+        border-radius: 50%;
+        transform: rotate(-24deg);
+      }
+      .overview-orbit::after {
+        content: '';
+        position: absolute;
+        left: 82%;
+        top: 11%;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 18px var(--cyan);
+      }
+      .overview-orbit.b {
+        left: 43px;
+        top: 167px;
+        width: 290px;
+        height: 290px;
+        border-color: rgba(255, 184, 97, 0.46);
+        transform: rotate(30deg);
+      }
+      .overview-loop {
+        position: absolute;
+        left: 395px;
+        top: 176px;
+        width: 655px;
+        height: 300px;
+      }
+      .loop-line {
+        position: absolute;
+        left: 43px;
+        right: 38px;
+        top: 110px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet), var(--cyan));
+        box-shadow: 0 0 14px rgba(103, 231, 222, 0.36);
+        transform-origin: left center;
+      }
+      .loop-line::after {
+        content: '';
+        position: absolute;
+        right: -3px;
+        top: -5px;
+        border-left: 11px solid var(--cyan);
+        border-top: 6px solid transparent;
+        border-bottom: 6px solid transparent;
+      }
+      .loop-node {
+        position: absolute;
+        top: 62px;
+        width: 132px;
+        height: 102px;
+        padding: 17px 16px;
+        background: rgba(5, 22, 31, 0.94);
+        border: 1px solid var(--line-strong);
+        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.25);
+      }
+      .loop-node:nth-of-type(3) {
+        left: 0;
+      }
+      .loop-node:nth-of-type(4) {
+        left: 174px;
+      }
+      .loop-node:nth-of-type(5) {
+        left: 348px;
+      }
+      .loop-node:nth-of-type(6) {
+        left: 522px;
+      }
+      .loop-node b {
+        display: block;
+        font-size: 20px;
+        line-height: 1;
+        color: var(--paper);
+      }
+      .loop-node span {
+        display: block;
+        margin-top: 13px;
+        color: var(--muted);
+        font:
+          500 11px/1.2 'Cascadia Mono',
+          monospace;
+      }
+      .loop-node[data-tone='solar'] {
+        border-top: 2px solid var(--solar);
+      }
+      .loop-node[data-tone='cyan'] {
+        border-top: 2px solid var(--cyan);
+      }
+      .loop-node[data-tone='violet'] {
+        border-top: 2px solid var(--violet);
+      }
+      .loop-node[data-tone='warn'] {
+        border-top: 2px solid var(--warn);
+      }
+      .loop-packet {
+        position: absolute;
+        left: 23px;
+        top: 104px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--hot);
+        box-shadow: 0 0 20px var(--hot);
+      }
+      .overview-stamp {
+        position: absolute;
+        left: 395px;
+        top: 518px;
+        padding: 12px 15px;
+        border-left: 2px solid var(--cyan);
+        color: var(--soft);
+        font:
+          500 13px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.06em;
+      }
 
       /* Architecture stack */
-      .layer-stack { position: absolute; left: 78px; top: 31px; width: 890px; }
-      .layer-card { position: relative; display: flex; align-items: center; height: 96px; margin-bottom: 13px; padding: 0 30px; background: rgba(6, 27, 38, .91); border: 1px solid var(--line); border-left: 4px solid var(--cyan); box-shadow: 0 12px 35px rgba(0, 0, 0, .22); transform-origin: left center; }
-      .layer-card:nth-child(2) { border-left-color: var(--solar); }
-      .layer-card:nth-child(3) { border-left-color: var(--violet); }
-      .layer-card:nth-child(4) { border-left-color: var(--warn); }
-      .layer-card:nth-child(5) { border-left-color: var(--cyan); }
-      .layer-number { width: 52px; color: var(--faint); font: 600 14px/1 "Cascadia Mono", monospace; }
-      .layer-card b { width: 270px; font-size: 28px; color: var(--paper); }
-      .layer-card small { color: var(--soft); font: 500 14px/1.2 "Cascadia Mono", monospace; }
-      .layer-packet { position: absolute; left: 52px; top: 75px; width: 11px; height: 11px; border-radius: 50%; background: var(--hot); box-shadow: 0 0 19px var(--hot); }
-      .layer-legend { position: absolute; left: 80px; top: 612px; color: var(--muted); font: 500 13px/1 "Cascadia Mono", monospace; letter-spacing: .04em; }
-      .layer-legend::before { content: ""; display: inline-block; width: 52px; height: 1px; margin: 0 12px 4px 0; background: var(--cyan); }
+      .layer-stack {
+        position: absolute;
+        left: 78px;
+        top: 31px;
+        width: 890px;
+      }
+      .layer-card {
+        position: relative;
+        display: flex;
+        align-items: center;
+        height: 96px;
+        margin-bottom: 13px;
+        padding: 0 30px;
+        background: rgba(6, 27, 38, 0.91);
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--cyan);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
+        transform-origin: left center;
+      }
+      .layer-card:nth-child(2) {
+        border-left-color: var(--solar);
+      }
+      .layer-card:nth-child(3) {
+        border-left-color: var(--violet);
+      }
+      .layer-card:nth-child(4) {
+        border-left-color: var(--warn);
+      }
+      .layer-card:nth-child(5) {
+        border-left-color: var(--cyan);
+      }
+      .layer-number {
+        width: 52px;
+        color: var(--faint);
+        font:
+          600 14px/1 'Cascadia Mono',
+          monospace;
+      }
+      .layer-card b {
+        width: 270px;
+        font-size: 28px;
+        color: var(--paper);
+      }
+      .layer-card small {
+        color: var(--soft);
+        font:
+          500 14px/1.2 'Cascadia Mono',
+          monospace;
+      }
+      .layer-packet {
+        position: absolute;
+        left: 52px;
+        top: 75px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--hot);
+        box-shadow: 0 0 19px var(--hot);
+      }
+      .layer-legend {
+        position: absolute;
+        left: 80px;
+        top: 612px;
+        color: var(--muted);
+        font:
+          500 13px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.04em;
+      }
+      .layer-legend::before {
+        content: '';
+        display: inline-block;
+        width: 52px;
+        height: 1px;
+        margin: 0 12px 4px 0;
+        background: var(--cyan);
+      }
 
       /* Phenomenon */
-      .phenomenon-card { left: 64px; top: 34px; width: 618px; height: 390px; padding: 13px; overflow: hidden; }
-      .phenomenon-card img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.80) contrast(1.13); opacity: .82; }
-      .phenomenon-card::after { content: "OBSERVED / ROI / AR11158"; position: absolute; z-index: 2; left: 27px; top: 29px; color: var(--cyan); font: 600 11px/1 "Cascadia Mono", monospace; letter-spacing: .11em; text-shadow: 0 0 10px var(--bg); }
-      .phenomenon-scan { position: absolute; z-index: 3; left: 16px; top: 16px; width: 2px; height: 358px; background: linear-gradient(transparent, var(--cyan), transparent); box-shadow: 0 0 18px var(--cyan); opacity: .9; }
-      .channel-row { position: absolute; left: 64px; top: 463px; display: flex; gap: 12px; }
-      .channel-chip { min-width: 104px; padding: 13px 14px; border: 1px solid var(--line-strong); background: rgba(6, 27, 38, .86); color: var(--soft); font: 600 13px/1 "Cascadia Mono", monospace; text-align: center; }
-      .channel-chip:first-child { color: var(--solar); border-color: rgba(255, 184, 97, .45); }
-      .channel-chip:last-child { color: var(--violet); border-color: rgba(187, 167, 255, .45); }
-      .phenomenon-note { position: absolute; left: 64px; top: 555px; width: 720px; padding: 17px 20px; border-left: 2px solid var(--solar); background: rgba(5, 20, 30, .72); color: var(--soft); font-size: 15px; line-height: 1.4; }
-      .question-branches { position: absolute; left: 740px; top: 62px; width: 310px; }
-      .branch { position: relative; min-height: 82px; margin-bottom: 20px; padding: 17px 19px 14px 22px; border: 1px solid var(--line); background: rgba(5, 21, 30, .85); }
-      .branch::before { content: ""; position: absolute; left: -1px; top: -1px; width: 3px; height: 100%; background: var(--solar); }
-      .branch:nth-child(2)::before { background: var(--cyan); }
-      .branch:nth-child(3)::before { background: var(--violet); }
-      .branch b { display: block; font-size: 18px; color: var(--paper); }
-      .branch span { display: block; margin-top: 8px; color: var(--muted); font: 500 11px/1.25 "Cascadia Mono", monospace; }
+      .phenomenon-card {
+        left: 64px;
+        top: 34px;
+        width: 618px;
+        height: 390px;
+        padding: 13px;
+        overflow: hidden;
+      }
+      .phenomenon-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: saturate(0.8) contrast(1.13);
+        opacity: 0.82;
+      }
+      .phenomenon-card::after {
+        content: 'OBSERVED / ROI / AR11158';
+        position: absolute;
+        z-index: 2;
+        left: 27px;
+        top: 29px;
+        color: var(--cyan);
+        font:
+          600 11px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.11em;
+        text-shadow: 0 0 10px var(--bg);
+      }
+      .phenomenon-scan {
+        position: absolute;
+        z-index: 3;
+        left: 16px;
+        top: 16px;
+        width: 2px;
+        height: 358px;
+        background: linear-gradient(transparent, var(--cyan), transparent);
+        box-shadow: 0 0 18px var(--cyan);
+        opacity: 0.9;
+      }
+      .channel-row {
+        position: absolute;
+        left: 64px;
+        top: 463px;
+        display: flex;
+        gap: 12px;
+      }
+      .channel-chip {
+        min-width: 104px;
+        padding: 13px 14px;
+        border: 1px solid var(--line-strong);
+        background: rgba(6, 27, 38, 0.86);
+        color: var(--soft);
+        font:
+          600 13px/1 'Cascadia Mono',
+          monospace;
+        text-align: center;
+      }
+      .channel-chip:first-child {
+        color: var(--solar);
+        border-color: rgba(255, 184, 97, 0.45);
+      }
+      .channel-chip:last-child {
+        color: var(--violet);
+        border-color: rgba(187, 167, 255, 0.45);
+      }
+      .phenomenon-note {
+        position: absolute;
+        left: 64px;
+        top: 555px;
+        width: 720px;
+        padding: 17px 20px;
+        border-left: 2px solid var(--solar);
+        background: rgba(5, 20, 30, 0.72);
+        color: var(--soft);
+        font-size: 15px;
+        line-height: 1.4;
+      }
+      .question-branches {
+        position: absolute;
+        left: 740px;
+        top: 62px;
+        width: 310px;
+      }
+      .branch {
+        position: relative;
+        min-height: 82px;
+        margin-bottom: 20px;
+        padding: 17px 19px 14px 22px;
+        border: 1px solid var(--line);
+        background: rgba(5, 21, 30, 0.85);
+      }
+      .branch::before {
+        content: '';
+        position: absolute;
+        left: -1px;
+        top: -1px;
+        width: 3px;
+        height: 100%;
+        background: var(--solar);
+      }
+      .branch:nth-child(2)::before {
+        background: var(--cyan);
+      }
+      .branch:nth-child(3)::before {
+        background: var(--violet);
+      }
+      .branch b {
+        display: block;
+        font-size: 18px;
+        color: var(--paper);
+      }
+      .branch span {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font:
+          500 11px/1.25 'Cascadia Mono',
+          monospace;
+      }
 
       /* API / event stream */
-      .terminal { left: 36px; top: 47px; width: 705px; height: 536px; padding: 27px 30px; }
-      .terminal-head { display: flex; justify-content: space-between; color: var(--muted); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .10em; }
-      .terminal-command { margin-top: 34px; color: var(--paper); font: 600 30px/1.1 "Cascadia Mono", monospace; }
-      .terminal-command em { color: var(--solar); font-style: normal; }
-      .terminal-row { display: flex; align-items: center; gap: 15px; margin-top: 24px; padding: 13px 0; border-top: 1px solid var(--line); color: var(--soft); font: 500 13px/1.2 "Cascadia Mono", monospace; }
-      .terminal-row b { width: 92px; color: var(--cyan); font: 600 12px/1 "Cascadia Mono", monospace; }
-      .terminal-row span:last-child { margin-left: auto; color: var(--muted); }
-      .event-stream { left: 781px; top: 47px; width: 300px; height: 536px; padding: 25px 22px; }
-      .event-row { display: flex; align-items: center; justify-content: space-between; margin-top: 21px; padding-bottom: 15px; border-bottom: 1px solid var(--line); color: var(--soft); font: 500 12px/1 "Cascadia Mono", monospace; }
-      .event-row i { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
-      .event-row:nth-child(3) i { background: var(--solar); box-shadow: 0 0 12px var(--solar); }
-      .event-row:nth-child(4) i { background: var(--violet); box-shadow: 0 0 12px var(--violet); }
-      .event-row:nth-child(5) i { background: var(--warn); box-shadow: 0 0 12px var(--warn); }
-      .checkpoint-stamp { position: absolute; left: 790px; top: 606px; padding: 13px 18px; color: var(--cyan); border: 1px solid var(--line-strong); background: rgba(5, 22, 31, .82); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .08em; }
+      .terminal {
+        left: 36px;
+        top: 47px;
+        width: 705px;
+        height: 536px;
+        padding: 27px 30px;
+      }
+      .terminal-head {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
+      }
+      .terminal-command {
+        margin-top: 34px;
+        color: var(--paper);
+        font:
+          600 30px/1.1 'Cascadia Mono',
+          monospace;
+      }
+      .terminal-command em {
+        color: var(--solar);
+        font-style: normal;
+      }
+      .terminal-row {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-top: 24px;
+        padding: 13px 0;
+        border-top: 1px solid var(--line);
+        color: var(--soft);
+        font:
+          500 13px/1.2 'Cascadia Mono',
+          monospace;
+      }
+      .terminal-row b {
+        width: 92px;
+        color: var(--cyan);
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+      }
+      .terminal-row span:last-child {
+        margin-left: auto;
+        color: var(--muted);
+      }
+      .event-stream {
+        left: 781px;
+        top: 47px;
+        width: 300px;
+        height: 536px;
+        padding: 25px 22px;
+      }
+      .event-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 21px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--line);
+        color: var(--soft);
+        font:
+          500 12px/1 'Cascadia Mono',
+          monospace;
+      }
+      .event-row i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 12px var(--cyan);
+      }
+      .event-row:nth-child(3) i {
+        background: var(--solar);
+        box-shadow: 0 0 12px var(--solar);
+      }
+      .event-row:nth-child(4) i {
+        background: var(--violet);
+        box-shadow: 0 0 12px var(--violet);
+      }
+      .event-row:nth-child(5) i {
+        background: var(--warn);
+        box-shadow: 0 0 12px var(--warn);
+      }
+      .checkpoint-stamp {
+        position: absolute;
+        left: 790px;
+        top: 606px;
+        padding: 13px 18px;
+        color: var(--cyan);
+        border: 1px solid var(--line-strong);
+        background: rgba(5, 22, 31, 0.82);
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+      }
 
       /* Graph */
-      .graph-svg { position: absolute; inset: 0; width: 1115px; height: 730px; overflow: visible; }
-      .graph-edge { fill: none; stroke: rgba(103, 231, 222, .30); stroke-width: 3; stroke-dasharray: 10 13; }
-      .graph-edge.hot { stroke: rgba(255, 184, 97, .65); }
-      .graph-edge.violet { stroke: rgba(187, 167, 255, .58); }
-      .graph-packet { fill: var(--hot); filter: url(#packet-glow); }
-      .graph-node { position: absolute; width: 204px; height: 115px; padding: 20px 21px; background: rgba(6, 28, 39, .95); border: 1px solid var(--line-strong); box-shadow: 0 18px 45px rgba(0, 0, 0, .25); }
-      .graph-node::before { content: ""; position: absolute; left: -1px; top: -1px; width: 60px; height: 3px; background: var(--node-color); box-shadow: 0 0 16px var(--node-color); }
-      .graph-node b { display: block; color: var(--node-color); font: 700 21px/1 "Cascadia Mono", monospace; }
-      .graph-node span { display: block; margin-top: 15px; color: var(--soft); font: 500 12px/1.35 "Cascadia Mono", monospace; }
-      #g-a { left: 38px; top: 252px; --node-color: var(--solar); }
-      #g-av { left: 300px; top: 116px; --node-color: var(--solar); }
-      #g-b { left: 300px; top: 389px; --node-color: var(--cyan); }
-      #g-bc { left: 566px; top: 252px; --node-color: var(--warn); }
-      #g-c { left: 826px; top: 116px; --node-color: var(--violet); }
-      #g-d { left: 826px; top: 389px; --node-color: var(--cyan); }
-      .graph-loop-note { position: absolute; left: 570px; top: 638px; color: var(--muted); font: 500 12px/1 "Cascadia Mono", monospace; letter-spacing: .05em; }
+      .graph-svg {
+        position: absolute;
+        inset: 0;
+        width: 1115px;
+        height: 730px;
+        overflow: visible;
+      }
+      .graph-edge {
+        fill: none;
+        stroke: rgba(103, 231, 222, 0.3);
+        stroke-width: 3;
+        stroke-dasharray: 10 13;
+      }
+      .graph-edge.hot {
+        stroke: rgba(255, 184, 97, 0.65);
+      }
+      .graph-edge.violet {
+        stroke: rgba(187, 167, 255, 0.58);
+      }
+      .graph-packet {
+        fill: var(--hot);
+        filter: url(#packet-glow);
+      }
+      .graph-node {
+        position: absolute;
+        width: 204px;
+        height: 115px;
+        padding: 20px 21px;
+        background: rgba(6, 28, 39, 0.95);
+        border: 1px solid var(--line-strong);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+      }
+      .graph-node::before {
+        content: '';
+        position: absolute;
+        left: -1px;
+        top: -1px;
+        width: 60px;
+        height: 3px;
+        background: var(--node-color);
+        box-shadow: 0 0 16px var(--node-color);
+      }
+      .graph-node b {
+        display: block;
+        color: var(--node-color);
+        font:
+          700 21px/1 'Cascadia Mono',
+          monospace;
+      }
+      .graph-node span {
+        display: block;
+        margin-top: 15px;
+        color: var(--soft);
+        font:
+          500 12px/1.35 'Cascadia Mono',
+          monospace;
+      }
+      #g-a {
+        left: 38px;
+        top: 252px;
+        --node-color: var(--solar);
+      }
+      #g-av {
+        left: 300px;
+        top: 116px;
+        --node-color: var(--solar);
+      }
+      #g-b {
+        left: 300px;
+        top: 389px;
+        --node-color: var(--cyan);
+      }
+      #g-bc {
+        left: 566px;
+        top: 252px;
+        --node-color: var(--warn);
+      }
+      #g-c {
+        left: 826px;
+        top: 116px;
+        --node-color: var(--violet);
+      }
+      #g-d {
+        left: 826px;
+        top: 389px;
+        --node-color: var(--cyan);
+      }
+      .graph-loop-note {
+        position: absolute;
+        left: 570px;
+        top: 638px;
+        color: var(--muted);
+        font:
+          500 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.05em;
+      }
 
       /* Hypotheses */
-      .hypothesis-list { position: absolute; left: 40px; top: 45px; width: 1010px; }
-      .hypothesis-card { position: relative; height: 170px; margin-bottom: 18px; padding: 24px 29px; background: rgba(6, 27, 38, .93); border: 1px solid var(--line); border-left: 4px solid var(--solar); box-shadow: 0 15px 40px rgba(0, 0, 0, .22); }
-      .hypothesis-card:nth-child(2) { border-left-color: var(--cyan); }
-      .hypothesis-card:nth-child(3) { border-left-color: var(--violet); }
-      .hypothesis-card b { display: block; color: var(--paper); font-size: 20px; }
-      .hypothesis-statement { width: 700px; margin-top: 15px; color: var(--soft); font-size: 16px; line-height: 1.42; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-      .hypothesis-meta { position: absolute; right: 26px; top: 27px; color: var(--muted); font: 500 12px/1.6 "Cascadia Mono", monospace; text-align: right; }
-      .hypothesis-meta strong { color: var(--hot); font-size: 23px; }
+      .hypothesis-list {
+        position: absolute;
+        left: 40px;
+        top: 45px;
+        width: 1010px;
+      }
+      .hypothesis-card {
+        position: relative;
+        height: 170px;
+        margin-bottom: 18px;
+        padding: 24px 29px;
+        background: rgba(6, 27, 38, 0.93);
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--solar);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.22);
+      }
+      .hypothesis-card:nth-child(2) {
+        border-left-color: var(--cyan);
+      }
+      .hypothesis-card:nth-child(3) {
+        border-left-color: var(--violet);
+      }
+      .hypothesis-card b {
+        display: block;
+        color: var(--paper);
+        font-size: 20px;
+      }
+      .hypothesis-statement {
+        width: 700px;
+        margin-top: 15px;
+        color: var(--soft);
+        font-size: 16px;
+        line-height: 1.42;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .hypothesis-meta {
+        position: absolute;
+        right: 26px;
+        top: 27px;
+        color: var(--muted);
+        font:
+          500 12px/1.6 'Cascadia Mono',
+          monospace;
+        text-align: right;
+      }
+      .hypothesis-meta strong {
+        color: var(--hot);
+        font-size: 23px;
+      }
 
       /* Workers and evidence */
-      .worker-list { position: absolute; left: 38px; top: 47px; width: 1020px; }
-      .worker-lane { position: relative; display: flex; align-items: center; height: 94px; margin-bottom: 16px; padding: 0 25px; background: rgba(6, 27, 38, .89); border: 1px solid var(--line); }
-      .worker-lane::after { content: ""; position: absolute; left: 185px; right: 35px; top: 46px; height: 1px; background: linear-gradient(90deg, var(--line-strong), transparent); }
-      .worker-dot { position: absolute; left: 195px; top: 41px; width: 11px; height: 11px; border-radius: 50%; background: var(--worker-color); box-shadow: 0 0 18px var(--worker-color); }
-      .worker-name { width: 155px; color: var(--worker-color); font: 700 19px/1 "Cascadia Mono", monospace; }
-      .worker-copy { position: relative; z-index: 2; margin-left: 69px; color: var(--soft); font-size: 16px; }
-      .worker-status { margin-left: auto; color: var(--muted); font: 500 11px/1 "Cascadia Mono", monospace; }
-      .ledger { left: 45px; top: 44px; width: 690px; height: 555px; padding: 26px 28px; }
-      .ledger-row { display: grid; grid-template-columns: 150px 1fr 130px; align-items: center; gap: 18px; height: 68px; border-bottom: 1px solid var(--line); color: var(--soft); font: 500 12px/1 "Cascadia Mono", monospace; }
-      .ledger-row b { color: var(--paper); font-size: 15px; }
-      .state-pill { justify-self: end; padding: 7px 10px; border: 1px solid currentColor; font-size: 10px; letter-spacing: .08em; }
-      .state-support { color: var(--cyan); }
-      .state-unknown { color: var(--warn); }
-      .state-contradict { color: var(--red); }
-      .ledger-counts { position: absolute; left: 786px; top: 80px; width: 260px; }
-      .count-card { margin-bottom: 18px; padding: 20px 22px; border-left: 3px solid var(--cyan); background: rgba(6, 27, 38, .86); }
-      .count-card:nth-child(2) { border-left-color: var(--warn); }
-      .count-card:nth-child(3) { border-left-color: var(--red); }
-      .count-card b { display: block; color: var(--paper); font: 700 42px/1 "Bahnschrift SemiCondensed", sans-serif; }
-      .count-card span { display: block; margin-top: 8px; color: var(--muted); font: 600 10px/1 "Cascadia Mono", monospace; letter-spacing: .10em; }
+      .worker-list {
+        position: absolute;
+        left: 38px;
+        top: 47px;
+        width: 1020px;
+      }
+      .worker-lane {
+        position: relative;
+        display: flex;
+        align-items: center;
+        height: 94px;
+        margin-bottom: 16px;
+        padding: 0 25px;
+        background: rgba(6, 27, 38, 0.89);
+        border: 1px solid var(--line);
+      }
+      .worker-lane::after {
+        content: '';
+        position: absolute;
+        left: 185px;
+        right: 35px;
+        top: 46px;
+        height: 1px;
+        background: linear-gradient(90deg, var(--line-strong), transparent);
+      }
+      .worker-dot {
+        position: absolute;
+        left: 195px;
+        top: 41px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--worker-color);
+        box-shadow: 0 0 18px var(--worker-color);
+      }
+      .worker-name {
+        width: 155px;
+        color: var(--worker-color);
+        font:
+          700 19px/1 'Cascadia Mono',
+          monospace;
+      }
+      .worker-copy {
+        position: relative;
+        z-index: 2;
+        margin-left: 69px;
+        color: var(--soft);
+        font-size: 16px;
+      }
+      .worker-status {
+        margin-left: auto;
+        color: var(--muted);
+        font:
+          500 11px/1 'Cascadia Mono',
+          monospace;
+      }
+      .ledger {
+        left: 45px;
+        top: 44px;
+        width: 690px;
+        height: 555px;
+        padding: 26px 28px;
+      }
+      .ledger-row {
+        display: grid;
+        grid-template-columns: 150px 1fr 130px;
+        align-items: center;
+        gap: 18px;
+        height: 68px;
+        border-bottom: 1px solid var(--line);
+        color: var(--soft);
+        font:
+          500 12px/1 'Cascadia Mono',
+          monospace;
+      }
+      .ledger-row b {
+        color: var(--paper);
+        font-size: 15px;
+      }
+      .state-pill {
+        justify-self: end;
+        padding: 7px 10px;
+        border: 1px solid currentColor;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+      }
+      .state-support {
+        color: var(--cyan);
+      }
+      .state-unknown {
+        color: var(--warn);
+      }
+      .state-contradict {
+        color: var(--red);
+      }
+      .ledger-counts {
+        position: absolute;
+        left: 786px;
+        top: 80px;
+        width: 260px;
+      }
+      .count-card {
+        margin-bottom: 18px;
+        padding: 20px 22px;
+        border-left: 3px solid var(--cyan);
+        background: rgba(6, 27, 38, 0.86);
+      }
+      .count-card:nth-child(2) {
+        border-left-color: var(--warn);
+      }
+      .count-card:nth-child(3) {
+        border-left-color: var(--red);
+      }
+      .count-card b {
+        display: block;
+        color: var(--paper);
+        font:
+          700 42px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+      }
+      .count-card span {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font:
+          600 10px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
+      }
 
       /* Processing */
-      .pipeline { position: absolute; left: 25px; top: 112px; display: flex; align-items: center; gap: 12px; }
-      .pipeline-node { position: relative; width: 185px; height: 132px; padding: 22px 18px; background: rgba(6, 28, 39, .93); border: 1px solid var(--line-strong); text-align: center; }
-      .pipeline-node::after { content: ""; position: absolute; right: -18px; top: 64px; width: 24px; height: 2px; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
-      .pipeline-node:last-child::after { display: none; }
-      .pipeline-node b { display: block; color: var(--paper); font: 700 20px/1 "Cascadia Mono", monospace; }
-      .pipeline-node span { display: block; margin-top: 14px; color: var(--muted); font: 500 11px/1.35 "Cascadia Mono", monospace; }
-      .pipeline-node:nth-child(1) { border-top: 2px solid var(--solar); }
-      .pipeline-node:nth-child(2), .pipeline-node:nth-child(3) { border-top: 2px solid var(--cyan); }
-      .pipeline-node:nth-child(4) { border-top: 2px solid var(--violet); }
-      .pipeline-node:nth-child(5) { border-top: 2px solid var(--warn); }
-      .processing-image { left: 54px; top: 344px; width: 435px; height: 267px; padding: 10px; overflow: hidden; }
-      .processing-image img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.72) contrast(1.12); opacity: .75; }
-      .processing-image::after { content: "SNAPSHOT / ROI / CHECKSUM"; position: absolute; left: 23px; top: 24px; color: var(--cyan); font: 600 10px/1 "Cascadia Mono", monospace; letter-spacing: .09em; text-shadow: 0 0 10px var(--bg); }
-      .processing-side { position: absolute; left: 550px; top: 354px; width: 488px; height: 243px; padding: 25px 28px; }
-      .processing-side-row { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--soft); font: 500 12px/1 "Cascadia Mono", monospace; }
-      .processing-side-row span:last-child { color: var(--cyan); }
+      .pipeline {
+        position: absolute;
+        left: 25px;
+        top: 112px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .pipeline-node {
+        position: relative;
+        width: 185px;
+        height: 132px;
+        padding: 22px 18px;
+        background: rgba(6, 28, 39, 0.93);
+        border: 1px solid var(--line-strong);
+        text-align: center;
+      }
+      .pipeline-node::after {
+        content: '';
+        position: absolute;
+        right: -18px;
+        top: 64px;
+        width: 24px;
+        height: 2px;
+        background: var(--cyan);
+        box-shadow: 0 0 12px var(--cyan);
+      }
+      .pipeline-node:last-child::after {
+        display: none;
+      }
+      .pipeline-node b {
+        display: block;
+        color: var(--paper);
+        font:
+          700 20px/1 'Cascadia Mono',
+          monospace;
+      }
+      .pipeline-node span {
+        display: block;
+        margin-top: 14px;
+        color: var(--muted);
+        font:
+          500 11px/1.35 'Cascadia Mono',
+          monospace;
+      }
+      .pipeline-node:nth-child(1) {
+        border-top: 2px solid var(--solar);
+      }
+      .pipeline-node:nth-child(2),
+      .pipeline-node:nth-child(3) {
+        border-top: 2px solid var(--cyan);
+      }
+      .pipeline-node:nth-child(4) {
+        border-top: 2px solid var(--violet);
+      }
+      .pipeline-node:nth-child(5) {
+        border-top: 2px solid var(--warn);
+      }
+      .processing-image {
+        left: 54px;
+        top: 344px;
+        width: 435px;
+        height: 267px;
+        padding: 10px;
+        overflow: hidden;
+      }
+      .processing-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: saturate(0.72) contrast(1.12);
+        opacity: 0.75;
+      }
+      .processing-image::after {
+        content: 'SNAPSHOT / ROI / CHECKSUM';
+        position: absolute;
+        left: 23px;
+        top: 24px;
+        color: var(--cyan);
+        font:
+          600 10px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.09em;
+        text-shadow: 0 0 10px var(--bg);
+      }
+      .processing-side {
+        position: absolute;
+        left: 550px;
+        top: 354px;
+        width: 488px;
+        height: 243px;
+        padding: 25px 28px;
+      }
+      .processing-side-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line);
+        color: var(--soft);
+        font:
+          500 12px/1 'Cascadia Mono',
+          monospace;
+      }
+      .processing-side-row span:last-child {
+        color: var(--cyan);
+      }
 
       /* Provenance / gate */
-      .lineage { position: absolute; left: 54px; top: 178px; width: 1000px; height: 140px; }
-      .lineage-line { position: absolute; left: 95px; right: 95px; top: 52px; height: 2px; background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet), var(--warn)); }
-      .lineage-node { position: absolute; top: 16px; width: 180px; height: 75px; padding: 16px 18px; border: 1px solid var(--line-strong); background: rgba(6, 27, 38, .91); text-align: center; }
-      .lineage-node:nth-child(2) { left: 252px; }
-      .lineage-node:nth-child(3) { left: 505px; }
-      .lineage-node:nth-child(4) { left: 758px; }
-      .lineage-node b { display: block; color: var(--paper); font-size: 17px; }
-      .lineage-node span { display: block; margin-top: 7px; color: var(--muted); font: 500 10px/1 "Cascadia Mono", monospace; }
-      .lineage-packet { position: absolute; left: 91px; top: 47px; width: 11px; height: 11px; border-radius: 50%; background: var(--hot); box-shadow: 0 0 18px var(--hot); }
-      .audit-note { position: absolute; left: 54px; top: 385px; width: 1000px; padding: 25px 28px; border-left: 3px solid var(--warn); background: rgba(8, 29, 38, .84); color: var(--soft); font-size: 20px; line-height: 1.45; }
-      .audit-note strong { color: var(--hot); font-weight: inherit; }
-      .gate-list { position: absolute; left: 45px; top: 43px; width: 625px; }
-      .gate-row { display: grid; grid-template-columns: 29px 1fr 150px; align-items: center; height: 66px; border-bottom: 1px solid var(--line); color: var(--soft); font-size: 15px; }
-      .gate-icon { width: 18px; height: 18px; border: 1px solid var(--warn); color: var(--warn); font: 700 12px/16px "Cascadia Mono", monospace; text-align: center; }
-      .gate-row.pass .gate-icon { border-color: var(--cyan); color: var(--cyan); }
-      .gate-value { color: var(--muted); font: 500 11px/1 "Cascadia Mono", monospace; text-align: right; }
-      .gate-meter { position: absolute; left: 770px; top: 88px; width: 245px; height: 245px; border: 1px solid var(--line-strong); border-radius: 50%; box-shadow: inset 0 0 35px rgba(103, 231, 222, .08); }
-      .gate-meter::before { content: "SUPPORT GATE"; position: absolute; left: 50%; top: 71px; transform: translateX(-50%); color: var(--muted); font: 600 11px/1 "Cascadia Mono", monospace; letter-spacing: .12em; white-space: nowrap; }
-      .gate-meter::after { content: "HOLD"; position: absolute; left: 50%; top: 104px; transform: translateX(-50%); color: var(--warn); font: 700 43px/1 "Bahnschrift SemiCondensed", sans-serif; }
-      .meter-arc { position: absolute; inset: 20px; border: 3px solid transparent; border-top-color: var(--cyan); border-right-color: var(--warn); border-radius: 50%; transform: rotate(-35deg); }
-      .meter-ratio { position: absolute; left: 50%; bottom: 48px; transform: translateX(-50%); color: var(--soft); font: 500 12px/1 "Cascadia Mono", monospace; white-space: nowrap; }
+      .lineage {
+        position: absolute;
+        left: 54px;
+        top: 178px;
+        width: 1000px;
+        height: 140px;
+      }
+      .lineage-line {
+        position: absolute;
+        left: 95px;
+        right: 95px;
+        top: 52px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet), var(--warn));
+      }
+      .lineage-node {
+        position: absolute;
+        top: 16px;
+        width: 180px;
+        height: 75px;
+        padding: 16px 18px;
+        border: 1px solid var(--line-strong);
+        background: rgba(6, 27, 38, 0.91);
+        text-align: center;
+      }
+      .lineage-node:nth-child(2) {
+        left: 252px;
+      }
+      .lineage-node:nth-child(3) {
+        left: 505px;
+      }
+      .lineage-node:nth-child(4) {
+        left: 758px;
+      }
+      .lineage-node b {
+        display: block;
+        color: var(--paper);
+        font-size: 17px;
+      }
+      .lineage-node span {
+        display: block;
+        margin-top: 7px;
+        color: var(--muted);
+        font:
+          500 10px/1 'Cascadia Mono',
+          monospace;
+      }
+      .lineage-packet {
+        position: absolute;
+        left: 91px;
+        top: 47px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--hot);
+        box-shadow: 0 0 18px var(--hot);
+      }
+      .audit-note {
+        position: absolute;
+        left: 54px;
+        top: 385px;
+        width: 1000px;
+        padding: 25px 28px;
+        border-left: 3px solid var(--warn);
+        background: rgba(8, 29, 38, 0.84);
+        color: var(--soft);
+        font-size: 20px;
+        line-height: 1.45;
+      }
+      .audit-note strong {
+        color: var(--hot);
+        font-weight: inherit;
+      }
+      .gate-list {
+        position: absolute;
+        left: 45px;
+        top: 43px;
+        width: 625px;
+      }
+      .gate-row {
+        display: grid;
+        grid-template-columns: 29px 1fr 150px;
+        align-items: center;
+        height: 66px;
+        border-bottom: 1px solid var(--line);
+        color: var(--soft);
+        font-size: 15px;
+      }
+      .gate-icon {
+        width: 18px;
+        height: 18px;
+        border: 1px solid var(--warn);
+        color: var(--warn);
+        font:
+          700 12px/16px 'Cascadia Mono',
+          monospace;
+        text-align: center;
+      }
+      .gate-row.pass .gate-icon {
+        border-color: var(--cyan);
+        color: var(--cyan);
+      }
+      .gate-value {
+        color: var(--muted);
+        font:
+          500 11px/1 'Cascadia Mono',
+          monospace;
+        text-align: right;
+      }
+      .gate-meter {
+        position: absolute;
+        left: 770px;
+        top: 88px;
+        width: 245px;
+        height: 245px;
+        border: 1px solid var(--line-strong);
+        border-radius: 50%;
+        box-shadow: inset 0 0 35px rgba(103, 231, 222, 0.08);
+      }
+      .gate-meter::before {
+        content: 'SUPPORT GATE';
+        position: absolute;
+        left: 50%;
+        top: 71px;
+        transform: translateX(-50%);
+        color: var(--muted);
+        font:
+          600 11px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.12em;
+        white-space: nowrap;
+      }
+      .gate-meter::after {
+        content: 'HOLD';
+        position: absolute;
+        left: 50%;
+        top: 104px;
+        transform: translateX(-50%);
+        color: var(--warn);
+        font:
+          700 43px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+      }
+      .meter-arc {
+        position: absolute;
+        inset: 20px;
+        border: 3px solid transparent;
+        border-top-color: var(--cyan);
+        border-right-color: var(--warn);
+        border-radius: 50%;
+        transform: rotate(-35deg);
+      }
+      .meter-ratio {
+        position: absolute;
+        left: 50%;
+        bottom: 48px;
+        transform: translateX(-50%);
+        color: var(--soft);
+        font:
+          500 12px/1 'Cascadia Mono',
+          monospace;
+        white-space: nowrap;
+      }
 
       /* Tasks */
-      .task-column { position: absolute; top: 44px; width: 468px; }
-      .task-column.left { left: 42px; }
-      .task-column.right { left: 550px; }
-      .task-heading { margin-bottom: 16px; color: var(--cyan); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .13em; }
-      .task-column.right .task-heading { color: var(--warn); }
-      .task-card { position: relative; height: 97px; margin-bottom: 13px; padding: 18px 20px; border: 1px solid var(--line); background: rgba(6, 27, 38, .89); }
-      .task-card::before { content: ""; position: absolute; left: -1px; top: -1px; width: 54px; height: 2px; background: var(--cyan); }
-      .task-column.right .task-card::before { background: var(--warn); }
-      .task-card b { display: block; color: var(--paper); font-size: 16px; }
-      .task-card span { display: block; margin-top: 10px; color: var(--muted); font: 500 11px/1.2 "Cascadia Mono", monospace; }
-      .route-arrow { position: absolute; left: 460px; top: 313px; width: 160px; height: 2px; background: var(--cyan); box-shadow: 0 0 14px var(--cyan); }
-      .route-arrow::after { content: ""; position: absolute; right: -2px; top: -6px; border-left: 12px solid var(--cyan); border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
-      .route-badge { position: absolute; left: 447px; top: 270px; padding: 9px 13px; border: 1px solid var(--line-strong); background: rgba(5, 20, 30, .9); color: var(--cyan); font: 600 11px/1 "Cascadia Mono", monospace; letter-spacing: .08em; }
+      .task-column {
+        position: absolute;
+        top: 44px;
+        width: 468px;
+      }
+      .task-column.left {
+        left: 42px;
+      }
+      .task-column.right {
+        left: 550px;
+      }
+      .task-heading {
+        margin-bottom: 16px;
+        color: var(--cyan);
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.13em;
+      }
+      .task-column.right .task-heading {
+        color: var(--warn);
+      }
+      .task-card {
+        position: relative;
+        height: 97px;
+        margin-bottom: 13px;
+        padding: 18px 20px;
+        border: 1px solid var(--line);
+        background: rgba(6, 27, 38, 0.89);
+      }
+      .task-card::before {
+        content: '';
+        position: absolute;
+        left: -1px;
+        top: -1px;
+        width: 54px;
+        height: 2px;
+        background: var(--cyan);
+      }
+      .task-column.right .task-card::before {
+        background: var(--warn);
+      }
+      .task-card b {
+        display: block;
+        color: var(--paper);
+        font-size: 16px;
+      }
+      .task-card span {
+        display: block;
+        margin-top: 10px;
+        color: var(--muted);
+        font:
+          500 11px/1.2 'Cascadia Mono',
+          monospace;
+      }
+      .route-arrow {
+        position: absolute;
+        left: 460px;
+        top: 313px;
+        width: 160px;
+        height: 2px;
+        background: var(--cyan);
+        box-shadow: 0 0 14px var(--cyan);
+      }
+      .route-arrow::after {
+        content: '';
+        position: absolute;
+        right: -2px;
+        top: -6px;
+        border-left: 12px solid var(--cyan);
+        border-top: 7px solid transparent;
+        border-bottom: 7px solid transparent;
+      }
+      .route-badge {
+        position: absolute;
+        left: 447px;
+        top: 270px;
+        padding: 9px 13px;
+        border: 1px solid var(--line-strong);
+        background: rgba(5, 20, 30, 0.9);
+        color: var(--cyan);
+        font:
+          600 11px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+      }
 
       /* Replay and storage */
-      .round-track { position: absolute; left: 44px; top: 105px; width: 1000px; }
-      .round-row { position: relative; height: 140px; margin-bottom: 24px; padding: 26px 28px; border: 1px solid var(--line); background: rgba(6, 27, 38, .88); }
-      .round-row b { display: block; color: var(--paper); font: 700 24px/1 "Cascadia Mono", monospace; }
-      .round-row small { display: block; margin-top: 12px; color: var(--muted); font: 500 11px/1 "Cascadia Mono", monospace; }
-      .round-bar { position: absolute; left: 250px; right: 28px; top: 62px; height: 17px; background: rgba(238, 249, 247, .08); overflow: hidden; }
-      .round-fill { width: 100%; height: 100%; background: linear-gradient(90deg, var(--solar), var(--cyan)); box-shadow: 0 0 18px rgba(103, 231, 222, .38); transform-origin: left; transform: scaleX(0); }
-      .round-fill.two { background: linear-gradient(90deg, var(--cyan), var(--violet)); }
-      .round-summary { position: absolute; left: 250px; top: 91px; color: var(--soft); font: 500 12px/1 "Cascadia Mono", monospace; }
-      .correction-line { position: absolute; left: 44px; top: 452px; width: 1000px; height: 95px; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .correction-dot { position: absolute; top: 42px; width: 10px; height: 10px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 16px var(--warn); }
-      .correction-label { position: absolute; left: 44px; top: 584px; color: var(--muted); font: 500 12px/1 "Cascadia Mono", monospace; }
-      .storage-row { position: absolute; left: 40px; top: 155px; display: flex; gap: 18px; }
-      .storage-card { position: relative; width: 235px; height: 235px; padding: 26px 22px; border: 1px solid var(--line-strong); background: rgba(6, 27, 38, .91); }
-      .storage-card::after { content: ""; position: absolute; right: -20px; top: 116px; width: 20px; height: 2px; background: var(--cyan); }
-      .storage-card:last-child::after { display: none; }
-      .storage-card b { display: block; color: var(--paper); font: 700 18px/1.2 "Cascadia Mono", monospace; }
-      .storage-card span { display: block; margin-top: 17px; color: var(--muted); font: 500 11px/1.55 "Cascadia Mono", monospace; }
-      .storage-icon { width: 55px; height: 55px; margin-bottom: 28px; border: 1px solid var(--cyan); box-shadow: inset 0 0 20px rgba(103, 231, 222, .13); }
-      .resume-tag { position: absolute; left: 42px; top: 492px; padding: 16px 22px; color: var(--cyan); border: 1px solid var(--line-strong); background: rgba(5, 20, 30, .82); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .08em; }
+      .round-track {
+        position: absolute;
+        left: 44px;
+        top: 105px;
+        width: 1000px;
+      }
+      .round-row {
+        position: relative;
+        height: 140px;
+        margin-bottom: 24px;
+        padding: 26px 28px;
+        border: 1px solid var(--line);
+        background: rgba(6, 27, 38, 0.88);
+      }
+      .round-row b {
+        display: block;
+        color: var(--paper);
+        font:
+          700 24px/1 'Cascadia Mono',
+          monospace;
+      }
+      .round-row small {
+        display: block;
+        margin-top: 12px;
+        color: var(--muted);
+        font:
+          500 11px/1 'Cascadia Mono',
+          monospace;
+      }
+      .round-bar {
+        position: absolute;
+        left: 250px;
+        right: 28px;
+        top: 62px;
+        height: 17px;
+        background: rgba(238, 249, 247, 0.08);
+        overflow: hidden;
+      }
+      .round-fill {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, var(--solar), var(--cyan));
+        box-shadow: 0 0 18px rgba(103, 231, 222, 0.38);
+        transform-origin: left;
+        transform: scaleX(0);
+      }
+      .round-fill.two {
+        background: linear-gradient(90deg, var(--cyan), var(--violet));
+      }
+      .round-summary {
+        position: absolute;
+        left: 250px;
+        top: 91px;
+        color: var(--soft);
+        font:
+          500 12px/1 'Cascadia Mono',
+          monospace;
+      }
+      .correction-line {
+        position: absolute;
+        left: 44px;
+        top: 452px;
+        width: 1000px;
+        height: 95px;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .correction-dot {
+        position: absolute;
+        top: 42px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--warn);
+        box-shadow: 0 0 16px var(--warn);
+      }
+      .correction-label {
+        position: absolute;
+        left: 44px;
+        top: 584px;
+        color: var(--muted);
+        font:
+          500 12px/1 'Cascadia Mono',
+          monospace;
+      }
+      .storage-row {
+        position: absolute;
+        left: 40px;
+        top: 155px;
+        display: flex;
+        gap: 18px;
+      }
+      .storage-card {
+        position: relative;
+        width: 235px;
+        height: 235px;
+        padding: 26px 22px;
+        border: 1px solid var(--line-strong);
+        background: rgba(6, 27, 38, 0.91);
+      }
+      .storage-card::after {
+        content: '';
+        position: absolute;
+        right: -20px;
+        top: 116px;
+        width: 20px;
+        height: 2px;
+        background: var(--cyan);
+      }
+      .storage-card:last-child::after {
+        display: none;
+      }
+      .storage-card b {
+        display: block;
+        color: var(--paper);
+        font:
+          700 18px/1.2 'Cascadia Mono',
+          monospace;
+      }
+      .storage-card span {
+        display: block;
+        margin-top: 17px;
+        color: var(--muted);
+        font:
+          500 11px/1.55 'Cascadia Mono',
+          monospace;
+      }
+      .storage-icon {
+        width: 55px;
+        height: 55px;
+        margin-bottom: 28px;
+        border: 1px solid var(--cyan);
+        box-shadow: inset 0 0 20px rgba(103, 231, 222, 0.13);
+      }
+      .resume-tag {
+        position: absolute;
+        left: 42px;
+        top: 492px;
+        padding: 16px 22px;
+        color: var(--cyan);
+        border: 1px solid var(--line-strong);
+        background: rgba(5, 20, 30, 0.82);
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+      }
 
       /* Verdict and closing */
-      .verdict-metrics { position: absolute; left: 42px; top: 89px; display: flex; gap: 16px; }
-      .verdict-metric { width: 190px; height: 145px; padding: 22px 20px; border: 1px solid var(--line-strong); background: rgba(6, 27, 38, .91); }
-      .metric-number { color: var(--hot); font-size: 54px; line-height: 1; }
-      .verdict-metric:nth-child(2) .metric-number { color: var(--cyan); }
-      .verdict-metric:nth-child(3) .metric-number { color: var(--warn); }
-      .verdict-metric span { display: block; margin-top: 15px; color: var(--muted); font: 600 10px/1.2 "Cascadia Mono", monospace; letter-spacing: .08em; }
-      .verdict-panel { left: 42px; top: 300px; width: 1000px; height: 225px; padding: 27px 30px; border-left: 3px solid var(--warn); }
-      .verdict-panel b { display: block; color: var(--warn); font-size: 34px; }
-      .verdict-panel p { width: 820px; margin-top: 19px; color: var(--soft); font-size: 18px; line-height: 1.45; }
-      .verdict-tag { position: absolute; right: 29px; top: 30px; padding: 10px 14px; border: 1px solid var(--warn); color: var(--warn); font: 600 11px/1 "Cascadia Mono", monospace; }
-      .closing-loop { position: absolute; left: 155px; top: 60px; width: 820px; height: 520px; border: 2px solid rgba(103, 231, 222, .28); border-radius: 50%; transform: rotate(-13deg); box-shadow: 0 0 70px rgba(103, 231, 222, .06); }
-      .closing-loop::before { content: ""; position: absolute; left: 80px; top: 62px; width: 660px; height: 390px; border: 1px solid rgba(255, 184, 97, .38); border-radius: 50%; }
-      .closing-loop::after { content: ""; position: absolute; right: -7px; top: 235px; border-left: 18px solid var(--cyan); border-top: 10px solid transparent; border-bottom: 10px solid transparent; transform: rotate(13deg); }
-      .closing-node { position: absolute; width: 190px; padding: 20px 18px; border: 1px solid var(--line-strong); background: rgba(5, 22, 31, .94); text-align: center; }
-      .closing-node b { display: block; color: var(--paper); font-size: 21px; }
-      .closing-node span { display: block; margin-top: 10px; color: var(--muted); font: 500 11px/1 "Cascadia Mono", monospace; }
-      .closing-node:nth-child(1) { left: 315px; top: -32px; border-top: 2px solid var(--solar); }
-      .closing-node:nth-child(2) { right: -92px; top: 200px; border-top: 2px solid var(--cyan); }
-      .closing-node:nth-child(3) { left: 312px; bottom: -30px; border-top: 2px solid var(--violet); }
-      .closing-node:nth-child(4) { left: -92px; top: 200px; border-top: 2px solid var(--warn); }
-      .closing-packet { position: absolute; left: 393px; top: -8px; width: 14px; height: 14px; border-radius: 50%; background: var(--hot); box-shadow: 0 0 22px var(--hot); }
+      .verdict-metrics {
+        position: absolute;
+        left: 42px;
+        top: 89px;
+        display: flex;
+        gap: 16px;
+      }
+      .verdict-metric {
+        width: 190px;
+        height: 145px;
+        padding: 22px 20px;
+        border: 1px solid var(--line-strong);
+        background: rgba(6, 27, 38, 0.91);
+      }
+      .metric-number {
+        color: var(--hot);
+        font-size: 54px;
+        line-height: 1;
+      }
+      .verdict-metric:nth-child(2) .metric-number {
+        color: var(--cyan);
+      }
+      .verdict-metric:nth-child(3) .metric-number {
+        color: var(--warn);
+      }
+      .verdict-metric span {
+        display: block;
+        margin-top: 15px;
+        color: var(--muted);
+        font:
+          600 10px/1.2 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+      }
+      .verdict-panel {
+        left: 42px;
+        top: 300px;
+        width: 1000px;
+        height: 225px;
+        padding: 27px 30px;
+        border-left: 3px solid var(--warn);
+      }
+      .verdict-panel b {
+        display: block;
+        color: var(--warn);
+        font-size: 34px;
+      }
+      .verdict-panel p {
+        width: 820px;
+        margin-top: 19px;
+        color: var(--soft);
+        font-size: 18px;
+        line-height: 1.45;
+      }
+      .verdict-tag {
+        position: absolute;
+        right: 29px;
+        top: 30px;
+        padding: 10px 14px;
+        border: 1px solid var(--warn);
+        color: var(--warn);
+        font:
+          600 11px/1 'Cascadia Mono',
+          monospace;
+      }
+      .closing-loop {
+        position: absolute;
+        left: 155px;
+        top: 60px;
+        width: 820px;
+        height: 520px;
+        border: 2px solid rgba(103, 231, 222, 0.28);
+        border-radius: 50%;
+        transform: rotate(-13deg);
+        box-shadow: 0 0 70px rgba(103, 231, 222, 0.06);
+      }
+      .closing-loop::before {
+        content: '';
+        position: absolute;
+        left: 80px;
+        top: 62px;
+        width: 660px;
+        height: 390px;
+        border: 1px solid rgba(255, 184, 97, 0.38);
+        border-radius: 50%;
+      }
+      .closing-loop::after {
+        content: '';
+        position: absolute;
+        right: -7px;
+        top: 235px;
+        border-left: 18px solid var(--cyan);
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+        transform: rotate(13deg);
+      }
+      .closing-node {
+        position: absolute;
+        width: 190px;
+        padding: 20px 18px;
+        border: 1px solid var(--line-strong);
+        background: rgba(5, 22, 31, 0.94);
+        text-align: center;
+      }
+      .closing-node b {
+        display: block;
+        color: var(--paper);
+        font-size: 21px;
+      }
+      .closing-node span {
+        display: block;
+        margin-top: 10px;
+        color: var(--muted);
+        font:
+          500 11px/1 'Cascadia Mono',
+          monospace;
+      }
+      .closing-node:nth-child(1) {
+        left: 315px;
+        top: -32px;
+        border-top: 2px solid var(--solar);
+      }
+      .closing-node:nth-child(2) {
+        right: -92px;
+        top: 200px;
+        border-top: 2px solid var(--cyan);
+      }
+      .closing-node:nth-child(3) {
+        left: 312px;
+        bottom: -30px;
+        border-top: 2px solid var(--violet);
+      }
+      .closing-node:nth-child(4) {
+        left: -92px;
+        top: 200px;
+        border-top: 2px solid var(--warn);
+      }
+      .closing-packet {
+        position: absolute;
+        left: 393px;
+        top: -8px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--hot);
+        box-shadow: 0 0 22px var(--hot);
+      }
 
       #caption-bar {
         position: absolute;
@@ -405,14 +1823,38 @@
         align-items: center;
         justify-content: space-between;
         gap: 30px;
-        border-top: 1px solid rgba(103, 231, 222, .28);
-        border-bottom: 1px solid rgba(103, 231, 222, .10);
-        background: linear-gradient(90deg, rgba(3, 12, 19, .95), rgba(3, 12, 19, .80), rgba(3, 12, 19, .95));
-        box-shadow: 0 -12px 35px rgba(0, 0, 0, .16);
+        border-top: 1px solid rgba(103, 231, 222, 0.28);
+        border-bottom: 1px solid rgba(103, 231, 222, 0.1);
+        background: linear-gradient(
+          90deg,
+          rgba(3, 12, 19, 0.95),
+          rgba(3, 12, 19, 0.8),
+          rgba(3, 12, 19, 0.95)
+        );
+        box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.16);
       }
-      #caption { max-width: 1210px; color: var(--paper); font-size: 22px; line-height: 1.25; }
-      #caption::before { content: "//"; margin-right: 13px; color: var(--solar); font: 600 16px/1 "Cascadia Mono", monospace; }
-      #caption-note { color: var(--muted); font: 500 11px/1 "Cascadia Mono", monospace; letter-spacing: .06em; white-space: nowrap; }
+      #caption {
+        max-width: 1210px;
+        color: var(--paper);
+        font-size: 22px;
+        line-height: 1.25;
+      }
+      #caption::before {
+        content: '//';
+        margin-right: 13px;
+        color: var(--solar);
+        font:
+          600 16px/1 'Cascadia Mono',
+          monospace;
+      }
+      #caption-note {
+        color: var(--muted);
+        font:
+          500 11px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+      }
 
       .bottom {
         position: absolute;
@@ -421,39 +1863,88 @@
         right: 86px;
         bottom: 37px;
       }
-      .progress-track { height: 3px; overflow: hidden; background: rgba(238, 249, 247, .13); }
-      #progress { width: 100%; height: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet)); box-shadow: 0 0 18px var(--cyan); }
-      .bottom-labels { display: flex; justify-content: space-between; margin-top: 10px; color: var(--faint); font: 600 11px/1 "Cascadia Mono", monospace; letter-spacing: .09em; }
-      #timecode { color: var(--cyan); }
+      .progress-track {
+        height: 3px;
+        overflow: hidden;
+        background: rgba(238, 249, 247, 0.13);
+      }
+      #progress {
+        width: 100%;
+        height: 100%;
+        transform-origin: left;
+        transform: scaleX(0);
+        background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet));
+        box-shadow: 0 0 18px var(--cyan);
+      }
+      .bottom-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        color: var(--faint);
+        font:
+          600 11px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.09em;
+      }
+      #timecode {
+        color: var(--cyan);
+      }
 
-      #trace-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+      #trace-defs {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+      }
     </style>
   </head>
   <body>
-    <main id="root" data-composition-id="motion-5m45s" data-start="0" data-duration="345" data-width="1920" data-height="1080" data-fps="30">
+    <main
+      id="root"
+      data-composition-id="motion-5m45s"
+      data-start="0"
+      data-duration="345"
+      data-width="1920"
+      data-height="1080"
+      data-fps="30"
+    >
       <div class="ambient">
-        <span class="ambient-dot"></span><span class="ambient-dot"></span><span class="ambient-dot"></span>
-        <span class="ambient-dot"></span><span class="ambient-dot"></span><span class="ambient-dot"></span><span class="ambient-dot"></span>
+        <span class="ambient-dot"></span><span class="ambient-dot"></span
+        ><span class="ambient-dot"></span> <span class="ambient-dot"></span
+        ><span class="ambient-dot"></span><span class="ambient-dot"></span
+        ><span class="ambient-dot"></span>
       </div>
       <header class="topbar">
-        <div class="brand"><span class="brand-mark"></span><span>OPEN-SCIENTIST / ARCHITECTURE MOTION</span></div>
-        <div class="top-status"><span>LIVE TRACE</span><span id="top-run">AR11158</span><span>05:45 STUDY</span></div>
+        <div class="brand">
+          <span class="brand-mark"></span><span>OPEN-SCIENTIST / ARCHITECTURE MOTION</span>
+        </div>
+        <div class="top-status">
+          <span>LIVE TRACE</span><span id="top-run">AR11158</span><span>05:45 STUDY</span>
+        </div>
       </header>
-      <div class="chapter-strip"><span id="chapter-label">01 / SYSTEM OVERVIEW</span><span id="shot-index">SHOT 01 / 42</span></div>
+      <div class="chapter-strip">
+        <span id="chapter-label">01 / SYSTEM OVERVIEW</span
+        ><span id="shot-index">SHOT 01 / 42</span>
+      </div>
 
       <div id="camera-world">
         <section id="copy-pane" class="copy-pane">
           <div id="copy-kicker" class="copy-kicker">A RESEARCH RUN SHOULD LEAVE A TRACE</div>
           <h1 id="copy-title" class="copy-title">让假设<br /><strong>接受证据</strong></h1>
-          <p id="copy-body" class="copy-body">先看系统如何把一个科研问题组织成可追踪的闭环，再进入每一个局部阶段。</p>
+          <p id="copy-body" class="copy-body">
+            先看系统如何把一个科研问题组织成可追踪的闭环，再进入每一个局部阶段。
+          </p>
           <div id="copy-meta" class="copy-meta">TOTAL VIEW → LOCAL MODULES → TOTAL LOOP</div>
         </section>
 
         <section id="visual-pane">
           <div id="view-overview" class="view">
-            <div class="overview-sun"></div><div class="overview-orbit"></div><div class="overview-orbit b"></div>
+            <div class="overview-sun"></div>
+            <div class="overview-orbit"></div>
+            <div class="overview-orbit b"></div>
             <div class="overview-loop">
-              <div class="loop-line"></div><div class="loop-packet"></div>
+              <div class="loop-line"></div>
+              <div class="loop-packet"></div>
               <div class="loop-node" data-tone="solar"><b>现象</b><span>PHENOMENON</span></div>
               <div class="loop-node" data-tone="cyan"><b>证据</b><span>EVIDENCE</span></div>
               <div class="loop-node" data-tone="violet"><b>验证</b><span>VALIDATION</span></div>
@@ -465,346 +1956,1400 @@
           <div id="view-architecture" class="view">
             <div class="view-shell"><div class="view-label">SYSTEM MAP / FIVE LAYERS</div></div>
             <div class="layer-stack">
-              <div class="layer-card"><span class="layer-number">01</span><b>API / SSE</b><small>POST /runs · stream · resume</small></div>
-              <div class="layer-card"><span class="layer-number">02</span><b>WORKFLOW</b><small>runtime · context · persistence</small></div>
-              <div class="layer-card"><span class="layer-number">03</span><b>LANGGRAPH</b><small>A / B / C / D · checkpointed State</small></div>
-              <div class="layer-card"><span class="layer-number">04</span><b>TOOLS / MCP</b><small>FITS · solar data · search · sandbox</small></div>
-              <div class="layer-card"><span class="layer-number">05</span><b>STORAGE / ARTIFACTS</b><small>records · snapshots · runs · checksums</small></div>
+              <div class="layer-card">
+                <span class="layer-number">01</span><b>API / SSE</b
+                ><small>POST /runs · stream · resume</small>
+              </div>
+              <div class="layer-card">
+                <span class="layer-number">02</span><b>WORKFLOW</b
+                ><small>runtime · context · persistence</small>
+              </div>
+              <div class="layer-card">
+                <span class="layer-number">03</span><b>LANGGRAPH</b
+                ><small>A / B / C / D · checkpointed State</small>
+              </div>
+              <div class="layer-card">
+                <span class="layer-number">04</span><b>TOOLS / MCP</b
+                ><small>FITS · solar data · search · sandbox</small>
+              </div>
+              <div class="layer-card">
+                <span class="layer-number">05</span><b>STORAGE / ARTIFACTS</b
+                ><small>records · snapshots · runs · checksums</small>
+              </div>
               <div class="layer-packet"></div>
             </div>
             <div class="layer-legend">ONE STATE OBJECT / MANY TRACEABLE HANDOFFS</div>
           </div>
 
           <div id="view-phenomenon" class="view">
-            <div class="view-shell"><div class="view-label">INPUT / REAL OBSERVATION WINDOW</div></div>
-            <div class="panel phenomenon-card"><img src="./coronal_diagnostics.png" alt="AR11158 diagnostic" /><div class="phenomenon-scan"></div></div>
-            <div class="channel-row"><span class="channel-chip">AIA 94 Å</span><span class="channel-chip">AIA 131 Å</span><span class="channel-chip">AIA 171 Å</span><span class="channel-chip">AIA 193 Å</span><span class="channel-chip">HMI</span></div>
-            <div class="question-branches"><div class="branch"><b>波动耗散</b><span>WAVE DISSIPATION / TESTABLE</span></div><div class="branch"><b>纳耀斑重联</b><span>NANOFLARE RECONNECTION / CONTRAST</span></div><div class="branch"><b>耦合机制</b><span>COUPLED MECHANISM / SEEK COUNTEREVIDENCE</span></div></div>
-            <div class="phenomenon-note">观测窗口、通道和研究问题一起进入运行；图片只是输入的一部分，不承担全部结论。</div>
+            <div class="view-shell">
+              <div class="view-label">INPUT / REAL OBSERVATION WINDOW</div>
+            </div>
+            <div class="panel phenomenon-card">
+              <img src="./coronal_diagnostics.png" alt="AR11158 diagnostic" />
+              <div class="phenomenon-scan"></div>
+            </div>
+            <div class="channel-row">
+              <span class="channel-chip">AIA 94 Å</span><span class="channel-chip">AIA 131 Å</span
+              ><span class="channel-chip">AIA 171 Å</span><span class="channel-chip">AIA 193 Å</span
+              ><span class="channel-chip">HMI</span>
+            </div>
+            <div class="question-branches">
+              <div class="branch"><b>波动耗散</b><span>WAVE DISSIPATION / TESTABLE</span></div>
+              <div class="branch">
+                <b>纳耀斑重联</b><span>NANOFLARE RECONNECTION / CONTRAST</span>
+              </div>
+              <div class="branch">
+                <b>耦合机制</b><span>COUPLED MECHANISM / SEEK COUNTEREVIDENCE</span>
+              </div>
+            </div>
+            <div class="phenomenon-note">
+              观测窗口、通道和研究问题一起进入运行；图片只是输入的一部分，不承担全部结论。
+            </div>
           </div>
 
           <div id="view-api" class="view">
             <div class="view-shell"><div class="view-label">RUN ENTRY / EVENT STREAM</div></div>
-            <div class="panel terminal"><div class="terminal-head"><span>REQUEST / RUN CONTEXT</span><span>HTTP 202</span></div><div class="terminal-command"><em>POST</em> /api/projects/:project/runs</div><div class="terminal-row"><b>project</b><span>open-scientist / ar11158</span><span>bound</span></div><div class="terminal-row"><b>workflow</b><span>scientificLoopWorkflow()</span><span>ready</span></div><div class="terminal-row"><b>state</b><span>hypotheses · evidence · tasks</span><span>empty → live</span></div><div class="terminal-row"><b>run id</b><span id="api-run-id">run-—</span><span>checkpointed</span></div></div>
-            <div class="panel event-stream"><div class="small-label">SSE / EVENT STREAM</div><div class="event-row"><i></i><span>node.started</span><span>01</span></div><div class="event-row"><i></i><span>agent.completed</span><span>07</span></div><div class="event-row"><i></i><span>evidence.recorded</span><span>32</span></div><div class="event-row"><i></i><span>run.completed</span><span>END</span></div><div class="event-row"><i></i><span>stream.resume</span><span>READY</span></div></div>
-            <div class="checkpoint-stamp">RUN <span id="api-checkpoint-id">—</span> / CHECKPOINTED</div>
+            <div class="panel terminal">
+              <div class="terminal-head">
+                <span>REQUEST / RUN CONTEXT</span><span>HTTP 202</span>
+              </div>
+              <div class="terminal-command"><em>POST</em> /api/projects/:project/runs</div>
+              <div class="terminal-row">
+                <b>project</b><span>open-scientist / ar11158</span><span>bound</span>
+              </div>
+              <div class="terminal-row">
+                <b>workflow</b><span>scientificLoopWorkflow()</span><span>ready</span>
+              </div>
+              <div class="terminal-row">
+                <b>state</b><span>hypotheses · evidence · tasks</span><span>empty → live</span>
+              </div>
+              <div class="terminal-row">
+                <b>run id</b><span id="api-run-id">run-—</span><span>checkpointed</span>
+              </div>
+            </div>
+            <div class="panel event-stream">
+              <div class="small-label">SSE / EVENT STREAM</div>
+              <div class="event-row"><i></i><span>node.started</span><span>01</span></div>
+              <div class="event-row"><i></i><span>agent.completed</span><span>07</span></div>
+              <div class="event-row"><i></i><span>evidence.recorded</span><span>32</span></div>
+              <div class="event-row"><i></i><span>run.completed</span><span>END</span></div>
+              <div class="event-row"><i></i><span>stream.resume</span><span>READY</span></div>
+            </div>
+            <div class="checkpoint-stamp">
+              RUN <span id="api-checkpoint-id">—</span> / CHECKPOINTED
+            </div>
           </div>
 
           <div id="view-graph" class="view">
             <div class="view-shell"><div class="view-label">LANGGRAPH / STATEFUL ROOT</div></div>
-            <svg class="graph-svg" viewBox="0 0 1115 730" aria-hidden="true"><defs><filter id="packet-glow" x="-160%" y="-160%" width="420%" height="420%"><feGaussianBlur stdDeviation="8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><path class="graph-edge hot" d="M 242 310 C 280 244 290 211 300 174" /><path class="graph-edge" d="M 504 174 C 552 235 570 263 566 310" /><path class="graph-edge violet" d="M 770 310 C 815 242 823 211 826 174" /><path class="graph-edge" d="M 930 231 C 1010 285 1007 382 930 446" /><path class="graph-edge hot" d="M 826 446 C 704 588 466 580 402 446" /><circle class="graph-packet" cx="242" cy="310" r="9"></circle></svg>
-            <div id="g-a" class="graph-node"><b>A.generate</b><span>phenomenon → hypotheses</span></div><div id="g-av" class="graph-node"><b>A.verify</b><span>schema · predictions · falsification</span></div><div id="g-b" class="graph-node"><b>B.run</b><span>agents → evidence / tasks</span></div><div id="g-bc" class="graph-node"><b>BC.verify</b><span>provenance → records</span></div><div id="g-c" class="graph-node"><b>C.verify</b><span>gate → status / confidence</span></div><div id="g-d" class="graph-node"><b>D.route</b><span>A / B / END</span></div>
-            <div class="graph-loop-note">CHECKPOINTED STATE / CONDITIONAL ROUTING / ROUND-AWARE</div>
+            <svg class="graph-svg" viewBox="0 0 1115 730" aria-hidden="true">
+              <defs>
+                <filter id="packet-glow" x="-160%" y="-160%" width="420%" height="420%">
+                  <feGaussianBlur stdDeviation="8" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <path class="graph-edge hot" d="M 242 310 C 280 244 290 211 300 174" />
+              <path class="graph-edge" d="M 504 174 C 552 235 570 263 566 310" />
+              <path class="graph-edge violet" d="M 770 310 C 815 242 823 211 826 174" />
+              <path class="graph-edge" d="M 930 231 C 1010 285 1007 382 930 446" />
+              <path class="graph-edge hot" d="M 826 446 C 704 588 466 580 402 446" />
+              <circle class="graph-packet" cx="242" cy="310" r="9"></circle>
+            </svg>
+            <div id="g-a" class="graph-node">
+              <b>A.generate</b><span>phenomenon → hypotheses</span>
+            </div>
+            <div id="g-av" class="graph-node">
+              <b>A.verify</b><span>schema · predictions · falsification</span>
+            </div>
+            <div id="g-b" class="graph-node">
+              <b>B.run</b><span>agents → evidence / tasks</span>
+            </div>
+            <div id="g-bc" class="graph-node">
+              <b>BC.verify</b><span>provenance → records</span>
+            </div>
+            <div id="g-c" class="graph-node">
+              <b>C.verify</b><span>gate → status / confidence</span>
+            </div>
+            <div id="g-d" class="graph-node"><b>D.route</b><span>A / B / END</span></div>
+            <div class="graph-loop-note">
+              CHECKPOINTED STATE / CONDITIONAL ROUTING / ROUND-AWARE
+            </div>
           </div>
 
           <div id="view-hypotheses" class="view">
-            <div class="view-shell"><div class="view-label">A.GENERATE → A.VERIFY / HYPOTHESIS RECORDS</div></div>
-            <div class="hypothesis-list"><div class="hypothesis-card"><b>H-01 / 波动耗散 × 磁场调制</b><div id="hyp-1" class="hypothesis-statement">—</div><div class="hypothesis-meta"><strong id="hyp-c-1">0.50</strong><br />CANDIDATE / PREDICTIONS 03</div></div><div class="hypothesis-card"><b>H-02 / 纳耀斑重联 × 冷却视线</b><div id="hyp-2" class="hypothesis-statement">—</div><div class="hypothesis-meta"><strong id="hyp-c-2">0.56</strong><br />UNCERTAIN / PREDICTIONS 03</div></div><div class="hypothesis-card"><b>H-03 / 波动 × 重联耦合</b><div id="hyp-3" class="hypothesis-statement">—</div><div class="hypothesis-meta"><strong id="hyp-c-3">0.50</strong><br />CANDIDATE / PREDICTIONS 03</div></div></div>
+            <div class="view-shell">
+              <div class="view-label">A.GENERATE → A.VERIFY / HYPOTHESIS RECORDS</div>
+            </div>
+            <div class="hypothesis-list">
+              <div class="hypothesis-card">
+                <b>H-01 / 波动耗散 × 磁场调制</b>
+                <div id="hyp-1" class="hypothesis-statement">—</div>
+                <div class="hypothesis-meta">
+                  <strong id="hyp-c-1">0.50</strong><br />CANDIDATE / PREDICTIONS 03
+                </div>
+              </div>
+              <div class="hypothesis-card">
+                <b>H-02 / 纳耀斑重联 × 冷却视线</b>
+                <div id="hyp-2" class="hypothesis-statement">—</div>
+                <div class="hypothesis-meta">
+                  <strong id="hyp-c-2">0.56</strong><br />UNCERTAIN / PREDICTIONS 03
+                </div>
+              </div>
+              <div class="hypothesis-card">
+                <b>H-03 / 波动 × 重联耦合</b>
+                <div id="hyp-3" class="hypothesis-statement">—</div>
+                <div class="hypothesis-meta">
+                  <strong id="hyp-c-3">0.50</strong><br />CANDIDATE / PREDICTIONS 03
+                </div>
+              </div>
+            </div>
           </div>
 
           <div id="view-workers" class="view">
-            <div class="view-shell"><div class="view-label">B.DISPATCH → B.WORKER / PARALLEL EVIDENCE WORK</div></div>
-            <div class="worker-list"><div class="worker-lane" style="--worker-color: var(--cyan)"><span class="worker-name">LOOKER</span><span class="worker-dot"></span><span class="worker-copy">观测目录与研究语境审计</span><span class="worker-status">4 EXEC / 3 DONE</span></div><div class="worker-lane" style="--worker-color: var(--solar)"><span class="worker-name">EXPLORER</span><span class="worker-dot"></span><span class="worker-copy">FITS、ROI、时间序列与图像诊断</span><span class="worker-status">4 EXEC / 4 DONE</span></div><div class="worker-lane" style="--worker-color: var(--violet)"><span class="worker-name">ORACLE</span><span class="worker-dot"></span><span class="worker-copy">反例、背景差异与替代解释</span><span class="worker-status">4 EXEC / 4 DONE</span></div><div class="worker-lane" style="--worker-color: var(--warn)"><span class="worker-name">FACT-CHECK</span><span class="worker-dot"></span><span class="worker-copy">snapshot、processing run 与 artifact 溯源</span><span class="worker-status">2 EXEC / 2 DONE</span></div></div>
+            <div class="view-shell">
+              <div class="view-label">B.DISPATCH → B.WORKER / PARALLEL EVIDENCE WORK</div>
+            </div>
+            <div class="worker-list">
+              <div class="worker-lane" style="--worker-color: var(--cyan)">
+                <span class="worker-name">LOOKER</span><span class="worker-dot"></span
+                ><span class="worker-copy">观测目录与研究语境审计</span
+                ><span class="worker-status">4 EXEC / 3 DONE</span>
+              </div>
+              <div class="worker-lane" style="--worker-color: var(--solar)">
+                <span class="worker-name">EXPLORER</span><span class="worker-dot"></span
+                ><span class="worker-copy">FITS、ROI、时间序列与图像诊断</span
+                ><span class="worker-status">4 EXEC / 4 DONE</span>
+              </div>
+              <div class="worker-lane" style="--worker-color: var(--violet)">
+                <span class="worker-name">ORACLE</span><span class="worker-dot"></span
+                ><span class="worker-copy">反例、背景差异与替代解释</span
+                ><span class="worker-status">4 EXEC / 4 DONE</span>
+              </div>
+              <div class="worker-lane" style="--worker-color: var(--warn)">
+                <span class="worker-name">FACT-CHECK</span><span class="worker-dot"></span
+                ><span class="worker-copy">snapshot、processing run 与 artifact 溯源</span
+                ><span class="worker-status">2 EXEC / 2 DONE</span>
+              </div>
+            </div>
           </div>
 
           <div id="view-evidence" class="view">
-            <div class="view-shell"><div class="view-label">B.AGGREGATE / EVIDENCE LEDGER</div></div>
-            <div class="panel ledger"><div class="small-label">EVIDENCE RECORDS / SHORT IDS PRESERVED</div><div class="ledger-row"><b>EV-7f31</b><span>cross-channel correlation</span><span class="state-pill state-support">SUPPORT</span></div><div class="ledger-row"><b>EV-2a90</b><span>periodic intensity variation</span><span class="state-pill state-support">SUPPORT</span></div><div class="ledger-row"><b>EV-8c11</b><span>missing independent event lineage</span><span class="state-pill state-unknown">UNKNOWN</span></div><div class="ledger-row"><b>EV-4d05</b><span>holdout not available in window</span><span class="state-pill state-unknown">UNKNOWN</span></div><div class="ledger-row"><b>EV-c002</b><span>contradictory signal search</span><span class="state-pill state-contradict">NONE</span></div><div class="ledger-row"><b>EV-91af</b><span>processing artifact checksum</span><span class="state-pill state-unknown">UNKNOWN</span></div></div>
-            <div class="ledger-counts"><div class="count-card"><b id="e-count-support">2</b><span>SUPPORT RECORDS</span></div><div class="count-card"><b id="e-count-unknown">30</b><span>UNKNOWN RECORDS</span></div><div class="count-card"><b id="e-count-contradict">0</b><span>CONTRADICT RECORDS</span></div></div>
+            <div class="view-shell">
+              <div class="view-label">B.AGGREGATE / EVIDENCE LEDGER</div>
+            </div>
+            <div class="panel ledger">
+              <div class="small-label">EVIDENCE RECORDS / SHORT IDS PRESERVED</div>
+              <div class="ledger-row">
+                <b>EV-7f31</b><span>cross-channel correlation</span
+                ><span class="state-pill state-support">SUPPORT</span>
+              </div>
+              <div class="ledger-row">
+                <b>EV-2a90</b><span>periodic intensity variation</span
+                ><span class="state-pill state-support">SUPPORT</span>
+              </div>
+              <div class="ledger-row">
+                <b>EV-8c11</b><span>missing independent event lineage</span
+                ><span class="state-pill state-unknown">UNKNOWN</span>
+              </div>
+              <div class="ledger-row">
+                <b>EV-4d05</b><span>holdout not available in window</span
+                ><span class="state-pill state-unknown">UNKNOWN</span>
+              </div>
+              <div class="ledger-row">
+                <b>EV-c002</b><span>contradictory signal search</span
+                ><span class="state-pill state-contradict">NONE</span>
+              </div>
+              <div class="ledger-row">
+                <b>EV-91af</b><span>processing artifact checksum</span
+                ><span class="state-pill state-unknown">UNKNOWN</span>
+              </div>
+            </div>
+            <div class="ledger-counts">
+              <div class="count-card">
+                <b id="e-count-support">2</b><span>SUPPORT RECORDS</span>
+              </div>
+              <div class="count-card">
+                <b id="e-count-unknown">30</b><span>UNKNOWN RECORDS</span>
+              </div>
+              <div class="count-card">
+                <b id="e-count-contradict">0</b><span>CONTRADICT RECORDS</span>
+              </div>
+            </div>
           </div>
 
           <div id="view-pipeline" class="view">
-            <div class="view-shell"><div class="view-label">EXPLORER / DETERMINISTIC PROCESSING TRACE</div></div>
-            <div class="pipeline"><div class="pipeline-node"><b>FITS</b><span>manifest / source window</span></div><div class="pipeline-node"><b>ROI</b><span>region / alignment</span></div><div class="pipeline-node"><b>TIME SERIES</b><span>cadence / channels</span></div><div class="pipeline-node"><b>METRICS</b><span>period / correlation</span></div><div class="pipeline-node"><b>ARTIFACT</b><span>figure / checksum</span></div></div>
-            <div class="panel processing-image"><img src="./coronal_diagnostics.png?artifact=processing" alt="diagnostic artifact" /></div><div class="panel processing-side"><div class="small-label">PROCESSING RUN / OUTPUT CONTRACT</div><div class="processing-side-row"><span>input snapshot</span><span>BOUND</span></div><div class="processing-side-row"><span>code version</span><span>RECORDED</span></div><div class="processing-side-row"><span>parameters</span><span>REPLAYABLE</span></div><div class="processing-side-row"><span>checksum</span><span>AVAILABLE</span></div></div>
+            <div class="view-shell">
+              <div class="view-label">EXPLORER / DETERMINISTIC PROCESSING TRACE</div>
+            </div>
+            <div class="pipeline">
+              <div class="pipeline-node"><b>FITS</b><span>manifest / source window</span></div>
+              <div class="pipeline-node"><b>ROI</b><span>region / alignment</span></div>
+              <div class="pipeline-node"><b>TIME SERIES</b><span>cadence / channels</span></div>
+              <div class="pipeline-node"><b>METRICS</b><span>period / correlation</span></div>
+              <div class="pipeline-node"><b>ARTIFACT</b><span>figure / checksum</span></div>
+            </div>
+            <div class="panel processing-image">
+              <img src="./coronal_diagnostics.png?artifact=processing" alt="diagnostic artifact" />
+            </div>
+            <div class="panel processing-side">
+              <div class="small-label">PROCESSING RUN / OUTPUT CONTRACT</div>
+              <div class="processing-side-row"><span>input snapshot</span><span>BOUND</span></div>
+              <div class="processing-side-row"><span>code version</span><span>RECORDED</span></div>
+              <div class="processing-side-row"><span>parameters</span><span>REPLAYABLE</span></div>
+              <div class="processing-side-row"><span>checksum</span><span>AVAILABLE</span></div>
+            </div>
           </div>
 
           <div id="view-audit" class="view">
-            <div class="view-shell"><div class="view-label">BC.VERIFY / PROVENANCE BEFORE PROMOTION</div></div>
-            <div class="lineage"><div class="lineage-line"></div><div class="lineage-node"><b>sample</b><span>observed window</span></div><div class="lineage-node"><b>processing run</b><span>params / version</span></div><div class="lineage-node"><b>artifact</b><span>figure / checksum</span></div><div class="lineage-node"><b>evidence</b><span>hypothesis link</span></div><div class="lineage-packet"></div></div>
-            <div class="audit-note"><strong>模型说支持 ≠ 系统接受支持。</strong><br />只有当样本、处理运行、产物和假设之间的链路完整，记录才有资格进入严格门槛。</div>
+            <div class="view-shell">
+              <div class="view-label">BC.VERIFY / PROVENANCE BEFORE PROMOTION</div>
+            </div>
+            <div class="lineage">
+              <div class="lineage-line"></div>
+              <div class="lineage-node"><b>sample</b><span>observed window</span></div>
+              <div class="lineage-node"><b>processing run</b><span>params / version</span></div>
+              <div class="lineage-node"><b>artifact</b><span>figure / checksum</span></div>
+              <div class="lineage-node"><b>evidence</b><span>hypothesis link</span></div>
+              <div class="lineage-packet"></div>
+            </div>
+            <div class="audit-note">
+              <strong>模型说支持 ≠ 系统接受支持。</strong
+              ><br />只有当样本、处理运行、产物和假设之间的链路完整，记录才有资格进入严格门槛。
+            </div>
           </div>
 
           <div id="view-gate" class="view">
-            <div class="view-shell"><div class="view-label">C.VERIFY / STRICT SUPPORT GATE</div></div>
-            <div class="gate-list"><div class="gate-row pass"><span class="gate-icon">✓</span><span>可量化结果与区间</span><span class="gate-value">PRESENT</span></div><div class="gate-row"><span class="gate-icon">–</span><span>支持记录 ≥ 3</span><span class="gate-value">2 / 3</span></div><div class="gate-row"><span class="gate-icon">–</span><span>独立事件与原始谱系</span><span class="gate-value">REQUIRES ≥ 3</span></div><div class="gate-row"><span class="gate-icon">–</span><span>观测族 / 方法族</span><span class="gate-value">REQUIRES ≥ 2 / 2</span></div><div class="gate-row"><span class="gate-icon">–</span><span>独立 holdout</span><span class="gate-value">MISSING</span></div><div class="gate-row"><span class="gate-icon">–</span><span>覆盖全部预测</span><span class="gate-value">NOT COMPLETE</span></div><div class="gate-row"><span class="gate-icon">–</span><span>confidence ≥ 0.60</span><span class="gate-value">0.56</span></div></div>
-            <div class="gate-meter"><div class="meter-arc"></div><div class="meter-ratio">2 SUPPORT / GATE HOLD</div></div>
+            <div class="view-shell">
+              <div class="view-label">C.VERIFY / STRICT SUPPORT GATE</div>
+            </div>
+            <div class="gate-list">
+              <div class="gate-row pass">
+                <span class="gate-icon">✓</span><span>可量化结果与区间</span
+                ><span class="gate-value">PRESENT</span>
+              </div>
+              <div class="gate-row">
+                <span class="gate-icon">–</span><span>支持记录 ≥ 3</span
+                ><span class="gate-value">2 / 3</span>
+              </div>
+              <div class="gate-row">
+                <span class="gate-icon">–</span><span>独立事件与原始谱系</span
+                ><span class="gate-value">REQUIRES ≥ 3</span>
+              </div>
+              <div class="gate-row">
+                <span class="gate-icon">–</span><span>观测族 / 方法族</span
+                ><span class="gate-value">REQUIRES ≥ 2 / 2</span>
+              </div>
+              <div class="gate-row">
+                <span class="gate-icon">–</span><span>独立 holdout</span
+                ><span class="gate-value">MISSING</span>
+              </div>
+              <div class="gate-row">
+                <span class="gate-icon">–</span><span>覆盖全部预测</span
+                ><span class="gate-value">NOT COMPLETE</span>
+              </div>
+              <div class="gate-row">
+                <span class="gate-icon">–</span><span>confidence ≥ 0.60</span
+                ><span class="gate-value">0.56</span>
+              </div>
+            </div>
+            <div class="gate-meter">
+              <div class="meter-arc"></div>
+              <div class="meter-ratio">2 SUPPORT / GATE HOLD</div>
+            </div>
           </div>
 
           <div id="view-tasks" class="view">
-            <div class="view-shell"><div class="view-label">D.PLAN / GAPS BECOME VALIDATION TASKS</div></div>
-            <div class="task-column left"><div class="task-heading">NOW EXECUTABLE / COMPLETED 03</div><div class="task-card"><b>复核 AIA 通道时间序列</b><span>EXECUTOR / EXPLORER · SUCCESS = METRIC</span></div><div class="task-card"><b>建立 ROI 处理快照</b><span>EXECUTOR / FACT-CHECK · SUCCESS = CHECKSUM</span></div><div class="task-card"><b>搜寻反例窗口</b><span>EXECUTOR / ORACLE · SUCCESS = CONTRAST</span></div><div class="task-card"><b>补充背景观测目录</b><span>EXECUTOR / LOOKER · STATUS = PLANNED</span></div></div>
-            <div class="task-column right"><div class="task-heading">NEEDS DATA / PLANNED 09</div><div class="task-card"><b>HMI 足点速度相关诊断</b><span>FUTURE SOURCE / HMI · ROUTE = B</span></div><div class="task-card"><b>94→131→193→171 冷却时延</b><span>FUTURE SOURCE / AIA · ROUTE = B</span></div><div class="task-card"><b>IRIS / EIS 光谱交叉验证</b><span>EXTERNAL EXECUTOR · HOLDOUT</span></div><div class="task-card"><b>时间频率与联合特征</b><span>STATUS = PLANNED · DISCRIMINATIVE</span></div></div>
-            <div class="route-badge">D.route / NEXT</div><div class="route-arrow"></div>
+            <div class="view-shell">
+              <div class="view-label">D.PLAN / GAPS BECOME VALIDATION TASKS</div>
+            </div>
+            <div class="task-column left">
+              <div class="task-heading">NOW EXECUTABLE / COMPLETED 03</div>
+              <div class="task-card">
+                <b>复核 AIA 通道时间序列</b><span>EXECUTOR / EXPLORER · SUCCESS = METRIC</span>
+              </div>
+              <div class="task-card">
+                <b>建立 ROI 处理快照</b><span>EXECUTOR / FACT-CHECK · SUCCESS = CHECKSUM</span>
+              </div>
+              <div class="task-card">
+                <b>搜寻反例窗口</b><span>EXECUTOR / ORACLE · SUCCESS = CONTRAST</span>
+              </div>
+              <div class="task-card">
+                <b>补充背景观测目录</b><span>EXECUTOR / LOOKER · STATUS = PLANNED</span>
+              </div>
+            </div>
+            <div class="task-column right">
+              <div class="task-heading">NEEDS DATA / PLANNED 09</div>
+              <div class="task-card">
+                <b>HMI 足点速度相关诊断</b><span>FUTURE SOURCE / HMI · ROUTE = B</span>
+              </div>
+              <div class="task-card">
+                <b>94→131→193→171 冷却时延</b><span>FUTURE SOURCE / AIA · ROUTE = B</span>
+              </div>
+              <div class="task-card">
+                <b>IRIS / EIS 光谱交叉验证</b><span>EXTERNAL EXECUTOR · HOLDOUT</span>
+              </div>
+              <div class="task-card">
+                <b>时间频率与联合特征</b><span>STATUS = PLANNED · DISCRIMINATIVE</span>
+              </div>
+            </div>
+            <div class="route-badge">D.route / NEXT</div>
+            <div class="route-arrow"></div>
           </div>
 
           <div id="view-replay" class="view">
-            <div class="view-shell"><div class="view-label">RUN REPLAY / ROUND-AWARE TRACE</div></div>
-            <div class="round-track"><div class="round-row"><b>ROUND 1</b><small>INITIAL EVIDENCE / CORRECTIONS / TASKS</small><div class="round-bar"><div class="round-fill" id="round-fill-1"></div></div><div class="round-summary">19 EVIDENCE · 6 TASKS · 14 CORRECTIONS · 7 AGENTS</div></div><div class="round-row"><b>ROUND 2</b><small>CONSUMES PREVIOUS STATE / DEDUPLICATES TASKS</small><div class="round-bar"><div class="round-fill two" id="round-fill-2"></div></div><div class="round-summary">13 EVIDENCE · 6 TASKS · 9 CORRECTIONS · 7 AGENTS</div></div></div>
-            <div class="correction-line"><span class="correction-dot" style="left: 5%"></span><span class="correction-dot" style="left: 14%"></span><span class="correction-dot" style="left: 25%"></span><span class="correction-dot" style="left: 41%"></span><span class="correction-dot" style="left: 54%"></span><span class="correction-dot" style="left: 68%"></span><span class="correction-dot" style="left: 82%"></span><span class="correction-dot" style="left: 94%"></span></div><div class="correction-label">CORRECTION STREAM / DUPLICATES BY FINGERPRINT / ONE AGENT SKIPPED</div>
+            <div class="view-shell">
+              <div class="view-label">RUN REPLAY / ROUND-AWARE TRACE</div>
+            </div>
+            <div class="round-track">
+              <div class="round-row">
+                <b>ROUND 1</b><small>INITIAL EVIDENCE / CORRECTIONS / TASKS</small>
+                <div class="round-bar"><div class="round-fill" id="round-fill-1"></div></div>
+                <div class="round-summary">19 EVIDENCE · 6 TASKS · 14 CORRECTIONS · 7 AGENTS</div>
+              </div>
+              <div class="round-row">
+                <b>ROUND 2</b><small>CONSUMES PREVIOUS STATE / DEDUPLICATES TASKS</small>
+                <div class="round-bar"><div class="round-fill two" id="round-fill-2"></div></div>
+                <div class="round-summary">13 EVIDENCE · 6 TASKS · 9 CORRECTIONS · 7 AGENTS</div>
+              </div>
+            </div>
+            <div class="correction-line">
+              <span class="correction-dot" style="left: 5%"></span
+              ><span class="correction-dot" style="left: 14%"></span
+              ><span class="correction-dot" style="left: 25%"></span
+              ><span class="correction-dot" style="left: 41%"></span
+              ><span class="correction-dot" style="left: 54%"></span
+              ><span class="correction-dot" style="left: 68%"></span
+              ><span class="correction-dot" style="left: 82%"></span
+              ><span class="correction-dot" style="left: 94%"></span>
+            </div>
+            <div class="correction-label">
+              CORRECTION STREAM / DUPLICATES BY FINGERPRINT / ONE AGENT SKIPPED
+            </div>
           </div>
 
           <div id="view-storage" class="view">
-            <div class="view-shell"><div class="view-label">DURABLE TRACE / PERSISTENCE AND RESUME</div></div>
-            <div class="storage-row"><div class="storage-card"><div class="storage-icon"></div><b>RUN CHUNKS</b><span>SSE events<br />node / agent / evidence<br />completion signal</span></div><div class="storage-card"><div class="storage-icon"></div><b>SCIENTIFIC RECORDS</b><span>hypotheses<br />evidence / corrections<br />validation tasks</span></div><div class="storage-card"><div class="storage-icon"></div><b>CHECKPOINT</b><span>run-scoped State<br />LangGraph runtime<br />resume position</span></div><div class="storage-card"><div class="storage-icon"></div><b>ARTIFACTS</b><span>metrics / figures<br />processing runs<br />checksums</span></div></div>
-            <div class="resume-tag">GET /stream → RESUME FROM CHECKPOINT → CONTINUE THE SAME RUN</div>
+            <div class="view-shell">
+              <div class="view-label">DURABLE TRACE / PERSISTENCE AND RESUME</div>
+            </div>
+            <div class="storage-row">
+              <div class="storage-card">
+                <div class="storage-icon"></div>
+                <b>RUN CHUNKS</b
+                ><span>SSE events<br />node / agent / evidence<br />completion signal</span>
+              </div>
+              <div class="storage-card">
+                <div class="storage-icon"></div>
+                <b>SCIENTIFIC RECORDS</b
+                ><span>hypotheses<br />evidence / corrections<br />validation tasks</span>
+              </div>
+              <div class="storage-card">
+                <div class="storage-icon"></div>
+                <b>CHECKPOINT</b
+                ><span>run-scoped State<br />LangGraph runtime<br />resume position</span>
+              </div>
+              <div class="storage-card">
+                <div class="storage-icon"></div>
+                <b>ARTIFACTS</b><span>metrics / figures<br />processing runs<br />checksums</span>
+              </div>
+            </div>
+            <div class="resume-tag">
+              GET /stream → RESUME FROM CHECKPOINT → CONTINUE THE SAME RUN
+            </div>
           </div>
 
           <div id="view-verdict" class="view">
-            <div class="view-shell"><div class="view-label">CURRENT RESULT / BOUNDED CONCLUSION</div></div>
-            <div class="verdict-metrics"><div class="verdict-metric"><div id="v-hypotheses" class="metric-number">3</div><span>HYPOTHESES</span></div><div class="verdict-metric"><div id="v-evidence" class="metric-number">32</div><span>EVIDENCE RECORDS</span></div><div class="verdict-metric"><div id="v-tasks" class="metric-number">12</div><span>VALIDATION TASKS</span></div><div class="verdict-metric"><div id="v-rounds" class="metric-number">2</div><span>ROUNDS</span></div></div>
-            <div class="panel verdict-panel"><b>needs_data</b><span class="verdict-tag">MAX_ROUNDS_REACHED</span><p>闭环完成，当前结果只支持受限于观测窗口和处理产物的局部判断；下一轮需要补充独立事件、holdout、光谱与更完整的预测覆盖。</p></div>
+            <div class="view-shell">
+              <div class="view-label">CURRENT RESULT / BOUNDED CONCLUSION</div>
+            </div>
+            <div class="verdict-metrics">
+              <div class="verdict-metric">
+                <div id="v-hypotheses" class="metric-number">3</div>
+                <span>HYPOTHESES</span>
+              </div>
+              <div class="verdict-metric">
+                <div id="v-evidence" class="metric-number">32</div>
+                <span>EVIDENCE RECORDS</span>
+              </div>
+              <div class="verdict-metric">
+                <div id="v-tasks" class="metric-number">12</div>
+                <span>VALIDATION TASKS</span>
+              </div>
+              <div class="verdict-metric">
+                <div id="v-rounds" class="metric-number">2</div>
+                <span>ROUNDS</span>
+              </div>
+            </div>
+            <div class="panel verdict-panel">
+              <b>needs_data</b><span class="verdict-tag">MAX_ROUNDS_REACHED</span>
+              <p>
+                闭环完成，当前结果只支持受限于观测窗口和处理产物的局部判断；下一轮需要补充独立事件、holdout、光谱与更完整的预测覆盖。
+              </p>
+            </div>
           </div>
 
           <div id="view-close" class="view">
-            <div class="view-shell"><div class="view-label">LOOP READY / NEXT ROUND HANDOFF</div></div>
-            <div class="closing-loop"><div class="closing-node"><b>现象</b><span>NEW WINDOW</span></div><div class="closing-node"><b>证据</b><span>NEW DATA</span></div><div class="closing-node"><b>验证</b><span>SAME GATE</span></div><div class="closing-node"><b>D.route</b><span>NEXT DECISION</span></div><div class="closing-packet"></div></div>
+            <div class="view-shell">
+              <div class="view-label">LOOP READY / NEXT ROUND HANDOFF</div>
+            </div>
+            <div class="closing-loop">
+              <div class="closing-node"><b>现象</b><span>NEW WINDOW</span></div>
+              <div class="closing-node"><b>证据</b><span>NEW DATA</span></div>
+              <div class="closing-node"><b>验证</b><span>SAME GATE</span></div>
+              <div class="closing-node"><b>D.route</b><span>NEXT DECISION</span></div>
+              <div class="closing-packet"></div>
+            </div>
           </div>
         </section>
       </div>
 
-      <div id="caption-bar"><div id="caption">先看整体架构，再进入每一个局部阶段。</div><div id="caption-note">FOLLOW THE OBJECT / PRESERVE THE STATE / NEVER CUT TO A SLIDE</div></div>
-      <div class="bottom"><div class="progress-track"><div id="progress"></div></div><div class="bottom-labels"><span id="timecode">00:00 / 05:45</span><span>OPEN-SCIENTIST / TOTAL → LOCAL → TOTAL</span><span>1920×1080 / 30 FPS</span></div></div>
+      <div id="caption-bar">
+        <div id="caption">先看整体架构，再进入每一个局部阶段。</div>
+        <div id="caption-note">FOLLOW THE OBJECT / PRESERVE THE STATE / NEVER CUT TO A SLIDE</div>
+      </div>
+      <div class="bottom">
+        <div class="progress-track"><div id="progress"></div></div>
+        <div class="bottom-labels">
+          <span id="timecode">00:00 / 05:45</span><span>OPEN-SCIENTIST / TOTAL → LOCAL → TOTAL</span
+          ><span>1920×1080 / 30 FPS</span>
+        </div>
+      </div>
     </main>
 
     <script src="./data.js"></script>
     <script>
-      const D = window.__OPEN_SCIENTIST_DEMO__ || {};
-      const $ = (selector) => document.querySelector(selector);
-      const $$ = (selector) => [...document.querySelectorAll(selector)];
-      const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = String(value ?? "—"); };
+      const D = window.__OPEN_SCIENTIST_DEMO__ || {}
+      const $ = (selector) => document.querySelector(selector)
+      const $$ = (selector) => [...document.querySelectorAll(selector)]
+      const setText = (selector, value) => {
+        const node = $(selector)
+        if (node) node.textContent = String(value ?? '—')
+      }
       const compact = (value, max = 120) => {
-        const text = String(value ?? "").replace(/\s+/g, " ").trim();
-        return text.length > max ? text.slice(0, max - 1) + "…" : text;
-      };
+        const text = String(value ?? '')
+          .replace(/\s+/g, ' ')
+          .trim()
+        return text.length > max ? text.slice(0, max - 1) + '…' : text
+      }
       const short = (value, length = 12) => {
-        const text = String(value ?? "—");
-        return text.length > length ? text.slice(0, length) + "…" : text;
-      };
+        const text = String(value ?? '—')
+        return text.length > length ? text.slice(0, length) + '…' : text
+      }
 
       const shots = [
-        { n: 1, start: 0, end: 6, chapter: "01 / SYSTEM OVERVIEW", view: "view-overview", kicker: "A RESEARCH RUN SHOULD LEAVE A TRACE", title: "让假设<br /><strong>接受证据</strong>", body: "一次科研运行，应该留下可追踪、可复核、可继续执行的路径。", meta: "TOTAL VIEW → LOCAL MODULES → TOTAL LOOP", caption: "先看问题如何进入一条可以回放的科学闭环。" },
-        { n: 2, start: 6, end: 13, chapter: "01 / SYSTEM OVERVIEW", view: "view-overview", kicker: "THE LOOP IS THE PRODUCT", title: "现象进入<br /><strong>闭环</strong>", body: "数据包不在页面之间消失，而是沿着状态对象继续流动。", meta: "PHENOMENON → EVIDENCE → VALIDATION → NEXT ROUND", caption: "同一个对象从现象走到下一轮，而不是切换到下一张页面。" },
-        { n: 3, start: 13, end: 20, chapter: "01 / SYSTEM OVERVIEW", view: "view-verdict", kicker: "A RESULT WITH BOUNDARIES", title: "结论也要<br /><strong>留下边界</strong>", body: "2 条支持、32 条证据、12 个任务，组成的是可审计结果，不是一句夸大的答案。", meta: "SUPPORT ≠ PROOF / NEEDS_DATA", caption: "结果的数量和限制必须同时被看见。" },
-        { n: 4, start: 20, end: 30, chapter: "01 / SYSTEM OVERVIEW", view: "view-overview", kicker: "THE STORY MAP", title: "先看整体<br /><strong>再看局部</strong>", body: "接下来依次展开系统架构、真实输入、A/B/C/D 阶段和运行回放。", meta: "01 ARCHITECTURE · 02 INPUT · 03 LOOP · 04 RESULT", caption: "叙事从总览开始，最后回到总览。" },
-        { n: 5, start: 30, end: 37, chapter: "02 / ARCHITECTURE", view: "view-architecture", kicker: "01 / API + SSE", title: "先把运行<br /><strong>接进来</strong>", body: "入口接收 run，并把节点、Agent、证据和完成事件发送出来。", meta: "apps/api/src/routes/runs.ts", caption: "第一层负责接收请求和发出事件。" },
-        { n: 6, start: 37, end: 44, chapter: "02 / ARCHITECTURE", view: "view-architecture", kicker: "02 / WORKFLOW", title: "再创建<br /><strong>运行时</strong>", body: "workflow 组装 runtime、上下文投影和持久化边界。", meta: "workflow.ts / context-builder.ts", caption: "入口之后，工作流决定这次运行如何被组织。" },
-        { n: 7, start: 44, end: 51, chapter: "02 / ARCHITECTURE", view: "view-graph", kicker: "03 / LANGGRAPH", title: "状态沿着<br /><strong>根图前进</strong>", body: "A、B、C、D 不是四张卡片，而是带条件路由的状态节点。", meta: "scientific-graph.ts / checkpointed State", caption: "根图负责推进状态、轮次和下一跳。" },
-        { n: 8, start: 51, end: 58, chapter: "02 / ARCHITECTURE", view: "view-architecture", kicker: "04 / TOOLS + MCP", title: "把真实数据<br /><strong>带进来</strong>", body: "FITS、太阳观测、搜索和沙箱能力由工具层提供。", meta: "packages/tools/src + packages/mcp/src", caption: "工具层把可执行的观测和计算接入闭环。" },
-        { n: 9, start: 58, end: 65, chapter: "02 / ARCHITECTURE", view: "view-architecture", kicker: "05 / STORAGE + ARTIFACTS", title: "每次判断<br /><strong>留下证据</strong>", body: "records、snapshots、runs 和 checksums 让结果可以回看。", meta: "packages/storage/src/repo", caption: "存储层保存过程，而不是只保存最后一句话。" },
-        { n: 10, start: 65, end: 75, chapter: "02 / ARCHITECTURE", view: "view-architecture", kicker: "THE SAME STATE OBJECT", title: "一条数据包<br /><strong>穿过五层</strong>", body: "同一个状态对象在入口、编排、工具和存储之间交接。", meta: "API → WORKFLOW → GRAPH → TOOLS → ARTIFACTS", caption: "架构的连续性，来自状态对象始终没有丢失。" },
-        { n: 11, start: 75, end: 83, chapter: "02 / ARCHITECTURE", view: "view-overview", kicker: "ARCHITECTURE ZOOM-OUT", title: "层数不是重点<br /><strong>流动才是</strong>", body: "整体架构最后要回到闭环：输入、证据、验证和下一轮互相连接。", meta: "STRUCTURE → TRACE → LOOP", caption: "从整体拉远，能再次看见架构为何服务于闭环。" },
-        { n: 12, start: 83, end: 90, chapter: "02 / ARCHITECTURE", view: "view-api", kicker: "RUN / CHECKPOINTED", title: "现在进入<br /><strong>真实运行</strong>", body: "架构收束为一个可恢复的 run，下一步从真实太阳观测开始。", meta: "RUN ID + CHECKPOINT + STREAM", caption: "总览完成，下面进入一条具体运行。" },
-        { n: 13, start: 90, end: 98, chapter: "03 / INPUT + RUN ENTRY", view: "view-phenomenon", kicker: "NOAA AR11158", title: "从一个真实<br /><strong>现象开始</strong>", body: "观测窗口中的多波段热响应与磁场演化，成为本次运行的输入。", meta: "OBSERVATION WINDOW / ROI", caption: "输入不是一张装饰图，而是带窗口和来源的观测。" },
-        { n: 14, start: 98, end: 106, chapter: "03 / INPUT + RUN ENTRY", view: "view-phenomenon", kicker: "MULTI-BAND OBSERVATION", title: "多波段一起<br /><strong>进入问题</strong>", body: "AIA 四个通道和 HMI 视向磁场共同约束研究问题。", meta: "AIA 94 · 131 · 171 · 193 · HMI", caption: "不同通道提供的是互补约束，不是重复的标签。" },
-        { n: 15, start: 106, end: 114, chapter: "03 / INPUT + RUN ENTRY", view: "view-phenomenon", kicker: "QUESTION → HYPOTHESES", title: "比较机制<br /><strong>主动找反例</strong>", body: "波动耗散、纳耀斑重联和耦合机制被转成可检验方向。", meta: "PREDICTION + FALSIFICATION", caption: "系统要比较解释，也要主动寻找能推翻它的证据。" },
-        { n: 16, start: 114, end: 122, chapter: "03 / INPUT + RUN ENTRY", view: "view-api", kicker: "POST /RUNS", title: "运行从一个<br /><strong>明确请求开始</strong>", body: "项目、观测现象和运行配置绑定到同一个 run id。", meta: "apps/api/src/routes/runs.ts", caption: "每次运行都有明确的入口，而不是从一段不可追踪的对话开始。" },
-        { n: 17, start: 122, end: 131, chapter: "03 / INPUT + RUN ENTRY", view: "view-api", kicker: "SSE / LIVE TRACE", title: "状态变化<br /><strong>实时可见</strong>", body: "节点、Agent、证据和完成事件沿 SSE 流进入前端。", meta: "node.started · agent.completed · evidence.recorded", caption: "观众看到的是事件流，而不是只看起点和终点。" },
-        { n: 18, start: 131, end: 138, chapter: "03 / INPUT + RUN ENTRY", view: "view-api", kicker: "CHECKPOINT / RUN-SCOPED STATE", title: "中断保存的<br /><strong>是状态</strong>", body: "checkpoint 记录运行位置和结构化上下文，供之后恢复。", meta: "RUN-SCOPED STATE / RESUME", caption: "可恢复性来自结构化状态，不来自一张截图。" },
-        { n: 19, start: 138, end: 145, chapter: "03 / INPUT + RUN ENTRY", view: "view-graph", kicker: "START → A.GENERATE", title: "根图现在<br /><strong>正式开始</strong>", body: "现象已经绑定到运行，状态进入 A.generate。", meta: "START / A.generate / CHECKPOINTED", caption: "从这里开始，进入四个阶段的局部展开。" },
-        { n: 20, start: 145, end: 153, chapter: "04 / LOCAL MODULES", view: "view-graph", kicker: "A.GENERATE", title: "先生成<br /><strong>可检验命题</strong>", body: "三条假设从同一个现象出发，沿不同机制分开。", meta: "3 HYPOTHESES", caption: "A 阶段把研究问题变成可以被检验的命题。" },
-        { n: 21, start: 153, end: 161, chapter: "04 / LOCAL MODULES", view: "view-graph", kicker: "A.VERIFY", title: "假设必须带着<br /><strong>证伪条件</strong>", body: "schema、预测和证伪条件逐项通过结构检查。", meta: "SCHEMA · PREDICTIONS · FALSIFICATION", caption: "没有预测和证伪条件的句子，不能进入证据工作。" },
-        { n: 22, start: 161, end: 170, chapter: "04 / LOCAL MODULES", view: "view-hypotheses", kicker: "HYPOTHESIS RECORDS", title: "候选状态<br /><strong>分别记录</strong>", body: "confidence、status、预测数和证伪数属于记录本身。", meta: "CANDIDATE / UNCERTAIN / CANDIDATE", caption: "系统不把三条假设压成一个模糊答案。" },
-        { n: 23, start: 170, end: 179, chapter: "04 / LOCAL MODULES", view: "view-workers", kicker: "B.DISPATCH", title: "证据工作<br /><strong>开始分发</strong>", body: "B.dispatch 把研究任务拆成并行的确定性工作流。", meta: "DISPATCH → WORKER → AGGREGATE", caption: "B 阶段的第一步是把证据工作分发出去。" },
-        { n: 24, start: 179, end: 188, chapter: "04 / LOCAL MODULES", view: "view-workers", kicker: "B.WORKER", title: "四条工作线<br /><strong>同时推进</strong>", body: "Looker、Explorer、Oracle 和 FACT-CHECK 各自处理一种职责。", meta: "4 ROLES / PARALLEL EXECUTION", caption: "并行不是让角色互相覆盖，而是让职责保持可分辨。" },
-        { n: 25, start: 188, end: 198, chapter: "04 / LOCAL MODULES", view: "view-workers", kicker: "STRUCTURED HANDOFF", title: "每条工作线<br /><strong>都有输入输出</strong>", body: "模型审阅器读取上游结构化记录，不直接接管原始处理过程。", meta: "READ STRUCTURED RECORDS / PRESERVE PROVENANCE", caption: "局部模块之间通过结构化交接保持边界。" },
-        { n: 26, start: 198, end: 208, chapter: "04 / LOCAL MODULES", view: "view-evidence", kicker: "B.AGGREGATE", title: "证据进入<br /><strong>账本</strong>", body: "32 条记录被分成 support、unknown 和 contradict 三种状态。", meta: "2 SUPPORT / 30 UNKNOWN / 0 CONTRADICT", caption: "证据先进入账本，再进入后续门槛。" },
-        { n: 27, start: 208, end: 218, chapter: "04 / LOCAL MODULES", view: "view-pipeline", kicker: "EXPLORER / PROCESSING", title: "数据处理<br /><strong>也要留下路径</strong>", body: "从 FITS 到 ROI、时间序列、指标和 artifact，每一步都能回放。", meta: "FITS → ROI → TIME SERIES → METRICS → ARTIFACT", caption: "数据工作不是一张装饰图，而是一条处理链。" },
-        { n: 28, start: 218, end: 228, chapter: "04 / LOCAL MODULES", view: "view-pipeline", kicker: "DIAGNOSTIC ARTIFACT", title: "图像只是输出<br /><strong>不是结论</strong>", body: "snapshot、参数、代码版本和 checksum 共同定义一个可复核产物。", meta: "SNAPSHOT / PROCESSING RUN / CHECKSUM", caption: "产物之所以可信，是因为它带着自己的处理上下文。" },
-        { n: 29, start: 228, end: 238, chapter: "04 / LOCAL MODULES", view: "view-audit", kicker: "BC.VERIFY", title: "先查溯源<br /><strong>再谈支持</strong>", body: "证据必须连回样本、处理运行、产物和具体假设。", meta: "PROVENANCE → AUDITABLE RECORD", caption: "BC 阶段把证据从一个判断变成一条可审计链。" },
-        { n: 30, start: 238, end: 248, chapter: "04 / LOCAL MODULES", view: "view-audit", kicker: "PROMOTION RULE", title: "缺链路<br /><strong>就降级</strong>", body: "缺少样本、处理运行或 checksum 的记录不能升级为 support。", meta: "SUPPORT CLAIM → UNKNOWN WHEN INCOMPLETE", caption: "系统宁可保留 unknown，也不把缺口写成结论。" },
-        { n: 31, start: 248, end: 258, chapter: "04 / LOCAL MODULES", view: "view-verdict", kicker: "C.SYNTHESIZE", title: "结论要被<br /><strong>证据边界约束</strong>", body: "C.synthesize 汇聚 bounded conclusion，不超出当前观测窗口。", meta: "BOUNDED CONCLUSION", caption: "C 阶段负责收敛，但不负责夸大。" },
-        { n: 32, start: 258, end: 268, chapter: "04 / LOCAL MODULES", view: "view-gate", kicker: "C.VERIFY / SUPPORT GATE", title: "严格门槛<br /><strong>暂未通过</strong>", body: "2 条 support 仍不足以满足独立事件、holdout 和完整预测覆盖。", meta: "GATE HOLD / CONFIDENCE 0.56", caption: "局部支持存在，但严格 support gate 仍然保持 HOLD。" },
-        { n: 33, start: 268, end: 278, chapter: "04 / LOCAL MODULES", view: "view-tasks", kicker: "D.PLAN", title: "把未知变成<br /><strong>下一步任务</strong>", body: "12 个验证任务按可执行性、数据需求和执行器分组。", meta: "3 COMPLETED / 9 PLANNED", caption: "系统不把未知藏起来，而是把未知改写成任务。" },
-        { n: 34, start: 278, end: 290, chapter: "04 / LOCAL MODULES", view: "view-tasks", kicker: "D.ROUTE", title: "路由决定<br /><strong>下一跳</strong>", body: "新证据、新任务、可执行性和轮次上限共同决定回到 A、B 还是 END。", meta: "ROUTE = A / B / END", caption: "D.route 让闭环根据条件继续，而不是凭感觉循环。" },
-        { n: 35, start: 290, end: 298, chapter: "05 / REPLAY + PERSISTENCE", view: "view-replay", kicker: "ROUND 1", title: "第一轮留下<br /><strong>证据和修正</strong>", body: "19 条证据、6 个任务和 14 条修正进入运行时间线。", meta: "19 EVIDENCE / 6 TASKS / 14 CORRECTIONS", caption: "回放第一轮，观察系统如何把工作变成记录。" },
-        { n: 36, start: 298, end: 306, chapter: "05 / REPLAY + PERSISTENCE", view: "view-replay", kicker: "ROUND 2", title: "第二轮消费<br /><strong>上一轮状态</strong>", body: "Round 2 不是重新播放，而是继续处理上一轮的证据和任务。", meta: "13 EVIDENCE / 6 TASKS / 9 CORRECTIONS", caption: "轮次的意义在于状态被消费，而不是画面被重复。" },
-        { n: 37, start: 306, end: 314, chapter: "05 / REPLAY + PERSISTENCE", view: "view-replay", kicker: "CORRECTION STREAM", title: "重复和跳过<br /><strong>都有原因</strong>", body: "correction stream 记录修正，fingerprint 帮助任务去重。", meta: "23 CORRECTIONS / 1 AGENT SKIPPED", caption: "可审计的运行也要记录不执行和被修正的原因。" },
-        { n: 38, start: 314, end: 322, chapter: "05 / REPLAY + PERSISTENCE", view: "view-storage", kicker: "DURABLE TRACE", title: "过程和产物<br /><strong>一起落盘</strong>", body: "事件、科学记录、checkpoint 和 artifacts 分别保存又互相连接。", meta: "RUN CHUNKS / RECORDS / CHECKPOINT / ARTIFACTS", caption: "运行结束后，过程和产物都可以被重新打开。" },
-        { n: 39, start: 322, end: 329, chapter: "05 / REPLAY + PERSISTENCE", view: "view-storage", kicker: "STREAM + RESUME", title: "中断之后<br /><strong>从状态继续</strong>", body: "GET /stream 可以从 checkpoint 重新接上同一条运行。", meta: "RESUME WITHOUT RESTARTING THE QUESTION", caption: "恢复不是从头猜测，而是从保存的状态继续。" },
-        { n: 40, start: 329, end: 335, chapter: "06 / TOTAL LOOP", view: "view-verdict", kicker: "CURRENT VERDICT", title: "诚实地停在<br /><strong>needs_data</strong>", body: "闭环完成，但证据仍不足以把某一种太阳加热机制说成已被证明。", meta: "CANDIDATE / UNCERTAIN / CANDIDATE", caption: "这次运行完成了闭环，也明确留下了证据边界。" },
-        { n: 41, start: 335, end: 338, chapter: "06 / TOTAL LOOP", view: "view-tasks", kicker: "NEXT HANDOFF", title: "下一轮从<br /><strong>任务继续</strong>", body: "补数据、补诊断、补 holdout，再让同一套 gate 重新判断。", meta: "HMI / COOLING DELAY / SPECTROSCOPY", caption: "下一轮不是另起炉灶，而是消费当前任务。" },
-        { n: 42, start: 338, end: 345, chapter: "06 / TOTAL LOOP", view: "view-close", kicker: "LOOP READY", title: "闭环完成<br /><strong>问题继续</strong>", body: "Open-Scientist 留下的不只是结论，还有下一次可执行的入口。", meta: "TOTAL VIEW / LOCAL MODULES / TOTAL LOOP", caption: "从总览开始，再回到总览；对象继续向下一轮流动。" }
-      ];
+        {
+          n: 1,
+          start: 0,
+          end: 6,
+          chapter: '01 / SYSTEM OVERVIEW',
+          view: 'view-overview',
+          kicker: 'A RESEARCH RUN SHOULD LEAVE A TRACE',
+          title: '让假设<br /><strong>接受证据</strong>',
+          body: '一次科研运行，应该留下可追踪、可复核、可继续执行的路径。',
+          meta: 'TOTAL VIEW → LOCAL MODULES → TOTAL LOOP',
+          caption: '先看问题如何进入一条可以回放的科学闭环。',
+        },
+        {
+          n: 2,
+          start: 6,
+          end: 13,
+          chapter: '01 / SYSTEM OVERVIEW',
+          view: 'view-overview',
+          kicker: 'THE LOOP IS THE PRODUCT',
+          title: '现象进入<br /><strong>闭环</strong>',
+          body: '数据包不在页面之间消失，而是沿着状态对象继续流动。',
+          meta: 'PHENOMENON → EVIDENCE → VALIDATION → NEXT ROUND',
+          caption: '同一个对象从现象走到下一轮，而不是切换到下一张页面。',
+        },
+        {
+          n: 3,
+          start: 13,
+          end: 20,
+          chapter: '01 / SYSTEM OVERVIEW',
+          view: 'view-verdict',
+          kicker: 'A RESULT WITH BOUNDARIES',
+          title: '结论也要<br /><strong>留下边界</strong>',
+          body: '2 条支持、32 条证据、12 个任务，组成的是可审计结果，不是一句夸大的答案。',
+          meta: 'SUPPORT ≠ PROOF / NEEDS_DATA',
+          caption: '结果的数量和限制必须同时被看见。',
+        },
+        {
+          n: 4,
+          start: 20,
+          end: 30,
+          chapter: '01 / SYSTEM OVERVIEW',
+          view: 'view-overview',
+          kicker: 'THE STORY MAP',
+          title: '先看整体<br /><strong>再看局部</strong>',
+          body: '接下来依次展开系统架构、真实输入、A/B/C/D 阶段和运行回放。',
+          meta: '01 ARCHITECTURE · 02 INPUT · 03 LOOP · 04 RESULT',
+          caption: '叙事从总览开始，最后回到总览。',
+        },
+        {
+          n: 5,
+          start: 30,
+          end: 37,
+          chapter: '02 / ARCHITECTURE',
+          view: 'view-architecture',
+          kicker: '01 / API + SSE',
+          title: '先把运行<br /><strong>接进来</strong>',
+          body: '入口接收 run，并把节点、Agent、证据和完成事件发送出来。',
+          meta: 'apps/api/src/routes/runs.ts',
+          caption: '第一层负责接收请求和发出事件。',
+        },
+        {
+          n: 6,
+          start: 37,
+          end: 44,
+          chapter: '02 / ARCHITECTURE',
+          view: 'view-architecture',
+          kicker: '02 / WORKFLOW',
+          title: '再创建<br /><strong>运行时</strong>',
+          body: 'workflow 组装 runtime、上下文投影和持久化边界。',
+          meta: 'workflow.ts / context-builder.ts',
+          caption: '入口之后，工作流决定这次运行如何被组织。',
+        },
+        {
+          n: 7,
+          start: 44,
+          end: 51,
+          chapter: '02 / ARCHITECTURE',
+          view: 'view-graph',
+          kicker: '03 / LANGGRAPH',
+          title: '状态沿着<br /><strong>根图前进</strong>',
+          body: 'A、B、C、D 不是四张卡片，而是带条件路由的状态节点。',
+          meta: 'scientific-graph.ts / checkpointed State',
+          caption: '根图负责推进状态、轮次和下一跳。',
+        },
+        {
+          n: 8,
+          start: 51,
+          end: 58,
+          chapter: '02 / ARCHITECTURE',
+          view: 'view-architecture',
+          kicker: '04 / TOOLS + MCP',
+          title: '把真实数据<br /><strong>带进来</strong>',
+          body: 'FITS、太阳观测、搜索和沙箱能力由工具层提供。',
+          meta: 'packages/tools/src + packages/mcp/src',
+          caption: '工具层把可执行的观测和计算接入闭环。',
+        },
+        {
+          n: 9,
+          start: 58,
+          end: 65,
+          chapter: '02 / ARCHITECTURE',
+          view: 'view-architecture',
+          kicker: '05 / STORAGE + ARTIFACTS',
+          title: '每次判断<br /><strong>留下证据</strong>',
+          body: 'records、snapshots、runs 和 checksums 让结果可以回看。',
+          meta: 'packages/storage/src/repo',
+          caption: '存储层保存过程，而不是只保存最后一句话。',
+        },
+        {
+          n: 10,
+          start: 65,
+          end: 75,
+          chapter: '02 / ARCHITECTURE',
+          view: 'view-architecture',
+          kicker: 'THE SAME STATE OBJECT',
+          title: '一条数据包<br /><strong>穿过五层</strong>',
+          body: '同一个状态对象在入口、编排、工具和存储之间交接。',
+          meta: 'API → WORKFLOW → GRAPH → TOOLS → ARTIFACTS',
+          caption: '架构的连续性，来自状态对象始终没有丢失。',
+        },
+        {
+          n: 11,
+          start: 75,
+          end: 83,
+          chapter: '02 / ARCHITECTURE',
+          view: 'view-overview',
+          kicker: 'ARCHITECTURE ZOOM-OUT',
+          title: '层数不是重点<br /><strong>流动才是</strong>',
+          body: '整体架构最后要回到闭环：输入、证据、验证和下一轮互相连接。',
+          meta: 'STRUCTURE → TRACE → LOOP',
+          caption: '从整体拉远，能再次看见架构为何服务于闭环。',
+        },
+        {
+          n: 12,
+          start: 83,
+          end: 90,
+          chapter: '02 / ARCHITECTURE',
+          view: 'view-api',
+          kicker: 'RUN / CHECKPOINTED',
+          title: '现在进入<br /><strong>真实运行</strong>',
+          body: '架构收束为一个可恢复的 run，下一步从真实太阳观测开始。',
+          meta: 'RUN ID + CHECKPOINT + STREAM',
+          caption: '总览完成，下面进入一条具体运行。',
+        },
+        {
+          n: 13,
+          start: 90,
+          end: 98,
+          chapter: '03 / INPUT + RUN ENTRY',
+          view: 'view-phenomenon',
+          kicker: 'NOAA AR11158',
+          title: '从一个真实<br /><strong>现象开始</strong>',
+          body: '观测窗口中的多波段热响应与磁场演化，成为本次运行的输入。',
+          meta: 'OBSERVATION WINDOW / ROI',
+          caption: '输入不是一张装饰图，而是带窗口和来源的观测。',
+        },
+        {
+          n: 14,
+          start: 98,
+          end: 106,
+          chapter: '03 / INPUT + RUN ENTRY',
+          view: 'view-phenomenon',
+          kicker: 'MULTI-BAND OBSERVATION',
+          title: '多波段一起<br /><strong>进入问题</strong>',
+          body: 'AIA 四个通道和 HMI 视向磁场共同约束研究问题。',
+          meta: 'AIA 94 · 131 · 171 · 193 · HMI',
+          caption: '不同通道提供的是互补约束，不是重复的标签。',
+        },
+        {
+          n: 15,
+          start: 106,
+          end: 114,
+          chapter: '03 / INPUT + RUN ENTRY',
+          view: 'view-phenomenon',
+          kicker: 'QUESTION → HYPOTHESES',
+          title: '比较机制<br /><strong>主动找反例</strong>',
+          body: '波动耗散、纳耀斑重联和耦合机制被转成可检验方向。',
+          meta: 'PREDICTION + FALSIFICATION',
+          caption: '系统要比较解释，也要主动寻找能推翻它的证据。',
+        },
+        {
+          n: 16,
+          start: 114,
+          end: 122,
+          chapter: '03 / INPUT + RUN ENTRY',
+          view: 'view-api',
+          kicker: 'POST /RUNS',
+          title: '运行从一个<br /><strong>明确请求开始</strong>',
+          body: '项目、观测现象和运行配置绑定到同一个 run id。',
+          meta: 'apps/api/src/routes/runs.ts',
+          caption: '每次运行都有明确的入口，而不是从一段不可追踪的对话开始。',
+        },
+        {
+          n: 17,
+          start: 122,
+          end: 131,
+          chapter: '03 / INPUT + RUN ENTRY',
+          view: 'view-api',
+          kicker: 'SSE / LIVE TRACE',
+          title: '状态变化<br /><strong>实时可见</strong>',
+          body: '节点、Agent、证据和完成事件沿 SSE 流进入前端。',
+          meta: 'node.started · agent.completed · evidence.recorded',
+          caption: '观众看到的是事件流，而不是只看起点和终点。',
+        },
+        {
+          n: 18,
+          start: 131,
+          end: 138,
+          chapter: '03 / INPUT + RUN ENTRY',
+          view: 'view-api',
+          kicker: 'CHECKPOINT / RUN-SCOPED STATE',
+          title: '中断保存的<br /><strong>是状态</strong>',
+          body: 'checkpoint 记录运行位置和结构化上下文，供之后恢复。',
+          meta: 'RUN-SCOPED STATE / RESUME',
+          caption: '可恢复性来自结构化状态，不来自一张截图。',
+        },
+        {
+          n: 19,
+          start: 138,
+          end: 145,
+          chapter: '03 / INPUT + RUN ENTRY',
+          view: 'view-graph',
+          kicker: 'START → A.GENERATE',
+          title: '根图现在<br /><strong>正式开始</strong>',
+          body: '现象已经绑定到运行，状态进入 A.generate。',
+          meta: 'START / A.generate / CHECKPOINTED',
+          caption: '从这里开始，进入四个阶段的局部展开。',
+        },
+        {
+          n: 20,
+          start: 145,
+          end: 153,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-graph',
+          kicker: 'A.GENERATE',
+          title: '先生成<br /><strong>可检验命题</strong>',
+          body: '三条假设从同一个现象出发，沿不同机制分开。',
+          meta: '3 HYPOTHESES',
+          caption: 'A 阶段把研究问题变成可以被检验的命题。',
+        },
+        {
+          n: 21,
+          start: 153,
+          end: 161,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-graph',
+          kicker: 'A.VERIFY',
+          title: '假设必须带着<br /><strong>证伪条件</strong>',
+          body: 'schema、预测和证伪条件逐项通过结构检查。',
+          meta: 'SCHEMA · PREDICTIONS · FALSIFICATION',
+          caption: '没有预测和证伪条件的句子，不能进入证据工作。',
+        },
+        {
+          n: 22,
+          start: 161,
+          end: 170,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-hypotheses',
+          kicker: 'HYPOTHESIS RECORDS',
+          title: '候选状态<br /><strong>分别记录</strong>',
+          body: 'confidence、status、预测数和证伪数属于记录本身。',
+          meta: 'CANDIDATE / UNCERTAIN / CANDIDATE',
+          caption: '系统不把三条假设压成一个模糊答案。',
+        },
+        {
+          n: 23,
+          start: 170,
+          end: 179,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-workers',
+          kicker: 'B.DISPATCH',
+          title: '证据工作<br /><strong>开始分发</strong>',
+          body: 'B.dispatch 把研究任务拆成并行的确定性工作流。',
+          meta: 'DISPATCH → WORKER → AGGREGATE',
+          caption: 'B 阶段的第一步是把证据工作分发出去。',
+        },
+        {
+          n: 24,
+          start: 179,
+          end: 188,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-workers',
+          kicker: 'B.WORKER',
+          title: '四条工作线<br /><strong>同时推进</strong>',
+          body: 'Looker、Explorer、Oracle 和 FACT-CHECK 各自处理一种职责。',
+          meta: '4 ROLES / PARALLEL EXECUTION',
+          caption: '并行不是让角色互相覆盖，而是让职责保持可分辨。',
+        },
+        {
+          n: 25,
+          start: 188,
+          end: 198,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-workers',
+          kicker: 'STRUCTURED HANDOFF',
+          title: '每条工作线<br /><strong>都有输入输出</strong>',
+          body: '模型审阅器读取上游结构化记录，不直接接管原始处理过程。',
+          meta: 'READ STRUCTURED RECORDS / PRESERVE PROVENANCE',
+          caption: '局部模块之间通过结构化交接保持边界。',
+        },
+        {
+          n: 26,
+          start: 198,
+          end: 208,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-evidence',
+          kicker: 'B.AGGREGATE',
+          title: '证据进入<br /><strong>账本</strong>',
+          body: '32 条记录被分成 support、unknown 和 contradict 三种状态。',
+          meta: '2 SUPPORT / 30 UNKNOWN / 0 CONTRADICT',
+          caption: '证据先进入账本，再进入后续门槛。',
+        },
+        {
+          n: 27,
+          start: 208,
+          end: 218,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-pipeline',
+          kicker: 'EXPLORER / PROCESSING',
+          title: '数据处理<br /><strong>也要留下路径</strong>',
+          body: '从 FITS 到 ROI、时间序列、指标和 artifact，每一步都能回放。',
+          meta: 'FITS → ROI → TIME SERIES → METRICS → ARTIFACT',
+          caption: '数据工作不是一张装饰图，而是一条处理链。',
+        },
+        {
+          n: 28,
+          start: 218,
+          end: 228,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-pipeline',
+          kicker: 'DIAGNOSTIC ARTIFACT',
+          title: '图像只是输出<br /><strong>不是结论</strong>',
+          body: 'snapshot、参数、代码版本和 checksum 共同定义一个可复核产物。',
+          meta: 'SNAPSHOT / PROCESSING RUN / CHECKSUM',
+          caption: '产物之所以可信，是因为它带着自己的处理上下文。',
+        },
+        {
+          n: 29,
+          start: 228,
+          end: 238,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-audit',
+          kicker: 'BC.VERIFY',
+          title: '先查溯源<br /><strong>再谈支持</strong>',
+          body: '证据必须连回样本、处理运行、产物和具体假设。',
+          meta: 'PROVENANCE → AUDITABLE RECORD',
+          caption: 'BC 阶段把证据从一个判断变成一条可审计链。',
+        },
+        {
+          n: 30,
+          start: 238,
+          end: 248,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-audit',
+          kicker: 'PROMOTION RULE',
+          title: '缺链路<br /><strong>就降级</strong>',
+          body: '缺少样本、处理运行或 checksum 的记录不能升级为 support。',
+          meta: 'SUPPORT CLAIM → UNKNOWN WHEN INCOMPLETE',
+          caption: '系统宁可保留 unknown，也不把缺口写成结论。',
+        },
+        {
+          n: 31,
+          start: 248,
+          end: 258,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-verdict',
+          kicker: 'C.SYNTHESIZE',
+          title: '结论要被<br /><strong>证据边界约束</strong>',
+          body: 'C.synthesize 汇聚 bounded conclusion，不超出当前观测窗口。',
+          meta: 'BOUNDED CONCLUSION',
+          caption: 'C 阶段负责收敛，但不负责夸大。',
+        },
+        {
+          n: 32,
+          start: 258,
+          end: 268,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-gate',
+          kicker: 'C.VERIFY / SUPPORT GATE',
+          title: '严格门槛<br /><strong>暂未通过</strong>',
+          body: '2 条 support 仍不足以满足独立事件、holdout 和完整预测覆盖。',
+          meta: 'GATE HOLD / CONFIDENCE 0.56',
+          caption: '局部支持存在，但严格 support gate 仍然保持 HOLD。',
+        },
+        {
+          n: 33,
+          start: 268,
+          end: 278,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-tasks',
+          kicker: 'D.PLAN',
+          title: '把未知变成<br /><strong>下一步任务</strong>',
+          body: '12 个验证任务按可执行性、数据需求和执行器分组。',
+          meta: '3 COMPLETED / 9 PLANNED',
+          caption: '系统不把未知藏起来，而是把未知改写成任务。',
+        },
+        {
+          n: 34,
+          start: 278,
+          end: 290,
+          chapter: '04 / LOCAL MODULES',
+          view: 'view-tasks',
+          kicker: 'D.ROUTE',
+          title: '路由决定<br /><strong>下一跳</strong>',
+          body: '新证据、新任务、可执行性和轮次上限共同决定回到 A、B 还是 END。',
+          meta: 'ROUTE = A / B / END',
+          caption: 'D.route 让闭环根据条件继续，而不是凭感觉循环。',
+        },
+        {
+          n: 35,
+          start: 290,
+          end: 298,
+          chapter: '05 / REPLAY + PERSISTENCE',
+          view: 'view-replay',
+          kicker: 'ROUND 1',
+          title: '第一轮留下<br /><strong>证据和修正</strong>',
+          body: '19 条证据、6 个任务和 14 条修正进入运行时间线。',
+          meta: '19 EVIDENCE / 6 TASKS / 14 CORRECTIONS',
+          caption: '回放第一轮，观察系统如何把工作变成记录。',
+        },
+        {
+          n: 36,
+          start: 298,
+          end: 306,
+          chapter: '05 / REPLAY + PERSISTENCE',
+          view: 'view-replay',
+          kicker: 'ROUND 2',
+          title: '第二轮消费<br /><strong>上一轮状态</strong>',
+          body: 'Round 2 不是重新播放，而是继续处理上一轮的证据和任务。',
+          meta: '13 EVIDENCE / 6 TASKS / 9 CORRECTIONS',
+          caption: '轮次的意义在于状态被消费，而不是画面被重复。',
+        },
+        {
+          n: 37,
+          start: 306,
+          end: 314,
+          chapter: '05 / REPLAY + PERSISTENCE',
+          view: 'view-replay',
+          kicker: 'CORRECTION STREAM',
+          title: '重复和跳过<br /><strong>都有原因</strong>',
+          body: 'correction stream 记录修正，fingerprint 帮助任务去重。',
+          meta: '23 CORRECTIONS / 1 AGENT SKIPPED',
+          caption: '可审计的运行也要记录不执行和被修正的原因。',
+        },
+        {
+          n: 38,
+          start: 314,
+          end: 322,
+          chapter: '05 / REPLAY + PERSISTENCE',
+          view: 'view-storage',
+          kicker: 'DURABLE TRACE',
+          title: '过程和产物<br /><strong>一起落盘</strong>',
+          body: '事件、科学记录、checkpoint 和 artifacts 分别保存又互相连接。',
+          meta: 'RUN CHUNKS / RECORDS / CHECKPOINT / ARTIFACTS',
+          caption: '运行结束后，过程和产物都可以被重新打开。',
+        },
+        {
+          n: 39,
+          start: 322,
+          end: 329,
+          chapter: '05 / REPLAY + PERSISTENCE',
+          view: 'view-storage',
+          kicker: 'STREAM + RESUME',
+          title: '中断之后<br /><strong>从状态继续</strong>',
+          body: 'GET /stream 可以从 checkpoint 重新接上同一条运行。',
+          meta: 'RESUME WITHOUT RESTARTING THE QUESTION',
+          caption: '恢复不是从头猜测，而是从保存的状态继续。',
+        },
+        {
+          n: 40,
+          start: 329,
+          end: 335,
+          chapter: '06 / TOTAL LOOP',
+          view: 'view-verdict',
+          kicker: 'CURRENT VERDICT',
+          title: '诚实地停在<br /><strong>needs_data</strong>',
+          body: '闭环完成，但证据仍不足以把某一种太阳加热机制说成已被证明。',
+          meta: 'CANDIDATE / UNCERTAIN / CANDIDATE',
+          caption: '这次运行完成了闭环，也明确留下了证据边界。',
+        },
+        {
+          n: 41,
+          start: 335,
+          end: 338,
+          chapter: '06 / TOTAL LOOP',
+          view: 'view-tasks',
+          kicker: 'NEXT HANDOFF',
+          title: '下一轮从<br /><strong>任务继续</strong>',
+          body: '补数据、补诊断、补 holdout，再让同一套 gate 重新判断。',
+          meta: 'HMI / COOLING DELAY / SPECTROSCOPY',
+          caption: '下一轮不是另起炉灶，而是消费当前任务。',
+        },
+        {
+          n: 42,
+          start: 338,
+          end: 345,
+          chapter: '06 / TOTAL LOOP',
+          view: 'view-close',
+          kicker: 'LOOP READY',
+          title: '闭环完成<br /><strong>问题继续</strong>',
+          body: 'Open-Scientist 留下的不只是结论，还有下一次可执行的入口。',
+          meta: 'TOTAL VIEW / LOCAL MODULES / TOTAL LOOP',
+          caption: '从总览开始，再回到总览；对象继续向下一轮流动。',
+        },
+      ]
 
       function populateData() {
-        const run = short(D.runId, 16);
-        setText("#top-run", D.phenomenon?.activeRegion || "AR11158");
-        setText("#api-run-id", run);
-        setText("#api-checkpoint-id", run);
-        const hypotheses = D.hypotheses || [];
+        const run = short(D.runId, 16)
+        setText('#top-run', D.phenomenon?.activeRegion || 'AR11158')
+        setText('#api-run-id', run)
+        setText('#api-checkpoint-id', run)
+        const hypotheses = D.hypotheses || []
         hypotheses.slice(0, 3).forEach((item, index) => {
-          setText(`#hyp-${index + 1}`, compact(item.statement, 170));
-          setText(`#hyp-c-${index + 1}`, Number(item.confidence || 0).toFixed(2));
-        });
-        const evidenceCounts = D.evidenceByStatus || {};
-        setText("#e-count-support", evidenceCounts.support ?? D.evidenceSupport ?? 2);
-        setText("#e-count-unknown", evidenceCounts.unknown ?? D.evidenceUnknown ?? 30);
-        setText("#e-count-contradict", evidenceCounts.contradict ?? D.evidenceContradict ?? 0);
-        setText("#v-hypotheses", D.hypothesisCount ?? hypotheses.length ?? 3);
-        setText("#v-evidence", D.evidenceTotal ?? 32);
-        setText("#v-tasks", D.taskTotal ?? 12);
-        setText("#v-rounds", D.totalRounds ?? 2);
+          setText(`#hyp-${index + 1}`, compact(item.statement, 170))
+          setText(`#hyp-c-${index + 1}`, Number(item.confidence || 0).toFixed(2))
+        })
+        const evidenceCounts = D.evidenceByStatus || {}
+        setText('#e-count-support', evidenceCounts.support ?? D.evidenceSupport ?? 2)
+        setText('#e-count-unknown', evidenceCounts.unknown ?? D.evidenceUnknown ?? 30)
+        setText('#e-count-contradict', evidenceCounts.contradict ?? D.evidenceContradict ?? 0)
+        setText('#v-hypotheses', D.hypothesisCount ?? hypotheses.length ?? 3)
+        setText('#v-evidence', D.evidenceTotal ?? 32)
+        setText('#v-tasks', D.taskTotal ?? 12)
+        setText('#v-rounds', D.totalRounds ?? 2)
       }
 
       function applyShot(shot) {
-        setText("#chapter-label", shot.chapter);
-        setText("#shot-index", `SHOT ${String(shot.n).padStart(2, "0")} / 42`);
-        setText("#copy-kicker", shot.kicker);
-        $("#copy-title").innerHTML = shot.title;
-        setText("#copy-body", shot.body);
-        setText("#copy-meta", shot.meta);
-        setText("#caption", shot.caption);
+        setText('#chapter-label', shot.chapter)
+        setText('#shot-index', `SHOT ${String(shot.n).padStart(2, '0')} / 42`)
+        setText('#copy-kicker', shot.kicker)
+        $('#copy-title').innerHTML = shot.title
+        setText('#copy-body', shot.body)
+        setText('#copy-meta', shot.meta)
+        setText('#caption', shot.caption)
         // Keep the outgoing view paintable while it fades out; the incoming view
         // fades in on top of it instead of creating a dark gap at every cut.
-        $$(".view").forEach((view) => { view.style.visibility = "visible"; });
+        $$('.view').forEach((view) => {
+          view.style.visibility = 'visible'
+        })
       }
 
       function resetView(viewId) {
-        const reset = (selector, props) => gsap.set(selector, props);
-        if (viewId === "view-overview") {
-          reset(".overview-sun", { scale: .86, opacity: .25 }); reset(".overview-orbit", { rotation: -24, scale: .84, opacity: .25 }); reset(".overview-orbit.b", { rotation: 30, scale: .84, opacity: .18 }); reset(".loop-node", { y: 34, opacity: .15 }); reset(".loop-line", { scaleX: .02, opacity: .22 }); reset(".loop-packet", { x: 0, opacity: 0 }); reset(".overview-stamp", { y: 20, opacity: 0 });
-        } else if (viewId === "view-architecture") {
-          reset(".layer-card", { x: -100, opacity: .15 }); reset(".layer-packet", { y: 0, opacity: 0 }); reset(".layer-legend", { y: 15, opacity: 0 });
-        } else if (viewId === "view-phenomenon") {
-          reset(".phenomenon-card", { x: 90, scale: .92, opacity: .15 }); reset(".phenomenon-scan", { x: 0, opacity: 0 }); reset(".channel-chip", { y: 30, opacity: .15 }); reset(".branch", { x: 60, opacity: .15 }); reset(".phenomenon-note", { y: 18, opacity: 0 });
-        } else if (viewId === "view-api") {
-          reset(".terminal", { x: -60, opacity: .15 }); reset(".event-stream", { x: 70, opacity: .15 }); reset(".terminal-row", { x: -20, opacity: .15 }); reset(".event-row", { x: 30, opacity: .15 }); reset(".checkpoint-stamp", { y: 18, opacity: 0 });
-        } else if (viewId === "view-graph") {
-          reset(".graph-node", { y: 35, scale: .82, opacity: .12 }); reset(".graph-edge", { strokeDashoffset: 680, opacity: .10 }); reset(".graph-packet", { opacity: 0 }); reset(".graph-loop-note", { y: 16, opacity: 0 });
-        } else if (viewId === "view-hypotheses") {
-          reset(".hypothesis-card", { x: 100, opacity: .12 });
-        } else if (viewId === "view-workers") {
-          reset(".worker-lane", { x: -80, opacity: .12 }); reset(".worker-dot", { x: 0, opacity: 0 });
-        } else if (viewId === "view-evidence") {
-          reset(".ledger", { x: -70, opacity: .12 }); reset(".ledger-row", { x: -20, opacity: .12 }); reset(".count-card", { x: 70, opacity: .12 });
-        } else if (viewId === "view-pipeline") {
-          reset(".pipeline-node", { y: 35, scale: .84, opacity: .12 }); reset(".processing-image", { x: -50, opacity: .12 }); reset(".processing-side", { x: 50, opacity: .12 });
-        } else if (viewId === "view-audit") {
-          reset(".lineage-node", { y: 30, opacity: .12 }); reset(".lineage-line", { scaleX: .02, transformOrigin: "left center", opacity: .18 }); reset(".lineage-packet", { x: 0, opacity: 0 }); reset(".audit-note", { y: 25, opacity: 0 });
-        } else if (viewId === "view-gate") {
-          reset(".gate-row", { x: -28, opacity: .12 }); reset(".gate-meter", { scale: .72, opacity: .12 });
-        } else if (viewId === "view-tasks") {
-          reset(".task-card", { y: 30, opacity: .12 }); reset(".route-arrow", { scaleX: .02, transformOrigin: "left center", opacity: .18 }); reset(".route-badge", { y: 15, opacity: 0 });
-        } else if (viewId === "view-replay") {
-          reset(".round-row", { x: -70, opacity: .12 }); reset(".round-fill", { scaleX: 0 }); reset(".correction-line", { opacity: .12, scaleX: .2, transformOrigin: "left center" }); reset(".correction-dot", { scale: .2, opacity: 0 }); reset(".correction-label", { y: 15, opacity: 0 });
-        } else if (viewId === "view-storage") {
-          reset(".storage-card", { x: 70, opacity: .12 }); reset(".resume-tag", { y: 20, opacity: 0 });
-        } else if (viewId === "view-verdict") {
-          reset(".verdict-metric", { y: 30, opacity: .12 }); reset(".verdict-panel", { y: 35, opacity: .12 });
-        } else if (viewId === "view-close") {
-          reset(".closing-loop", { scale: .78, rotation: -20, opacity: .15 }); reset(".closing-node", { y: 28, opacity: .12 }); reset(".closing-packet", { x: 0, opacity: 0 });
+        const reset = (selector, props) => gsap.set(selector, props)
+        if (viewId === 'view-overview') {
+          reset('.overview-sun', { scale: 0.86, opacity: 0.25 })
+          reset('.overview-orbit', { rotation: -24, scale: 0.84, opacity: 0.25 })
+          reset('.overview-orbit.b', { rotation: 30, scale: 0.84, opacity: 0.18 })
+          reset('.loop-node', { y: 34, opacity: 0.15 })
+          reset('.loop-line', { scaleX: 0.02, opacity: 0.22 })
+          reset('.loop-packet', { x: 0, opacity: 0 })
+          reset('.overview-stamp', { y: 20, opacity: 0 })
+        } else if (viewId === 'view-architecture') {
+          reset('.layer-card', { x: -100, opacity: 0.15 })
+          reset('.layer-packet', { y: 0, opacity: 0 })
+          reset('.layer-legend', { y: 15, opacity: 0 })
+        } else if (viewId === 'view-phenomenon') {
+          reset('.phenomenon-card', { x: 90, scale: 0.92, opacity: 0.15 })
+          reset('.phenomenon-scan', { x: 0, opacity: 0 })
+          reset('.channel-chip', { y: 30, opacity: 0.15 })
+          reset('.branch', { x: 60, opacity: 0.15 })
+          reset('.phenomenon-note', { y: 18, opacity: 0 })
+        } else if (viewId === 'view-api') {
+          reset('.terminal', { x: -60, opacity: 0.15 })
+          reset('.event-stream', { x: 70, opacity: 0.15 })
+          reset('.terminal-row', { x: -20, opacity: 0.15 })
+          reset('.event-row', { x: 30, opacity: 0.15 })
+          reset('.checkpoint-stamp', { y: 18, opacity: 0 })
+        } else if (viewId === 'view-graph') {
+          reset('.graph-node', { y: 35, scale: 0.82, opacity: 0.12 })
+          reset('.graph-edge', { strokeDashoffset: 680, opacity: 0.1 })
+          reset('.graph-packet', { opacity: 0 })
+          reset('.graph-loop-note', { y: 16, opacity: 0 })
+        } else if (viewId === 'view-hypotheses') {
+          reset('.hypothesis-card', { x: 100, opacity: 0.12 })
+        } else if (viewId === 'view-workers') {
+          reset('.worker-lane', { x: -80, opacity: 0.12 })
+          reset('.worker-dot', { x: 0, opacity: 0 })
+        } else if (viewId === 'view-evidence') {
+          reset('.ledger', { x: -70, opacity: 0.12 })
+          reset('.ledger-row', { x: -20, opacity: 0.12 })
+          reset('.count-card', { x: 70, opacity: 0.12 })
+        } else if (viewId === 'view-pipeline') {
+          reset('.pipeline-node', { y: 35, scale: 0.84, opacity: 0.12 })
+          reset('.processing-image', { x: -50, opacity: 0.12 })
+          reset('.processing-side', { x: 50, opacity: 0.12 })
+        } else if (viewId === 'view-audit') {
+          reset('.lineage-node', { y: 30, opacity: 0.12 })
+          reset('.lineage-line', { scaleX: 0.02, transformOrigin: 'left center', opacity: 0.18 })
+          reset('.lineage-packet', { x: 0, opacity: 0 })
+          reset('.audit-note', { y: 25, opacity: 0 })
+        } else if (viewId === 'view-gate') {
+          reset('.gate-row', { x: -28, opacity: 0.12 })
+          reset('.gate-meter', { scale: 0.72, opacity: 0.12 })
+        } else if (viewId === 'view-tasks') {
+          reset('.task-card', { y: 30, opacity: 0.12 })
+          reset('.route-arrow', { scaleX: 0.02, transformOrigin: 'left center', opacity: 0.18 })
+          reset('.route-badge', { y: 15, opacity: 0 })
+        } else if (viewId === 'view-replay') {
+          reset('.round-row', { x: -70, opacity: 0.12 })
+          reset('.round-fill', { scaleX: 0 })
+          reset('.correction-line', { opacity: 0.12, scaleX: 0.2, transformOrigin: 'left center' })
+          reset('.correction-dot', { scale: 0.2, opacity: 0 })
+          reset('.correction-label', { y: 15, opacity: 0 })
+        } else if (viewId === 'view-storage') {
+          reset('.storage-card', { x: 70, opacity: 0.12 })
+          reset('.resume-tag', { y: 20, opacity: 0 })
+        } else if (viewId === 'view-verdict') {
+          reset('.verdict-metric', { y: 30, opacity: 0.12 })
+          reset('.verdict-panel', { y: 35, opacity: 0.12 })
+        } else if (viewId === 'view-close') {
+          reset('.closing-loop', { scale: 0.78, rotation: -20, opacity: 0.15 })
+          reset('.closing-node', { y: 28, opacity: 0.12 })
+          reset('.closing-packet', { x: 0, opacity: 0 })
         }
       }
 
       function animateView(tl, shot) {
-        const s = shot.start + .22;
-        const d = shot.end - shot.start;
-        const ease = "power2.out";
-        const cameraX = ((shot.n % 5) - 2) * 10;
-        const cameraY = ((shot.n % 3) - 1) * 5;
-        tl.to("#camera-world", { x: cameraX, y: cameraY, scale: 1 + ((shot.n % 4) * .004), duration: d - .1, ease: "sine.inOut" }, shot.start + .15);
-        if (shot.view === "view-overview") {
-          tl.to(".overview-sun", { scale: 1.04, opacity: 1, duration: 1.0, ease }, s);
-          tl.to(".overview-orbit", { scale: 1, opacity: .78, rotation: shot.n % 2 ? 8 : -6, duration: d - .2, ease: "sine.inOut" }, s);
-          tl.to(".overview-orbit.b", { scale: 1, opacity: .54, rotation: shot.n % 2 ? -16 : 18, duration: d - .2, ease: "sine.inOut" }, s);
-          tl.to(".loop-line", { scaleX: 1, opacity: .95, duration: 1.1, ease }, s + .2);
-          tl.to(".loop-node", { y: 0, opacity: 1, duration: .65, stagger: .18, ease: "back.out(1.25)" }, s + .25);
-          tl.to(".loop-packet", { x: 518, opacity: 1, duration: d - 1.0, ease: "power1.inOut" }, s + .45);
-          tl.to(".overview-stamp", { y: 0, opacity: 1, duration: .7 }, s + d - 1.4);
-        } else if (shot.view === "view-architecture") {
-          tl.to(".layer-card", { x: 0, opacity: 1, duration: .64, stagger: .16, ease: "back.out(1.1)" }, s);
-          tl.to(".layer-packet", { y: 480, opacity: 1, duration: d - .8, ease: "power1.inOut" }, s + .3);
-          tl.to(".layer-legend", { y: 0, opacity: 1, duration: .7 }, s + d - 1.4);
-          tl.to(".layer-card", { x: shot.n % 2 ? 6 : -4, duration: d - 1.4, ease: "sine.inOut" }, s + .9);
-        } else if (shot.view === "view-phenomenon") {
-          tl.to(".phenomenon-card", { x: 0, scale: 1, opacity: 1, duration: 1.0, ease: "back.out(1.1)" }, s);
-          tl.to(".phenomenon-scan", { x: 588, opacity: .82, duration: d - 1.2, ease: "sine.inOut", repeat: 0 }, s + .35);
-          tl.to(".channel-chip", { y: 0, opacity: 1, duration: .58, stagger: .12, ease }, s + .65);
-          tl.to(".branch", { x: 0, opacity: 1, duration: .62, stagger: .18, ease }, s + .85);
-          tl.to(".phenomenon-note", { y: 0, opacity: 1, duration: .65 }, s + d - 1.5);
-        } else if (shot.view === "view-api") {
-          tl.to(".terminal", { x: 0, opacity: 1, duration: .82, ease }, s);
-          tl.to(".event-stream", { x: 0, opacity: 1, duration: .82, ease }, s + .18);
-          tl.to(".terminal-row", { x: 0, opacity: 1, duration: .48, stagger: .14, ease }, s + .5);
-          tl.to(".event-row", { x: 0, opacity: 1, duration: .42, stagger: .16, ease }, s + .7);
-          tl.to(".checkpoint-stamp", { y: 0, opacity: 1, duration: .65 }, s + d - 1.3);
-        } else if (shot.view === "view-graph") {
-          tl.to(".graph-edge", { strokeDashoffset: 0, opacity: 1, duration: 1.05, stagger: .16, ease }, s);
-          tl.to(".graph-node", { y: 0, scale: 1, opacity: 1, duration: .65, stagger: .16, ease: "back.out(1.3)" }, s + .28);
-          tl.to(".graph-packet", { opacity: 1, x: 270, y: shot.n % 2 ? 142 : 270, duration: d - .9, ease: "power1.inOut" }, s + .5);
-          tl.to(".graph-loop-note", { y: 0, opacity: 1, duration: .65 }, s + d - 1.2);
-        } else if (shot.view === "view-hypotheses") {
-          tl.to(".hypothesis-card", { x: 0, opacity: 1, duration: .65, stagger: .20, ease: "back.out(1.15)" }, s);
-          tl.to(".hypothesis-card", { y: shot.n % 2 ? -5 : 5, duration: d - 1.2, ease: "sine.inOut" }, s + .9);
-        } else if (shot.view === "view-workers") {
-          tl.to(".worker-lane", { x: 0, opacity: 1, duration: .62, stagger: .16, ease }, s);
-          tl.to(".worker-dot", { x: 690, opacity: 1, duration: d - 1.0, stagger: .15, ease: "power1.inOut" }, s + .48);
-          tl.to(".worker-lane", { y: shot.n % 2 ? -4 : 4, duration: d - 1.5, ease: "sine.inOut" }, s + .9);
-        } else if (shot.view === "view-evidence") {
-          tl.to(".ledger", { x: 0, opacity: 1, duration: .72, ease }, s);
-          tl.to(".ledger-row", { x: 0, opacity: 1, duration: .42, stagger: .14, ease }, s + .35);
-          tl.to(".count-card", { x: 0, opacity: 1, duration: .62, stagger: .18, ease: "back.out(1.15)" }, s + .5);
-          tl.to(".count-card", { y: -7, duration: d - 1.7, stagger: .15, ease: "sine.inOut" }, s + 1.0);
-        } else if (shot.view === "view-pipeline") {
-          tl.to(".pipeline-node", { y: 0, scale: 1, opacity: 1, duration: .62, stagger: .15, ease: "back.out(1.12)" }, s);
-          tl.to(".processing-image", { x: 0, opacity: 1, duration: .8, ease }, s + .52);
-          tl.to(".processing-side", { x: 0, opacity: 1, duration: .8, ease }, s + .7);
-          tl.to(".processing-image img", { x: 16, scale: 1.08, duration: d - 1.2, ease: "sine.inOut" }, s + .8);
-        } else if (shot.view === "view-audit") {
-          tl.to(".lineage-line", { scaleX: 1, opacity: 1, duration: 1.0, ease }, s);
-          tl.to(".lineage-node", { y: 0, opacity: 1, duration: .6, stagger: .18, ease: "back.out(1.1)" }, s + .25);
-          tl.to(".lineage-packet", { x: 760, opacity: 1, duration: d - 1.0, ease: "power1.inOut" }, s + .5);
-          tl.to(".audit-note", { y: 0, opacity: 1, duration: .7 }, s + d - 1.45);
-        } else if (shot.view === "view-gate") {
-          tl.to(".gate-row", { x: 0, opacity: 1, duration: .48, stagger: .13, ease }, s);
-          tl.to(".gate-meter", { scale: 1, opacity: 1, duration: 1.0, ease: "back.out(1.1)" }, s + .45);
-          tl.to(".meter-arc", { rotation: 25, duration: d - 1.3, ease: "sine.inOut" }, s + .7);
-        } else if (shot.view === "view-tasks") {
-          tl.to(".task-card", { y: 0, opacity: 1, duration: .52, stagger: .12, ease }, s);
-          tl.to(".route-arrow", { scaleX: 1, opacity: 1, duration: .82, ease }, s + .72);
-          tl.to(".route-badge", { y: 0, opacity: 1, duration: .65 }, s + 1.0);
-          tl.to(".task-column", { y: shot.n % 2 ? -5 : 5, duration: d - 1.7, ease: "sine.inOut" }, s + 1.1);
-        } else if (shot.view === "view-replay") {
-          tl.to(".round-row", { x: 0, opacity: 1, duration: .68, stagger: .22, ease }, s);
-          tl.to("#round-fill-1", { scaleX: .82, duration: 1.35, ease: "power2.out" }, s + .55);
-          tl.to("#round-fill-2", { scaleX: .68, duration: 1.35, ease: "power2.out" }, s + 1.0);
-          tl.to(".correction-line", { opacity: 1, scaleX: 1, duration: .9 }, s + 1.15);
-          tl.to(".correction-dot", { scale: 1, opacity: 1, duration: .38, stagger: .12, ease: "back.out(1.4)" }, s + 1.35);
-          tl.to(".correction-label", { y: 0, opacity: 1, duration: .65 }, s + d - 1.2);
-        } else if (shot.view === "view-storage") {
-          tl.to(".storage-card", { x: 0, opacity: 1, duration: .65, stagger: .17, ease: "back.out(1.1)" }, s);
-          tl.to(".storage-card", { y: shot.n % 2 ? -5 : 5, duration: d - 1.2, stagger: .12, ease: "sine.inOut" }, s + .9);
-          tl.to(".resume-tag", { y: 0, opacity: 1, duration: .68 }, s + d - 1.45);
-        } else if (shot.view === "view-verdict") {
-          tl.to(".verdict-metric", { y: 0, opacity: 1, duration: .62, stagger: .16, ease: "back.out(1.2)" }, s);
-          tl.to(".verdict-panel", { y: 0, opacity: 1, duration: .8, ease }, s + .62);
-          tl.to(".verdict-metric", { y: shot.n % 2 ? -5 : 5, duration: d - 1.8, stagger: .1, ease: "sine.inOut" }, s + 1.2);
-        } else if (shot.view === "view-close") {
-          tl.to(".closing-loop", { scale: 1, rotation: -13, opacity: 1, duration: 1.1, ease: "back.out(1.1)" }, s);
-          tl.to(".closing-node", { y: 0, opacity: 1, duration: .62, stagger: .16, ease: "back.out(1.1)" }, s + .35);
-          tl.to(".closing-packet", { x: 575, opacity: 1, duration: d - 1.1, ease: "power1.inOut" }, s + .55);
+        const s = shot.start + 0.22
+        const d = shot.end - shot.start
+        const ease = 'power2.out'
+        const cameraX = ((shot.n % 5) - 2) * 10
+        const cameraY = ((shot.n % 3) - 1) * 5
+        tl.to(
+          '#camera-world',
+          {
+            x: cameraX,
+            y: cameraY,
+            scale: 1 + (shot.n % 4) * 0.004,
+            duration: d - 0.1,
+            ease: 'sine.inOut',
+          },
+          shot.start + 0.15,
+        )
+        if (shot.view === 'view-overview') {
+          tl.to('.overview-sun', { scale: 1.04, opacity: 1, duration: 1.0, ease }, s)
+          tl.to(
+            '.overview-orbit',
+            {
+              scale: 1,
+              opacity: 0.78,
+              rotation: shot.n % 2 ? 8 : -6,
+              duration: d - 0.2,
+              ease: 'sine.inOut',
+            },
+            s,
+          )
+          tl.to(
+            '.overview-orbit.b',
+            {
+              scale: 1,
+              opacity: 0.54,
+              rotation: shot.n % 2 ? -16 : 18,
+              duration: d - 0.2,
+              ease: 'sine.inOut',
+            },
+            s,
+          )
+          tl.to('.loop-line', { scaleX: 1, opacity: 0.95, duration: 1.1, ease }, s + 0.2)
+          tl.to(
+            '.loop-node',
+            { y: 0, opacity: 1, duration: 0.65, stagger: 0.18, ease: 'back.out(1.25)' },
+            s + 0.25,
+          )
+          tl.to(
+            '.loop-packet',
+            { x: 518, opacity: 1, duration: d - 1.0, ease: 'power1.inOut' },
+            s + 0.45,
+          )
+          tl.to('.overview-stamp', { y: 0, opacity: 1, duration: 0.7 }, s + d - 1.4)
+        } else if (shot.view === 'view-architecture') {
+          tl.to(
+            '.layer-card',
+            { x: 0, opacity: 1, duration: 0.64, stagger: 0.16, ease: 'back.out(1.1)' },
+            s,
+          )
+          tl.to(
+            '.layer-packet',
+            { y: 480, opacity: 1, duration: d - 0.8, ease: 'power1.inOut' },
+            s + 0.3,
+          )
+          tl.to('.layer-legend', { y: 0, opacity: 1, duration: 0.7 }, s + d - 1.4)
+          tl.to(
+            '.layer-card',
+            { x: shot.n % 2 ? 6 : -4, duration: d - 1.4, ease: 'sine.inOut' },
+            s + 0.9,
+          )
+        } else if (shot.view === 'view-phenomenon') {
+          tl.to(
+            '.phenomenon-card',
+            { x: 0, scale: 1, opacity: 1, duration: 1.0, ease: 'back.out(1.1)' },
+            s,
+          )
+          tl.to(
+            '.phenomenon-scan',
+            { x: 588, opacity: 0.82, duration: d - 1.2, ease: 'sine.inOut', repeat: 0 },
+            s + 0.35,
+          )
+          tl.to(
+            '.channel-chip',
+            { y: 0, opacity: 1, duration: 0.58, stagger: 0.12, ease },
+            s + 0.65,
+          )
+          tl.to('.branch', { x: 0, opacity: 1, duration: 0.62, stagger: 0.18, ease }, s + 0.85)
+          tl.to('.phenomenon-note', { y: 0, opacity: 1, duration: 0.65 }, s + d - 1.5)
+        } else if (shot.view === 'view-api') {
+          tl.to('.terminal', { x: 0, opacity: 1, duration: 0.82, ease }, s)
+          tl.to('.event-stream', { x: 0, opacity: 1, duration: 0.82, ease }, s + 0.18)
+          tl.to('.terminal-row', { x: 0, opacity: 1, duration: 0.48, stagger: 0.14, ease }, s + 0.5)
+          tl.to('.event-row', { x: 0, opacity: 1, duration: 0.42, stagger: 0.16, ease }, s + 0.7)
+          tl.to('.checkpoint-stamp', { y: 0, opacity: 1, duration: 0.65 }, s + d - 1.3)
+        } else if (shot.view === 'view-graph') {
+          tl.to(
+            '.graph-edge',
+            { strokeDashoffset: 0, opacity: 1, duration: 1.05, stagger: 0.16, ease },
+            s,
+          )
+          tl.to(
+            '.graph-node',
+            { y: 0, scale: 1, opacity: 1, duration: 0.65, stagger: 0.16, ease: 'back.out(1.3)' },
+            s + 0.28,
+          )
+          tl.to(
+            '.graph-packet',
+            {
+              opacity: 1,
+              x: 270,
+              y: shot.n % 2 ? 142 : 270,
+              duration: d - 0.9,
+              ease: 'power1.inOut',
+            },
+            s + 0.5,
+          )
+          tl.to('.graph-loop-note', { y: 0, opacity: 1, duration: 0.65 }, s + d - 1.2)
+        } else if (shot.view === 'view-hypotheses') {
+          tl.to(
+            '.hypothesis-card',
+            { x: 0, opacity: 1, duration: 0.65, stagger: 0.2, ease: 'back.out(1.15)' },
+            s,
+          )
+          tl.to(
+            '.hypothesis-card',
+            { y: shot.n % 2 ? -5 : 5, duration: d - 1.2, ease: 'sine.inOut' },
+            s + 0.9,
+          )
+        } else if (shot.view === 'view-workers') {
+          tl.to('.worker-lane', { x: 0, opacity: 1, duration: 0.62, stagger: 0.16, ease }, s)
+          tl.to(
+            '.worker-dot',
+            { x: 690, opacity: 1, duration: d - 1.0, stagger: 0.15, ease: 'power1.inOut' },
+            s + 0.48,
+          )
+          tl.to(
+            '.worker-lane',
+            { y: shot.n % 2 ? -4 : 4, duration: d - 1.5, ease: 'sine.inOut' },
+            s + 0.9,
+          )
+        } else if (shot.view === 'view-evidence') {
+          tl.to('.ledger', { x: 0, opacity: 1, duration: 0.72, ease }, s)
+          tl.to('.ledger-row', { x: 0, opacity: 1, duration: 0.42, stagger: 0.14, ease }, s + 0.35)
+          tl.to(
+            '.count-card',
+            { x: 0, opacity: 1, duration: 0.62, stagger: 0.18, ease: 'back.out(1.15)' },
+            s + 0.5,
+          )
+          tl.to(
+            '.count-card',
+            { y: -7, duration: d - 1.7, stagger: 0.15, ease: 'sine.inOut' },
+            s + 1.0,
+          )
+        } else if (shot.view === 'view-pipeline') {
+          tl.to(
+            '.pipeline-node',
+            { y: 0, scale: 1, opacity: 1, duration: 0.62, stagger: 0.15, ease: 'back.out(1.12)' },
+            s,
+          )
+          tl.to('.processing-image', { x: 0, opacity: 1, duration: 0.8, ease }, s + 0.52)
+          tl.to('.processing-side', { x: 0, opacity: 1, duration: 0.8, ease }, s + 0.7)
+          tl.to(
+            '.processing-image img',
+            { x: 16, scale: 1.08, duration: d - 1.2, ease: 'sine.inOut' },
+            s + 0.8,
+          )
+        } else if (shot.view === 'view-audit') {
+          tl.to('.lineage-line', { scaleX: 1, opacity: 1, duration: 1.0, ease }, s)
+          tl.to(
+            '.lineage-node',
+            { y: 0, opacity: 1, duration: 0.6, stagger: 0.18, ease: 'back.out(1.1)' },
+            s + 0.25,
+          )
+          tl.to(
+            '.lineage-packet',
+            { x: 760, opacity: 1, duration: d - 1.0, ease: 'power1.inOut' },
+            s + 0.5,
+          )
+          tl.to('.audit-note', { y: 0, opacity: 1, duration: 0.7 }, s + d - 1.45)
+        } else if (shot.view === 'view-gate') {
+          tl.to('.gate-row', { x: 0, opacity: 1, duration: 0.48, stagger: 0.13, ease }, s)
+          tl.to(
+            '.gate-meter',
+            { scale: 1, opacity: 1, duration: 1.0, ease: 'back.out(1.1)' },
+            s + 0.45,
+          )
+          tl.to('.meter-arc', { rotation: 25, duration: d - 1.3, ease: 'sine.inOut' }, s + 0.7)
+        } else if (shot.view === 'view-tasks') {
+          tl.to('.task-card', { y: 0, opacity: 1, duration: 0.52, stagger: 0.12, ease }, s)
+          tl.to('.route-arrow', { scaleX: 1, opacity: 1, duration: 0.82, ease }, s + 0.72)
+          tl.to('.route-badge', { y: 0, opacity: 1, duration: 0.65 }, s + 1.0)
+          tl.to(
+            '.task-column',
+            { y: shot.n % 2 ? -5 : 5, duration: d - 1.7, ease: 'sine.inOut' },
+            s + 1.1,
+          )
+        } else if (shot.view === 'view-replay') {
+          tl.to('.round-row', { x: 0, opacity: 1, duration: 0.68, stagger: 0.22, ease }, s)
+          tl.to('#round-fill-1', { scaleX: 0.82, duration: 1.35, ease: 'power2.out' }, s + 0.55)
+          tl.to('#round-fill-2', { scaleX: 0.68, duration: 1.35, ease: 'power2.out' }, s + 1.0)
+          tl.to('.correction-line', { opacity: 1, scaleX: 1, duration: 0.9 }, s + 1.15)
+          tl.to(
+            '.correction-dot',
+            { scale: 1, opacity: 1, duration: 0.38, stagger: 0.12, ease: 'back.out(1.4)' },
+            s + 1.35,
+          )
+          tl.to('.correction-label', { y: 0, opacity: 1, duration: 0.65 }, s + d - 1.2)
+        } else if (shot.view === 'view-storage') {
+          tl.to(
+            '.storage-card',
+            { x: 0, opacity: 1, duration: 0.65, stagger: 0.17, ease: 'back.out(1.1)' },
+            s,
+          )
+          tl.to(
+            '.storage-card',
+            { y: shot.n % 2 ? -5 : 5, duration: d - 1.2, stagger: 0.12, ease: 'sine.inOut' },
+            s + 0.9,
+          )
+          tl.to('.resume-tag', { y: 0, opacity: 1, duration: 0.68 }, s + d - 1.45)
+        } else if (shot.view === 'view-verdict') {
+          tl.to(
+            '.verdict-metric',
+            { y: 0, opacity: 1, duration: 0.62, stagger: 0.16, ease: 'back.out(1.2)' },
+            s,
+          )
+          tl.to('.verdict-panel', { y: 0, opacity: 1, duration: 0.8, ease }, s + 0.62)
+          tl.to(
+            '.verdict-metric',
+            { y: shot.n % 2 ? -5 : 5, duration: d - 1.8, stagger: 0.1, ease: 'sine.inOut' },
+            s + 1.2,
+          )
+        } else if (shot.view === 'view-close') {
+          tl.to(
+            '.closing-loop',
+            { scale: 1, rotation: -13, opacity: 1, duration: 1.1, ease: 'back.out(1.1)' },
+            s,
+          )
+          tl.to(
+            '.closing-node',
+            { y: 0, opacity: 1, duration: 0.62, stagger: 0.16, ease: 'back.out(1.1)' },
+            s + 0.35,
+          )
+          tl.to(
+            '.closing-packet',
+            { x: 575, opacity: 1, duration: d - 1.1, ease: 'power1.inOut' },
+            s + 0.55,
+          )
         }
       }
 
-      populateData();
-      const tl = gsap.timeline({ paused: true, defaults: { ease: "power2.out" } });
-      tl.fromTo("#progress", { scaleX: 0 }, { scaleX: 1, duration: 345, ease: "none" }, 0);
-      tl.to(".ambient-dot", { y: -25, x: 18, duration: 8, ease: "sine.inOut", repeat: 42, yoyo: true, stagger: .25 }, 0);
+      populateData()
+      const tl = gsap.timeline({ paused: true, defaults: { ease: 'power2.out' } })
+      tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: 345, ease: 'none' }, 0)
+      tl.to(
+        '.ambient-dot',
+        { y: -25, x: 18, duration: 8, ease: 'sine.inOut', repeat: 42, yoyo: true, stagger: 0.25 },
+        0,
+      )
       shots.forEach((shot) => {
-        tl.call(() => { applyShot(shot); resetView(shot.view); }, [], shot.start);
-        tl.to(".view", { opacity: 0, duration: .38, ease: "power2.in" }, shot.start);
-        tl.fromTo(`#${shot.view}`, { opacity: 0, scale: .985 }, { opacity: 1, scale: 1, duration: .68, ease: "power2.out" }, shot.start + .18);
-        tl.to("#copy-pane", { opacity: 0, x: -18, duration: .26, ease: "power2.in" }, shot.start);
-        tl.fromTo("#copy-pane", { opacity: 0, x: 32 }, { opacity: 1, x: 0, duration: .60, ease: "power2.out" }, shot.start + .18);
-        tl.to("#caption-bar", { opacity: .25, duration: .18 }, shot.start);
-        tl.to("#caption-bar", { opacity: 1, duration: .44 }, shot.start + .22);
-        animateView(tl, shot);
-      });
-      tl.to("#copy-pane, #visual-pane, #caption-bar", { opacity: 0, duration: 1.1, ease: "power2.in" }, 343.7);
-      tl.to("#progress", { opacity: .35, duration: 1.1 }, 343.7);
-      window.__timelines = window.__timelines || {};
-      window.__timelines["motion-5m45s"] = tl;
+        tl.call(
+          () => {
+            applyShot(shot)
+            resetView(shot.view)
+          },
+          [],
+          shot.start,
+        )
+        tl.to('.view', { opacity: 0, duration: 0.38, ease: 'power2.in' }, shot.start)
+        tl.fromTo(
+          `#${shot.view}`,
+          { opacity: 0, scale: 0.985 },
+          { opacity: 1, scale: 1, duration: 0.68, ease: 'power2.out' },
+          shot.start + 0.18,
+        )
+        tl.to('#copy-pane', { opacity: 0, x: -18, duration: 0.26, ease: 'power2.in' }, shot.start)
+        tl.fromTo(
+          '#copy-pane',
+          { opacity: 0, x: 32 },
+          { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' },
+          shot.start + 0.18,
+        )
+        tl.to('#caption-bar', { opacity: 0.25, duration: 0.18 }, shot.start)
+        tl.to('#caption-bar', { opacity: 1, duration: 0.44 }, shot.start + 0.22)
+        animateView(tl, shot)
+      })
+      tl.to(
+        '#copy-pane, #visual-pane, #caption-bar',
+        { opacity: 0, duration: 1.1, ease: 'power2.in' },
+        343.7,
+      )
+      tl.to('#progress', { opacity: 0.35, duration: 1.1 }, 343.7)
+      window.__timelines = window.__timelines || {}
+      window.__timelines['motion-5m45s'] = tl
     </script>
   </body>
 </html>

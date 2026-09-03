@@ -6,11 +6,26 @@
     <title>Open Scientist / Actual Scientific Loop</title>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <style>
-      @font-face { font-family: "Microsoft YaHei UI"; src: local("Microsoft YaHei UI"); }
-      @font-face { font-family: "PingFang SC"; src: local("PingFang SC"); }
-      @font-face { font-family: "Noto Sans CJK SC"; src: local("Noto Sans CJK SC"); }
-      @font-face { font-family: "Bahnschrift SemiCondensed"; src: local("Bahnschrift SemiCondensed"); }
-      @font-face { font-family: "Cascadia Mono"; src: local("Cascadia Mono"); }
+      @font-face {
+        font-family: 'Microsoft YaHei UI';
+        src: local('Microsoft YaHei UI');
+      }
+      @font-face {
+        font-family: 'PingFang SC';
+        src: local('PingFang SC');
+      }
+      @font-face {
+        font-family: 'Noto Sans CJK SC';
+        src: local('Noto Sans CJK SC');
+      }
+      @font-face {
+        font-family: 'Bahnschrift SemiCondensed';
+        src: local('Bahnschrift SemiCondensed');
+      }
+      @font-face {
+        font-family: 'Cascadia Mono';
+        src: local('Cascadia Mono');
+      }
 
       :root {
         --bg: #06101b;
@@ -28,62 +43,90 @@
         --red: #ee7469;
         --violet: #bca5ff;
         --blue: #82b8ff;
-        --line: rgba(128, 223, 218, .2);
-        --line-strong: rgba(128, 223, 218, .38);
+        --line: rgba(128, 223, 218, 0.2);
+        --line-strong: rgba(128, 223, 218, 0.38);
       }
 
-      * { box-sizing: border-box; }
-      html, body {
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
         width: 1920px;
         height: 1080px;
         margin: 0;
         overflow: hidden;
         background: var(--bg-deep);
         color: var(--paper);
-        font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+        font-family: 'Microsoft YaHei UI', 'PingFang SC', 'Noto Sans CJK SC', sans-serif;
       }
-      body { -webkit-font-smoothing: antialiased; }
+      body {
+        -webkit-font-smoothing: antialiased;
+      }
       #root {
         position: relative;
         width: 1920px;
         height: 1080px;
         overflow: hidden;
         background:
-          radial-gradient(circle at 84% 18%, rgba(255, 171, 85, .09), transparent 22%),
+          radial-gradient(circle at 84% 18%, rgba(255, 171, 85, 0.09), transparent 22%),
           linear-gradient(135deg, #071825 0%, #040b15 72%, #081b25 100%);
       }
       #root::before {
-        content: "";
+        content: '';
         position: absolute;
         inset: 0;
         background-image:
-          linear-gradient(rgba(111, 215, 211, .14) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(111, 215, 211, .14) 1px, transparent 1px);
+          linear-gradient(rgba(111, 215, 211, 0.14) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(111, 215, 211, 0.14) 1px, transparent 1px);
         background-size: 96px 96px;
-        opacity: .28;
-        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .8), transparent 86%);
+        opacity: 0.28;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 86%);
       }
       #root::after {
-        content: "";
+        content: '';
         position: absolute;
         width: 820px;
         height: 820px;
         right: -390px;
         top: 115px;
-        border: 1px solid rgba(255, 171, 85, .27);
+        border: 1px solid rgba(255, 171, 85, 0.27);
         border-radius: 50%;
-        box-shadow: 0 0 100px rgba(255, 145, 49, .08), inset 0 0 140px rgba(255, 171, 85, .04);
+        box-shadow:
+          0 0 100px rgba(255, 145, 49, 0.08),
+          inset 0 0 140px rgba(255, 171, 85, 0.04);
       }
 
-      h1, h2, h3, p { margin: 0; }
-      h1, h2, h3, .big-number, .metric-value, .node-id, .route-id {
-        font-family: "Bahnschrift SemiCondensed", "Microsoft YaHei UI", sans-serif;
-        font-weight: 680;
-        letter-spacing: -.035em;
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
       }
-      h1 { font-size: 132px; line-height: .93; }
-      h2 { max-width: 1130px; font-size: 67px; line-height: 1.05; }
-      h3 { font-size: 26px; line-height: 1.25; }
+      h1,
+      h2,
+      h3,
+      .big-number,
+      .metric-value,
+      .node-id,
+      .route-id {
+        font-family: 'Bahnschrift SemiCondensed', 'Microsoft YaHei UI', sans-serif;
+        font-weight: 680;
+        letter-spacing: -0.035em;
+      }
+      h1 {
+        font-size: 132px;
+        line-height: 0.93;
+      }
+      h2 {
+        max-width: 1130px;
+        font-size: 67px;
+        line-height: 1.05;
+      }
+      h3 {
+        font-size: 26px;
+        line-height: 1.25;
+      }
       .scene {
         position: absolute;
         z-index: 10;
@@ -91,25 +134,44 @@
         padding: 140px 150px 150px;
         overflow: hidden;
       }
-      .scene-content { position: relative; width: 100%; height: 100%; }
-      .mono { font-family: "Cascadia Mono", "Microsoft YaHei UI", monospace; }
-      .accent { color: var(--cyan); }
-      .solar { color: var(--hot); text-shadow: 0 0 30px rgba(255, 171, 85, .22); }
-      .violet { color: var(--violet); }
-      .warn { color: var(--warn); }
-      .red { color: var(--red); }
+      .scene-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .mono {
+        font-family: 'Cascadia Mono', 'Microsoft YaHei UI', monospace;
+      }
+      .accent {
+        color: var(--cyan);
+      }
+      .solar {
+        color: var(--hot);
+        text-shadow: 0 0 30px rgba(255, 171, 85, 0.22);
+      }
+      .violet {
+        color: var(--violet);
+      }
+      .warn {
+        color: var(--warn);
+      }
+      .red {
+        color: var(--red);
+      }
       .kicker {
         display: flex;
         align-items: center;
         gap: 13px;
         margin-bottom: 24px;
-        font: 650 18px/1 "Cascadia Mono", monospace;
-        letter-spacing: .15em;
+        font:
+          650 18px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.15em;
         color: var(--cyan);
         text-transform: uppercase;
       }
       .kicker::before {
-        content: "";
+        content: '';
         width: 44px;
         height: 2px;
         background: currentColor;
@@ -127,12 +189,20 @@
         right: 0;
         bottom: 34px;
         max-width: 670px;
-        font: 500 16px/1.45 "Cascadia Mono", "Microsoft YaHei UI", monospace;
+        font:
+          500 16px/1.45 'Cascadia Mono',
+          'Microsoft YaHei UI',
+          monospace;
         color: var(--muted);
         text-align: right;
       }
 
-      .top, .bottom, .side-rail { position: absolute; z-index: 60; }
+      .top,
+      .bottom,
+      .side-rail {
+        position: absolute;
+        z-index: 60;
+      }
       .top {
         top: 39px;
         left: 62px;
@@ -140,21 +210,29 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font: 500 16px/1.2 "Cascadia Mono", monospace;
-        letter-spacing: .1em;
+        font:
+          500 16px/1.2 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
         color: var(--muted);
       }
-      .brand { display: flex; align-items: center; gap: 15px; color: var(--paper); }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        color: var(--paper);
+      }
       .mark {
         position: relative;
         width: 34px;
         height: 34px;
         border: 2px solid var(--solar);
         border-radius: 50%;
-        box-shadow: 0 0 22px rgba(255, 171, 85, .45);
+        box-shadow: 0 0 22px rgba(255, 171, 85, 0.45);
       }
-      .mark::before, .mark::after {
-        content: "";
+      .mark::before,
+      .mark::after {
+        content: '';
         position: absolute;
         inset: 6px -8px;
         border-top: 1px solid var(--cyan);
@@ -162,10 +240,17 @@
         border-radius: 50%;
         transform: rotate(-23deg);
       }
-      .mark::after { transform: rotate(23deg); }
-      .source { display: flex; gap: 10px; align-items: center; white-space: nowrap; }
+      .mark::after {
+        transform: rotate(23deg);
+      }
+      .source {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        white-space: nowrap;
+      }
       .source::before {
-        content: "";
+        content: '';
         width: 8px;
         height: 8px;
         border-radius: 50%;
@@ -177,7 +262,7 @@
         right: 63px;
         bottom: 132px;
         width: 1px;
-        background: linear-gradient(to bottom, transparent, rgba(108, 233, 223, .42), transparent);
+        background: linear-gradient(to bottom, transparent, rgba(108, 233, 223, 0.42), transparent);
       }
       #rail-pulse {
         position: absolute;
@@ -189,8 +274,16 @@
         background: var(--cyan);
         box-shadow: 0 0 20px var(--cyan);
       }
-      .bottom { right: 62px; bottom: 43px; left: 62px; }
-      .progress-track { height: 3px; overflow: hidden; background: rgba(238, 248, 247, .12); }
+      .bottom {
+        right: 62px;
+        bottom: 43px;
+        left: 62px;
+      }
+      .progress-track {
+        height: 3px;
+        overflow: hidden;
+        background: rgba(238, 248, 247, 0.12);
+      }
       #progress {
         width: 100%;
         height: 100%;
@@ -202,30 +295,75 @@
         display: flex;
         justify-content: space-between;
         margin-top: 12px;
-        font: 550 13px/1 "Cascadia Mono", monospace;
-        letter-spacing: .08em;
+        font:
+          550 13px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
         color: #668488;
       }
 
-      .hero-scene { display: flex; align-items: center; }
-      .hero-copy { width: 850px; padding-top: 10px; }
-      .hero-copy .subline { max-width: 760px; margin-top: 34px; font-size: 27px; line-height: 1.62; }
+      .hero-scene {
+        display: flex;
+        align-items: center;
+      }
+      .hero-copy {
+        width: 850px;
+        padding-top: 10px;
+      }
+      .hero-copy .subline {
+        max-width: 760px;
+        margin-top: 34px;
+        font-size: 27px;
+        line-height: 1.62;
+      }
       .hero-chain {
         display: flex;
         align-items: center;
         gap: 16px;
         margin-top: 39px;
-        font: 650 15px/1 "Cascadia Mono", monospace;
-        letter-spacing: .08em;
+        font:
+          650 15px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
         color: var(--muted);
       }
-      .hero-chain span { padding: 11px 13px; border: 1px solid var(--line-strong); color: var(--cyan); }
-      .hero-chain span:nth-child(4n + 1) { border-color: rgba(255, 171, 85, .42); color: var(--hot); }
-      .hero-chain i { font-style: normal; color: var(--faint); }
-      .hero-orbit { position: absolute; right: 40px; top: 17px; width: 710px; height: 710px; }
-      .orbit-ring { position: absolute; inset: 40px; border: 1px solid rgba(108, 233, 223, .24); border-radius: 50%; transform: rotate(-18deg) skewX(-12deg); }
-      .orbit-ring.two { inset: 112px; transform: rotate(38deg) skewX(18deg); border-color: rgba(255, 171, 85, .38); }
-      .orbit-ring.three { inset: 190px; transform: rotate(-32deg) skewX(-17deg); border-color: rgba(188, 165, 255, .25); }
+      .hero-chain span {
+        padding: 11px 13px;
+        border: 1px solid var(--line-strong);
+        color: var(--cyan);
+      }
+      .hero-chain span:nth-child(4n + 1) {
+        border-color: rgba(255, 171, 85, 0.42);
+        color: var(--hot);
+      }
+      .hero-chain i {
+        font-style: normal;
+        color: var(--faint);
+      }
+      .hero-orbit {
+        position: absolute;
+        right: 40px;
+        top: 17px;
+        width: 710px;
+        height: 710px;
+      }
+      .orbit-ring {
+        position: absolute;
+        inset: 40px;
+        border: 1px solid rgba(108, 233, 223, 0.24);
+        border-radius: 50%;
+        transform: rotate(-18deg) skewX(-12deg);
+      }
+      .orbit-ring.two {
+        inset: 112px;
+        transform: rotate(38deg) skewX(18deg);
+        border-color: rgba(255, 171, 85, 0.38);
+      }
+      .orbit-ring.three {
+        inset: 190px;
+        transform: rotate(-32deg) skewX(-17deg);
+        border-color: rgba(188, 165, 255, 0.25);
+      }
       .orbit-core {
         position: absolute;
         top: 242px;
@@ -235,24 +373,87 @@
         width: 226px;
         height: 226px;
         border-radius: 50%;
-        background: radial-gradient(circle at 36% 31%, #ffe1a2 0%, #ffac56 25%, #f26d3c 54%, #792b2a 100%);
-        box-shadow: 0 0 70px rgba(255, 147, 64, .37), inset -18px -26px 38px rgba(67, 12, 34, .34);
+        background: radial-gradient(
+          circle at 36% 31%,
+          #ffe1a2 0%,
+          #ffac56 25%,
+          #f26d3c 54%,
+          #792b2a 100%
+        );
+        box-shadow:
+          0 0 70px rgba(255, 147, 64, 0.37),
+          inset -18px -26px 38px rgba(67, 12, 34, 0.34);
         color: #241a1a;
         text-align: center;
       }
-      .orbit-core strong { font: 700 34px/1 "Bahnschrift SemiCondensed", sans-serif; letter-spacing: .04em; }
-      .orbit-core span { margin-top: 8px; font: 650 12px/1 "Cascadia Mono", monospace; letter-spacing: .12em; }
-      .orbit-label { position: absolute; font: 650 15px/1 "Cascadia Mono", monospace; letter-spacing: .11em; color: var(--muted); }
-      .orbit-label.a { top: 82px; right: 75px; color: var(--cyan); }
-      .orbit-label.b { bottom: 87px; left: 30px; color: var(--hot); }
-      .orbit-label.c { top: 318px; left: -6px; color: var(--violet); }
-      .hero-run { position: absolute; right: 47px; bottom: 14px; font: 600 16px/1.5 "Cascadia Mono", monospace; color: var(--muted); text-align: right; }
+      .orbit-core strong {
+        font:
+          700 34px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        letter-spacing: 0.04em;
+      }
+      .orbit-core span {
+        margin-top: 8px;
+        font:
+          650 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.12em;
+      }
+      .orbit-label {
+        position: absolute;
+        font:
+          650 15px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.11em;
+        color: var(--muted);
+      }
+      .orbit-label.a {
+        top: 82px;
+        right: 75px;
+        color: var(--cyan);
+      }
+      .orbit-label.b {
+        bottom: 87px;
+        left: 30px;
+        color: var(--hot);
+      }
+      .orbit-label.c {
+        top: 318px;
+        left: -6px;
+        color: var(--violet);
+      }
+      .hero-run {
+        position: absolute;
+        right: 47px;
+        bottom: 14px;
+        font:
+          600 16px/1.5 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+        text-align: right;
+      }
 
-      .heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 80px; }
-      .heading-copy { max-width: 1150px; }
-      .heading-side { max-width: 420px; padding-bottom: 9px; font-size: 21px; line-height: 1.55; color: var(--muted); }
+      .heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 80px;
+      }
+      .heading-copy {
+        max-width: 1150px;
+      }
+      .heading-side {
+        max-width: 420px;
+        padding-bottom: 9px;
+        font-size: 21px;
+        line-height: 1.55;
+        color: var(--muted);
+      }
 
-      .layer-list { margin-top: 48px; border-top: 1px solid var(--line-strong); }
+      .layer-list {
+        margin-top: 48px;
+        border-top: 1px solid var(--line-strong);
+      }
       .layer-row {
         display: grid;
         grid-template-columns: 72px 280px 1fr 360px;
@@ -260,212 +461,1282 @@
         min-height: 94px;
         border-bottom: 1px solid var(--line);
       }
-      .layer-row .layer-index { font: 700 18px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .layer-row .layer-name { font: 700 24px/1 "Cascadia Mono", monospace; letter-spacing: .06em; color: var(--paper); }
-      .layer-row .layer-path { font: 500 21px/1.3 "Cascadia Mono", monospace; color: var(--cyan); }
-      .layer-row .layer-detail { font: 500 17px/1.35 "Cascadia Mono", monospace; color: var(--muted); text-align: right; }
-      .stack-footer { display: flex; justify-content: space-between; margin-top: 29px; font: 500 15px/1.4 "Cascadia Mono", monospace; letter-spacing: .06em; color: var(--faint); }
+      .layer-row .layer-index {
+        font:
+          700 18px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .layer-row .layer-name {
+        font:
+          700 24px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.06em;
+        color: var(--paper);
+      }
+      .layer-row .layer-path {
+        font:
+          500 21px/1.3 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .layer-row .layer-detail {
+        font:
+          500 17px/1.35 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+        text-align: right;
+      }
+      .stack-footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 29px;
+        font:
+          500 15px/1.4 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.06em;
+        color: var(--faint);
+      }
 
-      .two-pane { display: grid; grid-template-columns: .82fr 1.18fr; gap: 86px; align-items: center; height: 100%; }
-      .phenomenon-title { max-width: 680px; margin-top: 13px; font: 650 28px/1.22 "Cascadia Mono", monospace; color: var(--hot); }
-      .question { max-width: 680px; margin-top: 28px; font-size: 25px; line-height: 1.58; color: var(--soft); }
-      .channel-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
-      .channel-row span { padding: 10px 13px; border-left: 2px solid var(--solar); background: rgba(255, 171, 85, .09); font: 600 15px/1 "Cascadia Mono", monospace; color: var(--hot); }
-      .constraint-list { display: grid; gap: 12px; margin-top: 31px; }
-      .constraint { display: grid; grid-template-columns: 18px 1fr; gap: 12px; align-items: start; font-size: 18px; line-height: 1.45; color: var(--muted); }
-      .constraint::before { content: ""; width: 7px; height: 7px; margin-top: 9px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
-      .diagnostic-frame { position: relative; padding: 15px; background: rgba(3, 13, 21, .94); border: 1px solid rgba(108, 233, 223, .32); box-shadow: 0 28px 80px rgba(0, 0, 0, .42); }
-      .diagnostic-frame::before { content: "INPUT / SDO FITS WINDOW"; position: absolute; top: -29px; left: 0; font: 600 14px/1 "Cascadia Mono", monospace; letter-spacing: .13em; color: var(--muted); }
-      .diagnostic-frame img { display: block; width: 100%; height: 530px; object-fit: cover; filter: saturate(.9) contrast(1.05); }
-      .image-tag { position: absolute; right: 29px; bottom: 29px; padding: 8px 11px; background: rgba(3, 13, 21, .84); border: 1px solid rgba(255, 171, 85, .5); font: 600 14px/1 "Cascadia Mono", monospace; color: var(--hot); }
-      #scan-beam { position: absolute; top: 15px; right: 15px; left: 15px; height: 2px; opacity: 0; background: linear-gradient(90deg, transparent, var(--cyan), transparent); box-shadow: 0 0 23px var(--cyan); }
+      .two-pane {
+        display: grid;
+        grid-template-columns: 0.82fr 1.18fr;
+        gap: 86px;
+        align-items: center;
+        height: 100%;
+      }
+      .phenomenon-title {
+        max-width: 680px;
+        margin-top: 13px;
+        font:
+          650 28px/1.22 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
+      .question {
+        max-width: 680px;
+        margin-top: 28px;
+        font-size: 25px;
+        line-height: 1.58;
+        color: var(--soft);
+      }
+      .channel-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 28px;
+      }
+      .channel-row span {
+        padding: 10px 13px;
+        border-left: 2px solid var(--solar);
+        background: rgba(255, 171, 85, 0.09);
+        font:
+          600 15px/1 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
+      .constraint-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 31px;
+      }
+      .constraint {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        gap: 12px;
+        align-items: start;
+        font-size: 18px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .constraint::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        margin-top: 9px;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 10px var(--cyan);
+      }
+      .diagnostic-frame {
+        position: relative;
+        padding: 15px;
+        background: rgba(3, 13, 21, 0.94);
+        border: 1px solid rgba(108, 233, 223, 0.32);
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+      }
+      .diagnostic-frame::before {
+        content: 'INPUT / SDO FITS WINDOW';
+        position: absolute;
+        top: -29px;
+        left: 0;
+        font:
+          600 14px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.13em;
+        color: var(--muted);
+      }
+      .diagnostic-frame img {
+        display: block;
+        width: 100%;
+        height: 530px;
+        object-fit: cover;
+        filter: saturate(0.9) contrast(1.05);
+      }
+      .image-tag {
+        position: absolute;
+        right: 29px;
+        bottom: 29px;
+        padding: 8px 11px;
+        background: rgba(3, 13, 21, 0.84);
+        border: 1px solid rgba(255, 171, 85, 0.5);
+        font:
+          600 14px/1 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
+      #scan-beam {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        left: 15px;
+        height: 2px;
+        opacity: 0;
+        background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+        box-shadow: 0 0 23px var(--cyan);
+      }
 
-      .graph-stage { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-      .graph-chain { position: relative; display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; margin-top: 64px; }
-      .graph-chain::before { content: ""; position: absolute; top: 39px; right: 3%; left: 3%; height: 1px; background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet), var(--cyan)); }
-      .graph-node { position: relative; z-index: 2; min-height: 166px; padding: 21px 16px; background: linear-gradient(145deg, rgba(10, 31, 43, .95), rgba(5, 15, 25, .9)); border-top: 2px solid var(--node); }
-      .graph-node::before { content: ""; position: absolute; top: 31px; left: -6px; width: 11px; height: 11px; border: 4px solid var(--bg); border-radius: 50%; background: var(--node); box-shadow: 0 0 16px var(--node); }
-      .graph-node:first-child::before { left: 5px; }
-      .graph-node:last-child::before { left: auto; right: 5px; }
-      .node-id { display: block; font-size: 25px; line-height: 1; color: var(--node); }
-      .node-title { display: block; margin-top: 19px; font-size: 19px; line-height: 1.25; color: var(--paper); }
-      .node-io { display: block; margin-top: 12px; font: 500 12px/1.4 "Cascadia Mono", monospace; color: var(--muted); }
-      .graph-loop { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 38px; }
-      .graph-loop-item { min-height: 95px; padding: 19px 22px; border-left: 2px solid var(--node); background: rgba(8, 26, 37, .7); }
-      .graph-loop-item strong { display: block; font: 700 17px/1 "Cascadia Mono", monospace; color: var(--node); }
-      .graph-loop-item span { display: block; margin-top: 10px; font-size: 18px; line-height: 1.35; color: var(--soft); }
+      .graph-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+      }
+      .graph-chain {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 10px;
+        margin-top: 64px;
+      }
+      .graph-chain::before {
+        content: '';
+        position: absolute;
+        top: 39px;
+        right: 3%;
+        left: 3%;
+        height: 1px;
+        background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet), var(--cyan));
+      }
+      .graph-node {
+        position: relative;
+        z-index: 2;
+        min-height: 166px;
+        padding: 21px 16px;
+        background: linear-gradient(145deg, rgba(10, 31, 43, 0.95), rgba(5, 15, 25, 0.9));
+        border-top: 2px solid var(--node);
+      }
+      .graph-node::before {
+        content: '';
+        position: absolute;
+        top: 31px;
+        left: -6px;
+        width: 11px;
+        height: 11px;
+        border: 4px solid var(--bg);
+        border-radius: 50%;
+        background: var(--node);
+        box-shadow: 0 0 16px var(--node);
+      }
+      .graph-node:first-child::before {
+        left: 5px;
+      }
+      .graph-node:last-child::before {
+        left: auto;
+        right: 5px;
+      }
+      .node-id {
+        display: block;
+        font-size: 25px;
+        line-height: 1;
+        color: var(--node);
+      }
+      .node-title {
+        display: block;
+        margin-top: 19px;
+        font-size: 19px;
+        line-height: 1.25;
+        color: var(--paper);
+      }
+      .node-io {
+        display: block;
+        margin-top: 12px;
+        font:
+          500 12px/1.4 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .graph-loop {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        margin-top: 38px;
+      }
+      .graph-loop-item {
+        min-height: 95px;
+        padding: 19px 22px;
+        border-left: 2px solid var(--node);
+        background: rgba(8, 26, 37, 0.7);
+      }
+      .graph-loop-item strong {
+        display: block;
+        font:
+          700 17px/1 'Cascadia Mono',
+          monospace;
+        color: var(--node);
+      }
+      .graph-loop-item span {
+        display: block;
+        margin-top: 10px;
+        font-size: 18px;
+        line-height: 1.35;
+        color: var(--soft);
+      }
 
-      .hypothesis-stage { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-      .stage-rail { display: flex; align-items: center; gap: 12px; margin-top: 20px; font: 600 15px/1 "Cascadia Mono", monospace; letter-spacing: .08em; color: var(--muted); }
-      .stage-rail span { color: var(--solar); }
-      .hypothesis-grid { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 44px; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .hypothesis { min-height: 386px; padding: 29px 30px; border-right: 1px solid var(--line); }
-      .hypothesis:last-child { border-right: 0; }
-      .hypothesis-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
-      .hypothesis-index { font: 700 18px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .status-pill { padding: 6px 9px; border: 1px solid currentColor; font: 650 12px/1 "Cascadia Mono", monospace; letter-spacing: .08em; }
-      .status-pill.candidate { color: var(--solar); }
-      .status-pill.uncertain { color: var(--warn); }
-      .status-pill.supported { color: var(--cyan); }
-      .hypothesis h3 { min-height: 154px; margin-top: 25px; font-size: 22px; line-height: 1.5; font-weight: 600; }
-      .mechanism-line { min-height: 49px; margin-top: 15px; font: 500 15px/1.5 "Cascadia Mono", monospace; color: var(--muted); }
-      .hypothesis-meta { display: flex; gap: 20px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); font: 500 13px/1.3 "Cascadia Mono", monospace; color: var(--faint); }
-      .hypothesis-confidence { display: flex; align-items: baseline; gap: 9px; margin-top: 20px; color: var(--cyan); }
-      .hypothesis-confidence strong { font: 700 46px/1 "Bahnschrift SemiCondensed", sans-serif; }
-      .hypothesis-confidence span { font: 500 12px/1 "Cascadia Mono", monospace; letter-spacing: .12em; }
+      .hypothesis-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+      }
+      .stage-rail {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 20px;
+        font:
+          600 15px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      .stage-rail span {
+        color: var(--solar);
+      }
+      .hypothesis-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        margin-top: 44px;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .hypothesis {
+        min-height: 386px;
+        padding: 29px 30px;
+        border-right: 1px solid var(--line);
+      }
+      .hypothesis:last-child {
+        border-right: 0;
+      }
+      .hypothesis-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+      }
+      .hypothesis-index {
+        font:
+          700 18px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .status-pill {
+        padding: 6px 9px;
+        border: 1px solid currentColor;
+        font:
+          650 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+      }
+      .status-pill.candidate {
+        color: var(--solar);
+      }
+      .status-pill.uncertain {
+        color: var(--warn);
+      }
+      .status-pill.supported {
+        color: var(--cyan);
+      }
+      .hypothesis h3 {
+        min-height: 154px;
+        margin-top: 25px;
+        font-size: 22px;
+        line-height: 1.5;
+        font-weight: 600;
+      }
+      .mechanism-line {
+        min-height: 49px;
+        margin-top: 15px;
+        font:
+          500 15px/1.5 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .hypothesis-meta {
+        display: flex;
+        gap: 20px;
+        margin-top: 22px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        font:
+          500 13px/1.3 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
+      .hypothesis-confidence {
+        display: flex;
+        align-items: baseline;
+        gap: 9px;
+        margin-top: 20px;
+        color: var(--cyan);
+      }
+      .hypothesis-confidence strong {
+        font:
+          700 46px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+      }
+      .hypothesis-confidence span {
+        font:
+          500 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.12em;
+      }
 
-      .workgroup-stage { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-      .workgroup-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 60px; }
-      .workgroup-header p { max-width: 510px; font-size: 21px; line-height: 1.55; color: var(--muted); }
-      .dispatch-line { display: flex; align-items: center; gap: 20px; margin-top: 37px; font: 650 17px/1 "Cascadia Mono", monospace; color: var(--muted); }
-      .dispatch-node { padding: 15px 18px; border: 1px solid var(--cyan); background: rgba(108, 233, 223, .08); color: var(--cyan); }
-      .dispatch-line i { font-style: normal; color: var(--faint); }
-      .agent-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 50px; margin-top: 25px; border-top: 1px solid var(--line); }
-      .agent-row { display: grid; grid-template-columns: 54px 1fr 190px; gap: 18px; align-items: center; min-height: 106px; border-bottom: 1px solid var(--line); }
-      .agent-mark { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--agent-color); border-radius: 50%; font: 700 12px/1 "Cascadia Mono", monospace; color: var(--agent-color); }
-      .agent-name { display: block; font: 700 17px/1 "Cascadia Mono", monospace; letter-spacing: .08em; color: var(--agent-color); }
-      .agent-title { display: block; margin-top: 8px; font-size: 18px; color: var(--paper); }
-      .agent-desc { display: block; margin-top: 5px; font-size: 14px; color: var(--muted); }
-      .agent-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: right; }
-      .agent-stats b { display: block; font: 700 24px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--paper); }
-      .agent-stats span { display: block; margin-top: 6px; font: 500 10px/1.2 "Cascadia Mono", monospace; color: var(--muted); }
-      .aggregate-line { margin-top: 25px; font: 650 15px/1 "Cascadia Mono", monospace; letter-spacing: .08em; color: var(--faint); }
+      .workgroup-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+      }
+      .workgroup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 60px;
+      }
+      .workgroup-header p {
+        max-width: 510px;
+        font-size: 21px;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+      .dispatch-line {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-top: 37px;
+        font:
+          650 17px/1 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .dispatch-node {
+        padding: 15px 18px;
+        border: 1px solid var(--cyan);
+        background: rgba(108, 233, 223, 0.08);
+        color: var(--cyan);
+      }
+      .dispatch-line i {
+        font-style: normal;
+        color: var(--faint);
+      }
+      .agent-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0 50px;
+        margin-top: 25px;
+        border-top: 1px solid var(--line);
+      }
+      .agent-row {
+        display: grid;
+        grid-template-columns: 54px 1fr 190px;
+        gap: 18px;
+        align-items: center;
+        min-height: 106px;
+        border-bottom: 1px solid var(--line);
+      }
+      .agent-mark {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--agent-color);
+        border-radius: 50%;
+        font:
+          700 12px/1 'Cascadia Mono',
+          monospace;
+        color: var(--agent-color);
+      }
+      .agent-name {
+        display: block;
+        font:
+          700 17px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+        color: var(--agent-color);
+      }
+      .agent-title {
+        display: block;
+        margin-top: 8px;
+        font-size: 18px;
+        color: var(--paper);
+      }
+      .agent-desc {
+        display: block;
+        margin-top: 5px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .agent-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        text-align: right;
+      }
+      .agent-stats b {
+        display: block;
+        font:
+          700 24px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--paper);
+      }
+      .agent-stats span {
+        display: block;
+        margin-top: 6px;
+        font:
+          500 10px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .aggregate-line {
+        margin-top: 25px;
+        font:
+          650 15px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+        color: var(--faint);
+      }
 
-      .processing-stage { display: grid; grid-template-columns: 1.15fr .85fr; gap: 80px; align-items: center; height: 100%; }
-      .processing-pipeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-top: 55px; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .process-step { position: relative; min-height: 220px; padding: 25px 20px; border-right: 1px solid var(--line); }
-      .process-step:last-child { border-right: 0; }
-      .process-step::after { content: "→"; position: absolute; top: 82px; right: -13px; z-index: 3; font: 700 22px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .process-step:last-child::after { display: none; }
-      .process-index { font: 700 13px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .process-step strong { display: block; margin-top: 31px; font: 650 20px/1.2 "Cascadia Mono", monospace; color: var(--paper); }
-      .process-step span { display: block; margin-top: 13px; font-size: 16px; line-height: 1.45; color: var(--muted); }
-      .processor-foot { display: flex; justify-content: space-between; gap: 25px; margin-top: 24px; font: 500 14px/1.45 "Cascadia Mono", monospace; color: var(--faint); }
-      .processor-figure { position: relative; padding: 13px; border: 1px solid rgba(255, 171, 85, .35); background: rgba(3, 13, 21, .86); }
-      .processor-figure::before { content: ""; display: block; width: 100%; height: 340px; background: linear-gradient(180deg, rgba(2, 10, 17, .05), rgba(2, 10, 17, .18)), url("./coronal_diagnostics.png") center / cover no-repeat; }
-      .processor-figure figcaption { display: flex; justify-content: space-between; margin-top: 13px; font: 600 14px/1 "Cascadia Mono", monospace; color: var(--hot); }
-      .metric-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; margin-top: 23px; background: var(--line); }
-      .metric-cell { padding: 14px 15px; background: rgba(7, 25, 35, .94); }
-      .metric-cell b { display: block; font: 700 26px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--paper); }
-      .metric-cell span { display: block; margin-top: 7px; font: 500 11px/1.25 "Cascadia Mono", monospace; color: var(--muted); }
+      .processing-stage {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 80px;
+        align-items: center;
+        height: 100%;
+      }
+      .processing-pipeline {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0;
+        margin-top: 55px;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .process-step {
+        position: relative;
+        min-height: 220px;
+        padding: 25px 20px;
+        border-right: 1px solid var(--line);
+      }
+      .process-step:last-child {
+        border-right: 0;
+      }
+      .process-step::after {
+        content: '→';
+        position: absolute;
+        top: 82px;
+        right: -13px;
+        z-index: 3;
+        font:
+          700 22px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .process-step:last-child::after {
+        display: none;
+      }
+      .process-index {
+        font:
+          700 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .process-step strong {
+        display: block;
+        margin-top: 31px;
+        font:
+          650 20px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--paper);
+      }
+      .process-step span {
+        display: block;
+        margin-top: 13px;
+        font-size: 16px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .processor-foot {
+        display: flex;
+        justify-content: space-between;
+        gap: 25px;
+        margin-top: 24px;
+        font:
+          500 14px/1.45 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
+      .processor-figure {
+        position: relative;
+        padding: 13px;
+        border: 1px solid rgba(255, 171, 85, 0.35);
+        background: rgba(3, 13, 21, 0.86);
+      }
+      .processor-figure::before {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 340px;
+        background:
+          linear-gradient(180deg, rgba(2, 10, 17, 0.05), rgba(2, 10, 17, 0.18)),
+          url('./coronal_diagnostics.png') center / cover no-repeat;
+      }
+      .processor-figure figcaption {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 13px;
+        font:
+          600 14px/1 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
+      .metric-strip {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1px;
+        margin-top: 23px;
+        background: var(--line);
+      }
+      .metric-cell {
+        padding: 14px 15px;
+        background: rgba(7, 25, 35, 0.94);
+      }
+      .metric-cell b {
+        display: block;
+        font:
+          700 26px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--paper);
+      }
+      .metric-cell span {
+        display: block;
+        margin-top: 7px;
+        font:
+          500 11px/1.25 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
 
-      .audit-stage { display: grid; grid-template-columns: .55fr 1.45fr; gap: 100px; align-items: center; height: 100%; }
-      .big-number { font-size: 205px; line-height: .78; color: var(--hot); }
-      .big-label { max-width: 300px; margin-top: 25px; font: 650 18px/1.45 "Cascadia Mono", monospace; letter-spacing: .1em; color: var(--cyan); }
-      .ledger-counts { display: flex; gap: 28px; margin-top: 31px; }
-      .ledger-count { padding-top: 13px; border-top: 2px solid var(--status-color); }
-      .ledger-count b { display: block; font: 700 30px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--status-color); }
-      .ledger-count span { display: block; margin-top: 6px; font: 500 11px/1 "Cascadia Mono", monospace; color: var(--muted); }
-      .gate-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; border-top: 1px solid var(--line-strong); }
-      .gate-item { display: grid; grid-template-columns: 20px 1fr auto; gap: 12px; align-items: center; min-height: 70px; border-bottom: 1px solid var(--line); }
-      .gate-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gate-color); box-shadow: 0 0 13px var(--gate-color); }
-      .gate-item.pass { --gate-color: var(--cyan); }
-      .gate-item.hold { --gate-color: var(--warn); }
-      .gate-label { font-size: 18px; color: var(--soft); }
-      .gate-value { font: 600 13px/1 "Cascadia Mono", monospace; color: var(--gate-color); }
-      .audit-note { margin-top: 23px; padding: 18px 22px; border-left: 2px solid var(--warn); background: rgba(234, 203, 92, .06); font-size: 19px; line-height: 1.5; color: var(--soft); }
+      .audit-stage {
+        display: grid;
+        grid-template-columns: 0.55fr 1.45fr;
+        gap: 100px;
+        align-items: center;
+        height: 100%;
+      }
+      .big-number {
+        font-size: 205px;
+        line-height: 0.78;
+        color: var(--hot);
+      }
+      .big-label {
+        max-width: 300px;
+        margin-top: 25px;
+        font:
+          650 18px/1.45 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
+        color: var(--cyan);
+      }
+      .ledger-counts {
+        display: flex;
+        gap: 28px;
+        margin-top: 31px;
+      }
+      .ledger-count {
+        padding-top: 13px;
+        border-top: 2px solid var(--status-color);
+      }
+      .ledger-count b {
+        display: block;
+        font:
+          700 30px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--status-color);
+      }
+      .ledger-count span {
+        display: block;
+        margin-top: 6px;
+        font:
+          500 11px/1 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .gate-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 48px;
+        border-top: 1px solid var(--line-strong);
+      }
+      .gate-item {
+        display: grid;
+        grid-template-columns: 20px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        min-height: 70px;
+        border-bottom: 1px solid var(--line);
+      }
+      .gate-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--gate-color);
+        box-shadow: 0 0 13px var(--gate-color);
+      }
+      .gate-item.pass {
+        --gate-color: var(--cyan);
+      }
+      .gate-item.hold {
+        --gate-color: var(--warn);
+      }
+      .gate-label {
+        font-size: 18px;
+        color: var(--soft);
+      }
+      .gate-value {
+        font:
+          600 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--gate-color);
+      }
+      .audit-note {
+        margin-top: 23px;
+        padding: 18px 22px;
+        border-left: 2px solid var(--warn);
+        background: rgba(234, 203, 92, 0.06);
+        font-size: 19px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
 
-      .c-stage { display: grid; grid-template-columns: .78fr 1.22fr; gap: 105px; align-items: center; height: 100%; }
-      .c-flow { display: grid; gap: 13px; margin-top: 42px; }
-      .c-node { display: grid; grid-template-columns: 112px 1fr; gap: 20px; align-items: center; min-height: 93px; padding: 16px 19px; border-left: 2px solid var(--node); background: rgba(8, 27, 38, .78); }
-      .c-node strong { font: 700 18px/1 "Cascadia Mono", monospace; color: var(--node); }
-      .c-node span { font-size: 19px; line-height: 1.4; color: var(--soft); }
-      .c-arrow { margin-left: 52px; font: 700 19px/1 "Cascadia Mono", monospace; color: var(--faint); }
-      .conclusion-panel { padding: 30px 34px; border-top: 2px solid var(--violet); background: rgba(11, 29, 45, .84); }
-      .panel-label { font: 650 15px/1 "Cascadia Mono", monospace; letter-spacing: .12em; color: var(--violet); }
-      .conclusion-panel h3 { max-width: 730px; margin-top: 25px; font-size: 29px; line-height: 1.35; }
-      .conclusion-panel p { max-width: 760px; margin-top: 20px; font-size: 20px; line-height: 1.6; color: var(--soft); }
-      .truth-line { display: flex; gap: 18px; align-items: center; margin-top: 27px; padding-top: 19px; border-top: 1px solid var(--line); font: 600 14px/1.45 "Cascadia Mono", monospace; color: var(--warn); }
-      .truth-line::before { content: "!"; display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid var(--warn); border-radius: 50%; }
+      .c-stage {
+        display: grid;
+        grid-template-columns: 0.78fr 1.22fr;
+        gap: 105px;
+        align-items: center;
+        height: 100%;
+      }
+      .c-flow {
+        display: grid;
+        gap: 13px;
+        margin-top: 42px;
+      }
+      .c-node {
+        display: grid;
+        grid-template-columns: 112px 1fr;
+        gap: 20px;
+        align-items: center;
+        min-height: 93px;
+        padding: 16px 19px;
+        border-left: 2px solid var(--node);
+        background: rgba(8, 27, 38, 0.78);
+      }
+      .c-node strong {
+        font:
+          700 18px/1 'Cascadia Mono',
+          monospace;
+        color: var(--node);
+      }
+      .c-node span {
+        font-size: 19px;
+        line-height: 1.4;
+        color: var(--soft);
+      }
+      .c-arrow {
+        margin-left: 52px;
+        font:
+          700 19px/1 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
+      .conclusion-panel {
+        padding: 30px 34px;
+        border-top: 2px solid var(--violet);
+        background: rgba(11, 29, 45, 0.84);
+      }
+      .panel-label {
+        font:
+          650 15px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.12em;
+        color: var(--violet);
+      }
+      .conclusion-panel h3 {
+        max-width: 730px;
+        margin-top: 25px;
+        font-size: 29px;
+        line-height: 1.35;
+      }
+      .conclusion-panel p {
+        max-width: 760px;
+        margin-top: 20px;
+        font-size: 20px;
+        line-height: 1.6;
+        color: var(--soft);
+      }
+      .truth-line {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        margin-top: 27px;
+        padding-top: 19px;
+        border-top: 1px solid var(--line);
+        font:
+          600 14px/1.45 'Cascadia Mono',
+          monospace;
+        color: var(--warn);
+      }
+      .truth-line::before {
+        content: '!';
+        display: grid;
+        place-items: center;
+        width: 25px;
+        height: 25px;
+        border: 1px solid var(--warn);
+        border-radius: 50%;
+      }
 
-      .task-stage { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-      .task-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 60px; }
-      .task-summary { display: flex; gap: 26px; padding-bottom: 8px; }
-      .task-stat { min-width: 112px; padding-left: 15px; border-left: 2px solid var(--stat-color); }
-      .task-stat b { display: block; font: 700 37px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--stat-color); }
-      .task-stat span { display: block; margin-top: 7px; font: 500 11px/1.25 "Cascadia Mono", monospace; color: var(--muted); }
-      .task-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 50px; margin-top: 40px; border-top: 1px solid var(--line-strong); }
-      .task-row { display: grid; grid-template-columns: 45px 1fr; gap: 15px; min-height: 92px; padding: 14px 0; border-bottom: 1px solid var(--line); }
-      .task-number { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--solar); border-radius: 50%; font: 650 13px/1 "Cascadia Mono", monospace; color: var(--hot); }
-      .task-meta { display: flex; gap: 12px; align-items: center; font: 600 11px/1 "Cascadia Mono", monospace; color: var(--muted); }
-      .task-route { color: var(--cyan); }
-      .task-status { color: var(--warn); }
-      .task-objective { display: block; margin-top: 8px; font-size: 17px; line-height: 1.4; color: var(--soft); }
-      .task-more { margin-top: 18px; font: 600 14px/1 "Cascadia Mono", monospace; color: var(--faint); }
+      .task-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+      }
+      .task-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 60px;
+      }
+      .task-summary {
+        display: flex;
+        gap: 26px;
+        padding-bottom: 8px;
+      }
+      .task-stat {
+        min-width: 112px;
+        padding-left: 15px;
+        border-left: 2px solid var(--stat-color);
+      }
+      .task-stat b {
+        display: block;
+        font:
+          700 37px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--stat-color);
+      }
+      .task-stat span {
+        display: block;
+        margin-top: 7px;
+        font:
+          500 11px/1.25 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .task-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 50px;
+        margin-top: 40px;
+        border-top: 1px solid var(--line-strong);
+      }
+      .task-row {
+        display: grid;
+        grid-template-columns: 45px 1fr;
+        gap: 15px;
+        min-height: 92px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .task-number {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--solar);
+        border-radius: 50%;
+        font:
+          650 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
+      .task-meta {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font:
+          600 11px/1 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .task-route {
+        color: var(--cyan);
+      }
+      .task-status {
+        color: var(--warn);
+      }
+      .task-objective {
+        display: block;
+        margin-top: 8px;
+        font-size: 17px;
+        line-height: 1.4;
+        color: var(--soft);
+      }
+      .task-more {
+        margin-top: 18px;
+        font:
+          600 14px/1 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
 
-      .route-stage { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-      .route-diagram { position: relative; height: 355px; margin-top: 45px; }
-      .route-diagram svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-      .route-path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1100; stroke-dashoffset: 1100; }
-      .route-label { position: absolute; display: grid; place-items: center; min-width: 180px; min-height: 87px; padding: 14px 20px; border-top: 2px solid var(--route-color); background: rgba(8, 27, 39, .93); text-align: center; }
-      .route-label strong { display: block; font: 700 20px/1 "Cascadia Mono", monospace; color: var(--route-color); }
-      .route-label span { display: block; margin-top: 9px; font-size: 16px; color: var(--soft); }
-      .route-label.start { top: 128px; left: 0; --route-color: var(--solar); }
-      .route-label.plan { top: 128px; left: 25%; --route-color: var(--violet); }
-      .route-label.route { top: 128px; left: 50%; --route-color: var(--cyan); }
-      .route-label.end { top: 30px; right: 0; --route-color: var(--warn); }
-      .route-label.loop-a { bottom: 8px; right: 185px; --route-color: var(--solar); }
-      .route-label.loop-b { bottom: 8px; right: 0; --route-color: var(--cyan); }
-      .route-explain { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 17px; margin-top: 18px; }
-      .route-explain article { min-height: 104px; padding: 20px 22px; border-left: 2px solid var(--route-color); background: rgba(8, 27, 39, .73); }
-      .route-explain strong { display: block; font: 700 17px/1 "Cascadia Mono", monospace; color: var(--route-color); }
-      .route-explain p { margin-top: 11px; font-size: 18px; line-height: 1.4; color: var(--soft); }
+      .route-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+      }
+      .route-diagram {
+        position: relative;
+        height: 355px;
+        margin-top: 45px;
+      }
+      .route-diagram svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+      .route-path {
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-dasharray: 1100;
+        stroke-dashoffset: 1100;
+      }
+      .route-label {
+        position: absolute;
+        display: grid;
+        place-items: center;
+        min-width: 180px;
+        min-height: 87px;
+        padding: 14px 20px;
+        border-top: 2px solid var(--route-color);
+        background: rgba(8, 27, 39, 0.93);
+        text-align: center;
+      }
+      .route-label strong {
+        display: block;
+        font:
+          700 20px/1 'Cascadia Mono',
+          monospace;
+        color: var(--route-color);
+      }
+      .route-label span {
+        display: block;
+        margin-top: 9px;
+        font-size: 16px;
+        color: var(--soft);
+      }
+      .route-label.start {
+        top: 128px;
+        left: 0;
+        --route-color: var(--solar);
+      }
+      .route-label.plan {
+        top: 128px;
+        left: 25%;
+        --route-color: var(--violet);
+      }
+      .route-label.route {
+        top: 128px;
+        left: 50%;
+        --route-color: var(--cyan);
+      }
+      .route-label.end {
+        top: 30px;
+        right: 0;
+        --route-color: var(--warn);
+      }
+      .route-label.loop-a {
+        bottom: 8px;
+        right: 185px;
+        --route-color: var(--solar);
+      }
+      .route-label.loop-b {
+        bottom: 8px;
+        right: 0;
+        --route-color: var(--cyan);
+      }
+      .route-explain {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 17px;
+        margin-top: 18px;
+      }
+      .route-explain article {
+        min-height: 104px;
+        padding: 20px 22px;
+        border-left: 2px solid var(--route-color);
+        background: rgba(8, 27, 39, 0.73);
+      }
+      .route-explain strong {
+        display: block;
+        font:
+          700 17px/1 'Cascadia Mono',
+          monospace;
+        color: var(--route-color);
+      }
+      .route-explain p {
+        margin-top: 11px;
+        font-size: 18px;
+        line-height: 1.4;
+        color: var(--soft);
+      }
 
-      .round-stage { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-      .round-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 45px; margin-top: 48px; }
-      .round-card { min-height: 330px; padding: 28px 31px; border-top: 2px solid var(--round-color); background: rgba(8, 26, 38, .82); }
-      .round-card h3 { color: var(--round-color); }
-      .round-card small { display: block; margin-top: 7px; font: 500 13px/1 "Cascadia Mono", monospace; color: var(--muted); }
-      .round-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 30px; background: var(--line); }
-      .round-stat { min-height: 77px; padding: 13px 12px; background: rgba(4, 16, 27, .84); }
-      .round-stat b { display: block; font: 700 27px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--paper); }
-      .round-stat span { display: block; margin-top: 7px; font: 500 10px/1.2 "Cascadia Mono", monospace; color: var(--muted); }
-      .round-note { margin-top: 22px; font-size: 18px; line-height: 1.5; color: var(--soft); }
-      .round-footer { display: flex; justify-content: space-between; margin-top: 25px; font: 600 14px/1 "Cascadia Mono", monospace; color: var(--faint); }
+      .round-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+      }
+      .round-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 45px;
+        margin-top: 48px;
+      }
+      .round-card {
+        min-height: 330px;
+        padding: 28px 31px;
+        border-top: 2px solid var(--round-color);
+        background: rgba(8, 26, 38, 0.82);
+      }
+      .round-card h3 {
+        color: var(--round-color);
+      }
+      .round-card small {
+        display: block;
+        margin-top: 7px;
+        font:
+          500 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .round-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        margin-top: 30px;
+        background: var(--line);
+      }
+      .round-stat {
+        min-height: 77px;
+        padding: 13px 12px;
+        background: rgba(4, 16, 27, 0.84);
+      }
+      .round-stat b {
+        display: block;
+        font:
+          700 27px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--paper);
+      }
+      .round-stat span {
+        display: block;
+        margin-top: 7px;
+        font:
+          500 10px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .round-note {
+        margin-top: 22px;
+        font-size: 18px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .round-footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 25px;
+        font:
+          600 14px/1 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
 
-      .persist-stage { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-      .persist-flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-top: 61px; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .persist-node { position: relative; min-height: 235px; padding: 27px 23px; border-right: 1px solid var(--line); }
-      .persist-node:last-child { border-right: 0; }
-      .persist-node::after { content: "→"; position: absolute; top: 94px; right: -13px; z-index: 2; font: 700 22px/1 "Cascadia Mono", monospace; color: var(--cyan); }
-      .persist-node:last-child::after { display: none; }
-      .persist-node strong { display: block; font: 700 19px/1.2 "Cascadia Mono", monospace; color: var(--cyan); }
-      .persist-node span { display: block; margin-top: 27px; font: 500 15px/1.55 "Cascadia Mono", monospace; color: var(--soft); }
-      .persist-node small { display: block; margin-top: 15px; font: 500 12px/1.45 "Cascadia Mono", monospace; color: var(--muted); }
-      .persist-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 31px; }
-      .persist-foot { padding-left: 18px; border-left: 2px solid var(--node); }
-      .persist-foot strong { display: block; font: 650 15px/1 "Cascadia Mono", monospace; color: var(--node); }
-      .persist-foot p { margin-top: 9px; font-size: 17px; line-height: 1.45; color: var(--muted); }
+      .persist-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+      }
+      .persist-flow {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0;
+        margin-top: 61px;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .persist-node {
+        position: relative;
+        min-height: 235px;
+        padding: 27px 23px;
+        border-right: 1px solid var(--line);
+      }
+      .persist-node:last-child {
+        border-right: 0;
+      }
+      .persist-node::after {
+        content: '→';
+        position: absolute;
+        top: 94px;
+        right: -13px;
+        z-index: 2;
+        font:
+          700 22px/1 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .persist-node:last-child::after {
+        display: none;
+      }
+      .persist-node strong {
+        display: block;
+        font:
+          700 19px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .persist-node span {
+        display: block;
+        margin-top: 27px;
+        font:
+          500 15px/1.55 'Cascadia Mono',
+          monospace;
+        color: var(--soft);
+      }
+      .persist-node small {
+        display: block;
+        margin-top: 15px;
+        font:
+          500 12px/1.45 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .persist-footer {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        margin-top: 31px;
+      }
+      .persist-foot {
+        padding-left: 18px;
+        border-left: 2px solid var(--node);
+      }
+      .persist-foot strong {
+        display: block;
+        font:
+          650 15px/1 'Cascadia Mono',
+          monospace;
+        color: var(--node);
+      }
+      .persist-foot p {
+        margin-top: 9px;
+        font-size: 17px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
 
-      .verdict-stage { display: grid; grid-template-columns: .85fr 1.15fr; gap: 100px; align-items: center; height: 100%; }
-      .verdict-word { margin-top: 16px; font: 700 94px/.85 "Bahnschrift SemiCondensed", sans-serif; letter-spacing: .02em; color: var(--warn); text-shadow: 0 0 34px rgba(234, 203, 92, .18); }
-      .verdict-copy { max-width: 650px; margin-top: 29px; font-size: 23px; line-height: 1.65; color: var(--soft); }
-      .verdict-metrics { display: flex; gap: 24px; margin-top: 30px; }
-      .verdict-metric { padding-left: 14px; border-left: 2px solid var(--metric-color); }
-      .verdict-metric b { display: block; font: 700 32px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--metric-color); }
-      .verdict-metric span { display: block; margin-top: 7px; font: 500 11px/1.25 "Cascadia Mono", monospace; color: var(--muted); }
-      .verdict-hypotheses { border-top: 1px solid var(--line-strong); }
-      .verdict-hypothesis { display: grid; grid-template-columns: 62px 1fr 120px; gap: 17px; align-items: center; min-height: 103px; border-bottom: 1px solid var(--line); }
-      .verdict-hypothesis b { font: 700 18px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .verdict-hypothesis p { font-size: 18px; line-height: 1.4; color: var(--soft); }
-      .verdict-hypothesis span { font: 650 13px/1 "Cascadia Mono", monospace; text-align: right; color: var(--hyp-color); }
-      .verdict-foot { margin-top: 25px; padding-top: 19px; border-top: 1px solid var(--line); font: 600 15px/1.45 "Cascadia Mono", monospace; color: var(--muted); }
+      .verdict-stage {
+        display: grid;
+        grid-template-columns: 0.85fr 1.15fr;
+        gap: 100px;
+        align-items: center;
+        height: 100%;
+      }
+      .verdict-word {
+        margin-top: 16px;
+        font:
+          700 94px/0.85 'Bahnschrift SemiCondensed',
+          sans-serif;
+        letter-spacing: 0.02em;
+        color: var(--warn);
+        text-shadow: 0 0 34px rgba(234, 203, 92, 0.18);
+      }
+      .verdict-copy {
+        max-width: 650px;
+        margin-top: 29px;
+        font-size: 23px;
+        line-height: 1.65;
+        color: var(--soft);
+      }
+      .verdict-metrics {
+        display: flex;
+        gap: 24px;
+        margin-top: 30px;
+      }
+      .verdict-metric {
+        padding-left: 14px;
+        border-left: 2px solid var(--metric-color);
+      }
+      .verdict-metric b {
+        display: block;
+        font:
+          700 32px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--metric-color);
+      }
+      .verdict-metric span {
+        display: block;
+        margin-top: 7px;
+        font:
+          500 11px/1.25 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .verdict-hypotheses {
+        border-top: 1px solid var(--line-strong);
+      }
+      .verdict-hypothesis {
+        display: grid;
+        grid-template-columns: 62px 1fr 120px;
+        gap: 17px;
+        align-items: center;
+        min-height: 103px;
+        border-bottom: 1px solid var(--line);
+      }
+      .verdict-hypothesis b {
+        font:
+          700 18px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .verdict-hypothesis p {
+        font-size: 18px;
+        line-height: 1.4;
+        color: var(--soft);
+      }
+      .verdict-hypothesis span {
+        font:
+          650 13px/1 'Cascadia Mono',
+          monospace;
+        text-align: right;
+        color: var(--hyp-color);
+      }
+      .verdict-foot {
+        margin-top: 25px;
+        padding-top: 19px;
+        border-top: 1px solid var(--line);
+        font:
+          600 15px/1.45 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
 
-      .handoff-stage { display: grid; grid-template-columns: .8fr 1.2fr; gap: 110px; align-items: center; height: 100%; }
-      .handoff-stage h2 { max-width: 620px; }
-      .handoff-stage .subline { max-width: 590px; }
-      .handoff-list { border-top: 1px solid var(--line-strong); }
-      .handoff-item { display: grid; grid-template-columns: 56px 1fr; gap: 18px; align-items: start; min-height: 93px; padding: 18px 0; border-bottom: 1px solid var(--line); }
-      .handoff-item b { font: 700 18px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .handoff-item p { font-size: 19px; line-height: 1.43; color: var(--soft); }
-      .handoff-closing { display: flex; align-items: center; gap: 18px; margin-top: 32px; font: 650 16px/1.4 "Cascadia Mono", monospace; letter-spacing: .08em; color: var(--cyan); }
-      .handoff-closing::before { content: ""; width: 45px; height: 1px; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+      .handoff-stage {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 110px;
+        align-items: center;
+        height: 100%;
+      }
+      .handoff-stage h2 {
+        max-width: 620px;
+      }
+      .handoff-stage .subline {
+        max-width: 590px;
+      }
+      .handoff-list {
+        border-top: 1px solid var(--line-strong);
+      }
+      .handoff-item {
+        display: grid;
+        grid-template-columns: 56px 1fr;
+        gap: 18px;
+        align-items: start;
+        min-height: 93px;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .handoff-item b {
+        font:
+          700 18px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .handoff-item p {
+        font-size: 19px;
+        line-height: 1.43;
+        color: var(--soft);
+      }
+      .handoff-closing {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-top: 32px;
+        font:
+          650 16px/1.4 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+        color: var(--cyan);
+      }
+      .handoff-closing::before {
+        content: '';
+        width: 45px;
+        height: 1px;
+        background: var(--cyan);
+        box-shadow: 0 0 12px var(--cyan);
+      }
 
-      .reveal { opacity: 0; }
+      .reveal {
+        opacity: 0;
+      }
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="175" data-width="1920" data-height="1080" data-fps="30">
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="175"
+      data-width="1920"
+      data-height="1080"
+      data-fps="30"
+    >
       <header class="top">
         <div class="brand"><span class="mark"></span><span>开放科学 / OPEN SCIENTIST</span></div>
         <div class="source">SOURCE LOCKED · <span id="digest">—</span></div>
@@ -477,267 +1748,767 @@
           <div class="hero-copy">
             <div class="kicker">OPEN-SCIENTIST / SCIENTIFIC RUN REPLAY</div>
             <h1>让假设<br /><span class="solar">接受证据</span></h1>
-            <p class="subline">这不是一张结果海报，而是一次真实 scientific run 的回放：现象进入系统，经过可审计的证据链，最后变成下一轮可以继续执行的任务。</p>
-            <div class="hero-chain"><span>PHENOMENON</span><i>→</i><span>HYPOTHESES</span><i>→</i><span>EVIDENCE</span><i>→</i><span>VALIDATION</span></div>
+            <p class="subline">
+              这不是一张结果海报，而是一次真实 scientific run
+              的回放：现象进入系统，经过可审计的证据链，最后变成下一轮可以继续执行的任务。
+            </p>
+            <div class="hero-chain">
+              <span>PHENOMENON</span><i>→</i><span>HYPOTHESES</span><i>→</i><span>EVIDENCE</span
+              ><i>→</i><span>VALIDATION</span>
+            </div>
           </div>
-          <div class="hero-orbit"><div class="orbit-ring"></div><div class="orbit-ring two"></div><div class="orbit-ring three"></div><div class="orbit-core"><div><strong>AR11158</strong><span>RUN / LOOP</span></div></div><span class="orbit-label a">AUDITABLE STATE</span><span class="orbit-label b">NEXT TASK</span><span class="orbit-label c">LANGGRAPH</span></div>
-          <div class="hero-run">RUN <span id="hero-run">—</span><br />MODEL-ASSISTED · ROUND 01 → 02</div>
+          <div class="hero-orbit">
+            <div class="orbit-ring"></div>
+            <div class="orbit-ring two"></div>
+            <div class="orbit-ring three"></div>
+            <div class="orbit-core">
+              <div><strong>AR11158</strong><span>RUN / LOOP</span></div>
+            </div>
+            <span class="orbit-label a">AUDITABLE STATE</span
+            ><span class="orbit-label b">NEXT TASK</span
+            ><span class="orbit-label c">LANGGRAPH</span>
+          </div>
+          <div class="hero-run">
+            RUN <span id="hero-run">—</span><br />MODEL-ASSISTED · ROUND 01 → 02
+          </div>
         </div>
       </section>
 
       <section id="s2" class="scene clip" data-start="8" data-duration="12" data-track-index="1">
         <div class="scene-content">
-          <div class="heading"><div class="heading-copy"><div class="kicker">01 · ACTUAL STACK</div><h2>这不是 Agent 卡片，<span class="accent">而是一条真实执行链</span></h2></div><p class="heading-side">每一层都对应实际代码和持久化边界。视频展示的是系统如何工作，不是把模型名字排成一行。</p></div>
+          <div class="heading">
+            <div class="heading-copy">
+              <div class="kicker">01 · ACTUAL STACK</div>
+              <h2>这不是 Agent 卡片，<span class="accent">而是一条真实执行链</span></h2>
+            </div>
+            <p class="heading-side">
+              每一层都对应实际代码和持久化边界。视频展示的是系统如何工作，不是把模型名字排成一行。
+            </p>
+          </div>
           <div id="framework-layers" class="layer-list"></div>
-          <div class="stack-footer"><span>POST /runs → SSE chunks → persisted scientific records</span><span>LANGGRAPH CHECKPOINT · SQLITE · ARTIFACT CHECKSUM</span></div>
+          <div class="stack-footer">
+            <span>POST /runs → SSE chunks → persisted scientific records</span
+            ><span>LANGGRAPH CHECKPOINT · SQLITE · ARTIFACT CHECKSUM</span>
+          </div>
         </div>
       </section>
 
       <section id="s3" class="scene clip" data-start="20" data-duration="9" data-track-index="2">
         <div class="scene-content two-pane">
-          <div><div class="kicker">02 · PHENOMENON INPUT</div><h2 id="phenomenon-title">NOAA AR11158 多波段热响应</h2><p class="phenomenon-title" id="active-region">NOAA 11158</p><p class="question" id="phenomenon-question">—</p><div class="channel-row"><span>AIA 94 Å</span><span>AIA 131 Å</span><span>AIA 171 Å</span><span>AIA 193 Å</span><span>HMI / MAGNETIC</span></div><div class="constraint-list"><div class="constraint">只使用已核验文献、本地 FITS 和登记的处理产物</div><div class="constraint">模型判断不能直接变成机制证据</div><div class="constraint">单一非唯一指标不能升级为 supported</div></div></div>
-          <figure class="diagnostic-frame"><div id="scan-beam"></div><img id="diagnostic-image" alt="coronal diagnostic" /><span class="image-tag">OBSERVED / ROI</span></figure>
+          <div>
+            <div class="kicker">02 · PHENOMENON INPUT</div>
+            <h2 id="phenomenon-title">NOAA AR11158 多波段热响应</h2>
+            <p class="phenomenon-title" id="active-region">NOAA 11158</p>
+            <p class="question" id="phenomenon-question">—</p>
+            <div class="channel-row">
+              <span>AIA 94 Å</span><span>AIA 131 Å</span><span>AIA 171 Å</span><span>AIA 193 Å</span
+              ><span>HMI / MAGNETIC</span>
+            </div>
+            <div class="constraint-list">
+              <div class="constraint">只使用已核验文献、本地 FITS 和登记的处理产物</div>
+              <div class="constraint">模型判断不能直接变成机制证据</div>
+              <div class="constraint">单一非唯一指标不能升级为 supported</div>
+            </div>
+          </div>
+          <figure class="diagnostic-frame">
+            <div id="scan-beam"></div>
+            <img id="diagnostic-image" alt="coronal diagnostic" /><span class="image-tag"
+              >OBSERVED / ROI</span
+            >
+          </figure>
         </div>
       </section>
 
       <section id="s4" class="scene clip" data-start="29" data-duration="11" data-track-index="3">
         <div class="scene-content graph-stage">
-          <div class="heading"><div class="heading-copy"><div class="kicker">03 · ROOT GRAPH</div><h2>问题从 <span class="solar">workflow</span> 进入 LangGraph</h2></div><p class="heading-side">状态属于一次 run。节点完成后留下事件，条件路由决定下一步。</p></div>
+          <div class="heading">
+            <div class="heading-copy">
+              <div class="kicker">03 · ROOT GRAPH</div>
+              <h2>问题从 <span class="solar">workflow</span> 进入 LangGraph</h2>
+            </div>
+            <p class="heading-side">状态属于一次 run。节点完成后留下事件，条件路由决定下一步。</p>
+          </div>
           <div id="graph-chain" class="graph-chain"></div>
-          <div class="graph-loop"><div class="graph-loop-item" style="--node: var(--solar)"><strong>STATE</strong><span>phenomenon · hypotheses · evidence · tasks</span></div><div class="graph-loop-item" style="--node: var(--cyan)"><strong>CONTEXT</strong><span>按 stage 与 capability 投影上下文</span></div><div class="graph-loop-item" style="--node: var(--violet)"><strong>CHECKPOINT</strong><span>中断后从 run-scoped state 恢复</span></div></div>
+          <div class="graph-loop">
+            <div class="graph-loop-item" style="--node: var(--solar)">
+              <strong>STATE</strong><span>phenomenon · hypotheses · evidence · tasks</span>
+            </div>
+            <div class="graph-loop-item" style="--node: var(--cyan)">
+              <strong>CONTEXT</strong><span>按 stage 与 capability 投影上下文</span>
+            </div>
+            <div class="graph-loop-item" style="--node: var(--violet)">
+              <strong>CHECKPOINT</strong><span>中断后从 run-scoped state 恢复</span>
+            </div>
+          </div>
         </div>
       </section>
 
       <section id="s5" class="scene clip" data-start="40" data-duration="12" data-track-index="4">
         <div class="scene-content hypothesis-stage">
-          <div class="heading"><div class="heading-copy"><div class="kicker">04 · STAGE A / GENERATE + VERIFY</div><h2>先把现象写成<span class="solar">可证伪的假设</span></h2></div><p class="heading-side">每条假设都必须携带预测、证伪条件、机制组成和当前状态。</p></div>
-          <div class="stage-rail"><span>A.generate</span><i>→</i><span>A.verify</span><i>·</i> THREE CANDIDATE HYPOTHESES</div>
+          <div class="heading">
+            <div class="heading-copy">
+              <div class="kicker">04 · STAGE A / GENERATE + VERIFY</div>
+              <h2>先把现象写成<span class="solar">可证伪的假设</span></h2>
+            </div>
+            <p class="heading-side">每条假设都必须携带预测、证伪条件、机制组成和当前状态。</p>
+          </div>
+          <div class="stage-rail">
+            <span>A.generate</span><i>→</i><span>A.verify</span><i>·</i> THREE CANDIDATE HYPOTHESES
+          </div>
           <div id="hypothesis-grid" class="hypothesis-grid"></div>
         </div>
       </section>
 
       <section id="s6" class="scene clip" data-start="52" data-duration="14" data-track-index="5">
         <div class="scene-content workgroup-stage">
-          <div class="workgroup-header"><div><div class="kicker">05 · STAGE B / EVIDENCE WORKGROUP</div><h2><span class="accent">B.run</span> 不是一个 Agent，<br />而是一组有边界的 worker</h2></div><p>确定性数据工作先运行；模型审阅器随后读取上游结构化记录。每个 worker 都有能力声明和输出边界。</p></div>
-          <div class="dispatch-line"><span class="dispatch-node">B.dispatch</span><i>→ parallel workers →</i><span class="dispatch-node">B.aggregate</span><span id="workgroup-count">—</span></div>
+          <div class="workgroup-header">
+            <div>
+              <div class="kicker">05 · STAGE B / EVIDENCE WORKGROUP</div>
+              <h2>
+                <span class="accent">B.run</span> 不是一个 Agent，<br />而是一组有边界的 worker
+              </h2>
+            </div>
+            <p>
+              确定性数据工作先运行；模型审阅器随后读取上游结构化记录。每个 worker
+              都有能力声明和输出边界。
+            </p>
+          </div>
+          <div class="dispatch-line">
+            <span class="dispatch-node">B.dispatch</span><i>→ parallel workers →</i
+            ><span class="dispatch-node">B.aggregate</span><span id="workgroup-count">—</span>
+          </div>
           <div id="agent-grid" class="agent-grid"></div>
-          <div class="aggregate-line">OUTPUT CONTRACT · evidence[] + validationTasks[] + corrections[] + limitations[]</div>
+          <div class="aggregate-line">
+            OUTPUT CONTRACT · evidence[] + validationTasks[] + corrections[] + limitations[]
+          </div>
         </div>
       </section>
 
       <section id="s7" class="scene clip" data-start="66" data-duration="13" data-track-index="6">
         <div class="scene-content processing-stage">
-          <div><div class="kicker">06 · DETERMINISTIC DATA PROCESSING</div><h2>Explorer 把 FITS 变成<span class="solar">可追溯产物</span></h2><div class="processing-pipeline"><div class="process-step"><b class="process-index">01</b><strong>MANIFEST</strong><span>source ids<br />checksums</span></div><div class="process-step"><b class="process-index">02</b><strong>FITS</strong><span>AIA / HMI<br />raw assets</span></div><div class="process-step"><b class="process-index">03</b><strong>ROI</strong><span>frozen<br />parameters</span></div><div class="process-step"><b class="process-index">04</b><strong>METRICS</strong><span>timeseries<br />intervals</span></div><div class="process-step"><b class="process-index">05</b><strong>ARTIFACT</strong><span>figure +<br />processing run</span></div></div><div class="processor-foot"><span>scripts/analyze_coronal_window.py</span><span>deterministic = true · WCS retained</span></div></div>
-          <div><figure class="processor-figure"><figcaption><span>ARTIFACT / FIGURE</span><span id="file-coverage">—</span></figcaption></figure><div class="metric-strip"><div class="metric-cell"><b id="metric-correlation">—</b><span>AIA 171/193 CORRELATION</span></div><div class="metric-cell"><b id="metric-period">—</b><span>CANDIDATE PERIOD / SEC</span></div></div></div>
+          <div>
+            <div class="kicker">06 · DETERMINISTIC DATA PROCESSING</div>
+            <h2>Explorer 把 FITS 变成<span class="solar">可追溯产物</span></h2>
+            <div class="processing-pipeline">
+              <div class="process-step">
+                <b class="process-index">01</b><strong>MANIFEST</strong
+                ><span>source ids<br />checksums</span>
+              </div>
+              <div class="process-step">
+                <b class="process-index">02</b><strong>FITS</strong
+                ><span>AIA / HMI<br />raw assets</span>
+              </div>
+              <div class="process-step">
+                <b class="process-index">03</b><strong>ROI</strong
+                ><span>frozen<br />parameters</span>
+              </div>
+              <div class="process-step">
+                <b class="process-index">04</b><strong>METRICS</strong
+                ><span>timeseries<br />intervals</span>
+              </div>
+              <div class="process-step">
+                <b class="process-index">05</b><strong>ARTIFACT</strong
+                ><span>figure +<br />processing run</span>
+              </div>
+            </div>
+            <div class="processor-foot">
+              <span>scripts/analyze_coronal_window.py</span
+              ><span>deterministic = true · WCS retained</span>
+            </div>
+          </div>
+          <div>
+            <figure class="processor-figure">
+              <figcaption>
+                <span>ARTIFACT / FIGURE</span><span id="file-coverage">—</span>
+              </figcaption>
+            </figure>
+            <div class="metric-strip">
+              <div class="metric-cell">
+                <b id="metric-correlation">—</b><span>AIA 171/193 CORRELATION</span>
+              </div>
+              <div class="metric-cell">
+                <b id="metric-period">—</b><span>CANDIDATE PERIOD / SEC</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       <section id="s8" class="scene clip" data-start="79" data-duration="12" data-track-index="7">
         <div class="scene-content audit-stage">
-          <div><div class="kicker">07 · BC.verify / PROMOTE EVIDENCE</div><div class="big-number" id="ledger-total">32</div><div class="big-label">STRUCTURED<br />EVIDENCE RECORDS</div><div class="ledger-counts"><div class="ledger-count" style="--status-color: var(--cyan)"><b id="ledger-support">2</b><span>SUPPORT</span></div><div class="ledger-count" style="--status-color: var(--warn)"><b id="ledger-unknown">30</b><span>UNKNOWN</span></div><div class="ledger-count" style="--status-color: var(--red)"><b id="ledger-contradict">0</b><span>CONTRADICT</span></div></div></div>
-          <div><h2>模型说“支持”，<br /><span class="warn">系统还要问：能审计吗？</span></h2><div id="gate-list" class="gate-list"></div><p class="audit-note">缺少样本、处理运行、artifact 或独立谱系时，候选证据会被降级为 <span class="warn mono">unknown</span>，而不是被悄悄送进结论。</p></div>
+          <div>
+            <div class="kicker">07 · BC.verify / PROMOTE EVIDENCE</div>
+            <div class="big-number" id="ledger-total">32</div>
+            <div class="big-label">STRUCTURED<br />EVIDENCE RECORDS</div>
+            <div class="ledger-counts">
+              <div class="ledger-count" style="--status-color: var(--cyan)">
+                <b id="ledger-support">2</b><span>SUPPORT</span>
+              </div>
+              <div class="ledger-count" style="--status-color: var(--warn)">
+                <b id="ledger-unknown">30</b><span>UNKNOWN</span>
+              </div>
+              <div class="ledger-count" style="--status-color: var(--red)">
+                <b id="ledger-contradict">0</b><span>CONTRADICT</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h2>模型说“支持”，<br /><span class="warn">系统还要问：能审计吗？</span></h2>
+            <div id="gate-list" class="gate-list"></div>
+            <p class="audit-note">
+              缺少样本、处理运行、artifact 或独立谱系时，候选证据会被降级为
+              <span class="warn mono">unknown</span>，而不是被悄悄送进结论。
+            </p>
+          </div>
         </div>
       </section>
 
       <section id="s9" class="scene clip" data-start="91" data-duration="13" data-track-index="8">
         <div class="scene-content c-stage">
-          <div><div class="kicker">08 · STAGE C / SYNTHESIZE + VERIFY</div><h2>结论必须停在<span class="violet">证据边界</span></h2><div class="c-flow"><div class="c-node" style="--node: var(--violet)"><strong>C.synthesize</strong><span>合成 bounded conclusion</span></div><div class="c-arrow">↓</div><div class="c-node" style="--node: var(--warn)"><strong>C.verify</strong><span>应用 support gate 与 confidence update</span></div></div></div>
-          <div class="conclusion-panel"><div class="panel-label">CURRENT CONCLUSION / BOUNDED</div><h3>本轮得到局部支持，但尚未形成机制级证明。</h3><p id="current-conclusion">—</p><div class="truth-line">support 记录是处理结果，不等于假设已经通过严格支持门槛</div></div>
+          <div>
+            <div class="kicker">08 · STAGE C / SYNTHESIZE + VERIFY</div>
+            <h2>结论必须停在<span class="violet">证据边界</span></h2>
+            <div class="c-flow">
+              <div class="c-node" style="--node: var(--violet)">
+                <strong>C.synthesize</strong><span>合成 bounded conclusion</span>
+              </div>
+              <div class="c-arrow">↓</div>
+              <div class="c-node" style="--node: var(--warn)">
+                <strong>C.verify</strong><span>应用 support gate 与 confidence update</span>
+              </div>
+            </div>
+          </div>
+          <div class="conclusion-panel">
+            <div class="panel-label">CURRENT CONCLUSION / BOUNDED</div>
+            <h3>本轮得到局部支持，但尚未形成机制级证明。</h3>
+            <p id="current-conclusion">—</p>
+            <div class="truth-line">support 记录是处理结果，不等于假设已经通过严格支持门槛</div>
+          </div>
         </div>
       </section>
 
       <section id="s10" class="scene clip" data-start="104" data-duration="14" data-track-index="9">
         <div class="scene-content task-stage">
-          <div class="task-head"><div><div class="kicker">09 · STAGE D / PLAN VALIDATION</div><h2>把未知写成<span class="solar">下一步任务</span></h2></div><div class="task-summary"><div class="task-stat" style="--stat-color: var(--cyan)"><b id="task-total">12</b><span>VALIDATION TASKS</span></div><div class="task-stat" style="--stat-color: var(--solar)"><b id="task-completed">3</b><span>COMPLETED</span></div><div class="task-stat" style="--stat-color: var(--warn)"><b id="task-planned">9</b><span>PLANNED</span></div></div></div>
-          <div id="task-grid" class="task-grid"></div><div id="task-more" class="task-more">—</div>
+          <div class="task-head">
+            <div>
+              <div class="kicker">09 · STAGE D / PLAN VALIDATION</div>
+              <h2>把未知写成<span class="solar">下一步任务</span></h2>
+            </div>
+            <div class="task-summary">
+              <div class="task-stat" style="--stat-color: var(--cyan)">
+                <b id="task-total">12</b><span>VALIDATION TASKS</span>
+              </div>
+              <div class="task-stat" style="--stat-color: var(--solar)">
+                <b id="task-completed">3</b><span>COMPLETED</span>
+              </div>
+              <div class="task-stat" style="--stat-color: var(--warn)">
+                <b id="task-planned">9</b><span>PLANNED</span>
+              </div>
+            </div>
+          </div>
+          <div id="task-grid" class="task-grid"></div>
+          <div id="task-more" class="task-more">—</div>
         </div>
       </section>
 
-      <section id="s11" class="scene clip" data-start="118" data-duration="12" data-track-index="10">
+      <section
+        id="s11"
+        class="scene clip"
+        data-start="118"
+        data-duration="12"
+        data-track-index="10"
+      >
         <div class="scene-content route-stage">
-          <div class="heading"><div class="heading-copy"><div class="kicker">10 · D.route / CLOSED LOOP</div><h2>继续、回退，还是<span class="accent">明确结束</span></h2></div><p class="heading-side">路由只依据新证据、新任务、可执行性和轮次上限，不凭叙事冲动继续。</p></div>
-          <div class="route-diagram"><svg viewBox="0 0 1540 355" aria-hidden="true"><path id="route-main" class="route-path" stroke="var(--violet)" d="M 150 174 L 510 174 L 895 174" /><path id="route-a" class="route-path" stroke="var(--solar)" d="M 895 174 C 1020 174 1045 300 1190 300 L 1350 300" /><path id="route-b" class="route-path" stroke="var(--cyan)" d="M 895 174 C 1045 174 1110 300 1350 300" /><path id="route-end" class="route-path" stroke="var(--warn)" d="M 895 174 C 1080 174 1190 72 1438 72" /></svg><div class="route-label start"><strong>A.generate</strong><span>hypotheses</span></div><div class="route-label plan"><strong>D.plan</strong><span>new tasks</span></div><div class="route-label route"><strong>D.route</strong><span>decision</span></div><div class="route-label end"><strong>END</strong><span>no executable work</span></div><div class="route-label loop-a"><strong>route = A</strong><span>model / mechanism update</span></div><div class="route-label loop-b"><strong>route = B</strong><span>data / evidence run</span></div></div>
-          <div class="route-explain"><article style="--route-color: var(--solar)"><strong>HAS NEW EVIDENCE</strong><p>消费上一轮记录，再判断假设是否需要更新。</p></article><article style="--route-color: var(--cyan)"><strong>HAS EXECUTABLE TASK</strong><p>有已注册 executor 才回到 B.run。</p></article><article style="--route-color: var(--warn)"><strong>MAX ROUNDS / NO WORK</strong><p>明确结束，并保留 deferred tasks。</p></article></div>
+          <div class="heading">
+            <div class="heading-copy">
+              <div class="kicker">10 · D.route / CLOSED LOOP</div>
+              <h2>继续、回退，还是<span class="accent">明确结束</span></h2>
+            </div>
+            <p class="heading-side">
+              路由只依据新证据、新任务、可执行性和轮次上限，不凭叙事冲动继续。
+            </p>
+          </div>
+          <div class="route-diagram">
+            <svg viewBox="0 0 1540 355" aria-hidden="true">
+              <path
+                id="route-main"
+                class="route-path"
+                stroke="var(--violet)"
+                d="M 150 174 L 510 174 L 895 174"
+              />
+              <path
+                id="route-a"
+                class="route-path"
+                stroke="var(--solar)"
+                d="M 895 174 C 1020 174 1045 300 1190 300 L 1350 300"
+              />
+              <path
+                id="route-b"
+                class="route-path"
+                stroke="var(--cyan)"
+                d="M 895 174 C 1045 174 1110 300 1350 300"
+              />
+              <path
+                id="route-end"
+                class="route-path"
+                stroke="var(--warn)"
+                d="M 895 174 C 1080 174 1190 72 1438 72"
+              />
+            </svg>
+            <div class="route-label start"><strong>A.generate</strong><span>hypotheses</span></div>
+            <div class="route-label plan"><strong>D.plan</strong><span>new tasks</span></div>
+            <div class="route-label route"><strong>D.route</strong><span>decision</span></div>
+            <div class="route-label end"><strong>END</strong><span>no executable work</span></div>
+            <div class="route-label loop-a">
+              <strong>route = A</strong><span>model / mechanism update</span>
+            </div>
+            <div class="route-label loop-b">
+              <strong>route = B</strong><span>data / evidence run</span>
+            </div>
+          </div>
+          <div class="route-explain">
+            <article style="--route-color: var(--solar)">
+              <strong>HAS NEW EVIDENCE</strong>
+              <p>消费上一轮记录，再判断假设是否需要更新。</p>
+            </article>
+            <article style="--route-color: var(--cyan)">
+              <strong>HAS EXECUTABLE TASK</strong>
+              <p>有已注册 executor 才回到 B.run。</p>
+            </article>
+            <article style="--route-color: var(--warn)">
+              <strong>MAX ROUNDS / NO WORK</strong>
+              <p>明确结束，并保留 deferred tasks。</p>
+            </article>
+          </div>
         </div>
       </section>
 
-      <section id="s12" class="scene clip" data-start="130" data-duration="12" data-track-index="11">
+      <section
+        id="s12"
+        class="scene clip"
+        data-start="130"
+        data-duration="12"
+        data-track-index="11"
+      >
         <div class="scene-content round-stage">
-          <div class="heading"><div class="heading-copy"><div class="kicker">11 · RUN REPLAY / ROUND 01 → 02</div><h2>第二轮消费上一轮的<span class="solar">证据和任务</span></h2></div><p class="heading-side">同一条 run state 持续累积；重复验证任务按 fingerprint 去重。</p></div>
+          <div class="heading">
+            <div class="heading-copy">
+              <div class="kicker">11 · RUN REPLAY / ROUND 01 → 02</div>
+              <h2>第二轮消费上一轮的<span class="solar">证据和任务</span></h2>
+            </div>
+            <p class="heading-side">同一条 run state 持续累积；重复验证任务按 fingerprint 去重。</p>
+          </div>
           <div id="round-grid" class="round-grid"></div>
-          <div class="round-footer"><span>STATEFUL LOOP · evidence / tasks / corrections remain addressable</span><span id="round-footer-status">—</span></div>
+          <div class="round-footer">
+            <span>STATEFUL LOOP · evidence / tasks / corrections remain addressable</span
+            ><span id="round-footer-status">—</span>
+          </div>
         </div>
       </section>
 
-      <section id="s13" class="scene clip" data-start="142" data-duration="11" data-track-index="12">
+      <section
+        id="s13"
+        class="scene clip"
+        data-start="142"
+        data-duration="11"
+        data-track-index="12"
+      >
         <div class="scene-content persist-stage">
-          <div class="heading"><div class="heading-copy"><div class="kicker">12 · DURABLE TRACE</div><h2>运行结束后，<span class="accent">轨迹仍然存在</span></h2></div><p class="heading-side">SSE 负责实时观看；checkpoint、SQLite 和 artifact 负责事后复核与恢复。</p></div>
-          <div class="persist-flow"><div class="persist-node"><strong>EVENTS</strong><span>scientific.node-state<br />scientific.evidence<br />scientific.route</span><small>live SSE chunks</small></div><div class="persist-node"><strong>CHECKPOINT</strong><span>run-scoped State<br />resume path</span><small>LangGraph runtime</small></div><div class="persist-node"><strong>RECORDS</strong><span>hypothesis<br />evidence / task / correction</span><small>project SQLite</small></div><div class="persist-node"><strong>ARTIFACTS</strong><span>metrics<br />figure / checksum</span><small>processing provenance</small></div><div class="persist-node"><strong>RESULT</strong><span>scientific-result.json<br />needs_data</span><small>exported run</small></div></div>
-          <div class="persist-footer"><div class="persist-foot" style="--node: var(--cyan)"><strong>RECOVERABLE</strong><p>GET /stream 可以从事件索引继续读取；scientific resume 从 checkpoint 继续。</p></div><div class="persist-foot" style="--node: var(--solar)"><strong>AUDITABLE</strong><p>每个确定性证据都能回到 source snapshot、processing run 和 output artifact。</p></div></div>
+          <div class="heading">
+            <div class="heading-copy">
+              <div class="kicker">12 · DURABLE TRACE</div>
+              <h2>运行结束后，<span class="accent">轨迹仍然存在</span></h2>
+            </div>
+            <p class="heading-side">
+              SSE 负责实时观看；checkpoint、SQLite 和 artifact 负责事后复核与恢复。
+            </p>
+          </div>
+          <div class="persist-flow">
+            <div class="persist-node">
+              <strong>EVENTS</strong
+              ><span>scientific.node-state<br />scientific.evidence<br />scientific.route</span
+              ><small>live SSE chunks</small>
+            </div>
+            <div class="persist-node">
+              <strong>CHECKPOINT</strong><span>run-scoped State<br />resume path</span
+              ><small>LangGraph runtime</small>
+            </div>
+            <div class="persist-node">
+              <strong>RECORDS</strong><span>hypothesis<br />evidence / task / correction</span
+              ><small>project SQLite</small>
+            </div>
+            <div class="persist-node">
+              <strong>ARTIFACTS</strong><span>metrics<br />figure / checksum</span
+              ><small>processing provenance</small>
+            </div>
+            <div class="persist-node">
+              <strong>RESULT</strong><span>scientific-result.json<br />needs_data</span
+              ><small>exported run</small>
+            </div>
+          </div>
+          <div class="persist-footer">
+            <div class="persist-foot" style="--node: var(--cyan)">
+              <strong>RECOVERABLE</strong>
+              <p>GET /stream 可以从事件索引继续读取；scientific resume 从 checkpoint 继续。</p>
+            </div>
+            <div class="persist-foot" style="--node: var(--solar)">
+              <strong>AUDITABLE</strong>
+              <p>每个确定性证据都能回到 source snapshot、processing run 和 output artifact。</p>
+            </div>
+          </div>
         </div>
       </section>
 
       <section id="s14" class="scene clip" data-start="153" data-duration="9" data-track-index="13">
         <div class="scene-content verdict-stage">
-          <div><div class="kicker">13 · CURRENT VERDICT</div><div class="verdict-word" id="scientific-status">NEEDS_DATA</div><p class="verdict-copy">本次运行完成了推理闭环，但证据还没有跨过机制级支持门槛。系统把“知道什么”和“还缺什么”一起交付。</p><div class="verdict-metrics"><div class="verdict-metric" style="--metric-color: var(--cyan)"><b id="verdict-support">2</b><span>SUPPORT</span></div><div class="verdict-metric" style="--metric-color: var(--warn)"><b id="verdict-unknown">30</b><span>UNKNOWN</span></div><div class="verdict-metric" style="--metric-color: var(--red)"><b id="verdict-contradict">0</b><span>CONTRADICT</span></div></div></div>
-          <div><div id="verdict-hypotheses" class="verdict-hypotheses"></div><div class="verdict-foot">TERMINATION · <span id="termination-reason">max_rounds_reached</span> · current run stops honestly</div></div>
+          <div>
+            <div class="kicker">13 · CURRENT VERDICT</div>
+            <div class="verdict-word" id="scientific-status">NEEDS_DATA</div>
+            <p class="verdict-copy">
+              本次运行完成了推理闭环，但证据还没有跨过机制级支持门槛。系统把“知道什么”和“还缺什么”一起交付。
+            </p>
+            <div class="verdict-metrics">
+              <div class="verdict-metric" style="--metric-color: var(--cyan)">
+                <b id="verdict-support">2</b><span>SUPPORT</span>
+              </div>
+              <div class="verdict-metric" style="--metric-color: var(--warn)">
+                <b id="verdict-unknown">30</b><span>UNKNOWN</span>
+              </div>
+              <div class="verdict-metric" style="--metric-color: var(--red)">
+                <b id="verdict-contradict">0</b><span>CONTRADICT</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div id="verdict-hypotheses" class="verdict-hypotheses"></div>
+            <div class="verdict-foot">
+              TERMINATION · <span id="termination-reason">max_rounds_reached</span> · current run
+              stops honestly
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="s15" class="scene clip" data-start="162" data-duration="13" data-track-index="14">
+      <section
+        id="s15"
+        class="scene clip"
+        data-start="162"
+        data-duration="13"
+        data-track-index="14"
+      >
         <div class="scene-content handoff-stage">
-          <div><div class="kicker">14 · NEXT HANDOFF</div><h2>下一轮从任务继续，<br /><span class="accent">不从猜测开始</span></h2><p class="subline">补数据、补诊断、补 holdout，再让同一套 evidence promotion 和 support gate 重新判断。</p><div class="handoff-closing">CLOSED LOOP READY FOR THE NEXT RUN</div></div>
+          <div>
+            <div class="kicker">14 · NEXT HANDOFF</div>
+            <h2>下一轮从任务继续，<br /><span class="accent">不从猜测开始</span></h2>
+            <p class="subline">
+              补数据、补诊断、补 holdout，再让同一套 evidence promotion 和 support gate 重新判断。
+            </p>
+            <div class="handoff-closing">CLOSED LOOP READY FOR THE NEXT RUN</div>
+          </div>
           <div id="handoff-list" class="handoff-list"></div>
         </div>
       </section>
 
-      <div class="bottom"><div class="progress-track"><div id="progress"></div></div><div class="progress-labels"><span>FRAMEWORK</span><span>RUN / LOOP REPLAY</span><span>175 SEC · HYPERFRAMES</span></div></div>
+      <div class="bottom">
+        <div class="progress-track"><div id="progress"></div></div>
+        <div class="progress-labels">
+          <span>FRAMEWORK</span><span>RUN / LOOP REPLAY</span><span>175 SEC · HYPERFRAMES</span>
+        </div>
+      </div>
     </div>
     <script src="./data.js"></script>
     <script>
-      const data = window.__OPEN_SCIENTIST_DEMO__ || {};
-      const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-      }[char]));
-      const text = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = String(value ?? "—"); };
-      const statusLabel = (value) => String(value ?? "unknown").replaceAll("_", " ").toUpperCase();
-      const sourceImage = data.diagnosticImage || "./coronal_diagnostics.png";
+      const data = window.__OPEN_SCIENTIST_DEMO__ || {}
+      const esc = (value) =>
+        String(value ?? '').replace(
+          /[&<>"']/g,
+          (char) =>
+            ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#39;',
+            })[char],
+        )
+      const text = (id, value) => {
+        const node = document.getElementById(id)
+        if (node) node.textContent = String(value ?? '—')
+      }
+      const statusLabel = (value) =>
+        String(value ?? 'unknown')
+          .replaceAll('_', ' ')
+          .toUpperCase()
+      const sourceImage = data.diagnosticImage || './coronal_diagnostics.png'
 
-      text("digest", "SHA " + (data.sourceDigest || "—"));
-      text("hero-run", data.runShortId || data.runId || "—");
-      text("phenomenon-title", data.phenomenon?.title || "NOAA AR11158 多波段热响应");
-      text("active-region", data.phenomenon?.activeRegion || "NOAA 11158");
-      text("phenomenon-question", data.phenomenon?.requestedQuestion || "—");
-      text("current-conclusion", data.conclusion || "—");
-      text("workgroup-count", `${data.deterministicRoleCount || 4} deterministic · ${data.modelRoleCount || 3} model review`);
-      text("file-coverage", data.fileCountLabel || "—");
-      text("metric-correlation", Number(data.crossChannelCorrelation || 0).toFixed(2));
-      text("metric-period", Number(data.candidatePeriodSeconds || 0).toFixed(0));
-      text("ledger-total", data.evidenceTotal || 0);
-      text("ledger-support", data.evidenceSupport || 0);
-      text("ledger-unknown", data.evidenceUnknown || 0);
-      text("ledger-contradict", data.evidenceContradict || 0);
-      text("task-total", data.taskTotal || 0);
-      text("task-completed", data.tasksCompleted || 0);
-      text("task-planned", data.tasksPlanned || 0);
-      text("task-more", data.validationMore || "—");
-      text("scientific-status", statusLabel(data.scientificStatus || "needs_data"));
-      text("verdict-support", data.evidenceSupport || 0);
-      text("verdict-unknown", data.evidenceUnknown || 0);
-      text("verdict-contradict", data.evidenceContradict || 0);
-      text("termination-reason", data.terminationReason || "—");
-      text("round-footer-status", `${data.totalRounds || 0} rounds · ${data.correctionCount || 0} corrections · max rounds reached`);
-      const image = document.getElementById("diagnostic-image");
-      if (image) image.src = sourceImage;
+      text('digest', 'SHA ' + (data.sourceDigest || '—'))
+      text('hero-run', data.runShortId || data.runId || '—')
+      text('phenomenon-title', data.phenomenon?.title || 'NOAA AR11158 多波段热响应')
+      text('active-region', data.phenomenon?.activeRegion || 'NOAA 11158')
+      text('phenomenon-question', data.phenomenon?.requestedQuestion || '—')
+      text('current-conclusion', data.conclusion || '—')
+      text(
+        'workgroup-count',
+        `${data.deterministicRoleCount || 4} deterministic · ${data.modelRoleCount || 3} model review`,
+      )
+      text('file-coverage', data.fileCountLabel || '—')
+      text('metric-correlation', Number(data.crossChannelCorrelation || 0).toFixed(2))
+      text('metric-period', Number(data.candidatePeriodSeconds || 0).toFixed(0))
+      text('ledger-total', data.evidenceTotal || 0)
+      text('ledger-support', data.evidenceSupport || 0)
+      text('ledger-unknown', data.evidenceUnknown || 0)
+      text('ledger-contradict', data.evidenceContradict || 0)
+      text('task-total', data.taskTotal || 0)
+      text('task-completed', data.tasksCompleted || 0)
+      text('task-planned', data.tasksPlanned || 0)
+      text('task-more', data.validationMore || '—')
+      text('scientific-status', statusLabel(data.scientificStatus || 'needs_data'))
+      text('verdict-support', data.evidenceSupport || 0)
+      text('verdict-unknown', data.evidenceUnknown || 0)
+      text('verdict-contradict', data.evidenceContradict || 0)
+      text('termination-reason', data.terminationReason || '—')
+      text(
+        'round-footer-status',
+        `${data.totalRounds || 0} rounds · ${data.correctionCount || 0} corrections · max rounds reached`,
+      )
+      const image = document.getElementById('diagnostic-image')
+      if (image) image.src = sourceImage
 
-      const framework = document.getElementById("framework-layers");
-      if (framework) framework.innerHTML = (data.frameworkLayers || []).map((item) => `
-        <article class="layer-row"><span class="layer-index">${esc(item.index)}</span><strong class="layer-name">${esc(item.name)}</strong><span class="layer-path">${esc(item.path)}</span><span class="layer-detail">${esc(item.detail)}</span></article>`).join("");
+      const framework = document.getElementById('framework-layers')
+      if (framework)
+        framework.innerHTML = (data.frameworkLayers || [])
+          .map(
+            (item) => `
+        <article class="layer-row"><span class="layer-index">${esc(item.index)}</span><strong class="layer-name">${esc(item.name)}</strong><span class="layer-path">${esc(item.path)}</span><span class="layer-detail">${esc(item.detail)}</span></article>`,
+          )
+          .join('')
 
-      const graph = document.getElementById("graph-chain");
-      if (graph) graph.innerHTML = (data.graphNodes || []).map((item) => `
-        <article class="graph-node" style="--node: ${esc(item.color)}"><strong class="node-id">${esc(item.id)}</strong><span class="node-title">${esc(item.title)}</span><small class="node-io">${esc(item.io)}</small></article>`).join("");
+      const graph = document.getElementById('graph-chain')
+      if (graph)
+        graph.innerHTML = (data.graphNodes || [])
+          .map(
+            (item) => `
+        <article class="graph-node" style="--node: ${esc(item.color)}"><strong class="node-id">${esc(item.id)}</strong><span class="node-title">${esc(item.title)}</span><small class="node-io">${esc(item.io)}</small></article>`,
+          )
+          .join('')
 
-      const hypotheses = document.getElementById("hypothesis-grid");
-      if (hypotheses) hypotheses.innerHTML = (data.hypotheses || []).map((item, index) => `
-        <article class="hypothesis"><div class="hypothesis-head"><span class="hypothesis-index">H${String(index + 1).padStart(2, "0")}</span><span class="status-pill ${esc(item.status)}">${esc(statusLabel(item.status))}</span></div><h3>${esc(item.statement)}</h3><p class="mechanism-line">${esc(item.mechanism)}</p><div class="hypothesis-meta"><span>${item.predictionCount} PREDICTIONS</span><span>${item.falsificationCount} FALSIFIERS</span></div><div class="hypothesis-confidence"><strong>${Number(item.confidence || 0).toFixed(2)}</strong><span>CONFIDENCE</span></div></article>`).join("");
+      const hypotheses = document.getElementById('hypothesis-grid')
+      if (hypotheses)
+        hypotheses.innerHTML = (data.hypotheses || [])
+          .map(
+            (item, index) => `
+        <article class="hypothesis"><div class="hypothesis-head"><span class="hypothesis-index">H${String(index + 1).padStart(2, '0')}</span><span class="status-pill ${esc(item.status)}">${esc(statusLabel(item.status))}</span></div><h3>${esc(item.statement)}</h3><p class="mechanism-line">${esc(item.mechanism)}</p><div class="hypothesis-meta"><span>${item.predictionCount} PREDICTIONS</span><span>${item.falsificationCount} FALSIFIERS</span></div><div class="hypothesis-confidence"><strong>${Number(item.confidence || 0).toFixed(2)}</strong><span>CONFIDENCE</span></div></article>`,
+          )
+          .join('')
 
-      const agents = document.getElementById("agent-grid");
-      if (agents) agents.innerHTML = (data.agentRoles || []).map((item) => `
-        <article class="agent-row" style="--agent-color: ${esc(item.color)}"><div class="agent-mark">${esc(item.label.slice(0, 2))}</div><div><strong class="agent-name">${esc(item.label)}</strong><span class="agent-title">${esc(item.title)}</span><small class="agent-desc">${esc(item.description)}</small></div><div class="agent-stats"><div><b>${item.executions}</b><span>RUNS</span></div><div><b>${item.completed}</b><span>DONE</span></div><div><b>${item.skipped}</b><span>SKIP</span></div></div></article>`).join("");
+      const agents = document.getElementById('agent-grid')
+      if (agents)
+        agents.innerHTML = (data.agentRoles || [])
+          .map(
+            (item) => `
+        <article class="agent-row" style="--agent-color: ${esc(item.color)}"><div class="agent-mark">${esc(item.label.slice(0, 2))}</div><div><strong class="agent-name">${esc(item.label)}</strong><span class="agent-title">${esc(item.title)}</span><small class="agent-desc">${esc(item.description)}</small></div><div class="agent-stats"><div><b>${item.executions}</b><span>RUNS</span></div><div><b>${item.completed}</b><span>DONE</span></div><div><b>${item.skipped}</b><span>SKIP</span></div></div></article>`,
+          )
+          .join('')
 
-      const gates = document.getElementById("gate-list");
-      if (gates) gates.innerHTML = (data.gateChecks || []).map((item) => `
-        <div class="gate-item ${esc(item.state)}"><span class="gate-dot"></span><span class="gate-label">${esc(item.label)}</span><span class="gate-value">${esc(item.value)}</span></div>`).join("");
+      const gates = document.getElementById('gate-list')
+      if (gates)
+        gates.innerHTML = (data.gateChecks || [])
+          .map(
+            (item) => `
+        <div class="gate-item ${esc(item.state)}"><span class="gate-dot"></span><span class="gate-label">${esc(item.label)}</span><span class="gate-value">${esc(item.value)}</span></div>`,
+          )
+          .join('')
 
-      const tasks = document.getElementById("task-grid");
-      if (tasks) tasks.innerHTML = (data.tasks || []).map((item, index) => `
-        <article class="task-row"><span class="task-number">${String(index + 1).padStart(2, "0")}</span><div><div class="task-meta"><span class="task-route">ROUTE ${esc(item.route)}</span><span>${esc(item.type)}</span><span class="task-status">${esc(statusLabel(item.status))}</span></div><span class="task-objective">${esc(item.objective)}</span></div></article>`).join("");
+      const tasks = document.getElementById('task-grid')
+      if (tasks)
+        tasks.innerHTML = (data.tasks || [])
+          .map(
+            (item, index) => `
+        <article class="task-row"><span class="task-number">${String(index + 1).padStart(2, '0')}</span><div><div class="task-meta"><span class="task-route">ROUTE ${esc(item.route)}</span><span>${esc(item.type)}</span><span class="task-status">${esc(statusLabel(item.status))}</span></div><span class="task-objective">${esc(item.objective)}</span></div></article>`,
+          )
+          .join('')
 
-      const rounds = document.getElementById("round-grid");
-      if (rounds) rounds.innerHTML = (data.rounds || []).map((item, index) => `
-        <article class="round-card" style="--round-color: ${index === 0 ? "var(--solar)" : "var(--cyan)"}"><h3>ROUND ${String(item.round).padStart(2, "0")}</h3><small>${index === 0 ? "discover / audit / plan" : "consume tasks / re-check / route"}</small><div class="round-stat-grid"><div class="round-stat"><b>${item.evidence}</b><span>EVIDENCE</span></div><div class="round-stat"><b>${item.tasks}</b><span>TASKS</span></div><div class="round-stat"><b>${item.agents}</b><span>AGENTS</span></div><div class="round-stat"><b>${item.corrections}</b><span>CORRECTIONS</span></div></div><p class="round-note">${item.support} support · ${item.unknown} unknown · ${item.completedTasks} completed task · ${item.plannedTasks} planned task</p><div class="round-footer"><span>${item.completedAgents} done · ${item.skippedAgents} skipped</span><span>STATE MERGED</span></div></article>`).join("");
+      const rounds = document.getElementById('round-grid')
+      if (rounds)
+        rounds.innerHTML = (data.rounds || [])
+          .map(
+            (item, index) => `
+        <article class="round-card" style="--round-color: ${index === 0 ? 'var(--solar)' : 'var(--cyan)'}"><h3>ROUND ${String(item.round).padStart(2, '0')}</h3><small>${index === 0 ? 'discover / audit / plan' : 'consume tasks / re-check / route'}</small><div class="round-stat-grid"><div class="round-stat"><b>${item.evidence}</b><span>EVIDENCE</span></div><div class="round-stat"><b>${item.tasks}</b><span>TASKS</span></div><div class="round-stat"><b>${item.agents}</b><span>AGENTS</span></div><div class="round-stat"><b>${item.corrections}</b><span>CORRECTIONS</span></div></div><p class="round-note">${item.support} support · ${item.unknown} unknown · ${item.completedTasks} completed task · ${item.plannedTasks} planned task</p><div class="round-footer"><span>${item.completedAgents} done · ${item.skippedAgents} skipped</span><span>STATE MERGED</span></div></article>`,
+          )
+          .join('')
 
-      const verdict = document.getElementById("verdict-hypotheses");
-      if (verdict) verdict.innerHTML = (data.hypotheses || []).map((item, index) => `
-        <article class="verdict-hypothesis"><b>H${String(index + 1).padStart(2, "0")}</b><p>${esc(item.mechanism)}</p><span style="--hyp-color: ${item.status === "uncertain" ? "var(--warn)" : "var(--solar)"}">${esc(statusLabel(item.status))}</span></article>`).join("");
+      const verdict = document.getElementById('verdict-hypotheses')
+      if (verdict)
+        verdict.innerHTML = (data.hypotheses || [])
+          .map(
+            (item, index) => `
+        <article class="verdict-hypothesis"><b>H${String(index + 1).padStart(2, '0')}</b><p>${esc(item.mechanism)}</p><span style="--hyp-color: ${item.status === 'uncertain' ? 'var(--warn)' : 'var(--solar)'}">${esc(statusLabel(item.status))}</span></article>`,
+          )
+          .join('')
 
-      const handoff = document.getElementById("handoff-list");
-      if (handoff) handoff.innerHTML = (data.handoffTasks || []).map((item, index) => `
-        <article class="handoff-item"><b>${String(index + 1).padStart(2, "0")}</b><p>${esc(item.objective || item)}</p></article>`).join("");
+      const handoff = document.getElementById('handoff-list')
+      if (handoff)
+        handoff.innerHTML = (data.handoffTasks || [])
+          .map(
+            (item, index) => `
+        <article class="handoff-item"><b>${String(index + 1).padStart(2, '0')}</b><p>${esc(item.objective || item)}</p></article>`,
+          )
+          .join('')
 
       const enter = (selector, at, options = {}) => {
-        const tl = window.__demoTimeline;
-        tl.fromTo(selector, { opacity: 0, y: options.y ?? 22, scale: options.scale ?? 1 }, { opacity: 1, y: 0, scale: 1, duration: options.duration ?? .62, ease: options.ease ?? "power3.out", stagger: options.stagger ?? 0, immediateRender: false }, at);
-      };
-      const tl = gsap.timeline({ paused: true });
-      window.__demoTimeline = tl;
-      tl.fromTo("#progress", { scaleX: 0 }, { scaleX: 1, duration: 175, ease: "none", immediateRender: false }, 0);
-      tl.fromTo("#rail-pulse", { y: 0, opacity: .2 }, { y: 770, opacity: 1, duration: 175, ease: "none", immediateRender: false }, 0);
-      tl.fromTo("#root", { "--orbit-turn": 0 }, { "--orbit-turn": 1, duration: 175, ease: "none", immediateRender: false }, 0);
-      tl.fromTo(".hero-orbit", { rotation: -4 }, { rotation: 4, duration: 8, ease: "sine.inOut", repeat: 1, yoyo: true, immediateRender: false }, 0);
-      tl.fromTo("#scan-beam", { y: 0, opacity: 0 }, { y: 510, opacity: .85, duration: 2.4, ease: "power1.inOut", repeat: 1, yoyo: true, immediateRender: false }, 21.5);
-      tl.fromTo("#route-main, #route-a, #route-b, #route-end", { strokeDashoffset: 1100 }, { strokeDashoffset: 0, duration: 1.6, ease: "power2.out", stagger: .24, immediateRender: false }, 120.5);
+        const tl = window.__demoTimeline
+        tl.fromTo(
+          selector,
+          { opacity: 0, y: options.y ?? 22, scale: options.scale ?? 1 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: options.duration ?? 0.62,
+            ease: options.ease ?? 'power3.out',
+            stagger: options.stagger ?? 0,
+            immediateRender: false,
+          },
+          at,
+        )
+      }
+      const tl = gsap.timeline({ paused: true })
+      window.__demoTimeline = tl
+      tl.fromTo(
+        '#progress',
+        { scaleX: 0 },
+        { scaleX: 1, duration: 175, ease: 'none', immediateRender: false },
+        0,
+      )
+      tl.fromTo(
+        '#rail-pulse',
+        { y: 0, opacity: 0.2 },
+        { y: 770, opacity: 1, duration: 175, ease: 'none', immediateRender: false },
+        0,
+      )
+      tl.fromTo(
+        '#root',
+        { '--orbit-turn': 0 },
+        { '--orbit-turn': 1, duration: 175, ease: 'none', immediateRender: false },
+        0,
+      )
+      tl.fromTo(
+        '.hero-orbit',
+        { rotation: -4 },
+        {
+          rotation: 4,
+          duration: 8,
+          ease: 'sine.inOut',
+          repeat: 1,
+          yoyo: true,
+          immediateRender: false,
+        },
+        0,
+      )
+      tl.fromTo(
+        '#scan-beam',
+        { y: 0, opacity: 0 },
+        {
+          y: 510,
+          opacity: 0.85,
+          duration: 2.4,
+          ease: 'power1.inOut',
+          repeat: 1,
+          yoyo: true,
+          immediateRender: false,
+        },
+        21.5,
+      )
+      tl.fromTo(
+        '#route-main, #route-a, #route-b, #route-end',
+        { strokeDashoffset: 1100 },
+        {
+          strokeDashoffset: 0,
+          duration: 1.6,
+          ease: 'power2.out',
+          stagger: 0.24,
+          immediateRender: false,
+        },
+        120.5,
+      )
 
-      enter("#s1 .kicker", .35, { duration: .55 });
-      enter("#s1 h1", .9, { duration: .8, y: 30 });
-      enter("#s1 .subline", 2, { duration: .78, y: 22 });
-      enter("#s1 .hero-chain", 3.05, { duration: .65, y: 14 });
-      enter("#s1 .hero-orbit", .65, { duration: .95, scale: .9, y: 0 });
-      enter("#s1 .hero-run", 3.65, { duration: .6, y: 0 });
-      enter("#s2 .heading", 8.3, { duration: .72, y: 23 });
-      enter("#s2 .layer-row", 9.8, { duration: .58, stagger: .12, y: 20 });
-      enter("#s2 .stack-footer", 11.7, { duration: .55, y: 8 });
-      enter("#s3 .kicker, #s3 h2, #s3 .phenomenon-title, #s3 .question", 20.35, { duration: .65, stagger: .12, y: 20 });
-      enter("#s3 .channel-row span", 21.35, { duration: .5, stagger: .07, y: 13 });
-      enter("#s3 .constraint", 22.1, { duration: .5, stagger: .09, y: 12 });
-      enter("#s3 .diagnostic-frame", 20.25, { duration: .82, scale: .98, y: 0 });
-      enter("#s4 .heading", 29.35, { duration: .7, y: 20 });
-      enter("#s4 .graph-node", 30.4, { duration: .55, stagger: .1, y: 18 });
-      enter("#s4 .graph-loop-item", 33.1, { duration: .55, stagger: .12, y: 15 });
-      enter("#s5 .heading", 40.35, { duration: .7, y: 20 });
-      enter("#s5 .stage-rail", 41.35, { duration: .55, y: 12 });
-      enter("#s5 .hypothesis", 42.1, { duration: .68, stagger: .13, y: 22 });
-      enter("#s6 .workgroup-header", 52.35, { duration: .7, y: 20 });
-      enter("#s6 .dispatch-line", 53.55, { duration: .58, y: 13 });
-      enter("#s6 .agent-row", 54.4, { duration: .58, stagger: .12, y: 17 });
-      enter("#s6 .aggregate-line", 56.8, { duration: .55, y: 8 });
-      enter("#s7 .kicker, #s7 h2", 66.35, { duration: .68, stagger: .11, y: 20 });
-      enter("#s7 .process-step", 68, { duration: .54, stagger: .1, y: 18 });
-      enter("#s7 .processor-figure", 68.2, { duration: .75, scale: .98, y: 0 });
-      enter("#s7 .metric-cell", 70.2, { duration: .52, stagger: .12, y: 12 });
-      enter("#s8 .kicker, #s8 .big-number, #s8 .big-label", 79.35, { duration: .72, stagger: .11, scale: .96, y: 0 });
-      enter("#s8 .ledger-count", 81.1, { duration: .52, stagger: .1, y: 13 });
-      enter("#s8 h2", 79.8, { duration: .7, y: 20 });
-      enter("#s8 .gate-item", 81, { duration: .5, stagger: .1, y: 14 });
-      enter("#s8 .audit-note", 83.1, { duration: .6, y: 12 });
-      enter("#s9 .kicker, #s9 h2", 91.35, { duration: .68, stagger: .11, y: 20 });
-      enter("#s9 .c-node", 93, { duration: .58, stagger: .18, y: 15 });
-      enter("#s9 .c-arrow", 94.1, { duration: .45, y: 8 });
-      enter("#s9 .conclusion-panel", 92.45, { duration: .78, scale: .98, y: 0 });
-      enter("#s10 .task-head", 104.35, { duration: .7, y: 20 });
-      enter("#s10 .task-row", 106, { duration: .52, stagger: .1, y: 14 });
-      enter("#s10 .task-more", 108.5, { duration: .5, y: 8 });
-      enter("#s11 .heading", 118.35, { duration: .7, y: 20 });
-      enter("#s11 .route-label", 120, { duration: .58, stagger: .12, scale: .94, y: 12 });
-      enter("#s11 .route-explain article", 123.2, { duration: .55, stagger: .12, y: 14 });
-      enter("#s12 .heading", 130.35, { duration: .7, y: 20 });
-      enter("#s12 .round-card", 132, { duration: .7, stagger: .2, y: 22 });
-      enter("#s12 .round-footer", 135.4, { duration: .5, y: 8 });
-      enter("#s13 .heading", 142.35, { duration: .7, y: 20 });
-      enter("#s13 .persist-node", 144, { duration: .55, stagger: .12, y: 18 });
-      enter("#s13 .persist-foot", 147.1, { duration: .55, stagger: .14, y: 12 });
-      enter("#s14 .kicker, #s14 .verdict-word", 153.35, { duration: .7, stagger: .12, scale: .96, y: 0 });
-      enter("#s14 .verdict-copy, #s14 .verdict-metric", 154.9, { duration: .55, stagger: .1, y: 13 });
-      enter("#s14 .verdict-hypothesis", 154.1, { duration: .52, stagger: .12, y: 14 });
-      enter("#s14 .verdict-foot", 156.9, { duration: .5, y: 8 });
-      enter("#s15 .kicker, #s15 h2", 162.35, { duration: .7, stagger: .12, y: 20 });
-      enter("#s15 .subline", 164.25, { duration: .62, y: 15 });
-      enter("#s15 .handoff-item", 163.4, { duration: .55, stagger: .14, y: 15 });
-      enter("#s15 .handoff-closing", 168.2, { duration: .62, y: 8 });
+      enter('#s1 .kicker', 0.35, { duration: 0.55 })
+      enter('#s1 h1', 0.9, { duration: 0.8, y: 30 })
+      enter('#s1 .subline', 2, { duration: 0.78, y: 22 })
+      enter('#s1 .hero-chain', 3.05, { duration: 0.65, y: 14 })
+      enter('#s1 .hero-orbit', 0.65, { duration: 0.95, scale: 0.9, y: 0 })
+      enter('#s1 .hero-run', 3.65, { duration: 0.6, y: 0 })
+      enter('#s2 .heading', 8.3, { duration: 0.72, y: 23 })
+      enter('#s2 .layer-row', 9.8, { duration: 0.58, stagger: 0.12, y: 20 })
+      enter('#s2 .stack-footer', 11.7, { duration: 0.55, y: 8 })
+      enter('#s3 .kicker, #s3 h2, #s3 .phenomenon-title, #s3 .question', 20.35, {
+        duration: 0.65,
+        stagger: 0.12,
+        y: 20,
+      })
+      enter('#s3 .channel-row span', 21.35, { duration: 0.5, stagger: 0.07, y: 13 })
+      enter('#s3 .constraint', 22.1, { duration: 0.5, stagger: 0.09, y: 12 })
+      enter('#s3 .diagnostic-frame', 20.25, { duration: 0.82, scale: 0.98, y: 0 })
+      enter('#s4 .heading', 29.35, { duration: 0.7, y: 20 })
+      enter('#s4 .graph-node', 30.4, { duration: 0.55, stagger: 0.1, y: 18 })
+      enter('#s4 .graph-loop-item', 33.1, { duration: 0.55, stagger: 0.12, y: 15 })
+      enter('#s5 .heading', 40.35, { duration: 0.7, y: 20 })
+      enter('#s5 .stage-rail', 41.35, { duration: 0.55, y: 12 })
+      enter('#s5 .hypothesis', 42.1, { duration: 0.68, stagger: 0.13, y: 22 })
+      enter('#s6 .workgroup-header', 52.35, { duration: 0.7, y: 20 })
+      enter('#s6 .dispatch-line', 53.55, { duration: 0.58, y: 13 })
+      enter('#s6 .agent-row', 54.4, { duration: 0.58, stagger: 0.12, y: 17 })
+      enter('#s6 .aggregate-line', 56.8, { duration: 0.55, y: 8 })
+      enter('#s7 .kicker, #s7 h2', 66.35, { duration: 0.68, stagger: 0.11, y: 20 })
+      enter('#s7 .process-step', 68, { duration: 0.54, stagger: 0.1, y: 18 })
+      enter('#s7 .processor-figure', 68.2, { duration: 0.75, scale: 0.98, y: 0 })
+      enter('#s7 .metric-cell', 70.2, { duration: 0.52, stagger: 0.12, y: 12 })
+      enter('#s8 .kicker, #s8 .big-number, #s8 .big-label', 79.35, {
+        duration: 0.72,
+        stagger: 0.11,
+        scale: 0.96,
+        y: 0,
+      })
+      enter('#s8 .ledger-count', 81.1, { duration: 0.52, stagger: 0.1, y: 13 })
+      enter('#s8 h2', 79.8, { duration: 0.7, y: 20 })
+      enter('#s8 .gate-item', 81, { duration: 0.5, stagger: 0.1, y: 14 })
+      enter('#s8 .audit-note', 83.1, { duration: 0.6, y: 12 })
+      enter('#s9 .kicker, #s9 h2', 91.35, { duration: 0.68, stagger: 0.11, y: 20 })
+      enter('#s9 .c-node', 93, { duration: 0.58, stagger: 0.18, y: 15 })
+      enter('#s9 .c-arrow', 94.1, { duration: 0.45, y: 8 })
+      enter('#s9 .conclusion-panel', 92.45, { duration: 0.78, scale: 0.98, y: 0 })
+      enter('#s10 .task-head', 104.35, { duration: 0.7, y: 20 })
+      enter('#s10 .task-row', 106, { duration: 0.52, stagger: 0.1, y: 14 })
+      enter('#s10 .task-more', 108.5, { duration: 0.5, y: 8 })
+      enter('#s11 .heading', 118.35, { duration: 0.7, y: 20 })
+      enter('#s11 .route-label', 120, { duration: 0.58, stagger: 0.12, scale: 0.94, y: 12 })
+      enter('#s11 .route-explain article', 123.2, { duration: 0.55, stagger: 0.12, y: 14 })
+      enter('#s12 .heading', 130.35, { duration: 0.7, y: 20 })
+      enter('#s12 .round-card', 132, { duration: 0.7, stagger: 0.2, y: 22 })
+      enter('#s12 .round-footer', 135.4, { duration: 0.5, y: 8 })
+      enter('#s13 .heading', 142.35, { duration: 0.7, y: 20 })
+      enter('#s13 .persist-node', 144, { duration: 0.55, stagger: 0.12, y: 18 })
+      enter('#s13 .persist-foot', 147.1, { duration: 0.55, stagger: 0.14, y: 12 })
+      enter('#s14 .kicker, #s14 .verdict-word', 153.35, {
+        duration: 0.7,
+        stagger: 0.12,
+        scale: 0.96,
+        y: 0,
+      })
+      enter('#s14 .verdict-copy, #s14 .verdict-metric', 154.9, {
+        duration: 0.55,
+        stagger: 0.1,
+        y: 13,
+      })
+      enter('#s14 .verdict-hypothesis', 154.1, { duration: 0.52, stagger: 0.12, y: 14 })
+      enter('#s14 .verdict-foot', 156.9, { duration: 0.5, y: 8 })
+      enter('#s15 .kicker, #s15 h2', 162.35, { duration: 0.7, stagger: 0.12, y: 20 })
+      enter('#s15 .subline', 164.25, { duration: 0.62, y: 15 })
+      enter('#s15 .handoff-item', 163.4, { duration: 0.55, stagger: 0.14, y: 15 })
+      enter('#s15 .handoff-closing', 168.2, { duration: 0.62, y: 8 })
 
-      window.__timelines = window.__timelines || {};
-      window.__timelines["main"] = tl;
+      window.__timelines = window.__timelines || {}
+      window.__timelines['main'] = tl
     </script>
   </body>
 </html>

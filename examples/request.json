@@ -22,9 +22,7 @@
         }
       }
     ],
-    "returns": [
-      "node_count"
-    ]
+    "returns": ["node_count"]
   },
   "request_type": "read"
 }

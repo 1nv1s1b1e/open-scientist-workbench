@@ -12,9 +12,7 @@ const logger = createLogger('storage')
 function getEncryptionKey(): string {
   const key = process.env.CREDENTIAL_ENCRYPTION_KEY
   if (!key) {
-    throw new Error(
-      'CREDENTIAL_ENCRYPTION_KEY must be set before storing or reading credentials',
-    )
+    throw new Error('CREDENTIAL_ENCRYPTION_KEY must be set before storing or reading credentials')
   }
   return key
 }
@@ -67,24 +65,29 @@ export async function createCredentialStore(): Promise<CredentialStore> {
       const rows = db.select().from(credentials).all()
       return rows.flatMap((r) => {
         try {
-          return [{
-            id: r.id,
-            provider: r.provider,
-            type: r.type,
-            apiKey: decrypt(r.encryptedKey),
-            ...(r.baseURL ? { baseURL: r.baseURL } : {}),
-            ...(r.metadataJson
-              ? { metadata: JSON.parse(r.metadataJson) as Record<string, unknown> }
-              : {}),
-          }]
+          return [
+            {
+              id: r.id,
+              provider: r.provider,
+              type: r.type,
+              apiKey: decrypt(r.encryptedKey),
+              ...(r.baseURL ? { baseURL: r.baseURL } : {}),
+              ...(r.metadataJson
+                ? { metadata: JSON.parse(r.metadataJson) as Record<string, unknown> }
+                : {}),
+            },
+          ]
         } catch (error) {
           // A credential encrypted with a retired master key must not break
           // the whole settings page. Keep the row untouched so it can be
           // recovered or replaced explicitly, but omit it from usable entries.
-          logger.warn({
-            credentialId: r.id,
-            error: error instanceof Error ? error.message : String(error),
-          }, 'credential list: skipped unreadable entry')
+          logger.warn(
+            {
+              credentialId: r.id,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            'credential list: skipped unreadable entry',
+          )
           return []
         }
       })

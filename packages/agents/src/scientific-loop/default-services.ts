@@ -811,7 +811,11 @@ async function generateLocalGroundedHypotheses(
   const localSourceIds = selected ? [matches.sourceId] : []
   const paperIds = papers.map((paper) => `paper:${paper.id}`)
   const allSources = [...new Set([...paperIds, ...localSourceIds])]
-  const regionLabel = activeRegion ? `AR${activeRegion}` : '当前输入现象'
+  const regionLabel = activeRegion
+    ? /^(?:AR|NOAA)\b/i.test(activeRegion)
+      ? activeRegion
+      : `AR${activeRegion}`
+    : '当前输入现象'
   const hasWaveCue = /(准周期|传播|波动|振荡|alfv|wave|periodic|oscillat)/i.test(normalized)
   const hasReconnectionCue =
     /(间歇|增亮|耀斑|重联|极性反转|中性线|94|131|nanoflare|brighten|reconnect|pil)/i.test(
@@ -1737,7 +1741,12 @@ export function localValidationExecutor(task: ValidationTask): string | null {
 }
 
 function hasRunnableLocalTask(context: Readonly<EvidenceAgentContext>): boolean {
-  return context.validationTasks.some((task) => localValidationExecutor(task) !== null)
+  // Only planned tasks are work for a later round. Completed tasks remain in
+  // state for provenance and reporting, but must not reopen the local loader
+  // or semantic reviewers as if they were new scientific work.
+  return context.validationTasks.some(
+    (task) => task.status === 'planned' && localValidationExecutor(task) !== null,
+  )
 }
 
 function localObservationCatalogAgent(): EvidenceAgent {
@@ -1879,7 +1888,7 @@ function createLocalProcessingLoader(input: DefaultScientificServicesInput): Loc
     const activeRegion = inferredActiveRegion(context.phenomenon)
     const query = `${context.phenomenon.title} ${context.phenomenon.description}`
     const runnableTasks = context.validationTasks.filter(
-      (item) => localValidationExecutor(item) !== null,
+      (item) => item.status === 'planned' && localValidationExecutor(item) !== null,
     )
     const primaryMatches = await searchCoronalObservationCases({ activeRegion, query, limit: 1 })
     const primary = primaryMatches.cases[0]
@@ -1937,7 +1946,11 @@ function createLocalProcessingLoader(input: DefaultScientificServicesInput): Loc
       }
     }
     return mapWithConcurrency(requests, 2, async (request) => {
-      const key = `${context.round}:${request.caseId}:${request.mode}:${request.purpose}`
+      // A deterministic processing result is identified by its input and
+      // processor version, not by the orchestration round. Reusing this key
+      // prevents a later round from recomputing and re-emitting the same
+      // diagnostic as if it were new evidence.
+      const key = `${request.caseId}:${request.mode}:${request.purpose}`
       let pending = cache.get(key)
       if (!pending) {
         pending = runLocalCoronalProcessing({
@@ -2103,7 +2116,6 @@ async function runBoundedEvidenceReview(input: {
   return mapModelReview(input.agentId, input.context, review, input.allowedSourceIds)
 }
 
-
 /**
  * Render earlier-round self-correction findings for model reviewers. Without
  * this block a round-2 reviewer re-reports the round-1 finding verbatim
@@ -2126,6 +2138,9 @@ function modelLookerAgent(
     label: `${agentLabel('looker')}：模型观测语境审阅`,
     executionKind: 'model',
     capabilities: ['source-audit', 'observation-analysis', 'fact-check'],
+    // Later rounds are task-driven. Do not re-run a semantic review when the
+    // only input is the same completed baseline evidence.
+    canRun: (context) => context.round === 1 || hasRunnableLocalTask(context),
     run: async (context) => {
       const activeRegion = inferredActiveRegion(context.phenomenon)
       const query = `${context.phenomenon.title} ${context.phenomenon.description}`
@@ -2193,6 +2208,7 @@ function modelExplorerAgent(
       'image-analysis',
       'cross-validation',
     ],
+    canRun: (context) => context.round === 1 || hasRunnableLocalTask(context),
     run: async (context) => {
       const query = `${context.phenomenon.title} ${context.phenomenon.description}`
       const [processing, papers] = await Promise.all([
@@ -2243,6 +2259,7 @@ function modelOracleAgent(
     label: `${agentLabel('oracle')}：模型反例审阅`,
     executionKind: 'model',
     capabilities: ['counterexample-search', 'cross-validation', 'fact-check'],
+    canRun: (context) => context.round === 1 || hasRunnableLocalTask(context),
     run: async (context) => {
       const processing = await load(context)
       const allowedSourceIds = processing.length ? [LOCAL_CORONAL_SOURCE_ID] : []
@@ -3164,7 +3181,8 @@ function localDiagnosticsAgent(
                   stage: 'B-data-quality',
                   severity: 'warning',
                   message: `有 ${totalReadFailures} 个抽样 FITS 读取或校验异常。`,
-                  action: '异常文件未进入指标计算；已登记重取任务，复核处理产物中的 readFailures 后再扩大样本。',
+                  action:
+                    '异常文件未进入指标计算；已登记重取任务，复核处理产物中的 readFailures 后再扩大样本。',
                   affectedIds: readFailureEvidenceIds,
                 },
               ]
@@ -3236,9 +3254,10 @@ export function localCounterexampleAgent(load: LocalProcessingLoader): EvidenceA
           agentId: 'oracle-local-counterexample',
           status: contradictsSpecificity ? ('contradict' as const) : ('unknown' as const),
           evidenceRole: 'diagnostic_boundary' as const,
-          contradictionScope: boundFalsificationIds.length > 0
-            ? ('critical_prediction' as const)
-            : ('diagnostic_specificity' as const),
+          contradictionScope:
+            boundFalsificationIds.length > 0
+              ? ('critical_prediction' as const)
+              : ('diagnostic_specificity' as const),
           claim: contradictsSpecificity
             ? boundFalsificationIds.length > 0
               ? '同活动区背景窗口出现相近热通道变异，预注册的关键证伪条件（该诊断的特异性丧失）被可复核测量命中。'
@@ -3335,6 +3354,10 @@ function supplementDiagnosticsAgent(input: DefaultScientificServicesInput): Evid
     label: `${agentLabel('explore')}：补充包派生产物审阅`,
     executionKind: 'deterministic',
     capabilities: ['observation-analysis', 'spectrum-analysis'],
+    // Supplement products are immutable, manifest-backed read-outs. They
+    // establish a boundary once; repeating them in every round creates no new
+    // information and used to inflate the evidence ledger.
+    canRun: (context) => context.round === 1,
     run: async (context) => {
       const diagnostics = await loadSupplementAnalysisDiagnostics()
       if (diagnostics.status !== 'ready' || diagnostics.products.length === 0) {
@@ -3362,10 +3385,10 @@ function supplementDiagnosticsAgent(input: DefaultScientificServicesInput): Evid
           evidence.push(
             EvidenceRecordSchema.parse({
               evidenceId: `e-supplement-${digest({
-                // Bind run identity + round so ids stay unique across runs of
-                // the same project (the persistence layer rejects collisions).
+                // Bind the immutable product identity. The same product must
+                // retain its evidence id across rounds so state upsert can
+                // recognize it as previously observed.
                 runId: input.runId,
-                round: context.round,
                 kind: product.kind,
                 caseId: product.caseId,
                 sha256: product.registeredSha256,

@@ -33,6 +33,8 @@ function hypothesis(
     ],
     sourceIds: ['paper:1'],
     scope: '登记的多活动区队列',
+    confidence: 0.4,
+    evidenceStrengthGrade: 'not_assessed',
     parentId: null,
     round: 1,
     status,
@@ -54,6 +56,7 @@ function context(hypotheses: ScientificHypothesis[]): PlanningContext {
       artifactIds: [],
       processingRunIds: [],
       round: 1,
+      recentLessons: [],
     },
     hypotheses,
     evidence: [],
@@ -120,9 +123,7 @@ describe('comprehensive registered diagnostic planning', () => {
     )
     expect(tasks.every((task) => task.readiness === 'executable_now')).toBe(true)
     expect(tasks.every((task) => task.detectability?.adequate === false)).toBe(true)
-    expect(
-      tasks.every((task) => task.detectability?.minimumIndependentEventCount === 3),
-    ).toBe(true)
+    expect(tasks.every((task) => task.detectability?.minimumIndependentEventCount === 3)).toBe(true)
     expect(tasks.some((task) => task.hypothesisIds.includes('h-old'))).toBe(false)
     expect(
       tasks.find((task) => task.executorId === 'coronal-wcs-unified-roi-v2')?.hypothesisIds,
@@ -139,10 +140,7 @@ describe('comprehensive registered diagnostic planning', () => {
     ]
     const tasks = buildExternalCompletenessTasks(context(active), [])
 
-    expect(tasks.map((task) => task.hypothesisIds[0])).toEqual([
-      'h-wave',
-      'h-reconnection',
-    ])
+    expect(tasks.map((task) => task.hypothesisIds[0])).toEqual(['h-wave', 'h-reconnection'])
     expect(tasks.every((task) => task.executorId === 'external')).toBe(true)
     expect(tasks.every((task) => task.readiness === 'requires_data')).toBe(true)
     expect(tasks.every((task) => task.detectability?.adequate === false)).toBe(true)
@@ -171,9 +169,7 @@ describe('comprehensive registered diagnostic planning', () => {
     }
     const external = buildExternalCompletenessTasks(context(active), [])[0]!
     const merged = mergeSharedExecutableTasks([base, duplicate, external])
-    const local = merged.filter(
-      (task) => task.executorId === 'coronal-timeseries-lag-v1',
-    )
+    const local = merged.filter((task) => task.executorId === 'coronal-timeseries-lag-v1')
 
     expect(local).toHaveLength(1)
     expect(local[0]?.hypothesisIds).toEqual(expect.arrayContaining(['h-wave', 'h-coupled']))

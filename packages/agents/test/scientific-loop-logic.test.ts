@@ -13,6 +13,9 @@ const task = (overrides: Record<string, unknown> = {}) => ({
   objective: '比较两个活动区的时序关系',
   requiredSourceIds: ['obs-1'],
   discriminatingOutcomes: ['结果 A', '结果 B'],
+  hypothesisIds: [],
+  predictionIds: [],
+  falsificationConditionIds: [],
   triggeredBy: 'e-1',
   status: 'planned' as const,
   resultEvidenceIds: [],
@@ -36,7 +39,10 @@ describe('scientific loop routing logic', () => {
   })
 
   it('deduplicates tasks by stable fingerprint while retaining the first trigger', () => {
-    const result = deduplicateValidationTasks([task(), task({ taskId: 'task-2', triggeredBy: 'e-2' })])
+    const result = deduplicateValidationTasks([
+      task(),
+      task({ taskId: 'task-2', triggeredBy: 'e-2' }),
+    ])
     expect(result).toHaveLength(1)
     expect(result[0]?.taskId).toBe('task-1')
     expect(result[0]?.triggeredBy).toBe('e-1')
@@ -53,26 +59,47 @@ describe('scientific loop routing logic', () => {
   })
 
   it('stops at maxRounds and continues only when new work exists', () => {
-    expect(shouldContinueScientificLoop({ round: 1, maxRounds: 1, newEvidence: 1, newTasks: 1 })).toEqual({
+    expect(
+      shouldContinueScientificLoop({ round: 1, maxRounds: 1, newEvidence: 1, newTasks: 1 }),
+    ).toEqual({
       continue: false,
       reason: 'max_rounds_reached',
     })
-    expect(shouldContinueScientificLoop({ round: 1, maxRounds: 3, newEvidence: 0, newTasks: 0 })).toEqual({
+    expect(
+      shouldContinueScientificLoop({ round: 1, maxRounds: 3, newEvidence: 0, newTasks: 0 }),
+    ).toEqual({
       continue: false,
       reason: 'no_new_evidence_or_tasks',
     })
-    expect(shouldContinueScientificLoop({ round: 1, maxRounds: 3, newEvidence: 1, newTasks: 0 })).toEqual({
+    expect(
+      shouldContinueScientificLoop({ round: 1, maxRounds: 3, newEvidence: 1, newTasks: 0 }),
+    ).toEqual({
       continue: true,
       reason: 'new_evidence',
     })
-    expect(shouldContinueScientificLoop({
-      round: 1,
-      maxRounds: 3,
-      newEvidence: 5,
-      newTasks: 0,
-      hasExecutableTask: false,
-      hasDeferredTask: true,
-    })).toEqual({
+    expect(
+      shouldContinueScientificLoop({
+        round: 1,
+        maxRounds: 3,
+        newEvidence: 5,
+        newTasks: 0,
+        hasExecutableTask: false,
+        hasDeferredTask: true,
+      }),
+    ).toEqual({
+      continue: false,
+      reason: 'no_executable_validation_task',
+    })
+    expect(
+      shouldContinueScientificLoop({
+        round: 3,
+        maxRounds: 3,
+        newEvidence: 0,
+        newTasks: 0,
+        hasExecutableTask: false,
+        hasDeferredTask: true,
+      }),
+    ).toEqual({
       continue: false,
       reason: 'no_executable_validation_task',
     })

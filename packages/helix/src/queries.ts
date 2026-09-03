@@ -752,8 +752,8 @@ export const queries = defineQueries({
 // 编译：vp run --filter @open-scientist/helix generate-queries
 // （运行时 queries.generate 在模块 import 时即写入 src/queries.json；
 //   失败不阻塞 import —— 动态查询路径仍可用。）
-void queries.generate(fileURLToPath(new URL('./queries.json', import.meta.url))).catch(
-  (err: unknown) => {
-  console.warn('[helix] queries.generate failed:', err)
-  },
-)
+void queries
+  .generate(fileURLToPath(new URL('./queries.json', import.meta.url)))
+  .catch((err: unknown) => {
+    console.warn('[helix] queries.generate failed:', err)
+  })

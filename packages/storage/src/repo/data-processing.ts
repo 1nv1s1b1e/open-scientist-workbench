@@ -8,11 +8,7 @@ import {
   type ProcessingRun,
 } from '@open-scientist/schema'
 import { createProjectDb } from '../db.ts'
-import {
-  artifacts,
-  dataSnapshots,
-  processingRuns,
-} from '../schema/project.ts'
+import { artifacts, dataSnapshots, processingRuns } from '../schema/project.ts'
 
 export async function createDataSnapshot(
   projectName: string,
@@ -42,11 +38,7 @@ export async function listDataSnapshots(
   options?: { runId?: string; limit?: number },
 ): Promise<DataSnapshotRef[]> {
   const { db } = createProjectDb(projectName)
-  let rows = db
-    .select()
-    .from(dataSnapshots)
-    .orderBy(desc(dataSnapshots.createdAt))
-    .all()
+  let rows = db.select().from(dataSnapshots).orderBy(desc(dataSnapshots.createdAt)).all()
   if (options?.runId) rows = rows.filter((row) => row.runId === options.runId)
   return rows.slice(0, options?.limit ?? 50).map((row) =>
     DataSnapshotRefSchema.parse({
@@ -91,11 +83,7 @@ export async function listArtifacts(
   options?: { runId?: string; processingRunId?: string; limit?: number },
 ): Promise<ArtifactRef[]> {
   const { db } = createProjectDb(projectName)
-  let rows = db
-    .select()
-    .from(artifacts)
-    .orderBy(desc(artifacts.createdAt))
-    .all()
+  let rows = db.select().from(artifacts).orderBy(desc(artifacts.createdAt)).all()
   if (options?.runId) rows = rows.filter((row) => row.runId === options.runId)
   if (options?.processingRunId) {
     rows = rows.filter((row) => row.processingRunId === options.processingRunId)
@@ -150,11 +138,7 @@ export async function listProcessingRuns(
   options?: { runId?: string; agentId?: string; limit?: number },
 ): Promise<ProcessingRun[]> {
   const { db } = createProjectDb(projectName)
-  let rows = db
-    .select()
-    .from(processingRuns)
-    .orderBy(desc(processingRuns.startedAt))
-    .all()
+  let rows = db.select().from(processingRuns).orderBy(desc(processingRuns.startedAt)).all()
   if (options?.runId) rows = rows.filter((row) => row.runId === options.runId)
   if (options?.agentId) rows = rows.filter((row) => row.agentId === options.agentId)
   return rows.slice(0, options?.limit ?? 50).map((row) =>

@@ -9,14 +9,7 @@ import {
 describe('scientific agent identities', () => {
   it('covers exactly the six stable role keys', () => {
     const keys = SCIENTIFIC_AGENTS.map((agent) => agent.key).sort()
-    expect(keys).toEqual([
-      'explore',
-      'librarian',
-      'looker',
-      'oracle',
-      'prometheus',
-      'sisyphus',
-    ])
+    expect(keys).toEqual(['explore', 'librarian', 'looker', 'oracle', 'prometheus', 'sisyphus'])
   })
 
   it('keeps codenames, display names and English names unique', () => {

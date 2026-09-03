@@ -187,6 +187,18 @@ data/
 
 这些派生帧是有损工作层，不能替代原始 FITS。当前处理器已实现统一 193 Å WCS/ROI（含差分自转补偿，`wcs-roi-dem-v4`）、预注册冷却时延、六通道 ROI 中位强度正则化 DEM、空间相干与表观传播、热事件 fluence 分布、HMI 共空间视向磁场、SHARP CEA 矢量磁场、磁—热时间关联代理，以及 AR11899 IRIS Si IV Doppler 正控复现。EIS Level-1 版本化拟合（v2）在冻结校准下输出六条谱线的强度、相对 Doppler、非热速度，以及由注册 CHIANTI 11.0.2 密度曲线反演的 Si X 258/261 电子密度（曲线经 Warren 2009 发表锚点验证，偏差约 0.11 dex；`scripts/build_eis_density_calibration.py` 构建并注册，`analyze_eis_level1.py` 校验消费）。NuSTAR 计数率链（`analyze_nustar_hxr.py` v2）提供逐观测的指向/ghost-ray 审计、活时间校正的 PI 波段计数率、临边圆拟合验证的盘内/离盘几何与精确 Poisson 显著性或 3σ 计数率上限；物理通量仍需 CALDB 响应矩阵谱拟合，滚转参考的日面坐标映射受限于 2014 年事件头缺少二进制表 WCS 关键字。AR11890 IRIS 方法复现（`analyze_iris_ar11890.py`）将正向控制扩展到第二个光谱事件（仍低于三次独立事件门槛）。尚未实现逐像素出版级 DEM、日冕自由能/NLFFF、人工确认的沿环能流或 MHD 能量闭合。预处理的作用是减少重复解码与运行时间，不是删除原始科学数据。
 
+### 匹配前向模型（loop-forward-model-v1）
+
+`scripts/run_loop_forward_model.py` 把 `mhdConfigTool` 的输出从"仅写 `.cfg` 与建议书"推进到可执行的正演闭环：脚本读取 `.cfg`（含 MHD 码单位参数的物理范围守卫），对定常、纳耀斑风暴、波动驱动三个预注册加热场景（共享同一时间平均加热）确定性积分单区能量平衡环模型，经双分量对数正态 AIA 温度响应合成六通道光变，输出峰值温度、热通道衰减时标与 171/193 通道间时延，并与登记观测目标（如 AR11158 窗口实测 `lagSpanSeconds=144 s`）做加权相对误差场景排序。自检覆盖能量闭合（1.0003）、无加热单调衰减、场景判别与字节级确定性；演示产物与 manifest SHA-256 在 `outputs/loop-forward-model-v1/`。局限在产物内如实声明：约化模型无空间冷却传播，合成时延仅支持场景间相对排序，3D MHD 求解、仪器图像级卷积与组件消融仍登记为 `future:matched-mhd-forward-model`。
+
+```powershell
+python scripts/run_loop_forward_model.py --cfg data/projects/3/mhd/run-1786354479295-5c6010a5.cfg --out outputs/loop-forward-model-v1/run-1786354479295-5c6010a5 --targets outputs/loop-forward-model-v1/targets-ar11158-20110215.json
+python scripts/run_loop_forward_model.py --cfg outputs/loop-forward-model-v1/scenario-h2-nanoflare-storm.cfg --out outputs/loop-forward-model-v1/scenario-h2-nanoflare-storm --targets outputs/loop-forward-model-v1/targets-ar11158-20110215.json
+python scripts/run_loop_forward_model.py --selfcheck
+```
+
+`scenario-h2-nanoflare-storm.cfg` 是锚定提交基线 `run-1788431926970-1f3b6181` H2 假设族的场景输入（按文档化默认参数由提交材料整理者撰写，非智能体运行产物）；该场景在登记目标上 storm 排序最优（1.035）但与 wave（1.069）区分度弱，与"单区模型不支持绝对时延预测"的局限声明一致，仅作能力演示而非科学结论。
+
 ### 70 GB 上限内的证据包与批量派生层
 
 `examples/coronal-evidence-70gb-v1.json` 当前对应 7 个独立活动区、13 个目标/背景窗口、长时段冷却、高时间分辨率爆发段和 304 Å 热非平衡诊断。主包为 61.490 GB；补充包包括 1.109 GB HMI SHARP CEA 矢量场、1.462 GB AR11899 IRIS/EIS 联合光谱，以及 1.453 GB EIS Level-1、AR11890/AR12222 IRIS 与四个 NuSTAR ObsID 定向包，总量为 65.514 GB。70 GB 是容量规划量级，不是必须填满的目标；继续增加同类 AIA 帧不会自动增加机制区分力。只有注册预测明确需要新的光谱、磁拓扑、模拟或独立事件时才补数。
@@ -241,11 +253,13 @@ python scripts/process_coronal_pack.py `
 > 候选如实为 `uncertain/needs_data`。**v3 结果保留为历史标定**；恢复路径是
 > 按预注册规则补充独立/更长验证窗数据（判据不放宽、不事后挑选强尾部事件）。详见 `docs/闭环创新点总账.md` 附加-5/6。
 
-当前提交基线是 [run-1788030664349-d02ffa8c](output/closure-complete-regression-r3-20260830/scientific-result.json)：`wcs-roi-dem-v5`、11 条假设全部 `uncertain / deferred_requires_data / insufficient`，`scientificStatus=needs_data`、`closureStatus=partial`。20 个任务中 16 个本地任务全部完成（含 AR11899 IRIS 与 5 个跨事件 holdout），4 个外部数据任务明确保留；失败任务、失败智能体和 error correction 均为 0，因此 `workflowClosure=complete`、`operationalClosure=complete`。归档包含 request、SSE、headers、代码补丁/状态清单以及 request/manifest/patch SHA。历史 Qwen v3 运行 `run-1787839551365-dec915cb` 仅用于证明旧标定下门禁路径可达，不代表当前 v5 数据支持某个过程或机制。详见 [最终说明](docs/competition-2b-final-backend-and-data.md)。
+当前提交基线是 [run-1788431926970-1f3b6181](output/docker-helix-submission-20260903/scientific-result.json)：`coronal-evidence-70gb-v1`、15 条假设、144 条证据和 29 项验证任务，18 项本地任务完成，11 项外部数据/人审任务保留；`scientificStatus=needs_data`、`closureStatus=partial`，但 `workflowClosure=complete`、`operationalClosure=complete`。结果包含 A/B/C/D 四阶段共 15 条 `agentExecutions` 和 `roundBudget=2/2, exhausted=true`，终止原因为 `no_executable_validation_task`。归档包含 request、SSE、headers、代码补丁/状态清单以及运行元数据。历史 Qwen v3 运行仅用于证明旧标定下门禁路径可达，不代表当前数据支持某个过程或机制。详见 [最终说明](docs/competition-2b-final-backend-and-data.md) 和 [科学故事](docs/competition-2b-scientific-story.md)。
 
 后端把“是否需要新增数据”下沉到验证任务：`readiness=executable_now` 表示现有数据和执行器可直接完成，`requires_data` 表示缺少明确的数据项，`external` 表示数据可能已有但本仓库没有执行器，`human_review` 表示需要专家复核。最终结果中的 `dataReadiness.requiresNewData` 只在存在 `requires_data` 任务时为真。不得因为结果为 `unknown` 就无条件增加数据；应先区分样本量不足、诊断缺失、效应小于可检测下限和预测本身不具区分力。
 
 科学结论与流程完整度分开报告：`scientificStatus` 表示 `supported`、`mixed`、`needs_data` 等科学状态；`closureStatus` 表示证据和反证是否达到科学充分性；`workflowClosure` 检查每条假设是否已有本轮终局处置，以及是否还残留 `executable_now` 或 `unassessed` 任务；`operationalClosure` 独立检查失败智能体、失败任务、数据完整性错误和未清除的 error correction。新运行不再给假设输出貌似精确的 0–1 `confidence`，而使用 `not_assessed / insufficient / limited / moderate / strong / conflicted` 序数证据等级。定量结果中的 `confidenceLevel=0.95` 仅是该指标区间的覆盖水平，不是“假设为真的概率”。
+
+挑战杯 2B 的输入、输出和科学故事按提交模板整理在 [`docs/competition-2b-scientific-story.md`](docs/competition-2b-scientific-story.md)。对外展示应按“现象 → 竞争假设 → 原子预测 → 确定性证据/反例 → 门禁判定 → 下一步验证任务”组织；多轮只消费新的 `planned` 验证任务，不能把已完成任务再次当作科学进展。
 
 ### 将数据放到独立磁盘
 

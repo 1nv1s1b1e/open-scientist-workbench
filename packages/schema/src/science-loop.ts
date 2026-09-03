@@ -70,9 +70,6 @@ export function transitionScienceLoop(
   return ScienceLoopStateSchema.parse({
     ...state,
     phase: nextPhase,
-    events: [
-      ...state.events,
-      { sequence: state.events.length + 1, phase: nextPhase, payload },
-    ],
+    events: [...state.events, { sequence: state.events.length + 1, phase: nextPhase, payload }],
   })
 }

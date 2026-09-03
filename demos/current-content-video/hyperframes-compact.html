@@ -6,10 +6,22 @@
     <title>Open Scientist / Compact Scientific Trace</title>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <style>
-      @font-face { font-family: "Microsoft YaHei UI"; src: local("Microsoft YaHei UI"); }
-      @font-face { font-family: "PingFang SC"; src: local("PingFang SC"); }
-      @font-face { font-family: "Bahnschrift SemiCondensed"; src: local("Bahnschrift SemiCondensed"); }
-      @font-face { font-family: "Cascadia Mono"; src: local("Cascadia Mono"); }
+      @font-face {
+        font-family: 'Microsoft YaHei UI';
+        src: local('Microsoft YaHei UI');
+      }
+      @font-face {
+        font-family: 'PingFang SC';
+        src: local('PingFang SC');
+      }
+      @font-face {
+        font-family: 'Bahnschrift SemiCondensed';
+        src: local('Bahnschrift SemiCondensed');
+      }
+      @font-face {
+        font-family: 'Cascadia Mono';
+        src: local('Cascadia Mono');
+      }
 
       :root {
         --bg: #040b13;
@@ -25,69 +37,108 @@
         --violet: #bca8ff;
         --warn: #e8cf63;
         --red: #ee7469;
-        --line: rgba(126, 221, 216, .18);
-        --line-strong: rgba(126, 221, 216, .42);
+        --line: rgba(126, 221, 216, 0.18);
+        --line-strong: rgba(126, 221, 216, 0.42);
       }
 
-      * { box-sizing: border-box; }
-      html, body {
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
         width: 1920px;
         height: 1080px;
         margin: 0;
         overflow: hidden;
         background: var(--bg);
         color: var(--paper);
-        font-family: "Microsoft YaHei UI", "PingFang SC", sans-serif;
+        font-family: 'Microsoft YaHei UI', 'PingFang SC', sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      body { background: var(--bg); }
+      body {
+        background: var(--bg);
+      }
       #root {
         position: relative;
         width: 1920px;
         height: 1080px;
         overflow: hidden;
         background:
-          radial-gradient(circle at 86% 17%, rgba(255, 180, 93, .11), transparent 25%),
+          radial-gradient(circle at 86% 17%, rgba(255, 180, 93, 0.11), transparent 25%),
           linear-gradient(135deg, #071b28 0%, #040a12 70%, #071923 100%);
       }
       #root::before {
-        content: "";
+        content: '';
         position: absolute;
         inset: 0;
         background-image:
-          linear-gradient(rgba(108, 233, 223, .12) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(108, 233, 223, .12) 1px, transparent 1px);
+          linear-gradient(rgba(108, 233, 223, 0.12) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(108, 233, 223, 0.12) 1px, transparent 1px);
         background-size: 80px 80px;
-        opacity: .24;
-        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .8), transparent 88%);
+        opacity: 0.24;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 88%);
       }
       #root::after {
-        content: "";
+        content: '';
         position: absolute;
         width: 900px;
         height: 900px;
         right: -470px;
         top: 90px;
-        border: 1px solid rgba(255, 180, 93, .25);
+        border: 1px solid rgba(255, 180, 93, 0.25);
         border-radius: 50%;
-        box-shadow: 0 0 120px rgba(255, 150, 54, .07), inset 0 0 100px rgba(255, 180, 93, .04);
+        box-shadow:
+          0 0 120px rgba(255, 150, 54, 0.07),
+          inset 0 0 100px rgba(255, 180, 93, 0.04);
       }
 
-      h1, h2, h3, p { margin: 0; }
-      h1, h2, h3, .metric-value, .page-index, .big-number {
-        font-family: "Bahnschrift SemiCondensed", "Microsoft YaHei UI", sans-serif;
-        font-weight: 680;
-        letter-spacing: -.035em;
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
       }
-      h1 { font-size: 132px; line-height: .88; }
-      h2 { max-width: 1110px; font-size: 67px; line-height: 1.02; }
-      h3 { font-size: 24px; line-height: 1.25; }
-      .mono { font-family: "Cascadia Mono", "Microsoft YaHei UI", monospace; }
-      .cyan { color: var(--cyan); }
-      .solar { color: var(--hot); }
-      .violet { color: var(--violet); }
-      .warn { color: var(--warn); }
-      .red { color: var(--red); }
+      h1,
+      h2,
+      h3,
+      .metric-value,
+      .page-index,
+      .big-number {
+        font-family: 'Bahnschrift SemiCondensed', 'Microsoft YaHei UI', sans-serif;
+        font-weight: 680;
+        letter-spacing: -0.035em;
+      }
+      h1 {
+        font-size: 132px;
+        line-height: 0.88;
+      }
+      h2 {
+        max-width: 1110px;
+        font-size: 67px;
+        line-height: 1.02;
+      }
+      h3 {
+        font-size: 24px;
+        line-height: 1.25;
+      }
+      .mono {
+        font-family: 'Cascadia Mono', 'Microsoft YaHei UI', monospace;
+      }
+      .cyan {
+        color: var(--cyan);
+      }
+      .solar {
+        color: var(--hot);
+      }
+      .violet {
+        color: var(--violet);
+      }
+      .warn {
+        color: var(--warn);
+      }
+      .red {
+        color: var(--red);
+      }
 
       .topbar {
         position: absolute;
@@ -98,21 +149,29 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font: 600 15px/1 "Cascadia Mono", monospace;
-        letter-spacing: .1em;
+        font:
+          600 15px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
         color: var(--muted);
       }
-      .brand { display: flex; align-items: center; gap: 15px; color: var(--paper); }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        color: var(--paper);
+      }
       .brand-mark {
         position: relative;
         width: 32px;
         height: 32px;
         border: 2px solid var(--solar);
         border-radius: 50%;
-        box-shadow: 0 0 22px rgba(255, 180, 93, .45);
+        box-shadow: 0 0 22px rgba(255, 180, 93, 0.45);
       }
-      .brand-mark::before, .brand-mark::after {
-        content: "";
+      .brand-mark::before,
+      .brand-mark::after {
+        content: '';
         position: absolute;
         inset: 6px -8px;
         border-top: 1px solid var(--cyan);
@@ -120,11 +179,19 @@
         border-radius: 50%;
         transform: rotate(-23deg);
       }
-      .brand-mark::after { transform: rotate(23deg); }
-      .top-state { display: flex; align-items: center; gap: 26px; }
-      .top-state span:first-child { color: var(--cyan); }
+      .brand-mark::after {
+        transform: rotate(23deg);
+      }
+      .top-state {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+      }
+      .top-state span:first-child {
+        color: var(--cyan);
+      }
       .top-state span:first-child::before {
-        content: "";
+        content: '';
         display: inline-block;
         width: 7px;
         height: 7px;
@@ -143,8 +210,10 @@
         width: 165px;
       }
       .rail-caption {
-        font: 650 12px/1 "Cascadia Mono", monospace;
-        letter-spacing: .16em;
+        font:
+          650 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.16em;
         color: var(--faint);
       }
       .rail-body {
@@ -153,7 +222,12 @@
         bottom: 55px;
         left: 7px;
         width: 1px;
-        background: linear-gradient(to bottom, var(--line-strong), rgba(108, 233, 223, .08), transparent);
+        background: linear-gradient(
+          to bottom,
+          var(--line-strong),
+          rgba(108, 233, 223, 0.08),
+          transparent
+        );
       }
       #rail-progress {
         position: absolute;
@@ -173,37 +247,65 @@
         gap: 17px;
         width: 155px;
         color: var(--faint);
-        transition: color .22s ease;
+        transition: color 0.22s ease;
       }
       .rail-step::before {
-        content: "";
+        content: '';
         width: 13px;
         height: 13px;
         border: 2px solid currentColor;
         border-radius: 50%;
         background: var(--bg);
-        transition: background .22s ease, box-shadow .22s ease, transform .22s ease;
+        transition:
+          background 0.22s ease,
+          box-shadow 0.22s ease,
+          transform 0.22s ease;
       }
-      .rail-step.active { color: var(--cyan); }
+      .rail-step.active {
+        color: var(--cyan);
+      }
       .rail-step.active::before {
         background: var(--cyan);
         box-shadow: 0 0 18px var(--cyan);
         transform: scale(1.12);
       }
-      .rail-step.done { color: var(--solar); }
-      .rail-step.done::before { background: var(--solar); }
-      .rail-step span { font: 650 12px/1 "Cascadia Mono", monospace; letter-spacing: .08em; }
-      .rail-step:nth-child(2) { top: 0; }
-      .rail-step:nth-child(3) { top: 20%; }
-      .rail-step:nth-child(4) { top: 40%; }
-      .rail-step:nth-child(5) { top: 60%; }
-      .rail-step:nth-child(6) { top: 80%; }
-      .rail-step:nth-child(7) { top: 100%; }
+      .rail-step.done {
+        color: var(--solar);
+      }
+      .rail-step.done::before {
+        background: var(--solar);
+      }
+      .rail-step span {
+        font:
+          650 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
+      }
+      .rail-step:nth-child(2) {
+        top: 0;
+      }
+      .rail-step:nth-child(3) {
+        top: 20%;
+      }
+      .rail-step:nth-child(4) {
+        top: 40%;
+      }
+      .rail-step:nth-child(5) {
+        top: 60%;
+      }
+      .rail-step:nth-child(6) {
+        top: 80%;
+      }
+      .rail-step:nth-child(7) {
+        top: 100%;
+      }
       .rail-foot {
         position: absolute;
         bottom: 0;
         left: 0;
-        font: 500 11px/1.55 "Cascadia Mono", monospace;
+        font:
+          500 11px/1.55 'Cascadia Mono',
+          monospace;
         color: var(--faint);
       }
 
@@ -218,7 +320,7 @@
         position: relative;
         height: 3px;
         overflow: hidden;
-        background: rgba(238, 248, 247, .1);
+        background: rgba(238, 248, 247, 0.1);
       }
       #global-progress {
         width: 100%;
@@ -237,7 +339,9 @@
         margin-top: -5px;
         border-radius: 50%;
         background: var(--hot);
-        box-shadow: 0 0 12px var(--hot), 0 0 24px rgba(255, 180, 93, .55);
+        box-shadow:
+          0 0 12px var(--hot),
+          0 0 24px rgba(255, 180, 93, 0.55);
       }
       #page-wipe {
         position: absolute;
@@ -248,7 +352,13 @@
         height: 2px;
         pointer-events: none;
         transform-origin: left;
-        background: linear-gradient(90deg, transparent, var(--solar) 12%, var(--cyan) 72%, transparent);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--solar) 12%,
+          var(--cyan) 72%,
+          transparent
+        );
         box-shadow: 0 0 17px var(--cyan);
       }
       .timeline-labels {
@@ -256,11 +366,15 @@
         align-items: center;
         justify-content: space-between;
         margin-top: 10px;
-        font: 550 12px/1 "Cascadia Mono", monospace;
-        letter-spacing: .08em;
+        font:
+          550 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
         color: var(--faint);
       }
-      #page-counter { color: var(--paper); }
+      #page-counter {
+        color: var(--paper);
+      }
 
       .page {
         position: absolute;
@@ -285,13 +399,15 @@
         align-items: center;
         gap: 12px;
         margin-bottom: 20px;
-        font: 650 16px/1 "Cascadia Mono", monospace;
-        letter-spacing: .14em;
+        font:
+          650 16px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--cyan);
       }
       .kicker::before {
-        content: "";
+        content: '';
         width: 39px;
         height: 2px;
         background: currentColor;
@@ -306,8 +422,10 @@
       }
       .page-index small {
         margin-left: 7px;
-        font: 600 13px/1 "Cascadia Mono", monospace;
-        letter-spacing: .1em;
+        font:
+          600 13px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
         color: var(--faint);
       }
       .page-subtitle {
@@ -318,12 +436,16 @@
         color: var(--muted);
       }
       .micro-label {
-        font: 650 12px/1.2 "Cascadia Mono", monospace;
-        letter-spacing: .12em;
+        font:
+          650 12px/1.2 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--faint);
       }
-      .reveal { opacity: 0; }
+      .reveal {
+        opacity: 0;
+      }
       .flow-packet {
         position: absolute;
         z-index: 5;
@@ -332,7 +454,9 @@
         border: 2px solid var(--bg);
         border-radius: 50%;
         background: var(--hot);
-        box-shadow: 0 0 13px var(--hot), 0 0 25px rgba(255, 180, 93, .6);
+        box-shadow:
+          0 0 13px var(--hot),
+          0 0 25px rgba(255, 180, 93, 0.6);
         pointer-events: none;
       }
       .scan-beam {
@@ -342,8 +466,17 @@
         right: 14px;
         top: 14px;
         height: 2px;
-        background: linear-gradient(90deg, transparent, var(--cyan) 18%, var(--hot) 50%, var(--cyan) 82%, transparent);
-        box-shadow: 0 0 15px var(--cyan), 0 0 25px rgba(255, 180, 93, .45);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--cyan) 18%,
+          var(--hot) 50%,
+          var(--cyan) 82%,
+          transparent
+        );
+        box-shadow:
+          0 0 15px var(--cyan),
+          0 0 25px rgba(255, 180, 93, 0.45);
         pointer-events: none;
       }
       .trace-note {
@@ -351,29 +484,67 @@
         right: 0;
         bottom: 15px;
         max-width: 650px;
-        font: 500 13px/1.45 "Cascadia Mono", monospace;
+        font:
+          500 13px/1.45 'Cascadia Mono',
+          monospace;
         color: var(--faint);
         text-align: right;
       }
 
-      .hero-page { display: flex; align-items: center; }
-      .hero-copy { position: relative; z-index: 2; width: 820px; margin-top: -24px; }
-      .hero-copy .kicker { margin-bottom: 31px; }
-      .hero-copy h1 span { display: block; color: var(--paper); }
-      .hero-copy h1 strong { display: block; color: var(--hot); font-weight: inherit; text-shadow: 0 0 35px rgba(255, 180, 93, .2); }
-      .hero-copy p { max-width: 700px; margin-top: 34px; font-size: 25px; line-height: 1.55; color: var(--soft); }
+      .hero-page {
+        display: flex;
+        align-items: center;
+      }
+      .hero-copy {
+        position: relative;
+        z-index: 2;
+        width: 820px;
+        margin-top: -24px;
+      }
+      .hero-copy .kicker {
+        margin-bottom: 31px;
+      }
+      .hero-copy h1 span {
+        display: block;
+        color: var(--paper);
+      }
+      .hero-copy h1 strong {
+        display: block;
+        color: var(--hot);
+        font-weight: inherit;
+        text-shadow: 0 0 35px rgba(255, 180, 93, 0.2);
+      }
+      .hero-copy p {
+        max-width: 700px;
+        margin-top: 34px;
+        font-size: 25px;
+        line-height: 1.55;
+        color: var(--soft);
+      }
       .hero-signal {
         display: flex;
         align-items: center;
         gap: 13px;
         margin-top: 37px;
-        font: 650 14px/1 "Cascadia Mono", monospace;
-        letter-spacing: .08em;
+        font:
+          650 14px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.08em;
         color: var(--muted);
       }
-      .hero-signal span { padding: 10px 12px; border: 1px solid var(--line-strong); color: var(--cyan); }
-      .hero-signal span:nth-child(4n + 1) { border-color: rgba(255, 180, 93, .5); color: var(--hot); }
-      .hero-signal i { color: var(--faint); font-style: normal; }
+      .hero-signal span {
+        padding: 10px 12px;
+        border: 1px solid var(--line-strong);
+        color: var(--cyan);
+      }
+      .hero-signal span:nth-child(4n + 1) {
+        border-color: rgba(255, 180, 93, 0.5);
+        color: var(--hot);
+      }
+      .hero-signal i {
+        color: var(--faint);
+        font-style: normal;
+      }
       .hero-orbit {
         position: absolute;
         top: -24px;
@@ -381,9 +552,23 @@
         width: 720px;
         height: 720px;
       }
-      .orbit-ring { position: absolute; inset: 40px; border: 1px solid rgba(108, 233, 223, .23); border-radius: 50%; transform: rotate(-18deg) skewX(-12deg); }
-      .orbit-ring.two { inset: 125px; transform: rotate(37deg) skewX(17deg); border-color: rgba(255, 180, 93, .35); }
-      .orbit-ring.three { inset: 210px; transform: rotate(-30deg) skewX(-17deg); border-color: rgba(188, 168, 255, .24); }
+      .orbit-ring {
+        position: absolute;
+        inset: 40px;
+        border: 1px solid rgba(108, 233, 223, 0.23);
+        border-radius: 50%;
+        transform: rotate(-18deg) skewX(-12deg);
+      }
+      .orbit-ring.two {
+        inset: 125px;
+        transform: rotate(37deg) skewX(17deg);
+        border-color: rgba(255, 180, 93, 0.35);
+      }
+      .orbit-ring.three {
+        inset: 210px;
+        transform: rotate(-30deg) skewX(-17deg);
+        border-color: rgba(188, 168, 255, 0.24);
+      }
       .orbit-core {
         position: absolute;
         top: 252px;
@@ -393,313 +578,1786 @@
         width: 216px;
         height: 216px;
         border-radius: 50%;
-        background: radial-gradient(circle at 35% 30%, #ffe2a7 0%, #ffad58 27%, #ed693c 56%, #712a2b 100%);
-        box-shadow: 0 0 82px rgba(255, 145, 55, .37), inset -20px -27px 38px rgba(67, 12, 34, .32);
+        background: radial-gradient(
+          circle at 35% 30%,
+          #ffe2a7 0%,
+          #ffad58 27%,
+          #ed693c 56%,
+          #712a2b 100%
+        );
+        box-shadow:
+          0 0 82px rgba(255, 145, 55, 0.37),
+          inset -20px -27px 38px rgba(67, 12, 34, 0.32);
         color: #271919;
         text-align: center;
       }
-      .orbit-core strong { font: 700 33px/1 "Bahnschrift SemiCondensed", sans-serif; letter-spacing: .03em; }
-      .orbit-core span { margin-top: 9px; font: 650 11px/1 "Cascadia Mono", monospace; letter-spacing: .12em; }
-      .orbit-label { position: absolute; font: 650 13px/1 "Cascadia Mono", monospace; letter-spacing: .1em; color: var(--muted); }
-      .orbit-label.a { top: 89px; right: 59px; color: var(--cyan); }
-      .orbit-label.b { bottom: 84px; left: 12px; color: var(--hot); }
-      .orbit-label.c { top: 329px; left: -18px; color: var(--violet); }
+      .orbit-core strong {
+        font:
+          700 33px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        letter-spacing: 0.03em;
+      }
+      .orbit-core span {
+        margin-top: 9px;
+        font:
+          650 11px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.12em;
+      }
+      .orbit-label {
+        position: absolute;
+        font:
+          650 13px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+      }
+      .orbit-label.a {
+        top: 89px;
+        right: 59px;
+        color: var(--cyan);
+      }
+      .orbit-label.b {
+        bottom: 84px;
+        left: 12px;
+        color: var(--hot);
+      }
+      .orbit-label.c {
+        top: 329px;
+        left: -18px;
+        color: var(--violet);
+      }
       .hero-run {
         position: absolute;
         right: 20px;
         bottom: 8px;
-        font: 550 13px/1.45 "Cascadia Mono", monospace;
+        font:
+          550 13px/1.45 'Cascadia Mono',
+          monospace;
         color: var(--faint);
         text-align: right;
       }
 
-      .phenomenon-layout { display: grid; grid-template-columns: .8fr 1.2fr; gap: 70px; align-items: center; height: 650px; margin-top: 35px; }
-      .phenomenon-title { margin-top: 18px; font: 650 26px/1.25 "Cascadia Mono", monospace; color: var(--hot); }
-      .question { max-width: 630px; margin-top: 25px; font-size: 24px; line-height: 1.55; color: var(--soft); }
-      .constraint-list { display: grid; gap: 12px; margin-top: 30px; }
-      .constraint { display: grid; grid-template-columns: 14px 1fr; gap: 11px; font-size: 16px; line-height: 1.45; color: var(--muted); }
-      .constraint::before { content: ""; width: 6px; height: 6px; margin-top: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 11px var(--cyan); }
-      .channel-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 27px; }
-      .channel-row span { padding: 9px 10px; border-left: 2px solid var(--solar); background: rgba(255, 180, 93, .08); font: 600 13px/1 "Cascadia Mono", monospace; color: var(--hot); }
-      .diagnostic-frame { position: relative; padding: 13px; background: rgba(3, 13, 21, .93); border: 1px solid rgba(108, 233, 223, .3); box-shadow: 0 22px 70px rgba(0, 0, 0, .38); }
-      .diagnostic-frame::before { content: "INPUT / SDO FITS WINDOW"; position: absolute; top: -27px; left: 0; font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .12em; color: var(--muted); }
-      .diagnostic-frame img { display: block; width: 100%; height: 515px; object-fit: cover; filter: saturate(.88) contrast(1.05); }
-      #input-scan { left: 13px; right: 13px; top: 13px; }
-      .image-tag { position: absolute; right: 26px; bottom: 25px; padding: 7px 10px; background: rgba(3, 13, 21, .85); border: 1px solid rgba(255, 180, 93, .5); font: 600 12px/1 "Cascadia Mono", monospace; color: var(--hot); }
+      .phenomenon-layout {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 70px;
+        align-items: center;
+        height: 650px;
+        margin-top: 35px;
+      }
+      .phenomenon-title {
+        margin-top: 18px;
+        font:
+          650 26px/1.25 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
+      .question {
+        max-width: 630px;
+        margin-top: 25px;
+        font-size: 24px;
+        line-height: 1.55;
+        color: var(--soft);
+      }
+      .constraint-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 30px;
+      }
+      .constraint {
+        display: grid;
+        grid-template-columns: 14px 1fr;
+        gap: 11px;
+        font-size: 16px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .constraint::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        margin-top: 8px;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 11px var(--cyan);
+      }
+      .channel-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 27px;
+      }
+      .channel-row span {
+        padding: 9px 10px;
+        border-left: 2px solid var(--solar);
+        background: rgba(255, 180, 93, 0.08);
+        font:
+          600 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
+      .diagnostic-frame {
+        position: relative;
+        padding: 13px;
+        background: rgba(3, 13, 21, 0.93);
+        border: 1px solid rgba(108, 233, 223, 0.3);
+        box-shadow: 0 22px 70px rgba(0, 0, 0, 0.38);
+      }
+      .diagnostic-frame::before {
+        content: 'INPUT / SDO FITS WINDOW';
+        position: absolute;
+        top: -27px;
+        left: 0;
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+      }
+      .diagnostic-frame img {
+        display: block;
+        width: 100%;
+        height: 515px;
+        object-fit: cover;
+        filter: saturate(0.88) contrast(1.05);
+      }
+      #input-scan {
+        left: 13px;
+        right: 13px;
+        top: 13px;
+      }
+      .image-tag {
+        position: absolute;
+        right: 26px;
+        bottom: 25px;
+        padding: 7px 10px;
+        background: rgba(3, 13, 21, 0.85);
+        border: 1px solid rgba(255, 180, 93, 0.5);
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
 
-      .stack-layout { display: grid; grid-template-columns: 1.2fr .8fr; gap: 65px; margin-top: 42px; }
-      .layer-list { border-top: 1px solid var(--line-strong); }
-      .layer-row { display: grid; grid-template-columns: 52px 210px 1fr; align-items: center; min-height: 82px; border-bottom: 1px solid var(--line); }
-      .layer-index { font: 700 15px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .layer-name { font: 700 20px/1 "Cascadia Mono", monospace; letter-spacing: .05em; color: var(--paper); }
-      .layer-path { font: 500 15px/1.35 "Cascadia Mono", monospace; color: var(--cyan); }
-      .stack-inspector { position: relative; min-height: 432px; padding: 27px; border-left: 2px solid var(--cyan); background: rgba(8, 28, 41, .78); }
-      #api-packet { left: 30px; top: 161px; background: var(--cyan); box-shadow: 0 0 13px var(--cyan), 0 0 25px rgba(108, 233, 223, .6); }
-      .big-code { margin-top: 22px; font: 700 42px/1 "Cascadia Mono", monospace; color: var(--paper); }
-      .flow-steps { display: flex; align-items: center; gap: 11px; margin-top: 32px; font: 650 15px/1 "Cascadia Mono", monospace; color: var(--cyan); }
-      .flow-steps span { padding: 10px 11px; border-bottom: 1px solid var(--cyan); }
-      .flow-steps i { font-style: normal; color: var(--faint); }
-      .state-lines { display: grid; gap: 14px; margin-top: 45px; }
-      .state-line { display: grid; grid-template-columns: 160px 1fr; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font: 500 14px/1.35 "Cascadia Mono", monospace; }
-      .state-line b { color: var(--muted); font-weight: 500; }
-      .state-line span { color: var(--hot); }
+      .stack-layout {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 65px;
+        margin-top: 42px;
+      }
+      .layer-list {
+        border-top: 1px solid var(--line-strong);
+      }
+      .layer-row {
+        display: grid;
+        grid-template-columns: 52px 210px 1fr;
+        align-items: center;
+        min-height: 82px;
+        border-bottom: 1px solid var(--line);
+      }
+      .layer-index {
+        font:
+          700 15px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .layer-name {
+        font:
+          700 20px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.05em;
+        color: var(--paper);
+      }
+      .layer-path {
+        font:
+          500 15px/1.35 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .stack-inspector {
+        position: relative;
+        min-height: 432px;
+        padding: 27px;
+        border-left: 2px solid var(--cyan);
+        background: rgba(8, 28, 41, 0.78);
+      }
+      #api-packet {
+        left: 30px;
+        top: 161px;
+        background: var(--cyan);
+        box-shadow:
+          0 0 13px var(--cyan),
+          0 0 25px rgba(108, 233, 223, 0.6);
+      }
+      .big-code {
+        margin-top: 22px;
+        font:
+          700 42px/1 'Cascadia Mono',
+          monospace;
+        color: var(--paper);
+      }
+      .flow-steps {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin-top: 32px;
+        font:
+          650 15px/1 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .flow-steps span {
+        padding: 10px 11px;
+        border-bottom: 1px solid var(--cyan);
+      }
+      .flow-steps i {
+        font-style: normal;
+        color: var(--faint);
+      }
+      .state-lines {
+        display: grid;
+        gap: 14px;
+        margin-top: 45px;
+      }
+      .state-line {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 16px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line);
+        font:
+          500 14px/1.35 'Cascadia Mono',
+          monospace;
+      }
+      .state-line b {
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .state-line span {
+        color: var(--hot);
+      }
 
-      .architecture-layout { display: grid; grid-template-columns: 1fr .75fr; gap: 85px; align-items: center; height: 640px; margin-top: 30px; }
-      .state-spine { position: relative; padding-left: 32px; }
-      .state-spine::before { content: ""; position: absolute; top: 18px; bottom: 18px; left: 7px; width: 1px; background: linear-gradient(to bottom, var(--solar), var(--cyan), var(--violet)); }
-      .state-node { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 86px; padding: 0 20px; border-bottom: 1px solid var(--line); background: rgba(8, 27, 39, .62); }
-      .state-node::before { content: ""; position: absolute; left: -31px; width: 11px; height: 11px; border: 3px solid var(--bg); border-radius: 50%; background: var(--node-color); box-shadow: 0 0 14px var(--node-color); }
-      .state-node strong { font: 700 19px/1 "Cascadia Mono", monospace; color: var(--node-color); }
-      .state-node span { font-size: 17px; color: var(--paper); }
-      .state-inspector { padding: 28px; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .state-inspector h3 { margin-top: 17px; font-size: 32px; color: var(--paper); }
-      .state-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; margin-top: 31px; background: var(--line); }
-      .state-metric { min-height: 98px; padding: 17px; background: rgba(6, 22, 32, .9); }
-      .state-metric b { display: block; font: 700 31px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--hot); }
-      .state-metric span { display: block; margin-top: 9px; font: 500 11px/1.2 "Cascadia Mono", monospace; color: var(--muted); }
-      .state-inspector p { margin-top: 24px; font: 500 14px/1.5 "Cascadia Mono", monospace; color: var(--muted); }
+      .architecture-layout {
+        display: grid;
+        grid-template-columns: 1fr 0.75fr;
+        gap: 85px;
+        align-items: center;
+        height: 640px;
+        margin-top: 30px;
+      }
+      .state-spine {
+        position: relative;
+        padding-left: 32px;
+      }
+      .state-spine::before {
+        content: '';
+        position: absolute;
+        top: 18px;
+        bottom: 18px;
+        left: 7px;
+        width: 1px;
+        background: linear-gradient(to bottom, var(--solar), var(--cyan), var(--violet));
+      }
+      .state-node {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 86px;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(8, 27, 39, 0.62);
+      }
+      .state-node::before {
+        content: '';
+        position: absolute;
+        left: -31px;
+        width: 11px;
+        height: 11px;
+        border: 3px solid var(--bg);
+        border-radius: 50%;
+        background: var(--node-color);
+        box-shadow: 0 0 14px var(--node-color);
+      }
+      .state-node strong {
+        font:
+          700 19px/1 'Cascadia Mono',
+          monospace;
+        color: var(--node-color);
+      }
+      .state-node span {
+        font-size: 17px;
+        color: var(--paper);
+      }
+      .state-inspector {
+        padding: 28px;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .state-inspector h3 {
+        margin-top: 17px;
+        font-size: 32px;
+        color: var(--paper);
+      }
+      .state-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1px;
+        margin-top: 31px;
+        background: var(--line);
+      }
+      .state-metric {
+        min-height: 98px;
+        padding: 17px;
+        background: rgba(6, 22, 32, 0.9);
+      }
+      .state-metric b {
+        display: block;
+        font:
+          700 31px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--hot);
+      }
+      .state-metric span {
+        display: block;
+        margin-top: 9px;
+        font:
+          500 11px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .state-inspector p {
+        margin-top: 24px;
+        font:
+          500 14px/1.5 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
 
-      .graph-lane { position: relative; display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-top: 75px; }
-      #graph-packet { top: 25px; left: 2%; background: var(--solar); }
-      .graph-lane::before { content: ""; position: absolute; top: 31px; right: 2%; left: 2%; height: 1px; background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet), var(--cyan)); }
-      .graph-node { position: relative; z-index: 2; min-height: 168px; padding: 19px 13px; border-top: 2px solid var(--node-color); background: rgba(8, 28, 41, .86); }
-      .graph-node::before { content: ""; position: absolute; top: 25px; left: -5px; width: 9px; height: 9px; border: 3px solid var(--bg); border-radius: 50%; background: var(--node-color); box-shadow: 0 0 15px var(--node-color); }
-      .graph-node:first-child::before { left: 3px; }
-      .graph-node:last-child::before { right: 3px; left: auto; }
-      .graph-node b { display: block; font: 700 19px/1 "Cascadia Mono", monospace; color: var(--node-color); }
-      .graph-node strong { display: block; margin-top: 20px; font-size: 18px; line-height: 1.25; color: var(--paper); }
-      .graph-node span { display: block; margin-top: 11px; font: 500 11px/1.35 "Cascadia Mono", monospace; color: var(--muted); }
-      .graph-footer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 38px; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .graph-footer div { min-height: 83px; padding: 20px; border-right: 1px solid var(--line); }
-      .graph-footer div:last-child { border-right: 0; }
-      .graph-footer b { display: block; font: 700 15px/1 "Cascadia Mono", monospace; color: var(--cyan); }
-      .graph-footer span { display: block; margin-top: 10px; font-size: 16px; color: var(--muted); }
+      .graph-lane {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 8px;
+        margin-top: 75px;
+      }
+      #graph-packet {
+        top: 25px;
+        left: 2%;
+        background: var(--solar);
+      }
+      .graph-lane::before {
+        content: '';
+        position: absolute;
+        top: 31px;
+        right: 2%;
+        left: 2%;
+        height: 1px;
+        background: linear-gradient(90deg, var(--solar), var(--cyan), var(--violet), var(--cyan));
+      }
+      .graph-node {
+        position: relative;
+        z-index: 2;
+        min-height: 168px;
+        padding: 19px 13px;
+        border-top: 2px solid var(--node-color);
+        background: rgba(8, 28, 41, 0.86);
+      }
+      .graph-node::before {
+        content: '';
+        position: absolute;
+        top: 25px;
+        left: -5px;
+        width: 9px;
+        height: 9px;
+        border: 3px solid var(--bg);
+        border-radius: 50%;
+        background: var(--node-color);
+        box-shadow: 0 0 15px var(--node-color);
+      }
+      .graph-node:first-child::before {
+        left: 3px;
+      }
+      .graph-node:last-child::before {
+        right: 3px;
+        left: auto;
+      }
+      .graph-node b {
+        display: block;
+        font:
+          700 19px/1 'Cascadia Mono',
+          monospace;
+        color: var(--node-color);
+      }
+      .graph-node strong {
+        display: block;
+        margin-top: 20px;
+        font-size: 18px;
+        line-height: 1.25;
+        color: var(--paper);
+      }
+      .graph-node span {
+        display: block;
+        margin-top: 11px;
+        font:
+          500 11px/1.35 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .graph-footer {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0;
+        margin-top: 38px;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .graph-footer div {
+        min-height: 83px;
+        padding: 20px;
+        border-right: 1px solid var(--line);
+      }
+      .graph-footer div:last-child {
+        border-right: 0;
+      }
+      .graph-footer b {
+        display: block;
+        font:
+          700 15px/1 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .graph-footer span {
+        display: block;
+        margin-top: 10px;
+        font-size: 16px;
+        color: var(--muted);
+      }
 
-      .stage-layout { display: grid; grid-template-columns: .63fr 1.37fr; gap: 80px; align-items: center; height: 650px; margin-top: 20px; }
-      .stage-tile { min-height: 350px; padding: 28px; border-left: 3px solid var(--solar); background: rgba(10, 31, 43, .76); }
-      .stage-tile .node-big { margin-top: 20px; font: 700 66px/1 "Cascadia Mono", monospace; color: var(--hot); }
-      .stage-tile p { max-width: 350px; margin-top: 20px; font-size: 19px; line-height: 1.5; color: var(--soft); }
-      .stage-transfer { display: flex; align-items: center; gap: 13px; margin-top: 36px; font: 650 13px/1 "Cascadia Mono", monospace; color: var(--cyan); }
-      .stage-transfer i { color: var(--faint); font-style: normal; }
-      .hypothesis-preview { border-top: 1px solid var(--line-strong); }
-      .hypothesis-line { display: grid; grid-template-columns: 55px 1fr 120px; gap: 16px; align-items: center; min-height: 125px; border-bottom: 1px solid var(--line); }
-      .hypothesis-line b { font: 700 17px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .hypothesis-line p { font-size: 17px; line-height: 1.4; color: var(--paper); }
-      .hypothesis-line span { justify-self: end; font: 600 12px/1.3 "Cascadia Mono", monospace; color: var(--warn); text-align: right; }
-      .verify-grid { display: grid; grid-template-columns: .74fr 1.26fr; gap: 78px; align-items: center; height: 655px; margin-top: 17px; }
-      .verify-column { border-top: 1px solid var(--line-strong); }
-      .verify-row { display: grid; grid-template-columns: 43px 1fr 110px; gap: 14px; align-items: center; min-height: 78px; border-bottom: 1px solid var(--line); }
-      .verify-row b { display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid var(--cyan); border-radius: 50%; font: 700 12px/1 "Cascadia Mono", monospace; color: var(--cyan); }
-      .verify-row strong { font: 650 16px/1.2 "Cascadia Mono", monospace; color: var(--paper); }
-      .verify-row span { justify-self: end; font: 600 12px/1 "Cascadia Mono", monospace; color: var(--cyan); }
-      .verify-callout { padding: 27px; border-left: 2px solid var(--violet); background: rgba(17, 20, 42, .75); }
-      .verify-callout h3 { margin-top: 17px; font-size: 35px; color: var(--paper); }
-      .verify-callout p { margin-top: 20px; font-size: 20px; line-height: 1.5; color: var(--soft); }
-      .verify-callout .mini-rule { display: flex; gap: 12px; margin-top: 29px; font: 600 13px/1 "Cascadia Mono", monospace; color: var(--violet); }
-      .mini-rule i { display: inline-block; width: 34px; height: 1px; margin-top: 6px; background: var(--violet); }
+      .stage-layout {
+        display: grid;
+        grid-template-columns: 0.63fr 1.37fr;
+        gap: 80px;
+        align-items: center;
+        height: 650px;
+        margin-top: 20px;
+      }
+      .stage-tile {
+        min-height: 350px;
+        padding: 28px;
+        border-left: 3px solid var(--solar);
+        background: rgba(10, 31, 43, 0.76);
+      }
+      .stage-tile .node-big {
+        margin-top: 20px;
+        font:
+          700 66px/1 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
+      .stage-tile p {
+        max-width: 350px;
+        margin-top: 20px;
+        font-size: 19px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .stage-transfer {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin-top: 36px;
+        font:
+          650 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .stage-transfer i {
+        color: var(--faint);
+        font-style: normal;
+      }
+      .hypothesis-preview {
+        border-top: 1px solid var(--line-strong);
+      }
+      .hypothesis-line {
+        display: grid;
+        grid-template-columns: 55px 1fr 120px;
+        gap: 16px;
+        align-items: center;
+        min-height: 125px;
+        border-bottom: 1px solid var(--line);
+      }
+      .hypothesis-line b {
+        font:
+          700 17px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .hypothesis-line p {
+        font-size: 17px;
+        line-height: 1.4;
+        color: var(--paper);
+      }
+      .hypothesis-line span {
+        justify-self: end;
+        font:
+          600 12px/1.3 'Cascadia Mono',
+          monospace;
+        color: var(--warn);
+        text-align: right;
+      }
+      .verify-grid {
+        display: grid;
+        grid-template-columns: 0.74fr 1.26fr;
+        gap: 78px;
+        align-items: center;
+        height: 655px;
+        margin-top: 17px;
+      }
+      .verify-column {
+        border-top: 1px solid var(--line-strong);
+      }
+      .verify-row {
+        display: grid;
+        grid-template-columns: 43px 1fr 110px;
+        gap: 14px;
+        align-items: center;
+        min-height: 78px;
+        border-bottom: 1px solid var(--line);
+      }
+      .verify-row b {
+        display: grid;
+        place-items: center;
+        width: 27px;
+        height: 27px;
+        border: 1px solid var(--cyan);
+        border-radius: 50%;
+        font:
+          700 12px/1 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .verify-row strong {
+        font:
+          650 16px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--paper);
+      }
+      .verify-row span {
+        justify-self: end;
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .verify-callout {
+        padding: 27px;
+        border-left: 2px solid var(--violet);
+        background: rgba(17, 20, 42, 0.75);
+      }
+      .verify-callout h3 {
+        margin-top: 17px;
+        font-size: 35px;
+        color: var(--paper);
+      }
+      .verify-callout p {
+        margin-top: 20px;
+        font-size: 20px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .verify-callout .mini-rule {
+        display: flex;
+        gap: 12px;
+        margin-top: 29px;
+        font:
+          600 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--violet);
+      }
+      .mini-rule i {
+        display: inline-block;
+        width: 34px;
+        height: 1px;
+        margin-top: 6px;
+        background: var(--violet);
+      }
 
-      .dispatch-layout { display: grid; grid-template-columns: 1.1fr .9fr; gap: 75px; align-items: center; height: 665px; margin-top: 5px; }
-      .dispatch-map { position: relative; min-height: 480px; padding-top: 22px; }
-      #dispatch-packet { left: 137px; top: 105px; background: var(--cyan); box-shadow: 0 0 13px var(--cyan), 0 0 25px rgba(108, 233, 223, .6); }
-      .dispatch-root { width: 280px; padding: 20px; border: 1px solid var(--cyan); background: rgba(108, 233, 223, .08); }
-      .dispatch-root b, .dispatch-child b { display: block; font: 700 20px/1 "Cascadia Mono", monospace; color: var(--cyan); }
-      .dispatch-root span, .dispatch-child span { display: block; margin-top: 9px; font: 500 13px/1.35 "Cascadia Mono", monospace; color: var(--muted); }
-      .dispatch-branches { position: absolute; top: 115px; left: 137px; width: 3px; height: 258px; background: linear-gradient(var(--cyan), var(--solar)); transform-origin: top; }
-      .dispatch-branches::before, .dispatch-branches::after { content: ""; position: absolute; left: 0; width: 450px; height: 1px; transform-origin: left; background: var(--line-strong); }
-      .dispatch-branches::before { top: 38px; transform: rotate(14deg); }
-      .dispatch-branches::after { top: 140px; transform: rotate(-14deg); }
-      .dispatch-children { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 164px; }
-      .dispatch-child { min-height: 122px; padding: 17px; border-top: 2px solid var(--agent); background: rgba(8, 28, 41, .78); }
-      .dispatch-child b { font-size: 15px; color: var(--agent); }
-      .dispatch-child span { font-size: 12px; }
-      .dispatch-log { padding: 27px; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .dispatch-log h3 { margin-top: 17px; font-size: 34px; }
-      .dispatch-log p { margin-top: 19px; font-size: 18px; line-height: 1.5; color: var(--soft); }
-      .dispatch-log .log-line { display: flex; justify-content: space-between; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--line); font: 500 13px/1.3 "Cascadia Mono", monospace; color: var(--muted); }
-      .dispatch-log .log-line strong { color: var(--hot); font-weight: 600; }
-      .agent-table { display: grid; grid-template-columns: 1fr 1fr; gap: 0 60px; margin-top: 35px; border-top: 1px solid var(--line-strong); }
-      .agent-row { display: grid; grid-template-columns: 53px 1fr 150px; gap: 15px; align-items: center; min-height: 109px; border-bottom: 1px solid var(--line); }
-      .agent-mark { display: grid; place-items: center; width: 37px; height: 37px; border: 1px solid var(--agent); border-radius: 50%; font: 700 11px/1 "Cascadia Mono", monospace; color: var(--agent); }
-      .agent-name { display: block; font: 700 15px/1 "Cascadia Mono", monospace; color: var(--agent); }
-      .agent-title { display: block; margin-top: 7px; font-size: 16px; color: var(--paper); }
-      .agent-desc { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
-      .agent-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: right; }
-      .agent-stats b { display: block; font: 700 21px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--paper); }
-      .agent-stats span { display: block; margin-top: 5px; font: 500 9px/1.2 "Cascadia Mono", monospace; color: var(--muted); }
+      .dispatch-layout {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 75px;
+        align-items: center;
+        height: 665px;
+        margin-top: 5px;
+      }
+      .dispatch-map {
+        position: relative;
+        min-height: 480px;
+        padding-top: 22px;
+      }
+      #dispatch-packet {
+        left: 137px;
+        top: 105px;
+        background: var(--cyan);
+        box-shadow:
+          0 0 13px var(--cyan),
+          0 0 25px rgba(108, 233, 223, 0.6);
+      }
+      .dispatch-root {
+        width: 280px;
+        padding: 20px;
+        border: 1px solid var(--cyan);
+        background: rgba(108, 233, 223, 0.08);
+      }
+      .dispatch-root b,
+      .dispatch-child b {
+        display: block;
+        font:
+          700 20px/1 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .dispatch-root span,
+      .dispatch-child span {
+        display: block;
+        margin-top: 9px;
+        font:
+          500 13px/1.35 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .dispatch-branches {
+        position: absolute;
+        top: 115px;
+        left: 137px;
+        width: 3px;
+        height: 258px;
+        background: linear-gradient(var(--cyan), var(--solar));
+        transform-origin: top;
+      }
+      .dispatch-branches::before,
+      .dispatch-branches::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        width: 450px;
+        height: 1px;
+        transform-origin: left;
+        background: var(--line-strong);
+      }
+      .dispatch-branches::before {
+        top: 38px;
+        transform: rotate(14deg);
+      }
+      .dispatch-branches::after {
+        top: 140px;
+        transform: rotate(-14deg);
+      }
+      .dispatch-children {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-top: 164px;
+      }
+      .dispatch-child {
+        min-height: 122px;
+        padding: 17px;
+        border-top: 2px solid var(--agent);
+        background: rgba(8, 28, 41, 0.78);
+      }
+      .dispatch-child b {
+        font-size: 15px;
+        color: var(--agent);
+      }
+      .dispatch-child span {
+        font-size: 12px;
+      }
+      .dispatch-log {
+        padding: 27px;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .dispatch-log h3 {
+        margin-top: 17px;
+        font-size: 34px;
+      }
+      .dispatch-log p {
+        margin-top: 19px;
+        font-size: 18px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .dispatch-log .log-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line);
+        font:
+          500 13px/1.3 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .dispatch-log .log-line strong {
+        color: var(--hot);
+        font-weight: 600;
+      }
+      .agent-table {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 60px;
+        margin-top: 35px;
+        border-top: 1px solid var(--line-strong);
+      }
+      .agent-row {
+        display: grid;
+        grid-template-columns: 53px 1fr 150px;
+        gap: 15px;
+        align-items: center;
+        min-height: 109px;
+        border-bottom: 1px solid var(--line);
+      }
+      .agent-mark {
+        display: grid;
+        place-items: center;
+        width: 37px;
+        height: 37px;
+        border: 1px solid var(--agent);
+        border-radius: 50%;
+        font:
+          700 11px/1 'Cascadia Mono',
+          monospace;
+        color: var(--agent);
+      }
+      .agent-name {
+        display: block;
+        font:
+          700 15px/1 'Cascadia Mono',
+          monospace;
+        color: var(--agent);
+      }
+      .agent-title {
+        display: block;
+        margin-top: 7px;
+        font-size: 16px;
+        color: var(--paper);
+      }
+      .agent-desc {
+        display: block;
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .agent-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        text-align: right;
+      }
+      .agent-stats b {
+        display: block;
+        font:
+          700 21px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--paper);
+      }
+      .agent-stats span {
+        display: block;
+        margin-top: 5px;
+        font:
+          500 9px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
 
-      .pipeline { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 80px; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      #pipeline-packet { top: 98px; left: 2%; background: var(--solar); }
-      .pipeline-step { position: relative; min-height: 258px; padding: 22px 19px; border-right: 1px solid var(--line); }
-      .pipeline-step:last-child { border-right: 0; }
-      .pipeline-step::after { content: "→"; position: absolute; top: 101px; right: -12px; z-index: 3; font: 700 20px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .pipeline-step:last-child::after { display: none; }
-      .pipeline-step b { font: 700 13px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .pipeline-step strong { display: block; margin-top: 39px; font: 650 20px/1 "Cascadia Mono", monospace; color: var(--paper); }
-      .pipeline-step span { display: block; margin-top: 13px; font-size: 15px; line-height: 1.45; color: var(--muted); }
-      .pipeline-foot { display: flex; justify-content: space-between; gap: 30px; margin-top: 21px; font: 500 13px/1.4 "Cascadia Mono", monospace; color: var(--faint); }
-      .artifact-layout { display: grid; grid-template-columns: .85fr 1.15fr; gap: 75px; align-items: center; height: 660px; margin-top: 4px; }
-      .artifact-visual { position: relative; min-height: 440px; padding: 14px; border: 1px solid rgba(255, 180, 93, .4); background: rgba(3, 13, 21, .82); }
-      .artifact-visual::before { content: ""; display: block; height: 353px; background: linear-gradient(180deg, rgba(2, 10, 17, .03), rgba(2, 10, 17, .14)), url("./coronal_diagnostics.png") center / cover no-repeat; }
-      #artifact-scan { left: 14px; right: 14px; top: 27px; }
-      .artifact-visual figcaption { display: flex; justify-content: space-between; margin-top: 13px; font: 600 13px/1 "Cascadia Mono", monospace; color: var(--hot); }
-      .artifact-data { border-top: 1px solid var(--line-strong); }
-      .artifact-row { display: grid; grid-template-columns: 180px 1fr; gap: 20px; min-height: 72px; align-items: center; border-bottom: 1px solid var(--line); font: 500 14px/1.35 "Cascadia Mono", monospace; }
-      .artifact-row b { color: var(--muted); font-weight: 500; }
-      .artifact-row span { color: var(--cyan); }
-      .artifact-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; margin-top: 27px; background: var(--line); }
-      .artifact-metric { padding: 17px; background: rgba(7, 25, 35, .94); }
-      .artifact-metric b { display: block; font: 700 31px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--paper); }
-      .artifact-metric span { display: block; margin-top: 8px; font: 500 10px/1.2 "Cascadia Mono", monospace; color: var(--muted); }
+      .pipeline {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        margin-top: 80px;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      #pipeline-packet {
+        top: 98px;
+        left: 2%;
+        background: var(--solar);
+      }
+      .pipeline-step {
+        position: relative;
+        min-height: 258px;
+        padding: 22px 19px;
+        border-right: 1px solid var(--line);
+      }
+      .pipeline-step:last-child {
+        border-right: 0;
+      }
+      .pipeline-step::after {
+        content: '→';
+        position: absolute;
+        top: 101px;
+        right: -12px;
+        z-index: 3;
+        font:
+          700 20px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .pipeline-step:last-child::after {
+        display: none;
+      }
+      .pipeline-step b {
+        font:
+          700 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .pipeline-step strong {
+        display: block;
+        margin-top: 39px;
+        font:
+          650 20px/1 'Cascadia Mono',
+          monospace;
+        color: var(--paper);
+      }
+      .pipeline-step span {
+        display: block;
+        margin-top: 13px;
+        font-size: 15px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .pipeline-foot {
+        display: flex;
+        justify-content: space-between;
+        gap: 30px;
+        margin-top: 21px;
+        font:
+          500 13px/1.4 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
+      .artifact-layout {
+        display: grid;
+        grid-template-columns: 0.85fr 1.15fr;
+        gap: 75px;
+        align-items: center;
+        height: 660px;
+        margin-top: 4px;
+      }
+      .artifact-visual {
+        position: relative;
+        min-height: 440px;
+        padding: 14px;
+        border: 1px solid rgba(255, 180, 93, 0.4);
+        background: rgba(3, 13, 21, 0.82);
+      }
+      .artifact-visual::before {
+        content: '';
+        display: block;
+        height: 353px;
+        background:
+          linear-gradient(180deg, rgba(2, 10, 17, 0.03), rgba(2, 10, 17, 0.14)),
+          url('./coronal_diagnostics.png') center / cover no-repeat;
+      }
+      #artifact-scan {
+        left: 14px;
+        right: 14px;
+        top: 27px;
+      }
+      .artifact-visual figcaption {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 13px;
+        font:
+          600 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+      }
+      .artifact-data {
+        border-top: 1px solid var(--line-strong);
+      }
+      .artifact-row {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 20px;
+        min-height: 72px;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        font:
+          500 14px/1.35 'Cascadia Mono',
+          monospace;
+      }
+      .artifact-row b {
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .artifact-row span {
+        color: var(--cyan);
+      }
+      .artifact-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1px;
+        margin-top: 27px;
+        background: var(--line);
+      }
+      .artifact-metric {
+        padding: 17px;
+        background: rgba(7, 25, 35, 0.94);
+      }
+      .artifact-metric b {
+        display: block;
+        font:
+          700 31px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--paper);
+      }
+      .artifact-metric span {
+        display: block;
+        margin-top: 8px;
+        font:
+          500 10px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
 
-      .gate-layout { display: grid; grid-template-columns: 1fr .85fr; gap: 80px; align-items: center; height: 665px; margin-top: 5px; }
-      .gate-list { border-top: 1px solid var(--line-strong); }
-      .gate-row { display: grid; grid-template-columns: 13px 1fr 165px; gap: 16px; align-items: center; min-height: 69px; border-bottom: 1px solid var(--line); }
-      .gate-row i { width: 9px; height: 9px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 12px var(--warn); }
-      .gate-row.pass i { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
-      .gate-row strong { font-size: 16px; color: var(--paper); }
-      .gate-row span { justify-self: end; font: 600 12px/1.3 "Cascadia Mono", monospace; color: var(--warn); text-align: right; }
-      .gate-row.pass span { color: var(--cyan); }
-      .gate-callout { padding: 28px; border-left: 2px solid var(--warn); background: rgba(36, 32, 19, .72); }
-      .gate-callout .big-number { font-size: 122px; line-height: .8; color: var(--hot); }
-      .gate-callout h3 { margin-top: 21px; font-size: 31px; }
-      .gate-callout p { margin-top: 18px; font-size: 17px; line-height: 1.5; color: var(--soft); }
-      .evidence-ledger { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 28px; background: var(--line); }
-      .ledger-cell { min-height: 112px; padding: 18px; background: rgba(7, 25, 35, .92); }
-      .ledger-cell b { display: block; font: 700 42px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--paper); }
-      .ledger-cell span { display: block; margin-top: 8px; font: 500 11px/1 "Cascadia Mono", monospace; color: var(--muted); }
-      .ledger-layout { display: grid; grid-template-columns: .8fr 1.2fr; gap: 75px; align-items: center; height: 660px; margin-top: 6px; }
-      .ledger-total { padding: 25px 0; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .ledger-total .big-number { font-size: 154px; line-height: .8; color: var(--hot); }
-      .ledger-total p { margin-top: 20px; max-width: 380px; font-size: 21px; line-height: 1.45; color: var(--soft); }
-      .ledger-bars { position: relative; border-top: 1px solid var(--line-strong); }
-      #ledger-packet { left: 0%; top: 91px; background: var(--warn); box-shadow: 0 0 13px var(--warn), 0 0 25px rgba(232, 207, 99, .55); }
-      .ledger-bar-row { padding: 20px 0; border-bottom: 1px solid var(--line); }
-      .ledger-bar-head { display: flex; justify-content: space-between; font: 600 14px/1 "Cascadia Mono", monospace; color: var(--paper); }
-      .ledger-bar-head span:last-child { color: var(--hot); }
-      .ledger-bar-track { height: 9px; margin-top: 13px; background: rgba(238, 248, 247, .1); }
-      .ledger-bar-fill { width: 0; height: 100%; transform-origin: left; background: var(--cyan); }
-      .ledger-bar-fill.unknown { background: var(--warn); }
-      .ledger-bar-fill.contradict { background: var(--red); }
-      .ledger-caption { margin-top: 24px; font: 500 13px/1.45 "Cascadia Mono", monospace; color: var(--faint); }
-      .strict-layout { display: grid; grid-template-columns: .95fr 1.05fr; gap: 80px; align-items: center; height: 655px; margin-top: 10px; }
-      .strict-callout { padding: 30px; border-left: 2px solid var(--violet); background: rgba(20, 17, 40, .72); }
-      .strict-callout .big-number { font-size: 116px; line-height: .82; color: var(--violet); }
-      .strict-callout h3 { margin-top: 23px; font-size: 33px; }
-      .strict-callout p { margin-top: 19px; font-size: 19px; line-height: 1.5; color: var(--soft); }
-      .strict-list { border-top: 1px solid var(--line-strong); }
-      .strict-item { display: grid; grid-template-columns: 45px 1fr 115px; gap: 15px; align-items: center; min-height: 76px; border-bottom: 1px solid var(--line); }
-      .strict-item b { font: 700 14px/1 "Cascadia Mono", monospace; color: var(--violet); }
-      .strict-item span { font-size: 16px; color: var(--paper); }
-      .strict-item em { justify-self: end; font: 600 12px/1 "Cascadia Mono", monospace; color: var(--warn); font-style: normal; }
-      .strict-item.pass em { color: var(--cyan); }
+      .gate-layout {
+        display: grid;
+        grid-template-columns: 1fr 0.85fr;
+        gap: 80px;
+        align-items: center;
+        height: 665px;
+        margin-top: 5px;
+      }
+      .gate-list {
+        border-top: 1px solid var(--line-strong);
+      }
+      .gate-row {
+        display: grid;
+        grid-template-columns: 13px 1fr 165px;
+        gap: 16px;
+        align-items: center;
+        min-height: 69px;
+        border-bottom: 1px solid var(--line);
+      }
+      .gate-row i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--warn);
+        box-shadow: 0 0 12px var(--warn);
+      }
+      .gate-row.pass i {
+        background: var(--cyan);
+        box-shadow: 0 0 12px var(--cyan);
+      }
+      .gate-row strong {
+        font-size: 16px;
+        color: var(--paper);
+      }
+      .gate-row span {
+        justify-self: end;
+        font:
+          600 12px/1.3 'Cascadia Mono',
+          monospace;
+        color: var(--warn);
+        text-align: right;
+      }
+      .gate-row.pass span {
+        color: var(--cyan);
+      }
+      .gate-callout {
+        padding: 28px;
+        border-left: 2px solid var(--warn);
+        background: rgba(36, 32, 19, 0.72);
+      }
+      .gate-callout .big-number {
+        font-size: 122px;
+        line-height: 0.8;
+        color: var(--hot);
+      }
+      .gate-callout h3 {
+        margin-top: 21px;
+        font-size: 31px;
+      }
+      .gate-callout p {
+        margin-top: 18px;
+        font-size: 17px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .evidence-ledger {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        margin-top: 28px;
+        background: var(--line);
+      }
+      .ledger-cell {
+        min-height: 112px;
+        padding: 18px;
+        background: rgba(7, 25, 35, 0.92);
+      }
+      .ledger-cell b {
+        display: block;
+        font:
+          700 42px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--paper);
+      }
+      .ledger-cell span {
+        display: block;
+        margin-top: 8px;
+        font:
+          500 11px/1 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .ledger-layout {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 75px;
+        align-items: center;
+        height: 660px;
+        margin-top: 6px;
+      }
+      .ledger-total {
+        padding: 25px 0;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .ledger-total .big-number {
+        font-size: 154px;
+        line-height: 0.8;
+        color: var(--hot);
+      }
+      .ledger-total p {
+        margin-top: 20px;
+        max-width: 380px;
+        font-size: 21px;
+        line-height: 1.45;
+        color: var(--soft);
+      }
+      .ledger-bars {
+        position: relative;
+        border-top: 1px solid var(--line-strong);
+      }
+      #ledger-packet {
+        left: 0%;
+        top: 91px;
+        background: var(--warn);
+        box-shadow:
+          0 0 13px var(--warn),
+          0 0 25px rgba(232, 207, 99, 0.55);
+      }
+      .ledger-bar-row {
+        padding: 20px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .ledger-bar-head {
+        display: flex;
+        justify-content: space-between;
+        font:
+          600 14px/1 'Cascadia Mono',
+          monospace;
+        color: var(--paper);
+      }
+      .ledger-bar-head span:last-child {
+        color: var(--hot);
+      }
+      .ledger-bar-track {
+        height: 9px;
+        margin-top: 13px;
+        background: rgba(238, 248, 247, 0.1);
+      }
+      .ledger-bar-fill {
+        width: 0;
+        height: 100%;
+        transform-origin: left;
+        background: var(--cyan);
+      }
+      .ledger-bar-fill.unknown {
+        background: var(--warn);
+      }
+      .ledger-bar-fill.contradict {
+        background: var(--red);
+      }
+      .ledger-caption {
+        margin-top: 24px;
+        font:
+          500 13px/1.45 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
+      .strict-layout {
+        display: grid;
+        grid-template-columns: 0.95fr 1.05fr;
+        gap: 80px;
+        align-items: center;
+        height: 655px;
+        margin-top: 10px;
+      }
+      .strict-callout {
+        padding: 30px;
+        border-left: 2px solid var(--violet);
+        background: rgba(20, 17, 40, 0.72);
+      }
+      .strict-callout .big-number {
+        font-size: 116px;
+        line-height: 0.82;
+        color: var(--violet);
+      }
+      .strict-callout h3 {
+        margin-top: 23px;
+        font-size: 33px;
+      }
+      .strict-callout p {
+        margin-top: 19px;
+        font-size: 19px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .strict-list {
+        border-top: 1px solid var(--line-strong);
+      }
+      .strict-item {
+        display: grid;
+        grid-template-columns: 45px 1fr 115px;
+        gap: 15px;
+        align-items: center;
+        min-height: 76px;
+        border-bottom: 1px solid var(--line);
+      }
+      .strict-item b {
+        font:
+          700 14px/1 'Cascadia Mono',
+          monospace;
+        color: var(--violet);
+      }
+      .strict-item span {
+        font-size: 16px;
+        color: var(--paper);
+      }
+      .strict-item em {
+        justify-self: end;
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        color: var(--warn);
+        font-style: normal;
+      }
+      .strict-item.pass em {
+        color: var(--cyan);
+      }
 
-      .synthesis-layout { display: grid; grid-template-columns: .75fr 1.25fr; gap: 76px; align-items: center; height: 660px; margin-top: 8px; }
-      .synthesis-chain { border-top: 1px solid var(--line-strong); }
-      .synthesis-node { display: grid; grid-template-columns: 145px 1fr; align-items: center; min-height: 88px; border-bottom: 1px solid var(--line); }
-      .synthesis-node b { font: 650 15px/1 "Cascadia Mono", monospace; color: var(--violet); }
-      .synthesis-node span { font-size: 18px; color: var(--paper); }
-      .conclusion-panel { padding: 30px; border-top: 2px solid var(--violet); background: rgba(13, 22, 39, .8); }
-      .conclusion-panel h3 { font-size: 30px; color: var(--paper); }
-      .conclusion-panel p { margin-top: 20px; font-size: 19px; line-height: 1.55; color: var(--soft); }
-      .limitation-list { display: grid; gap: 11px; margin-top: 25px; }
-      .limitation { display: grid; grid-template-columns: 20px 1fr; gap: 10px; font-size: 14px; line-height: 1.4; color: var(--muted); }
-      .limitation::before { content: "—"; color: var(--warn); }
-      .task-layout { margin-top: 42px; }
-      .task-head { display: grid; grid-template-columns: 180px 1fr 150px 150px; gap: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--line-strong); font: 600 12px/1 "Cascadia Mono", monospace; letter-spacing: .1em; color: var(--faint); }
-      .task-row { display: grid; grid-template-columns: 180px 1fr 150px 150px; gap: 20px; align-items: center; min-height: 77px; border-bottom: 1px solid var(--line); }
-      .task-row b { font: 650 14px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .task-row p { font-size: 15px; line-height: 1.35; color: var(--paper); }
-      .task-row span { font: 600 12px/1.25 "Cascadia Mono", monospace; color: var(--cyan); }
-      .task-row em { justify-self: end; font: 600 11px/1.3 "Cascadia Mono", monospace; color: var(--warn); font-style: normal; text-align: right; }
-      .task-foot { display: flex; justify-content: space-between; margin-top: 19px; font: 500 13px/1 "Cascadia Mono", monospace; color: var(--faint); }
-      .route-layout { display: grid; grid-template-columns: 1.25fr .75fr; gap: 70px; align-items: center; height: 665px; margin-top: 5px; }
-      .route-map { position: relative; height: 450px; }
-      .route-map svg { width: 100%; height: 100%; overflow: visible; }
-      .route-map path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 8 9; }
-      .route-map circle { stroke: var(--bg); stroke-width: 5; }
-      #route-packet { stroke: var(--bg); stroke-width: 3; }
-      .route-text { font: 700 17px "Cascadia Mono", monospace; fill: var(--paper); }
-      .route-context { border-top: 1px solid var(--line-strong); }
-      .route-card { min-height: 115px; padding: 22px 0; border-bottom: 1px solid var(--line); }
-      .route-card b { display: block; font: 700 15px/1 "Cascadia Mono", monospace; color: var(--cyan); }
-      .route-card p { margin-top: 11px; font-size: 16px; line-height: 1.4; color: var(--soft); }
+      .synthesis-layout {
+        display: grid;
+        grid-template-columns: 0.75fr 1.25fr;
+        gap: 76px;
+        align-items: center;
+        height: 660px;
+        margin-top: 8px;
+      }
+      .synthesis-chain {
+        border-top: 1px solid var(--line-strong);
+      }
+      .synthesis-node {
+        display: grid;
+        grid-template-columns: 145px 1fr;
+        align-items: center;
+        min-height: 88px;
+        border-bottom: 1px solid var(--line);
+      }
+      .synthesis-node b {
+        font:
+          650 15px/1 'Cascadia Mono',
+          monospace;
+        color: var(--violet);
+      }
+      .synthesis-node span {
+        font-size: 18px;
+        color: var(--paper);
+      }
+      .conclusion-panel {
+        padding: 30px;
+        border-top: 2px solid var(--violet);
+        background: rgba(13, 22, 39, 0.8);
+      }
+      .conclusion-panel h3 {
+        font-size: 30px;
+        color: var(--paper);
+      }
+      .conclusion-panel p {
+        margin-top: 20px;
+        font-size: 19px;
+        line-height: 1.55;
+        color: var(--soft);
+      }
+      .limitation-list {
+        display: grid;
+        gap: 11px;
+        margin-top: 25px;
+      }
+      .limitation {
+        display: grid;
+        grid-template-columns: 20px 1fr;
+        gap: 10px;
+        font-size: 14px;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+      .limitation::before {
+        content: '—';
+        color: var(--warn);
+      }
+      .task-layout {
+        margin-top: 42px;
+      }
+      .task-head {
+        display: grid;
+        grid-template-columns: 180px 1fr 150px 150px;
+        gap: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line-strong);
+        font:
+          600 12px/1 'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.1em;
+        color: var(--faint);
+      }
+      .task-row {
+        display: grid;
+        grid-template-columns: 180px 1fr 150px 150px;
+        gap: 20px;
+        align-items: center;
+        min-height: 77px;
+        border-bottom: 1px solid var(--line);
+      }
+      .task-row b {
+        font:
+          650 14px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .task-row p {
+        font-size: 15px;
+        line-height: 1.35;
+        color: var(--paper);
+      }
+      .task-row span {
+        font:
+          600 12px/1.25 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .task-row em {
+        justify-self: end;
+        font:
+          600 11px/1.3 'Cascadia Mono',
+          monospace;
+        color: var(--warn);
+        font-style: normal;
+        text-align: right;
+      }
+      .task-foot {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 19px;
+        font:
+          500 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
+      .route-layout {
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: 70px;
+        align-items: center;
+        height: 665px;
+        margin-top: 5px;
+      }
+      .route-map {
+        position: relative;
+        height: 450px;
+      }
+      .route-map svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+      .route-map path {
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-dasharray: 8 9;
+      }
+      .route-map circle {
+        stroke: var(--bg);
+        stroke-width: 5;
+      }
+      #route-packet {
+        stroke: var(--bg);
+        stroke-width: 3;
+      }
+      .route-text {
+        font:
+          700 17px 'Cascadia Mono',
+          monospace;
+        fill: var(--paper);
+      }
+      .route-context {
+        border-top: 1px solid var(--line-strong);
+      }
+      .route-card {
+        min-height: 115px;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .route-card b {
+        display: block;
+        font:
+          700 15px/1 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .route-card p {
+        margin-top: 11px;
+        font-size: 16px;
+        line-height: 1.4;
+        color: var(--soft);
+      }
 
-      .round-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 55px; margin-top: 77px; }
-      .round-card { border-top: 2px solid var(--round-color); }
-      .round-card h3 { margin-top: 21px; font-size: 32px; color: var(--round-color); }
-      .round-card .round-line { margin-top: 8px; font: 500 12px/1 "Cascadia Mono", monospace; color: var(--faint); }
-      .round-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 29px; background: var(--line); }
-      .round-metric { min-height: 123px; padding: 17px; background: rgba(7, 25, 35, .94); }
-      .round-metric b { display: block; font: 700 39px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--paper); }
-      .round-metric span { display: block; margin-top: 9px; font: 500 10px/1.2 "Cascadia Mono", monospace; color: var(--muted); }
-      .round-footer { margin-top: 28px; font: 500 14px/1.45 "Cascadia Mono", monospace; color: var(--muted); }
-      .correction-layout { display: grid; grid-template-columns: .63fr 1.37fr; gap: 70px; align-items: center; height: 655px; margin-top: 6px; }
-      .correction-total { padding: 23px 0; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .correction-total .big-number { font-size: 152px; line-height: .8; color: var(--solar); }
-      .correction-total h3 { margin-top: 20px; font-size: 30px; }
-      .correction-total p { margin-top: 17px; max-width: 380px; font-size: 17px; line-height: 1.5; color: var(--soft); }
-      .correction-list { border-top: 1px solid var(--line-strong); }
-      .correction-row { display: grid; grid-template-columns: 75px 1fr 180px; gap: 16px; align-items: center; min-height: 87px; border-bottom: 1px solid var(--line); }
-      .correction-row b { font: 650 13px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .correction-row p { font-size: 15px; line-height: 1.3; color: var(--paper); }
-      .correction-row span { justify-self: end; font: 500 11px/1.35 "Cascadia Mono", monospace; color: var(--muted); text-align: right; }
-      .trace-layout { display: grid; grid-template-columns: 1.35fr .65fr; gap: 80px; align-items: center; height: 660px; margin-top: 12px; }
-      .trace-map { position: relative; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .trace-map::before { content: ""; position: absolute; z-index: 1; top: 0; bottom: 0; left: 19px; width: 1px; background: linear-gradient(to bottom, var(--cyan), var(--solar), var(--violet)); opacity: .6; }
-      #trace-packet { left: 13px; top: 10px; background: var(--cyan); box-shadow: 0 0 13px var(--cyan), 0 0 25px rgba(108, 233, 223, .6); }
-      .trace-node { display: grid; grid-template-columns: 180px 1fr 180px; align-items: center; min-height: 91px; border-bottom: 1px solid var(--line); }
-      .trace-node:last-child { border-bottom: 0; }
-      .trace-node b { font: 650 14px/1 "Cascadia Mono", monospace; color: var(--cyan); }
-      .trace-node span { font-size: 17px; color: var(--paper); }
-      .trace-node em { justify-self: end; font: 500 12px/1.3 "Cascadia Mono", monospace; color: var(--muted); font-style: normal; text-align: right; }
-      .trace-aside { padding: 27px; border-left: 2px solid var(--cyan); background: rgba(8, 28, 41, .75); }
-      .trace-aside h3 { margin-top: 18px; font-size: 34px; }
-      .trace-aside p { margin-top: 18px; font-size: 17px; line-height: 1.5; color: var(--soft); }
-      .trace-aside .trace-id { margin-top: 31px; font: 500 12px/1.45 "Cascadia Mono", monospace; color: var(--faint); word-break: break-all; }
+      .round-layout {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 55px;
+        margin-top: 77px;
+      }
+      .round-card {
+        border-top: 2px solid var(--round-color);
+      }
+      .round-card h3 {
+        margin-top: 21px;
+        font-size: 32px;
+        color: var(--round-color);
+      }
+      .round-card .round-line {
+        margin-top: 8px;
+        font:
+          500 12px/1 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
+      .round-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        margin-top: 29px;
+        background: var(--line);
+      }
+      .round-metric {
+        min-height: 123px;
+        padding: 17px;
+        background: rgba(7, 25, 35, 0.94);
+      }
+      .round-metric b {
+        display: block;
+        font:
+          700 39px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--paper);
+      }
+      .round-metric span {
+        display: block;
+        margin-top: 9px;
+        font:
+          500 10px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .round-footer {
+        margin-top: 28px;
+        font:
+          500 14px/1.45 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .correction-layout {
+        display: grid;
+        grid-template-columns: 0.63fr 1.37fr;
+        gap: 70px;
+        align-items: center;
+        height: 655px;
+        margin-top: 6px;
+      }
+      .correction-total {
+        padding: 23px 0;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .correction-total .big-number {
+        font-size: 152px;
+        line-height: 0.8;
+        color: var(--solar);
+      }
+      .correction-total h3 {
+        margin-top: 20px;
+        font-size: 30px;
+      }
+      .correction-total p {
+        margin-top: 17px;
+        max-width: 380px;
+        font-size: 17px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .correction-list {
+        border-top: 1px solid var(--line-strong);
+      }
+      .correction-row {
+        display: grid;
+        grid-template-columns: 75px 1fr 180px;
+        gap: 16px;
+        align-items: center;
+        min-height: 87px;
+        border-bottom: 1px solid var(--line);
+      }
+      .correction-row b {
+        font:
+          650 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .correction-row p {
+        font-size: 15px;
+        line-height: 1.3;
+        color: var(--paper);
+      }
+      .correction-row span {
+        justify-self: end;
+        font:
+          500 11px/1.35 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+        text-align: right;
+      }
+      .trace-layout {
+        display: grid;
+        grid-template-columns: 1.35fr 0.65fr;
+        gap: 80px;
+        align-items: center;
+        height: 660px;
+        margin-top: 12px;
+      }
+      .trace-map {
+        position: relative;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .trace-map::before {
+        content: '';
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        bottom: 0;
+        left: 19px;
+        width: 1px;
+        background: linear-gradient(to bottom, var(--cyan), var(--solar), var(--violet));
+        opacity: 0.6;
+      }
+      #trace-packet {
+        left: 13px;
+        top: 10px;
+        background: var(--cyan);
+        box-shadow:
+          0 0 13px var(--cyan),
+          0 0 25px rgba(108, 233, 223, 0.6);
+      }
+      .trace-node {
+        display: grid;
+        grid-template-columns: 180px 1fr 180px;
+        align-items: center;
+        min-height: 91px;
+        border-bottom: 1px solid var(--line);
+      }
+      .trace-node:last-child {
+        border-bottom: 0;
+      }
+      .trace-node b {
+        font:
+          650 14px/1 'Cascadia Mono',
+          monospace;
+        color: var(--cyan);
+      }
+      .trace-node span {
+        font-size: 17px;
+        color: var(--paper);
+      }
+      .trace-node em {
+        justify-self: end;
+        font:
+          500 12px/1.3 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+        font-style: normal;
+        text-align: right;
+      }
+      .trace-aside {
+        padding: 27px;
+        border-left: 2px solid var(--cyan);
+        background: rgba(8, 28, 41, 0.75);
+      }
+      .trace-aside h3 {
+        margin-top: 18px;
+        font-size: 34px;
+      }
+      .trace-aside p {
+        margin-top: 18px;
+        font-size: 17px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .trace-aside .trace-id {
+        margin-top: 31px;
+        font:
+          500 12px/1.45 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+        word-break: break-all;
+      }
 
-      .verdict-layout { display: grid; grid-template-columns: .7fr 1.3fr; gap: 78px; align-items: center; height: 660px; margin-top: 12px; }
-      .verdict-word { font: 700 90px/.86 "Bahnschrift SemiCondensed", sans-serif; color: var(--hot); letter-spacing: -.04em; }
-      .verdict-copy { margin-top: 24px; max-width: 450px; font-size: 20px; line-height: 1.5; color: var(--soft); }
-      .verdict-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 30px; background: var(--line); }
-      .verdict-metric { min-height: 103px; padding: 16px; background: rgba(7, 25, 35, .94); }
-      .verdict-metric b { display: block; font: 700 34px/1 "Bahnschrift SemiCondensed", sans-serif; color: var(--paper); }
-      .verdict-metric span { display: block; margin-top: 8px; font: 500 10px/1.2 "Cascadia Mono", monospace; color: var(--muted); }
-      .verdict-hypotheses { border-top: 1px solid var(--line-strong); }
-      .verdict-hypothesis { display: grid; grid-template-columns: 58px 1fr 125px; gap: 16px; align-items: center; min-height: 103px; border-bottom: 1px solid var(--line); }
-      .verdict-hypothesis b { font: 700 14px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .verdict-hypothesis p { font-size: 16px; line-height: 1.35; color: var(--paper); }
-      .verdict-hypothesis span { justify-self: end; font: 600 11px/1.25 "Cascadia Mono", monospace; color: var(--warn); text-align: right; }
-      .handoff-layout { display: grid; grid-template-columns: .68fr 1.32fr; gap: 80px; align-items: center; height: 660px; margin-top: 8px; }
-      .handoff-lead h3 { margin-top: 19px; font-size: 38px; }
-      .handoff-lead p { margin-top: 20px; max-width: 430px; font-size: 19px; line-height: 1.5; color: var(--soft); }
-      .handoff-lead .handoff-status { display: inline-block; margin-top: 33px; padding: 10px 13px; border-left: 2px solid var(--solar); font: 650 13px/1 "Cascadia Mono", monospace; color: var(--hot); background: rgba(255, 180, 93, .08); }
-      .handoff-list { border-top: 1px solid var(--line-strong); }
-      .handoff-row { display: grid; grid-template-columns: 55px 1fr 160px; gap: 17px; align-items: center; min-height: 93px; border-bottom: 1px solid var(--line); }
-      .handoff-row b { font: 700 13px/1 "Cascadia Mono", monospace; color: var(--solar); }
-      .handoff-row p { font-size: 15px; line-height: 1.35; color: var(--paper); }
-      .handoff-row span { justify-self: end; font: 500 11px/1.35 "Cascadia Mono", monospace; color: var(--muted); text-align: right; }
-      .close-page { display: flex; align-items: center; }
-      .close-layout { display: grid; grid-template-columns: .9fr 1.1fr; gap: 75px; align-items: center; width: 100%; }
-      .close-copy h2 { max-width: 670px; font-size: 78px; }
-      .close-copy p { max-width: 610px; margin-top: 25px; font-size: 22px; line-height: 1.52; color: var(--soft); }
-      .close-copy .close-meta { margin-top: 33px; font: 600 13px/1.4 "Cascadia Mono", monospace; color: var(--faint); }
-      .close-map { position: relative; min-height: 445px; padding: 20px; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); }
-      .close-map svg { width: 100%; height: 390px; overflow: visible; }
-      .close-map path { fill: none; stroke: var(--cyan); stroke-width: 2; stroke-dasharray: 9 9; }
-      .close-map circle { stroke: var(--bg); stroke-width: 5; }
-      #close-packet { stroke: var(--bg); stroke-width: 3; }
-      .close-map text { font: 700 16px "Cascadia Mono", monospace; fill: var(--paper); }
+      .verdict-layout {
+        display: grid;
+        grid-template-columns: 0.7fr 1.3fr;
+        gap: 78px;
+        align-items: center;
+        height: 660px;
+        margin-top: 12px;
+      }
+      .verdict-word {
+        font:
+          700 90px/0.86 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--hot);
+        letter-spacing: -0.04em;
+      }
+      .verdict-copy {
+        margin-top: 24px;
+        max-width: 450px;
+        font-size: 20px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .verdict-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        margin-top: 30px;
+        background: var(--line);
+      }
+      .verdict-metric {
+        min-height: 103px;
+        padding: 16px;
+        background: rgba(7, 25, 35, 0.94);
+      }
+      .verdict-metric b {
+        display: block;
+        font:
+          700 34px/1 'Bahnschrift SemiCondensed',
+          sans-serif;
+        color: var(--paper);
+      }
+      .verdict-metric span {
+        display: block;
+        margin-top: 8px;
+        font:
+          500 10px/1.2 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+      }
+      .verdict-hypotheses {
+        border-top: 1px solid var(--line-strong);
+      }
+      .verdict-hypothesis {
+        display: grid;
+        grid-template-columns: 58px 1fr 125px;
+        gap: 16px;
+        align-items: center;
+        min-height: 103px;
+        border-bottom: 1px solid var(--line);
+      }
+      .verdict-hypothesis b {
+        font:
+          700 14px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .verdict-hypothesis p {
+        font-size: 16px;
+        line-height: 1.35;
+        color: var(--paper);
+      }
+      .verdict-hypothesis span {
+        justify-self: end;
+        font:
+          600 11px/1.25 'Cascadia Mono',
+          monospace;
+        color: var(--warn);
+        text-align: right;
+      }
+      .handoff-layout {
+        display: grid;
+        grid-template-columns: 0.68fr 1.32fr;
+        gap: 80px;
+        align-items: center;
+        height: 660px;
+        margin-top: 8px;
+      }
+      .handoff-lead h3 {
+        margin-top: 19px;
+        font-size: 38px;
+      }
+      .handoff-lead p {
+        margin-top: 20px;
+        max-width: 430px;
+        font-size: 19px;
+        line-height: 1.5;
+        color: var(--soft);
+      }
+      .handoff-lead .handoff-status {
+        display: inline-block;
+        margin-top: 33px;
+        padding: 10px 13px;
+        border-left: 2px solid var(--solar);
+        font:
+          650 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--hot);
+        background: rgba(255, 180, 93, 0.08);
+      }
+      .handoff-list {
+        border-top: 1px solid var(--line-strong);
+      }
+      .handoff-row {
+        display: grid;
+        grid-template-columns: 55px 1fr 160px;
+        gap: 17px;
+        align-items: center;
+        min-height: 93px;
+        border-bottom: 1px solid var(--line);
+      }
+      .handoff-row b {
+        font:
+          700 13px/1 'Cascadia Mono',
+          monospace;
+        color: var(--solar);
+      }
+      .handoff-row p {
+        font-size: 15px;
+        line-height: 1.35;
+        color: var(--paper);
+      }
+      .handoff-row span {
+        justify-self: end;
+        font:
+          500 11px/1.35 'Cascadia Mono',
+          monospace;
+        color: var(--muted);
+        text-align: right;
+      }
+      .close-page {
+        display: flex;
+        align-items: center;
+      }
+      .close-layout {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 75px;
+        align-items: center;
+        width: 100%;
+      }
+      .close-copy h2 {
+        max-width: 670px;
+        font-size: 78px;
+      }
+      .close-copy p {
+        max-width: 610px;
+        margin-top: 25px;
+        font-size: 22px;
+        line-height: 1.52;
+        color: var(--soft);
+      }
+      .close-copy .close-meta {
+        margin-top: 33px;
+        font:
+          600 13px/1.4 'Cascadia Mono',
+          monospace;
+        color: var(--faint);
+      }
+      .close-map {
+        position: relative;
+        min-height: 445px;
+        padding: 20px;
+        border-top: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line);
+      }
+      .close-map svg {
+        width: 100%;
+        height: 390px;
+        overflow: visible;
+      }
+      .close-map path {
+        fill: none;
+        stroke: var(--cyan);
+        stroke-width: 2;
+        stroke-dasharray: 9 9;
+      }
+      .close-map circle {
+        stroke: var(--bg);
+        stroke-width: 5;
+      }
+      #close-packet {
+        stroke: var(--bg);
+        stroke-width: 3;
+      }
+      .close-map text {
+        font:
+          700 16px 'Cascadia Mono',
+          monospace;
+        fill: var(--paper);
+      }
 
       @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
       }
     </style>
   </head>
   <body>
-    <main id="root" data-composition-id="main" data-start="0" data-duration="175" data-width="1920" data-height="1080" data-fps="30">
+    <main
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="175"
+      data-width="1920"
+      data-height="1080"
+      data-fps="30"
+    >
       <header class="topbar">
-        <div class="brand"><span class="brand-mark"></span><span>开放科学 / OPEN SCIENTIST</span></div>
-        <div class="top-state"><span id="event-label">OBSERVE / PHENOMENON</span><span>SHA <b id="source-sha">—</b></span></div>
+        <div class="brand">
+          <span class="brand-mark"></span><span>开放科学 / OPEN SCIENTIST</span>
+        </div>
+        <div class="top-state">
+          <span id="event-label">OBSERVE / PHENOMENON</span
+          ><span>SHA <b id="source-sha">—</b></span>
+        </div>
       </header>
 
       <aside class="flow-rail">
@@ -719,256 +2377,937 @@
       <div id="page-wipe"></div>
 
       <footer class="timeline">
-        <div class="timeline-track"><div id="global-progress"></div><div id="trace-cursor"></div></div>
-        <div class="timeline-labels"><span id="page-counter">PAGE 01 / 24</span><span id="timeline-event">COMPACT EXECUTION TRACE</span><span>175 SEC · HYPERFRAMES</span></div>
+        <div class="timeline-track">
+          <div id="global-progress"></div>
+          <div id="trace-cursor"></div>
+        </div>
+        <div class="timeline-labels">
+          <span id="page-counter">PAGE 01 / 24</span
+          ><span id="timeline-event">COMPACT EXECUTION TRACE</span
+          ><span>175 SEC · HYPERFRAMES</span>
+        </div>
       </footer>
 
-      <section id="p01" class="page clip" data-start="0" data-duration="6" data-track-index="0" data-phase="OBSERVE" data-event="RUN REPLAY">
+      <section
+        id="p01"
+        class="page clip"
+        data-start="0"
+        data-duration="6"
+        data-track-index="0"
+        data-phase="OBSERVE"
+        data-event="RUN REPLAY"
+      >
         <div class="page-shell hero-page">
           <div class="hero-copy">
             <div class="kicker reveal">OPEN SCIENTIST / SCIENTIFIC LOOP REPLAY</div>
             <h1 class="reveal"><span>让假设</span><strong>接受证据</strong></h1>
-            <p class="reveal">一条真实运行记录，如何从观测输入走到“需要更多数据”，再把下一步验证任务交回系统。</p>
-            <div class="hero-signal reveal"><span>OBSERVE</span><i>→</i><span>HYPOTHESIZE</span><i>→</i><span>EVIDENCE</span><i>→</i><span>ROUTE</span></div>
-            <div class="hero-run reveal">RUN <span id="hero-run-id">—</span><br />MODEL-ASSISTED · ROUND <span id="hero-rounds">—</span></div>
+            <p class="reveal">
+              一条真实运行记录，如何从观测输入走到“需要更多数据”，再把下一步验证任务交回系统。
+            </p>
+            <div class="hero-signal reveal">
+              <span>OBSERVE</span><i>→</i><span>HYPOTHESIZE</span><i>→</i><span>EVIDENCE</span
+              ><i>→</i><span>ROUTE</span>
+            </div>
+            <div class="hero-run reveal">
+              RUN <span id="hero-run-id">—</span><br />MODEL-ASSISTED · ROUND
+              <span id="hero-rounds">—</span>
+            </div>
           </div>
           <div class="hero-orbit reveal">
-            <div class="orbit-ring"></div><div class="orbit-ring two"></div><div class="orbit-ring three"></div>
-            <div class="orbit-core"><div><strong>AR11158</strong><span>OBSERVED / ROI</span></div></div>
-            <span class="orbit-label a">AIA / HMI</span><span class="orbit-label b">NEXT TASK</span><span class="orbit-label c">LANGGRAPH</span>
+            <div class="orbit-ring"></div>
+            <div class="orbit-ring two"></div>
+            <div class="orbit-ring three"></div>
+            <div class="orbit-core">
+              <div><strong>AR11158</strong><span>OBSERVED / ROI</span></div>
+            </div>
+            <span class="orbit-label a">AIA / HMI</span><span class="orbit-label b">NEXT TASK</span
+            ><span class="orbit-label c">LANGGRAPH</span>
           </div>
         </div>
       </section>
 
-      <section id="p02" class="page clip" data-start="6" data-duration="7" data-track-index="1" data-phase="OBSERVE" data-event="PHENOMENON INPUT">
+      <section
+        id="p02"
+        class="page clip"
+        data-start="6"
+        data-duration="7"
+        data-track-index="1"
+        data-phase="OBSERVE"
+        data-event="PHENOMENON INPUT"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">01 · INPUT / PHENOMENON</div><h2 id="phenomenon-title">NOAA AR11158</h2></div><div class="page-index reveal">02<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">01 · INPUT / PHENOMENON</div>
+              <h2 id="phenomenon-title">NOAA AR11158</h2>
+            </div>
+            <div class="page-index reveal">02<small>/ 24</small></div>
+          </div>
           <div class="phenomenon-layout">
             <div class="reveal">
               <div class="phenomenon-title" id="active-region">NOAA 11158</div>
               <p class="question" id="phenomenon-question">—</p>
-              <div class="channel-row"><span>AIA 94 Å</span><span>AIA 131 Å</span><span>AIA 171 Å</span><span>AIA 193 Å</span><span>HMI / MAGNETIC</span></div>
-              <div class="constraint-list"><div class="constraint">只使用已核验文献、本地 FITS 和登记的处理产物</div><div class="constraint">模型判断不能直接变成机制证据</div><div class="constraint">单一非唯一指标不能升级为 supported</div></div>
+              <div class="channel-row">
+                <span>AIA 94 Å</span><span>AIA 131 Å</span><span>AIA 171 Å</span
+                ><span>AIA 193 Å</span><span>HMI / MAGNETIC</span>
+              </div>
+              <div class="constraint-list">
+                <div class="constraint">只使用已核验文献、本地 FITS 和登记的处理产物</div>
+                <div class="constraint">模型判断不能直接变成机制证据</div>
+                <div class="constraint">单一非唯一指标不能升级为 supported</div>
+              </div>
             </div>
-            <figure class="diagnostic-frame reveal"><img id="diagnostic-image" alt="coronal diagnostic" /><span id="input-scan" class="scan-beam"></span><span class="image-tag">OBSERVED / ROI</span></figure>
+            <figure class="diagnostic-frame reveal">
+              <img id="diagnostic-image" alt="coronal diagnostic" /><span
+                id="input-scan"
+                class="scan-beam"
+              ></span
+              ><span class="image-tag">OBSERVED / ROI</span>
+            </figure>
           </div>
         </div>
       </section>
 
-      <section id="p03" class="page clip" data-start="13" data-duration="7" data-track-index="2" data-phase="STRUCTURE" data-event="API TO STATE">
+      <section
+        id="p03"
+        class="page clip"
+        data-start="13"
+        data-duration="7"
+        data-track-index="2"
+        data-phase="STRUCTURE"
+        data-event="API TO STATE"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">02 · ACTUAL STACK</div><h2>从一个请求，到一条可回放的执行链</h2></div><div class="page-index reveal">03<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">02 · ACTUAL STACK</div>
+              <h2>从一个请求，到一条可回放的执行链</h2>
+            </div>
+            <div class="page-index reveal">03<small>/ 24</small></div>
+          </div>
           <div class="stack-layout">
             <div id="layer-rows" class="layer-list reveal"></div>
-            <div class="stack-inspector reveal"><div class="micro-label">REQUEST / RUN CONTEXT</div><div class="big-code">POST /runs</div><div class="flow-steps"><span>stream</span><i>→</i><span>resume</span><i>→</i><span>checkpoint</span></div><span id="api-packet" class="flow-packet"></span><div class="state-lines"><div class="state-line"><b>runtime</b><span>scientificLoopWorkflow()</span></div><div class="state-line"><b>state</b><span>hypotheses · evidence · tasks</span></div><div class="state-line"><b>exit</b><span id="stack-exit">—</span></div></div></div>
+            <div class="stack-inspector reveal">
+              <div class="micro-label">REQUEST / RUN CONTEXT</div>
+              <div class="big-code">POST /runs</div>
+              <div class="flow-steps">
+                <span>stream</span><i>→</i><span>resume</span><i>→</i><span>checkpoint</span>
+              </div>
+              <span id="api-packet" class="flow-packet"></span>
+              <div class="state-lines">
+                <div class="state-line"><b>runtime</b><span>scientificLoopWorkflow()</span></div>
+                <div class="state-line"><b>state</b><span>hypotheses · evidence · tasks</span></div>
+                <div class="state-line"><b>exit</b><span id="stack-exit">—</span></div>
+              </div>
+            </div>
           </div>
           <div class="trace-note reveal">结构不是装饰：每一层都决定下一层能否复现。</div>
         </div>
       </section>
 
-      <section id="p04" class="page clip" data-start="20" data-duration="7" data-track-index="3" data-phase="STRUCTURE" data-event="STATE ASSEMBLY">
+      <section
+        id="p04"
+        class="page clip"
+        data-start="20"
+        data-duration="7"
+        data-track-index="3"
+        data-phase="STRUCTURE"
+        data-event="STATE ASSEMBLY"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">03 · STATE ASSEMBLY</div><h2>目录不是图，状态才是图</h2><p class="page-subtitle">同一份 ScientificLoopState 把现象、假设、证据和下一步任务接在一起。</p></div><div class="page-index reveal">04<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">03 · STATE ASSEMBLY</div>
+              <h2>目录不是图，状态才是图</h2>
+              <p class="page-subtitle">
+                同一份 ScientificLoopState 把现象、假设、证据和下一步任务接在一起。
+              </p>
+            </div>
+            <div class="page-index reveal">04<small>/ 24</small></div>
+          </div>
           <div class="architecture-layout">
             <div class="state-spine reveal">
-              <div class="state-node" style="--node-color: var(--solar)"><strong>phenomenon</strong><span>可观察的输入</span></div>
-              <div class="state-node" style="--node-color: var(--cyan)"><strong>hypotheses</strong><span id="state-hypotheses">—</span></div>
-              <div class="state-node" style="--node-color: var(--warn)"><strong>evidence</strong><span id="state-evidence">—</span></div>
-              <div class="state-node" style="--node-color: var(--violet)"><strong>validationTasks</strong><span id="state-tasks">—</span></div>
-              <div class="state-node" style="--node-color: var(--cyan)"><strong>route</strong><span id="state-route">—</span></div>
+              <div class="state-node" style="--node-color: var(--solar)">
+                <strong>phenomenon</strong><span>可观察的输入</span>
+              </div>
+              <div class="state-node" style="--node-color: var(--cyan)">
+                <strong>hypotheses</strong><span id="state-hypotheses">—</span>
+              </div>
+              <div class="state-node" style="--node-color: var(--warn)">
+                <strong>evidence</strong><span id="state-evidence">—</span>
+              </div>
+              <div class="state-node" style="--node-color: var(--violet)">
+                <strong>validationTasks</strong><span id="state-tasks">—</span>
+              </div>
+              <div class="state-node" style="--node-color: var(--cyan)">
+                <strong>route</strong><span id="state-route">—</span>
+              </div>
             </div>
-            <div class="state-inspector reveal"><div class="micro-label">CHECKPOINTED STATE</div><h3>每个节点都留下输入、输出与下一跳</h3><div class="state-metrics"><div class="state-metric"><b id="state-rounds">—</b><span>ROUNDS</span></div><div class="state-metric"><b id="state-agents">—</b><span>AGENT EXECUTIONS</span></div><div class="state-metric"><b id="state-corrections">—</b><span>CORRECTIONS</span></div><div class="state-metric"><b id="state-status">—</b><span>SCIENTIFIC STATUS</span></div></div><p>这使一次运行可以被暂停、恢复、审计，也可以从已有状态继续下一轮。</p></div>
+            <div class="state-inspector reveal">
+              <div class="micro-label">CHECKPOINTED STATE</div>
+              <h3>每个节点都留下输入、输出与下一跳</h3>
+              <div class="state-metrics">
+                <div class="state-metric"><b id="state-rounds">—</b><span>ROUNDS</span></div>
+                <div class="state-metric">
+                  <b id="state-agents">—</b><span>AGENT EXECUTIONS</span>
+                </div>
+                <div class="state-metric">
+                  <b id="state-corrections">—</b><span>CORRECTIONS</span>
+                </div>
+                <div class="state-metric">
+                  <b id="state-status">—</b><span>SCIENTIFIC STATUS</span>
+                </div>
+              </div>
+              <p>这使一次运行可以被暂停、恢复、审计，也可以从已有状态继续下一轮。</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="p05" class="page clip" data-start="27" data-duration="7" data-track-index="4" data-phase="STRUCTURE" data-event="LANGGRAPH ROOT">
+      <section
+        id="p05"
+        class="page clip"
+        data-start="27"
+        data-duration="7"
+        data-track-index="4"
+        data-phase="STRUCTURE"
+        data-event="LANGGRAPH ROOT"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">04 · ROOT GRAPH</div><h2>LangGraph 把回路装配起来</h2></div><div class="page-index reveal">05<small>/ 24</small></div></div>
-          <div id="graph-nodes" class="graph-lane reveal"><span id="graph-packet" class="flow-packet"></span></div>
-          <div class="graph-footer reveal"><div><b>START</b><span>进入 A.generate</span></div><div><b>STATE</b><span>节点之间传递结构化状态</span></div><div><b>END</b><span>由 D.route 决定是否收敛</span></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">04 · ROOT GRAPH</div>
+              <h2>LangGraph 把回路装配起来</h2>
+            </div>
+            <div class="page-index reveal">05<small>/ 24</small></div>
+          </div>
+          <div id="graph-nodes" class="graph-lane reveal">
+            <span id="graph-packet" class="flow-packet"></span>
+          </div>
+          <div class="graph-footer reveal">
+            <div><b>START</b><span>进入 A.generate</span></div>
+            <div><b>STATE</b><span>节点之间传递结构化状态</span></div>
+            <div><b>END</b><span>由 D.route 决定是否收敛</span></div>
+          </div>
           <div class="trace-note reveal">A / B / C / D 不是四个口号，而是实际 node id。</div>
         </div>
       </section>
 
-      <section id="p06" class="page clip" data-start="34" data-duration="7" data-track-index="5" data-phase="HYPOTHESES" data-event="A.GENERATE">
+      <section
+        id="p06"
+        class="page clip"
+        data-start="34"
+        data-duration="7"
+        data-track-index="5"
+        data-phase="HYPOTHESES"
+        data-event="A.GENERATE"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">05 · STAGE A / GENERATE</div><h2>先把现象写成可证伪的假设</h2></div><div class="page-index reveal">06<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">05 · STAGE A / GENERATE</div>
+              <h2>先把现象写成可证伪的假设</h2>
+            </div>
+            <div class="page-index reveal">06<small>/ 24</small></div>
+          </div>
           <div class="stage-layout">
-            <div class="stage-tile reveal"><div class="micro-label">NODE / A.generate</div><div class="node-big">A<span class="cyan">.</span>generate</div><p>把现象约束、已有上下文和机制空间变成候选假设集合。</p><div class="stage-transfer"><span>phenomenon</span><i>→</i><span>hypotheses[<span id="hypothesis-count">—</span>]</span></div></div>
+            <div class="stage-tile reveal">
+              <div class="micro-label">NODE / A.generate</div>
+              <div class="node-big">A<span class="cyan">.</span>generate</div>
+              <p>把现象约束、已有上下文和机制空间变成候选假设集合。</p>
+              <div class="stage-transfer">
+                <span>phenomenon</span><i>→</i
+                ><span>hypotheses[<span id="hypothesis-count">—</span>]</span>
+              </div>
+            </div>
             <div id="hypothesis-preview" class="hypothesis-preview reveal"></div>
           </div>
         </div>
       </section>
 
-      <section id="p07" class="page clip" data-start="41" data-duration="7" data-track-index="6" data-phase="HYPOTHESES" data-event="A.VERIFY">
+      <section
+        id="p07"
+        class="page clip"
+        data-start="41"
+        data-duration="7"
+        data-track-index="6"
+        data-phase="HYPOTHESES"
+        data-event="A.VERIFY"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">06 · STAGE A / VERIFY</div><h2>先验证形状，再讨论机制</h2><p class="page-subtitle">假设必须带有预测、反证条件和不确定性，才会进入后续证据工作组。</p></div><div class="page-index reveal">07<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">06 · STAGE A / VERIFY</div>
+              <h2>先验证形状，再讨论机制</h2>
+              <p class="page-subtitle">
+                假设必须带有预测、反证条件和不确定性，才会进入后续证据工作组。
+              </p>
+            </div>
+            <div class="page-index reveal">07<small>/ 24</small></div>
+          </div>
           <div class="verify-grid">
-            <div class="verify-column reveal"><div class="verify-row"><b>01</b><strong>statement 可读</strong><span>REQUIRED</span></div><div class="verify-row"><b>02</b><strong>predictions 可执行</strong><span>REQUIRED</span></div><div class="verify-row"><b>03</b><strong>falsification 可检查</strong><span>REQUIRED</span></div><div class="verify-row"><b>04</b><strong>confidence 可追踪</strong><span>REQUIRED</span></div></div>
-            <div class="verify-callout reveal"><div class="micro-label">STRUCTURAL CHECK</div><h3 id="verify-callout-title">—</h3><p>每条假设先通过结构校验，再允许 Agent 去寻找支持、未知或反驳证据。</p><div class="mini-rule"><i></i><span>NO STRUCTURE · NO EVIDENCE CLAIM</span></div></div>
+            <div class="verify-column reveal">
+              <div class="verify-row">
+                <b>01</b><strong>statement 可读</strong><span>REQUIRED</span>
+              </div>
+              <div class="verify-row">
+                <b>02</b><strong>predictions 可执行</strong><span>REQUIRED</span>
+              </div>
+              <div class="verify-row">
+                <b>03</b><strong>falsification 可检查</strong><span>REQUIRED</span>
+              </div>
+              <div class="verify-row">
+                <b>04</b><strong>confidence 可追踪</strong><span>REQUIRED</span>
+              </div>
+            </div>
+            <div class="verify-callout reveal">
+              <div class="micro-label">STRUCTURAL CHECK</div>
+              <h3 id="verify-callout-title">—</h3>
+              <p>每条假设先通过结构校验，再允许 Agent 去寻找支持、未知或反驳证据。</p>
+              <div class="mini-rule"><i></i><span>NO STRUCTURE · NO EVIDENCE CLAIM</span></div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="p08" class="page clip" data-start="48" data-duration="7" data-track-index="7" data-phase="EVIDENCE" data-event="B.DISPATCH">
+      <section
+        id="p08"
+        class="page clip"
+        data-start="48"
+        data-duration="7"
+        data-track-index="7"
+        data-phase="EVIDENCE"
+        data-event="B.DISPATCH"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">07 · STAGE B / DISPATCH</div><h2>B.run 不是一个 Agent，而是一组有边界的 worker</h2></div><div class="page-index reveal">08<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">07 · STAGE B / DISPATCH</div>
+              <h2>B.run 不是一个 Agent，而是一组有边界的 worker</h2>
+            </div>
+            <div class="page-index reveal">08<small>/ 24</small></div>
+          </div>
           <div class="dispatch-layout">
-            <div class="dispatch-map reveal"><div class="dispatch-root"><b>B.dispatch</b><span>fan-out / role assignment</span></div><div class="dispatch-branches"></div><span id="dispatch-packet" class="flow-packet"></span><div class="dispatch-children"><div class="dispatch-child" style="--agent: var(--cyan)"><b>LOOKER</b><span>source context</span></div><div class="dispatch-child" style="--agent: var(--solar)"><b>EXPLORER</b><span>FITS metrics</span></div><div class="dispatch-child" style="--agent: var(--violet)"><b>ORACLE</b><span>counterexamples</span></div></div></div>
-            <div class="dispatch-log reveal"><div class="micro-label">SUBGRAPH</div><h3>B.worker → B.aggregate</h3><p>先执行确定性工具，再运行模型角色，最后把结果聚合成带 lineage 的 evidence。</p><div class="log-line"><span>deterministic first</span><strong>TRUE</strong></div><div class="log-line"><span>model role calls</span><strong id="model-role-count">—</strong></div><div class="log-line"><span>agent executions</span><strong id="dispatch-agent-count">—</strong></div></div>
+            <div class="dispatch-map reveal">
+              <div class="dispatch-root">
+                <b>B.dispatch</b><span>fan-out / role assignment</span>
+              </div>
+              <div class="dispatch-branches"></div>
+              <span id="dispatch-packet" class="flow-packet"></span>
+              <div class="dispatch-children">
+                <div class="dispatch-child" style="--agent: var(--cyan)">
+                  <b>LOOKER</b><span>source context</span>
+                </div>
+                <div class="dispatch-child" style="--agent: var(--solar)">
+                  <b>EXPLORER</b><span>FITS metrics</span>
+                </div>
+                <div class="dispatch-child" style="--agent: var(--violet)">
+                  <b>ORACLE</b><span>counterexamples</span>
+                </div>
+              </div>
+            </div>
+            <div class="dispatch-log reveal">
+              <div class="micro-label">SUBGRAPH</div>
+              <h3>B.worker → B.aggregate</h3>
+              <p>先执行确定性工具，再运行模型角色，最后把结果聚合成带 lineage 的 evidence。</p>
+              <div class="log-line"><span>deterministic first</span><strong>TRUE</strong></div>
+              <div class="log-line">
+                <span>model role calls</span><strong id="model-role-count">—</strong>
+              </div>
+              <div class="log-line">
+                <span>agent executions</span><strong id="dispatch-agent-count">—</strong>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="p09" class="page clip" data-start="55" data-duration="7" data-track-index="8" data-phase="EVIDENCE" data-event="WORKGROUP">
+      <section
+        id="p09"
+        class="page clip"
+        data-start="55"
+        data-duration="7"
+        data-track-index="8"
+        data-phase="EVIDENCE"
+        data-event="WORKGROUP"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">08 · STAGE B / WORKGROUP</div><h2>四个角色，四种失误来源</h2><p class="page-subtitle">同一个问题被拆成来源审计、确定性分析、反例搜索和处理溯源。</p></div><div class="page-index reveal">09<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">08 · STAGE B / WORKGROUP</div>
+              <h2>四个角色，四种失误来源</h2>
+              <p class="page-subtitle">
+                同一个问题被拆成来源审计、确定性分析、反例搜索和处理溯源。
+              </p>
+            </div>
+            <div class="page-index reveal">09<small>/ 24</small></div>
+          </div>
           <div id="agent-rows" class="agent-table reveal"></div>
           <div class="trace-note reveal">完成与跳过都会写入 execution trace，不会被静默抹掉。</div>
         </div>
       </section>
 
-      <section id="p10" class="page clip" data-start="62" data-duration="7" data-track-index="9" data-phase="EVIDENCE" data-event="DETERMINISTIC PROCESSING">
+      <section
+        id="p10"
+        class="page clip"
+        data-start="62"
+        data-duration="7"
+        data-track-index="9"
+        data-phase="EVIDENCE"
+        data-event="DETERMINISTIC PROCESSING"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">09 · DETERMINISTIC DATA PROCESSING</div><h2>确定性代码先把原始数据变成产物</h2></div><div class="page-index reveal">10<small>/ 24</small></div></div>
-          <div class="pipeline reveal"><div class="pipeline-step"><b>01</b><strong>MANIFEST</strong><span>source ids<br />checksums</span></div><div class="pipeline-step"><b>02</b><strong>FITS</strong><span>AIA / HMI<br />raw assets</span></div><div class="pipeline-step"><b>03</b><strong>ROI</strong><span>frozen<br />parameters</span></div><div class="pipeline-step"><b>04</b><strong>METRICS</strong><span>timeseries<br />intervals</span></div><div class="pipeline-step"><b>05</b><strong>ARTIFACT</strong><span>figure +<br />processing run</span></div><span id="pipeline-packet" class="flow-packet"></span></div>
-          <div class="pipeline-foot reveal"><span>scripts/analyze_coronal_window.py</span><span>deterministic = true · WCS retained</span></div>
-        </div>
-      </section>
-
-      <section id="p11" class="page clip" data-start="69" data-duration="7" data-track-index="10" data-phase="EVIDENCE" data-event="ARTIFACT LINEAGE">
-        <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">10 · ARTIFACT / LINEAGE</div><h2>图不是证据，谱系才是</h2></div><div class="page-index reveal">11<small>/ 24</small></div></div>
-          <div class="artifact-layout">
-            <figure class="artifact-visual reveal"><span id="artifact-scan" class="scan-beam"></span><figcaption><span>ARTIFACT / FIGURE</span><span id="file-coverage">—</span></figcaption></figure>
-            <div class="artifact-data reveal"><div class="artifact-row"><b>producer</b><span>explorer</span></div><div class="artifact-row"><b>script</b><span>analyze_coronal_window.py</span></div><div class="artifact-row"><b>lineage</b><span>snapshot → processing run → artifact</span></div><div class="artifact-row"><b>promotion</b><span>BC.verify / auditable record</span></div><div class="artifact-metrics"><div class="artifact-metric"><b id="metric-correlation">—</b><span>AIA 171/193 CORRELATION</span></div><div class="artifact-metric"><b id="metric-period">—</b><span>CANDIDATE PERIOD / SEC</span></div></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">09 · DETERMINISTIC DATA PROCESSING</div>
+              <h2>确定性代码先把原始数据变成产物</h2>
+            </div>
+            <div class="page-index reveal">10<small>/ 24</small></div>
+          </div>
+          <div class="pipeline reveal">
+            <div class="pipeline-step">
+              <b>01</b><strong>MANIFEST</strong><span>source ids<br />checksums</span>
+            </div>
+            <div class="pipeline-step">
+              <b>02</b><strong>FITS</strong><span>AIA / HMI<br />raw assets</span>
+            </div>
+            <div class="pipeline-step">
+              <b>03</b><strong>ROI</strong><span>frozen<br />parameters</span>
+            </div>
+            <div class="pipeline-step">
+              <b>04</b><strong>METRICS</strong><span>timeseries<br />intervals</span>
+            </div>
+            <div class="pipeline-step">
+              <b>05</b><strong>ARTIFACT</strong><span>figure +<br />processing run</span>
+            </div>
+            <span id="pipeline-packet" class="flow-packet"></span>
+          </div>
+          <div class="pipeline-foot reveal">
+            <span>scripts/analyze_coronal_window.py</span
+            ><span>deterministic = true · WCS retained</span>
           </div>
         </div>
       </section>
 
-      <section id="p12" class="page clip" data-start="76" data-duration="7" data-track-index="11" data-phase="EVIDENCE" data-event="BC.VERIFY / PROMOTE">
+      <section
+        id="p11"
+        class="page clip"
+        data-start="69"
+        data-duration="7"
+        data-track-index="10"
+        data-phase="EVIDENCE"
+        data-event="ARTIFACT LINEAGE"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">11 · STAGE BC / VERIFY</div><h2>证据进入系统前，必须过晋级门槛</h2></div><div class="page-index reveal">12<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">10 · ARTIFACT / LINEAGE</div>
+              <h2>图不是证据，谱系才是</h2>
+            </div>
+            <div class="page-index reveal">11<small>/ 24</small></div>
+          </div>
+          <div class="artifact-layout">
+            <figure class="artifact-visual reveal">
+              <span id="artifact-scan" class="scan-beam"></span>
+              <figcaption>
+                <span>ARTIFACT / FIGURE</span><span id="file-coverage">—</span>
+              </figcaption>
+            </figure>
+            <div class="artifact-data reveal">
+              <div class="artifact-row"><b>producer</b><span>explorer</span></div>
+              <div class="artifact-row"><b>script</b><span>analyze_coronal_window.py</span></div>
+              <div class="artifact-row">
+                <b>lineage</b><span>snapshot → processing run → artifact</span>
+              </div>
+              <div class="artifact-row">
+                <b>promotion</b><span>BC.verify / auditable record</span>
+              </div>
+              <div class="artifact-metrics">
+                <div class="artifact-metric">
+                  <b id="metric-correlation">—</b><span>AIA 171/193 CORRELATION</span>
+                </div>
+                <div class="artifact-metric">
+                  <b id="metric-period">—</b><span>CANDIDATE PERIOD / SEC</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="p12"
+        class="page clip"
+        data-start="76"
+        data-duration="7"
+        data-track-index="11"
+        data-phase="EVIDENCE"
+        data-event="BC.VERIFY / PROMOTE"
+      >
+        <div class="page-shell">
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">11 · STAGE BC / VERIFY</div>
+              <h2>证据进入系统前，必须过晋级门槛</h2>
+            </div>
+            <div class="page-index reveal">12<small>/ 24</small></div>
+          </div>
           <div class="gate-layout">
             <div id="gate-checks" class="gate-list reveal"></div>
-            <div class="gate-callout reveal"><div class="big-number" id="gate-total">—</div><h3>structured evidence records</h3><p>记录先保留为 support、unknown 或 contradict，再决定它能否被机制综合使用。</p><div class="evidence-ledger"><div class="ledger-cell"><b id="gate-support">—</b><span>SUPPORT</span></div><div class="ledger-cell"><b id="gate-unknown">—</b><span>UNKNOWN</span></div><div class="ledger-cell"><b id="gate-contradict">—</b><span>CONTRADICT</span></div></div></div>
+            <div class="gate-callout reveal">
+              <div class="big-number" id="gate-total">—</div>
+              <h3>structured evidence records</h3>
+              <p>记录先保留为 support、unknown 或 contradict，再决定它能否被机制综合使用。</p>
+              <div class="evidence-ledger">
+                <div class="ledger-cell"><b id="gate-support">—</b><span>SUPPORT</span></div>
+                <div class="ledger-cell"><b id="gate-unknown">—</b><span>UNKNOWN</span></div>
+                <div class="ledger-cell"><b id="gate-contradict">—</b><span>CONTRADICT</span></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="p13" class="page clip" data-start="83" data-duration="7" data-track-index="12" data-phase="EVIDENCE" data-event="EVIDENCE LEDGER">
+      <section
+        id="p13"
+        class="page clip"
+        data-start="83"
+        data-duration="7"
+        data-track-index="12"
+        data-phase="EVIDENCE"
+        data-event="EVIDENCE LEDGER"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">12 · EVIDENCE LEDGER</div><h2>32 条记录里，只有少数真正支持</h2></div><div class="page-index reveal">13<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">12 · EVIDENCE LEDGER</div>
+              <h2>32 条记录里，只有少数真正支持</h2>
+            </div>
+            <div class="page-index reveal">13<small>/ 24</small></div>
+          </div>
           <div class="ledger-layout">
-            <div class="ledger-total reveal"><div class="big-number" id="ledger-total">—</div><p>每条记录都有来源、状态、观察值和处理谱系。大多数 unknown 不是失败，而是下一轮的入口。</p></div>
-            <div class="ledger-bars reveal"><span id="ledger-packet" class="flow-packet"></span><div class="ledger-bar-row"><div class="ledger-bar-head"><span>SUPPORT</span><span id="bar-support-value">—</span></div><div class="ledger-bar-track"><div id="bar-support" class="ledger-bar-fill"></div></div></div><div class="ledger-bar-row"><div class="ledger-bar-head"><span>UNKNOWN</span><span id="bar-unknown-value">—</span></div><div class="ledger-bar-track"><div id="bar-unknown" class="ledger-bar-fill unknown"></div></div></div><div class="ledger-bar-row"><div class="ledger-bar-head"><span>CONTRADICT</span><span id="bar-contradict-value">—</span></div><div class="ledger-bar-track"><div id="bar-contradict" class="ledger-bar-fill contradict"></div></div></div><p class="ledger-caption">evidenceStatus 不是装饰标签，它决定 C.verify 能否放行。</p></div>
+            <div class="ledger-total reveal">
+              <div class="big-number" id="ledger-total">—</div>
+              <p>
+                每条记录都有来源、状态、观察值和处理谱系。大多数 unknown
+                不是失败，而是下一轮的入口。
+              </p>
+            </div>
+            <div class="ledger-bars reveal">
+              <span id="ledger-packet" class="flow-packet"></span>
+              <div class="ledger-bar-row">
+                <div class="ledger-bar-head">
+                  <span>SUPPORT</span><span id="bar-support-value">—</span>
+                </div>
+                <div class="ledger-bar-track">
+                  <div id="bar-support" class="ledger-bar-fill"></div>
+                </div>
+              </div>
+              <div class="ledger-bar-row">
+                <div class="ledger-bar-head">
+                  <span>UNKNOWN</span><span id="bar-unknown-value">—</span>
+                </div>
+                <div class="ledger-bar-track">
+                  <div id="bar-unknown" class="ledger-bar-fill unknown"></div>
+                </div>
+              </div>
+              <div class="ledger-bar-row">
+                <div class="ledger-bar-head">
+                  <span>CONTRADICT</span><span id="bar-contradict-value">—</span>
+                </div>
+                <div class="ledger-bar-track">
+                  <div id="bar-contradict" class="ledger-bar-fill contradict"></div>
+                </div>
+              </div>
+              <p class="ledger-caption">evidenceStatus 不是装饰标签，它决定 C.verify 能否放行。</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="p14" class="page clip" data-start="90" data-duration="7" data-track-index="13" data-phase="VALIDATE" data-event="C.VERIFY / EVIDENCE GATE">
+      <section
+        id="p14"
+        class="page clip"
+        data-start="90"
+        data-duration="7"
+        data-track-index="13"
+        data-phase="VALIDATE"
+        data-event="C.VERIFY / EVIDENCE GATE"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">13 · STAGE C / VERIFY</div><h2>系统不会把 candidate 说成 supported</h2></div><div class="page-index reveal">14<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">13 · STAGE C / VERIFY</div>
+              <h2>系统不会把 candidate 说成 supported</h2>
+            </div>
+            <div class="page-index reveal">14<small>/ 24</small></div>
+          </div>
           <div class="strict-layout">
-            <div class="strict-callout reveal"><div class="big-number" id="strict-support-count">—</div><h3>support records</h3><p>当前还没有足够的独立事件、holdout 和完整预测覆盖，机制结论必须保持克制。</p></div>
+            <div class="strict-callout reveal">
+              <div class="big-number" id="strict-support-count">—</div>
+              <h3>support records</h3>
+              <p>当前还没有足够的独立事件、holdout 和完整预测覆盖，机制结论必须保持克制。</p>
+            </div>
             <div id="strict-list" class="strict-list reveal"></div>
           </div>
         </div>
       </section>
 
-      <section id="p15" class="page clip" data-start="97" data-duration="7" data-track-index="14" data-phase="VALIDATE" data-event="C.SYNTHESIZE">
+      <section
+        id="p15"
+        class="page clip"
+        data-start="97"
+        data-duration="7"
+        data-track-index="14"
+        data-phase="VALIDATE"
+        data-event="C.SYNTHESIZE"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">14 · STAGE C / SYNTHESIZE</div><h2>结论先收窄，再保留不确定性</h2></div><div class="page-index reveal">15<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">14 · STAGE C / SYNTHESIZE</div>
+              <h2>结论先收窄，再保留不确定性</h2>
+            </div>
+            <div class="page-index reveal">15<small>/ 24</small></div>
+          </div>
           <div class="synthesis-layout">
-            <div class="synthesis-chain reveal"><div class="synthesis-node"><b>C.verify</b><span>full bounded condition</span></div><div class="synthesis-node"><b>C.synthesize</b><span>mechanism comparison</span></div><div class="synthesis-node"><b>conclusion</b><span>needs more data</span></div></div>
-            <div class="conclusion-panel reveal"><div class="micro-label">CURRENT CONCLUSION</div><h3 id="conclusion-title">—</h3><p id="conclusion-copy">—</p><div id="limitation-list" class="limitation-list"></div></div>
+            <div class="synthesis-chain reveal">
+              <div class="synthesis-node"><b>C.verify</b><span>full bounded condition</span></div>
+              <div class="synthesis-node"><b>C.synthesize</b><span>mechanism comparison</span></div>
+              <div class="synthesis-node"><b>conclusion</b><span>needs more data</span></div>
+            </div>
+            <div class="conclusion-panel reveal">
+              <div class="micro-label">CURRENT CONCLUSION</div>
+              <h3 id="conclusion-title">—</h3>
+              <p id="conclusion-copy">—</p>
+              <div id="limitation-list" class="limitation-list"></div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="p16" class="page clip" data-start="104" data-duration="7" data-track-index="15" data-phase="VALIDATE" data-event="D.PLAN">
+      <section
+        id="p16"
+        class="page clip"
+        data-start="104"
+        data-duration="7"
+        data-track-index="15"
+        data-phase="VALIDATE"
+        data-event="D.PLAN"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">15 · STAGE D / PLAN</div><h2>缺口被翻译成下一步任务</h2><p class="page-subtitle">D.plan 不把“还不确定”留在结论里，而是登记成可以继续追踪的 validation task。</p></div><div class="page-index reveal">16<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">15 · STAGE D / PLAN</div>
+              <h2>缺口被翻译成下一步任务</h2>
+              <p class="page-subtitle">
+                D.plan 不把“还不确定”留在结论里，而是登记成可以继续追踪的 validation task。
+              </p>
+            </div>
+            <div class="page-index reveal">16<small>/ 24</small></div>
+          </div>
           <div class="task-layout">
-            <div class="task-head reveal"><span>TASK / ROUTE</span><span>OBJECTIVE</span><span>EXECUTOR</span><span>READINESS</span></div>
+            <div class="task-head reveal">
+              <span>TASK / ROUTE</span><span>OBJECTIVE</span><span>EXECUTOR</span
+              ><span>READINESS</span>
+            </div>
             <div id="task-rows" class="reveal"></div>
-            <div class="task-foot reveal"><span id="task-total-label">—</span><span id="task-more-label">—</span></div>
+            <div class="task-foot reveal">
+              <span id="task-total-label">—</span><span id="task-more-label">—</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="p17" class="page clip" data-start="111" data-duration="7" data-track-index="16" data-phase="VALIDATE" data-event="D.ROUTE">
+      <section
+        id="p17"
+        class="page clip"
+        data-start="111"
+        data-duration="7"
+        data-track-index="16"
+        data-phase="VALIDATE"
+        data-event="D.ROUTE"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">16 · D.ROUTE / CLOSED LOOP</div><h2>继续、回退，还是明确结束</h2></div><div class="page-index reveal">17<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">16 · D.ROUTE / CLOSED LOOP</div>
+              <h2>继续、回退，还是明确结束</h2>
+            </div>
+            <div class="page-index reveal">17<small>/ 24</small></div>
+          </div>
           <div class="route-layout">
-            <div class="route-map reveal"><svg viewBox="0 0 930 430" aria-label="D route decision graph"><path id="route-main" d="M80 205 H305 H525" stroke="var(--cyan)"></path><path id="route-a" d="M525 205 C650 205 675 92 830 92" stroke="var(--solar)"></path><path id="route-b" d="M525 205 C650 205 675 318 830 318" stroke="var(--violet)"></path><circle cx="80" cy="205" r="13" fill="var(--solar)"></circle><circle cx="305" cy="205" r="13" fill="var(--cyan)"></circle><circle cx="525" cy="205" r="13" fill="var(--cyan)"></circle><circle cx="830" cy="92" r="13" fill="var(--solar)"></circle><circle cx="830" cy="318" r="13" fill="var(--violet)"></circle><circle id="route-packet" cx="80" cy="205" r="8" fill="var(--hot)"></circle><text class="route-text" x="51" y="169">C.synthesize</text><text class="route-text" x="274" y="169">D.plan</text><text class="route-text" x="493" y="169">D.route</text><text class="route-text" x="785" y="58" fill="var(--solar)">route → A</text><text class="route-text" x="785" y="363" fill="var(--violet)">route → B</text></svg></div>
-            <div class="route-context reveal"><div class="route-card"><b>HAS MORE EVIDENCE?</b><p>有新的可执行数据，回到 A.generate。</p></div><div class="route-card"><b>HAS EXECUTABLE TASK</b><p>登记任务，进入下一轮 B.run。</p></div><div class="route-card"><b id="route-terminal">CURRENT DECISION</b><p>当前运行在 max_rounds_reached 处停止。</p></div></div>
+            <div class="route-map reveal">
+              <svg viewBox="0 0 930 430" aria-label="D route decision graph">
+                <path id="route-main" d="M80 205 H305 H525" stroke="var(--cyan)"></path>
+                <path id="route-a" d="M525 205 C650 205 675 92 830 92" stroke="var(--solar)"></path>
+                <path
+                  id="route-b"
+                  d="M525 205 C650 205 675 318 830 318"
+                  stroke="var(--violet)"
+                ></path>
+                <circle cx="80" cy="205" r="13" fill="var(--solar)"></circle>
+                <circle cx="305" cy="205" r="13" fill="var(--cyan)"></circle>
+                <circle cx="525" cy="205" r="13" fill="var(--cyan)"></circle>
+                <circle cx="830" cy="92" r="13" fill="var(--solar)"></circle>
+                <circle cx="830" cy="318" r="13" fill="var(--violet)"></circle>
+                <circle id="route-packet" cx="80" cy="205" r="8" fill="var(--hot)"></circle>
+                <text class="route-text" x="51" y="169">C.synthesize</text>
+                <text class="route-text" x="274" y="169">D.plan</text>
+                <text class="route-text" x="493" y="169">D.route</text>
+                <text class="route-text" x="785" y="58" fill="var(--solar)">route → A</text>
+                <text class="route-text" x="785" y="363" fill="var(--violet)">route → B</text>
+              </svg>
+            </div>
+            <div class="route-context reveal">
+              <div class="route-card">
+                <b>HAS MORE EVIDENCE?</b>
+                <p>有新的可执行数据，回到 A.generate。</p>
+              </div>
+              <div class="route-card">
+                <b>HAS EXECUTABLE TASK</b>
+                <p>登记任务，进入下一轮 B.run。</p>
+              </div>
+              <div class="route-card">
+                <b id="route-terminal">CURRENT DECISION</b>
+                <p>当前运行在 max_rounds_reached 处停止。</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="p18" class="page clip" data-start="118" data-duration="7" data-track-index="17" data-phase="TRACE" data-event="ROUND 1 REPLAY">
+      <section
+        id="p18"
+        class="page clip"
+        data-start="118"
+        data-duration="7"
+        data-track-index="17"
+        data-phase="TRACE"
+        data-event="ROUND 1 REPLAY"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">17 · ROUND REPLAY / ROUND 01</div><h2>第一轮先留下证据，再暴露缺口</h2></div><div class="page-index reveal">18<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">17 · ROUND REPLAY / ROUND 01</div>
+              <h2>第一轮先留下证据，再暴露缺口</h2>
+            </div>
+            <div class="page-index reveal">18<small>/ 24</small></div>
+          </div>
           <div id="round-one" class="round-layout reveal"></div>
-          <div class="round-footer reveal">Round 1 的结果进入状态，而不是被剪辑成一句“Agent 完成了任务”。</div>
+          <div class="round-footer reveal">
+            Round 1 的结果进入状态，而不是被剪辑成一句“Agent 完成了任务”。
+          </div>
         </div>
       </section>
 
-      <section id="p19" class="page clip" data-start="125" data-duration="7" data-track-index="18" data-phase="TRACE" data-event="ROUND 2 REPLAY">
+      <section
+        id="p19"
+        class="page clip"
+        data-start="125"
+        data-duration="7"
+        data-track-index="18"
+        data-phase="TRACE"
+        data-event="ROUND 2 REPLAY"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">18 · ROUND REPLAY / ROUND 02</div><h2>第二轮校正后，仍然回到数据</h2></div><div class="page-index reveal">19<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">18 · ROUND REPLAY / ROUND 02</div>
+              <h2>第二轮校正后，仍然回到数据</h2>
+            </div>
+            <div class="page-index reveal">19<small>/ 24</small></div>
+          </div>
           <div id="round-two" class="round-layout reveal"></div>
-          <div class="round-footer reveal">最终状态不是“证明完成”，而是把剩余不确定性继续登记。</div>
+          <div class="round-footer reveal">
+            最终状态不是“证明完成”，而是把剩余不确定性继续登记。
+          </div>
         </div>
       </section>
 
-      <section id="p20" class="page clip" data-start="132" data-duration="7" data-track-index="19" data-phase="TRACE" data-event="CORRECTION STREAM">
+      <section
+        id="p20"
+        class="page clip"
+        data-start="132"
+        data-duration="7"
+        data-track-index="19"
+        data-phase="TRACE"
+        data-event="CORRECTION STREAM"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">19 · CORRECTION STREAM</div><h2>每轮都留下 correction，下一轮不从零开始</h2></div><div class="page-index reveal">20<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">19 · CORRECTION STREAM</div>
+              <h2>每轮都留下 correction，下一轮不从零开始</h2>
+            </div>
+            <div class="page-index reveal">20<small>/ 24</small></div>
+          </div>
           <div class="correction-layout">
-            <div class="correction-total reveal"><div class="big-number" id="correction-total">—</div><h3>corrections recorded</h3><p>模型输出、事实核对和证据缺口被写回运行上下文，成为下一轮的约束。</p></div>
+            <div class="correction-total reveal">
+              <div class="big-number" id="correction-total">—</div>
+              <h3>corrections recorded</h3>
+              <p>模型输出、事实核对和证据缺口被写回运行上下文，成为下一轮的约束。</p>
+            </div>
             <div id="correction-list" class="correction-list reveal"></div>
           </div>
         </div>
       </section>
 
-      <section id="p21" class="page clip" data-start="139" data-duration="7" data-track-index="20" data-phase="TRACE" data-event="DURABLE TRACE">
+      <section
+        id="p21"
+        class="page clip"
+        data-start="139"
+        data-duration="7"
+        data-track-index="20"
+        data-phase="TRACE"
+        data-event="DURABLE TRACE"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">20 · DURABLE TRACE</div><h2>运行结束时，轨迹仍然存在</h2></div><div class="page-index reveal">21<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">20 · DURABLE TRACE</div>
+              <h2>运行结束时，轨迹仍然存在</h2>
+            </div>
+            <div class="page-index reveal">21<small>/ 24</small></div>
+          </div>
           <div class="trace-layout">
-            <div class="trace-map reveal"><span id="trace-packet" class="flow-packet"></span><div class="trace-node"><b>EVENTS</b><span>scientific-node-state</span><em>SSE stream<br />run events</em></div><div class="trace-node"><b>CHECKPOINT</b><span>resume-safe state</span><em>round / node<br />graph context</em></div><div class="trace-node"><b>RECORDS</b><span>hypotheses · evidence</span><em>lineage / status<br />corrections</em></div><div class="trace-node"><b>ARTIFACTS</b><span>figures · snapshots</span><em>processing runs<br />checksums</em></div><div class="trace-node"><b>RESULT</b><span>scientific-result.json</span><em>needs_data<br />handoff</em></div></div>
-            <div class="trace-aside reveal"><div class="micro-label">PERSISTENCE</div><h3>闭环可回放</h3><p>这次视频展示的不是一张结果图，而是可以从结果 JSON 追溯回节点和产物的 execution trace。</p><div class="trace-id">run: <span id="trace-run-id">—</span><br />source: <span id="trace-source">—</span></div></div>
+            <div class="trace-map reveal">
+              <span id="trace-packet" class="flow-packet"></span>
+              <div class="trace-node">
+                <b>EVENTS</b><span>scientific-node-state</span><em>SSE stream<br />run events</em>
+              </div>
+              <div class="trace-node">
+                <b>CHECKPOINT</b><span>resume-safe state</span
+                ><em>round / node<br />graph context</em>
+              </div>
+              <div class="trace-node">
+                <b>RECORDS</b><span>hypotheses · evidence</span
+                ><em>lineage / status<br />corrections</em>
+              </div>
+              <div class="trace-node">
+                <b>ARTIFACTS</b><span>figures · snapshots</span
+                ><em>processing runs<br />checksums</em>
+              </div>
+              <div class="trace-node">
+                <b>RESULT</b><span>scientific-result.json</span><em>needs_data<br />handoff</em>
+              </div>
+            </div>
+            <div class="trace-aside reveal">
+              <div class="micro-label">PERSISTENCE</div>
+              <h3>闭环可回放</h3>
+              <p>
+                这次视频展示的不是一张结果图，而是可以从结果 JSON 追溯回节点和产物的 execution
+                trace。
+              </p>
+              <div class="trace-id">
+                run: <span id="trace-run-id">—</span><br />source: <span id="trace-source">—</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="p22" class="page clip" data-start="146" data-duration="7" data-track-index="21" data-phase="TRACE" data-event="CURRENT VERDICT">
+      <section
+        id="p22"
+        class="page clip"
+        data-start="146"
+        data-duration="7"
+        data-track-index="21"
+        data-phase="TRACE"
+        data-event="CURRENT VERDICT"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">21 · CURRENT VERDICT</div><h2>当前结论不是胜负，而是下一次测量</h2></div><div class="page-index reveal">22<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">21 · CURRENT VERDICT</div>
+              <h2>当前结论不是胜负，而是下一次测量</h2>
+            </div>
+            <div class="page-index reveal">22<small>/ 24</small></div>
+          </div>
           <div class="verdict-layout">
-            <div class="reveal"><div class="verdict-word">NEEDS<br />DATA</div><p class="verdict-copy">证据门槛没有被强行放宽，所以机制保持 candidate / uncertain，而不是被包装成确定答案。</p><div class="verdict-metrics"><div class="verdict-metric"><b id="verdict-support">—</b><span>SUPPORT</span></div><div class="verdict-metric"><b id="verdict-unknown">—</b><span>UNKNOWN</span></div><div class="verdict-metric"><b id="verdict-contradict">—</b><span>CONTRADICT</span></div></div></div>
+            <div class="reveal">
+              <div class="verdict-word">NEEDS<br />DATA</div>
+              <p class="verdict-copy">
+                证据门槛没有被强行放宽，所以机制保持 candidate / uncertain，而不是被包装成确定答案。
+              </p>
+              <div class="verdict-metrics">
+                <div class="verdict-metric"><b id="verdict-support">—</b><span>SUPPORT</span></div>
+                <div class="verdict-metric"><b id="verdict-unknown">—</b><span>UNKNOWN</span></div>
+                <div class="verdict-metric">
+                  <b id="verdict-contradict">—</b><span>CONTRADICT</span>
+                </div>
+              </div>
+            </div>
             <div id="verdict-hypotheses" class="verdict-hypotheses reveal"></div>
           </div>
         </div>
       </section>
 
-      <section id="p23" class="page clip" data-start="153" data-duration="9" data-track-index="22" data-phase="TRACE" data-event="NEXT HANDOFF">
+      <section
+        id="p23"
+        class="page clip"
+        data-start="153"
+        data-duration="9"
+        data-track-index="22"
+        data-phase="TRACE"
+        data-event="NEXT HANDOFF"
+      >
         <div class="page-shell">
-          <div class="page-topline"><div class="reveal"><div class="kicker">22 · NEXT HANDOFF</div><h2>下一轮从验证任务开始，不从叙事开始</h2></div><div class="page-index reveal">23<small>/ 24</small></div></div>
+          <div class="page-topline">
+            <div class="reveal">
+              <div class="kicker">22 · NEXT HANDOFF</div>
+              <h2>下一轮从验证任务开始，不从叙事开始</h2>
+            </div>
+            <div class="page-index reveal">23<small>/ 24</small></div>
+          </div>
           <div class="handoff-layout">
-            <div class="handoff-lead reveal"><div class="micro-label">CLOSED LOOP READY</div><h3>把未知变成可执行的下一步</h3><p>任务、executor、route 和 readiness 都已登记，下一轮可以从同一份状态继续。</p><span class="handoff-status" id="handoff-status">—</span></div>
+            <div class="handoff-lead reveal">
+              <div class="micro-label">CLOSED LOOP READY</div>
+              <h3>把未知变成可执行的下一步</h3>
+              <p>任务、executor、route 和 readiness 都已登记，下一轮可以从同一份状态继续。</p>
+              <span class="handoff-status" id="handoff-status">—</span>
+            </div>
             <div id="handoff-rows" class="handoff-list reveal"></div>
           </div>
         </div>
       </section>
 
-      <section id="p24" class="page clip" data-start="162" data-duration="13" data-track-index="23" data-phase="TRACE" data-event="LOOP READY">
+      <section
+        id="p24"
+        class="page clip"
+        data-start="162"
+        data-duration="13"
+        data-track-index="23"
+        data-phase="TRACE"
+        data-event="LOOP READY"
+      >
         <div class="page-shell close-page">
           <div class="close-layout">
-            <div class="close-copy"><div class="kicker reveal">23 · LOOP READY</div><h2 class="reveal">下一次不是更多叙事，<span class="solar">而是更多证据</span></h2><p class="reveal">Open Scientist 把“我还不知道”变成一条可追踪、可复现、可以继续执行的科学工作流。</p><div class="close-meta reveal">OBSERVE → HYPOTHESIZE → EVIDENCE → VALIDATE → ROUTE</div></div>
-            <div class="close-map reveal"><svg viewBox="0 0 780 390" aria-label="closed scientific loop"><path id="close-loop" d="M115 195 C115 70 300 46 390 120 C480 194 665 170 665 286 C665 357 530 361 390 286 C250 211 115 320 115 195"></path><circle cx="115" cy="195" r="13" fill="var(--solar)"></circle><circle cx="390" cy="120" r="13" fill="var(--cyan)"></circle><circle cx="665" cy="286" r="13" fill="var(--violet)"></circle><circle id="close-packet" cx="115" cy="195" r="8" fill="var(--hot)"></circle><text x="52" y="160">OBSERVE</text><text x="355" y="77">EVIDENCE</text><text x="612" y="347">NEXT TASK</text></svg></div>
+            <div class="close-copy">
+              <div class="kicker reveal">23 · LOOP READY</div>
+              <h2 class="reveal">下一次不是更多叙事，<span class="solar">而是更多证据</span></h2>
+              <p class="reveal">
+                Open Scientist 把“我还不知道”变成一条可追踪、可复现、可以继续执行的科学工作流。
+              </p>
+              <div class="close-meta reveal">
+                OBSERVE → HYPOTHESIZE → EVIDENCE → VALIDATE → ROUTE
+              </div>
+            </div>
+            <div class="close-map reveal">
+              <svg viewBox="0 0 780 390" aria-label="closed scientific loop">
+                <path
+                  id="close-loop"
+                  d="M115 195 C115 70 300 46 390 120 C480 194 665 170 665 286 C665 357 530 361 390 286 C250 211 115 320 115 195"
+                ></path>
+                <circle cx="115" cy="195" r="13" fill="var(--solar)"></circle>
+                <circle cx="390" cy="120" r="13" fill="var(--cyan)"></circle>
+                <circle cx="665" cy="286" r="13" fill="var(--violet)"></circle>
+                <circle id="close-packet" cx="115" cy="195" r="8" fill="var(--hot)"></circle>
+                <text x="52" y="160">OBSERVE</text>
+                <text x="355" y="77">EVIDENCE</text>
+                <text x="612" y="347">NEXT TASK</text>
+              </svg>
+            </div>
           </div>
         </div>
       </section>
@@ -976,238 +3315,578 @@
 
     <script src="./data.js"></script>
     <script>
-      (() => {
-        const D = window.__OPEN_SCIENTIST_DEMO__ || {};
-        const $ = (id) => document.getElementById(id);
-        const text = (id, value) => { const node = $(id); if (node) node.textContent = String(value ?? "—"); };
-        const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
-        const percent = (value, total) => total ? Math.max(2, (Number(value) / Number(total)) * 100) : 2;
-        const fmtConfidence = (value) => (Number(value) || 0).toFixed(2);
-        const rounds = D.rounds || [];
-        const hypotheses = D.hypotheses || [];
-        const gateChecks = D.gateChecks || [];
-        const tasks = D.tasks || [];
-        const handoffTasks = D.handoffTasks || [];
+      ;(() => {
+        const D = window.__OPEN_SCIENTIST_DEMO__ || {}
+        const $ = (id) => document.getElementById(id)
+        const text = (id, value) => {
+          const node = $(id)
+          if (node) node.textContent = String(value ?? '—')
+        }
+        const esc = (value) =>
+          String(value ?? '').replace(
+            /[&<>"']/g,
+            (char) =>
+              ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char],
+          )
+        const percent = (value, total) =>
+          total ? Math.max(2, (Number(value) / Number(total)) * 100) : 2
+        const fmtConfidence = (value) => (Number(value) || 0).toFixed(2)
+        const rounds = D.rounds || []
+        const hypotheses = D.hypotheses || []
+        const gateChecks = D.gateChecks || []
+        const tasks = D.tasks || []
+        const handoffTasks = D.handoffTasks || []
 
-        text("source-sha", D.sourceDigest);
-        text("hero-run-id", D.runShortId);
-        text("hero-rounds", D.totalRounds);
-        text("stack-exit", D.terminationReason);
-        text("active-region", D.phenomenon && D.phenomenon.activeRegion);
-        text("phenomenon-title", D.phenomenon && D.phenomenon.title);
-        text("phenomenon-question", D.phenomenon && D.phenomenon.requestedQuestion);
-        text("state-hypotheses", (D.hypothesisCount || 0) + " candidates");
-        text("state-evidence", (D.evidenceTotal || 0) + " records");
-        text("state-tasks", (D.taskTotal || 0) + " validation tasks");
-        text("state-route", D.terminationReason);
-        text("state-rounds", D.totalRounds);
-        text("state-agents", D.agentTotal);
-        text("state-corrections", D.correctionCount);
-        text("state-status", D.scientificStatus);
-        text("hypothesis-count", D.hypothesisCount);
-        text("model-role-count", D.modelRoleCount);
-        text("dispatch-agent-count", D.agentTotal);
-        text("file-coverage", D.fileCountLabel);
-        text("metric-correlation", Number(D.crossChannelCorrelation || 0).toFixed(2));
-        text("metric-period", Math.round(Number(D.candidatePeriodSeconds || 0)));
-        text("gate-total", D.evidenceTotal);
-        text("gate-support", D.evidenceSupport);
-        text("gate-unknown", D.evidenceUnknown);
-        text("gate-contradict", D.evidenceContradict);
-        text("ledger-total", D.evidenceTotal);
-        text("bar-support-value", D.evidenceSupport);
-        text("bar-unknown-value", D.evidenceUnknown);
-        text("bar-contradict-value", D.evidenceContradict);
-        text("strict-support-count", D.evidenceSupport);
-        text("conclusion-title", D.scientificStatus || "needs_data");
-        text("conclusion-copy", D.conclusion);
-        text("correction-total", D.correctionCount);
-        text("trace-run-id", D.runShortId);
-        text("trace-source", D.sourceDigest);
-        text("verdict-support", D.evidenceSupport);
-        text("verdict-unknown", D.evidenceUnknown);
-        text("verdict-contradict", D.evidenceContradict);
-        text("handoff-status", D.validationMore);
-        text("task-total-label", (D.taskTotal || 0) + " TASKS REGISTERED · " + (D.tasksPlanned || 0) + " PLANNED");
-        text("task-more-label", D.validationMore);
+        text('source-sha', D.sourceDigest)
+        text('hero-run-id', D.runShortId)
+        text('hero-rounds', D.totalRounds)
+        text('stack-exit', D.terminationReason)
+        text('active-region', D.phenomenon && D.phenomenon.activeRegion)
+        text('phenomenon-title', D.phenomenon && D.phenomenon.title)
+        text('phenomenon-question', D.phenomenon && D.phenomenon.requestedQuestion)
+        text('state-hypotheses', (D.hypothesisCount || 0) + ' candidates')
+        text('state-evidence', (D.evidenceTotal || 0) + ' records')
+        text('state-tasks', (D.taskTotal || 0) + ' validation tasks')
+        text('state-route', D.terminationReason)
+        text('state-rounds', D.totalRounds)
+        text('state-agents', D.agentTotal)
+        text('state-corrections', D.correctionCount)
+        text('state-status', D.scientificStatus)
+        text('hypothesis-count', D.hypothesisCount)
+        text('model-role-count', D.modelRoleCount)
+        text('dispatch-agent-count', D.agentTotal)
+        text('file-coverage', D.fileCountLabel)
+        text('metric-correlation', Number(D.crossChannelCorrelation || 0).toFixed(2))
+        text('metric-period', Math.round(Number(D.candidatePeriodSeconds || 0)))
+        text('gate-total', D.evidenceTotal)
+        text('gate-support', D.evidenceSupport)
+        text('gate-unknown', D.evidenceUnknown)
+        text('gate-contradict', D.evidenceContradict)
+        text('ledger-total', D.evidenceTotal)
+        text('bar-support-value', D.evidenceSupport)
+        text('bar-unknown-value', D.evidenceUnknown)
+        text('bar-contradict-value', D.evidenceContradict)
+        text('strict-support-count', D.evidenceSupport)
+        text('conclusion-title', D.scientificStatus || 'needs_data')
+        text('conclusion-copy', D.conclusion)
+        text('correction-total', D.correctionCount)
+        text('trace-run-id', D.runShortId)
+        text('trace-source', D.sourceDigest)
+        text('verdict-support', D.evidenceSupport)
+        text('verdict-unknown', D.evidenceUnknown)
+        text('verdict-contradict', D.evidenceContradict)
+        text('handoff-status', D.validationMore)
+        text(
+          'task-total-label',
+          (D.taskTotal || 0) + ' TASKS REGISTERED · ' + (D.tasksPlanned || 0) + ' PLANNED',
+        )
+        text('task-more-label', D.validationMore)
 
-        const image = $("diagnostic-image");
-        if (image) image.src = D.diagnosticImage || "./coronal_diagnostics.png";
+        const image = $('diagnostic-image')
+        if (image) image.src = D.diagnosticImage || './coronal_diagnostics.png'
 
-        $("layer-rows").innerHTML = (D.frameworkLayers || []).map((item) =>
-          '<div class="layer-row"><span class="layer-index">' + esc(item.index) + '</span><strong class="layer-name">' + esc(item.name) + '</strong><span class="layer-path">' + esc(item.path) + '</span></div>'
-        ).join("");
+        $('layer-rows').innerHTML = (D.frameworkLayers || [])
+          .map(
+            (item) =>
+              '<div class="layer-row"><span class="layer-index">' +
+              esc(item.index) +
+              '</span><strong class="layer-name">' +
+              esc(item.name) +
+              '</strong><span class="layer-path">' +
+              esc(item.path) +
+              '</span></div>',
+          )
+          .join('')
 
-        $("graph-nodes").innerHTML = '<span id="graph-packet" class="flow-packet"></span>' + (D.graphNodes || []).map((node) =>
-          '<div class="graph-node" style="--node-color:' + esc(node.color) + '"><b>' + esc(node.id) + '</b><strong>' + esc(node.title) + '</strong><span>' + esc(node.io) + '</span></div>'
-        ).join("");
+        $('graph-nodes').innerHTML =
+          '<span id="graph-packet" class="flow-packet"></span>' +
+          (D.graphNodes || [])
+            .map(
+              (node) =>
+                '<div class="graph-node" style="--node-color:' +
+                esc(node.color) +
+                '"><b>' +
+                esc(node.id) +
+                '</b><strong>' +
+                esc(node.title) +
+                '</strong><span>' +
+                esc(node.io) +
+                '</span></div>',
+            )
+            .join('')
 
-        $("hypothesis-preview").innerHTML = hypotheses.map((item) =>
-          '<div class="hypothesis-line"><b>' + esc(item.id) + '</b><p>' + esc(item.statement) + '</p><span>' + esc(item.status) + '<br />confidence ' + fmtConfidence(item.confidence) + '</span></div>'
-        ).join("");
+        $('hypothesis-preview').innerHTML = hypotheses
+          .map(
+            (item) =>
+              '<div class="hypothesis-line"><b>' +
+              esc(item.id) +
+              '</b><p>' +
+              esc(item.statement) +
+              '</p><span>' +
+              esc(item.status) +
+              '<br />confidence ' +
+              fmtConfidence(item.confidence) +
+              '</span></div>',
+          )
+          .join('')
 
-        text("verify-callout-title", (hypotheses.length || 0) + " candidates pass shape check");
-        $("agent-rows").innerHTML = (D.agentRoles || []).map((item) =>
-          '<div class="agent-row" style="--agent:' + esc(item.color) + '"><div class="agent-mark">' + esc(item.label.slice(0, 2)) + '</div><div><b class="agent-name">' + esc(item.label) + '</b><span class="agent-title">' + esc(item.title) + '</span><span class="agent-desc">' + esc(item.description) + '</span></div><div class="agent-stats"><div><b>' + esc(item.executions) + '</b><span>RUNS</span></div><div><b>' + esc(item.completed) + '</b><span>DONE</span></div><div><b>' + esc(item.skipped) + '</b><span>SKIP</span></div></div></div>'
-        ).join("");
+        text('verify-callout-title', (hypotheses.length || 0) + ' candidates pass shape check')
+        $('agent-rows').innerHTML = (D.agentRoles || [])
+          .map(
+            (item) =>
+              '<div class="agent-row" style="--agent:' +
+              esc(item.color) +
+              '"><div class="agent-mark">' +
+              esc(item.label.slice(0, 2)) +
+              '</div><div><b class="agent-name">' +
+              esc(item.label) +
+              '</b><span class="agent-title">' +
+              esc(item.title) +
+              '</span><span class="agent-desc">' +
+              esc(item.description) +
+              '</span></div><div class="agent-stats"><div><b>' +
+              esc(item.executions) +
+              '</b><span>RUNS</span></div><div><b>' +
+              esc(item.completed) +
+              '</b><span>DONE</span></div><div><b>' +
+              esc(item.skipped) +
+              '</b><span>SKIP</span></div></div></div>',
+          )
+          .join('')
 
-        $("gate-checks").innerHTML = gateChecks.slice(0, 6).map((item) =>
-          '<div class="gate-row ' + (item.state === "pass" ? "pass" : "") + '"><i></i><strong>' + esc(item.label) + '</strong><span>' + esc(item.value) + '</span></div>'
-        ).join("");
-        $("strict-list").innerHTML = gateChecks.map((item, index) =>
-          '<div class="strict-item ' + (item.state === "pass" ? "pass" : "") + '"><b>GATE ' + String(index + 1).padStart(2, "0") + '</b><span>' + esc(item.label) + '</span><em>' + esc(item.state === "pass" ? "PASS" : "HOLD") + ' · ' + esc(item.value) + '</em></div>'
-        ).join("");
+        $('gate-checks').innerHTML = gateChecks
+          .slice(0, 6)
+          .map(
+            (item) =>
+              '<div class="gate-row ' +
+              (item.state === 'pass' ? 'pass' : '') +
+              '"><i></i><strong>' +
+              esc(item.label) +
+              '</strong><span>' +
+              esc(item.value) +
+              '</span></div>',
+          )
+          .join('')
+        $('strict-list').innerHTML = gateChecks
+          .map(
+            (item, index) =>
+              '<div class="strict-item ' +
+              (item.state === 'pass' ? 'pass' : '') +
+              '"><b>GATE ' +
+              String(index + 1).padStart(2, '0') +
+              '</b><span>' +
+              esc(item.label) +
+              '</span><em>' +
+              esc(item.state === 'pass' ? 'PASS' : 'HOLD') +
+              ' · ' +
+              esc(item.value) +
+              '</em></div>',
+          )
+          .join('')
 
-        const evidenceTotal = Number(D.evidenceTotal || 0);
-        ["support", "unknown", "contradict"].forEach((key) => {
-          const node = $("bar-" + key);
-          if (node) node.style.width = percent(D["evidence" + key.charAt(0).toUpperCase() + key.slice(1)], evidenceTotal) + "%";
-        });
+        const evidenceTotal = Number(D.evidenceTotal || 0)
+        ;['support', 'unknown', 'contradict'].forEach((key) => {
+          const node = $('bar-' + key)
+          if (node)
+            node.style.width =
+              percent(D['evidence' + key.charAt(0).toUpperCase() + key.slice(1)], evidenceTotal) +
+              '%'
+        })
 
-        $("limitation-list").innerHTML = (D.limitations || []).slice(0, 4).map((item) =>
-          '<div class="limitation">' + esc(item) + '</div>'
-        ).join("");
+        $('limitation-list').innerHTML = (D.limitations || [])
+          .slice(0, 4)
+          .map((item) => '<div class="limitation">' + esc(item) + '</div>')
+          .join('')
 
-        const taskMarkup = (items, compact = false) => (items || []).map((item, index) =>
-          '<div class="task-row"><b>' + (compact ? "TASK " + String(index + 1).padStart(2, "0") : esc(item.id) + ' · ' + esc(item.route)) + '</b><p>' + esc(item.objective) + '</p><span>' + esc(item.executor) + '</span><em>' + esc(item.readiness) + '</em></div>'
-        ).join("");
-        $("task-rows").innerHTML = taskMarkup(tasks);
-        $("handoff-rows").innerHTML = taskMarkup(handoffTasks, true).replace(/class="task-row"/g, 'class="handoff-row"');
+        const taskMarkup = (items, compact = false) =>
+          (items || [])
+            .map(
+              (item, index) =>
+                '<div class="task-row"><b>' +
+                (compact
+                  ? 'TASK ' + String(index + 1).padStart(2, '0')
+                  : esc(item.id) + ' · ' + esc(item.route)) +
+                '</b><p>' +
+                esc(item.objective) +
+                '</p><span>' +
+                esc(item.executor) +
+                '</span><em>' +
+                esc(item.readiness) +
+                '</em></div>',
+            )
+            .join('')
+        $('task-rows').innerHTML = taskMarkup(tasks)
+        $('handoff-rows').innerHTML = taskMarkup(handoffTasks, true).replace(
+          /class="task-row"/g,
+          'class="handoff-row"',
+        )
 
         const roundMarkup = (round, color) => {
-          if (!round) return '<div class="round-card" style="--round-color:' + color + '"><h3>NO ROUND DATA</h3></div>';
-          return '<div class="round-card" style="--round-color:' + color + '"><h3>ROUND ' + esc(String(round.round).padStart(2, "0")) + '</h3><div class="round-line">evidence / tasks / agents / corrections</div><div class="round-metrics"><div class="round-metric"><b>' + esc(round.evidence) + '</b><span>EVIDENCE</span></div><div class="round-metric"><b>' + esc(round.tasks) + '</b><span>TASKS</span></div><div class="round-metric"><b>' + esc(round.agents) + '</b><span>AGENTS</span></div><div class="round-metric"><b>' + esc(round.corrections) + '</b><span>CORRECTIONS</span></div></div></div>';
-        };
-        $("round-one").innerHTML = roundMarkup(rounds[0], "var(--solar)");
-        $("round-two").innerHTML = roundMarkup(rounds[1], "var(--violet)");
+          if (!round)
+            return (
+              '<div class="round-card" style="--round-color:' +
+              color +
+              '"><h3>NO ROUND DATA</h3></div>'
+            )
+          return (
+            '<div class="round-card" style="--round-color:' +
+            color +
+            '"><h3>ROUND ' +
+            esc(String(round.round).padStart(2, '0')) +
+            '</h3><div class="round-line">evidence / tasks / agents / corrections</div><div class="round-metrics"><div class="round-metric"><b>' +
+            esc(round.evidence) +
+            '</b><span>EVIDENCE</span></div><div class="round-metric"><b>' +
+            esc(round.tasks) +
+            '</b><span>TASKS</span></div><div class="round-metric"><b>' +
+            esc(round.agents) +
+            '</b><span>AGENTS</span></div><div class="round-metric"><b>' +
+            esc(round.corrections) +
+            '</b><span>CORRECTIONS</span></div></div></div>'
+          )
+        }
+        $('round-one').innerHTML = roundMarkup(rounds[0], 'var(--solar)')
+        $('round-two').innerHTML = roundMarkup(rounds[1], 'var(--violet)')
 
-        $("correction-list").innerHTML = (D.corrections || []).map((item) =>
-          '<div class="correction-row"><b>R' + esc(item.round) + ' · ' + esc(item.stage) + '</b><p>' + esc(item.message) + '</p><span>' + esc(item.action) + '</span></div>'
-        ).join("");
+        $('correction-list').innerHTML = (D.corrections || [])
+          .map(
+            (item) =>
+              '<div class="correction-row"><b>R' +
+              esc(item.round) +
+              ' · ' +
+              esc(item.stage) +
+              '</b><p>' +
+              esc(item.message) +
+              '</p><span>' +
+              esc(item.action) +
+              '</span></div>',
+          )
+          .join('')
 
-        $("verdict-hypotheses").innerHTML = hypotheses.map((item) =>
-          '<div class="verdict-hypothesis"><b>' + esc(item.id) + '</b><p>' + esc(item.mechanism) + '</p><span>' + esc(item.status) + '<br />' + fmtConfidence(item.confidence) + '</span></div>'
-        ).join("");
+        $('verdict-hypotheses').innerHTML = hypotheses
+          .map(
+            (item) =>
+              '<div class="verdict-hypothesis"><b>' +
+              esc(item.id) +
+              '</b><p>' +
+              esc(item.mechanism) +
+              '</p><span>' +
+              esc(item.status) +
+              '<br />' +
+              fmtConfidence(item.confidence) +
+              '</span></div>',
+          )
+          .join('')
 
-        const phases = ["OBSERVE", "STRUCTURE", "HYPOTHESES", "EVIDENCE", "VALIDATE", "TRACE"];
-        const pages = Array.from(document.querySelectorAll(".page"));
-        const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-        const starts = pages.map((page) => Number(page.dataset.start));
+        const phases = ['OBSERVE', 'STRUCTURE', 'HYPOTHESES', 'EVIDENCE', 'VALIDATE', 'TRACE']
+        const pages = Array.from(document.querySelectorAll('.page'))
+        const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+        const starts = pages.map((page) => Number(page.dataset.start))
 
         function activate(index) {
-          const page = pages[index];
-          if (!page) return;
-          const phase = page.dataset.phase || "TRACE";
-          const phaseIndex = Math.max(0, phases.indexOf(phase));
-          document.querySelectorAll(".rail-step").forEach((node) => {
-            const step = Number(node.dataset.railStep);
-            node.classList.toggle("active", step === phaseIndex);
-            node.classList.toggle("done", step < phaseIndex);
-          });
-          text("event-label", phase + " / " + page.dataset.event);
-          text("timeline-event", page.dataset.event);
-          text("page-counter", "PAGE " + String(index + 1).padStart(2, "0") + " / " + String(pages.length).padStart(2, "0"));
+          const page = pages[index]
+          if (!page) return
+          const phase = page.dataset.phase || 'TRACE'
+          const phaseIndex = Math.max(0, phases.indexOf(phase))
+          document.querySelectorAll('.rail-step').forEach((node) => {
+            const step = Number(node.dataset.railStep)
+            node.classList.toggle('active', step === phaseIndex)
+            node.classList.toggle('done', step < phaseIndex)
+          })
+          text('event-label', phase + ' / ' + page.dataset.event)
+          text('timeline-event', page.dataset.event)
+          text(
+            'page-counter',
+            'PAGE ' +
+              String(index + 1).padStart(2, '0') +
+              ' / ' +
+              String(pages.length).padStart(2, '0'),
+          )
         }
 
         const countUp = (id, end, digits, at) => {
-          const node = $(id);
-          const target = Number(end);
-          if (!node || !Number.isFinite(target)) return;
-          const state = { value: 0 };
-          tl.to(state, {
-            value: target,
-            duration: 1.25,
-            ease: "power2.out",
-            onUpdate: () => { node.textContent = digits ? state.value.toFixed(digits) : String(Math.round(state.value)); }
-          }, at);
-        };
+          const node = $(id)
+          const target = Number(end)
+          if (!node || !Number.isFinite(target)) return
+          const state = { value: 0 }
+          tl.to(
+            state,
+            {
+              value: target,
+              duration: 1.25,
+              ease: 'power2.out',
+              onUpdate: () => {
+                node.textContent = digits
+                  ? state.value.toFixed(digits)
+                  : String(Math.round(state.value))
+              },
+            },
+            at,
+          )
+        }
 
-        tl.fromTo("#global-progress", { scaleX: 0 }, { scaleX: 1, duration: 175, ease: "none" }, 0);
-        tl.fromTo("#rail-progress", { scaleY: 0 }, { scaleY: 1, duration: 175, ease: "none" }, 0);
-        tl.fromTo("#trace-cursor", { x: 0 }, { x: 1564, duration: 175, ease: "none" }, 0);
+        tl.fromTo('#global-progress', { scaleX: 0 }, { scaleX: 1, duration: 175, ease: 'none' }, 0)
+        tl.fromTo('#rail-progress', { scaleY: 0 }, { scaleY: 1, duration: 175, ease: 'none' }, 0)
+        tl.fromTo('#trace-cursor', { x: 0 }, { x: 1564, duration: 175, ease: 'none' }, 0)
         pages.forEach((page, index) => {
-          const start = starts[index];
-          tl.call(() => activate(index), [], start);
-          const shell = page.querySelector(".page-shell");
+          const start = starts[index]
+          tl.call(() => activate(index), [], start)
+          const shell = page.querySelector('.page-shell')
           if (shell) {
-            const direction = index % 2 ? 1 : -1;
-            const clipIn = direction > 0 ? "inset(0 7% 0 0)" : "inset(0 0 0 7%)";
-            tl.fromTo(shell, { opacity: 0, x: direction * 84, clipPath: clipIn }, { opacity: 1, x: 0, clipPath: "inset(0 0 0 0)", duration: .72, ease: "power3.out" }, start + .02);
+            const direction = index % 2 ? 1 : -1
+            const clipIn = direction > 0 ? 'inset(0 7% 0 0)' : 'inset(0 0 0 7%)'
+            tl.fromTo(
+              shell,
+              { opacity: 0, x: direction * 84, clipPath: clipIn },
+              { opacity: 1, x: 0, clipPath: 'inset(0 0 0 0)', duration: 0.72, ease: 'power3.out' },
+              start + 0.02,
+            )
           }
-          tl.fromTo("#page-wipe", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: .22, ease: "power2.out" }, start);
-          tl.to("#page-wipe", { scaleX: 0, opacity: 0, duration: .36, ease: "power2.in" }, start + .22);
-          const reveals = Array.from(page.querySelectorAll(".reveal"));
+          tl.fromTo(
+            '#page-wipe',
+            { scaleX: 0, opacity: 0 },
+            { scaleX: 1, opacity: 1, duration: 0.22, ease: 'power2.out' },
+            start,
+          )
+          tl.to(
+            '#page-wipe',
+            { scaleX: 0, opacity: 0, duration: 0.36, ease: 'power2.in' },
+            start + 0.22,
+          )
+          const reveals = Array.from(page.querySelectorAll('.reveal'))
           reveals.forEach((node, revealIndex) => {
-            tl.fromTo(node, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .42 }, start + .18 + Math.min(revealIndex, 8) * .07);
-          });
-        });
+            tl.fromTo(
+              node,
+              { opacity: 0, y: 18 },
+              { opacity: 1, y: 0, duration: 0.42 },
+              start + 0.18 + Math.min(revealIndex, 8) * 0.07,
+            )
+          })
+        })
 
-        countUp("state-rounds", D.totalRounds, 0, 20.65);
-        countUp("state-agents", D.agentTotal, 0, 20.8);
-        countUp("state-corrections", D.correctionCount, 0, 20.95);
-        countUp("metric-correlation", D.crossChannelCorrelation, 2, 69.6);
-        countUp("metric-period", D.candidatePeriodSeconds, 0, 69.75);
-        countUp("gate-total", D.evidenceTotal, 0, 76.7);
-        countUp("ledger-total", D.evidenceTotal, 0, 83.7);
-        countUp("strict-support-count", D.evidenceSupport, 0, 90.7);
-        countUp("correction-total", D.correctionCount, 0, 132.7);
-        countUp("verdict-support", D.evidenceSupport, 0, 146.7);
-        countUp("verdict-unknown", D.evidenceUnknown, 0, 146.82);
-        countUp("verdict-contradict", D.evidenceContradict, 0, 146.94);
+        countUp('state-rounds', D.totalRounds, 0, 20.65)
+        countUp('state-agents', D.agentTotal, 0, 20.8)
+        countUp('state-corrections', D.correctionCount, 0, 20.95)
+        countUp('metric-correlation', D.crossChannelCorrelation, 2, 69.6)
+        countUp('metric-period', D.candidatePeriodSeconds, 0, 69.75)
+        countUp('gate-total', D.evidenceTotal, 0, 76.7)
+        countUp('ledger-total', D.evidenceTotal, 0, 83.7)
+        countUp('strict-support-count', D.evidenceSupport, 0, 90.7)
+        countUp('correction-total', D.correctionCount, 0, 132.7)
+        countUp('verdict-support', D.evidenceSupport, 0, 146.7)
+        countUp('verdict-unknown', D.evidenceUnknown, 0, 146.82)
+        countUp('verdict-contradict', D.evidenceContradict, 0, 146.94)
 
-        tl.fromTo("#input-scan", { y: 0, opacity: 0 }, { y: 511, opacity: 1, duration: 2.4, repeat: 1, yoyo: true, ease: "sine.inOut" }, 6.35);
-        tl.fromTo("#api-packet", { x: 0, y: 0, opacity: 0 }, { x: 515, y: 0, opacity: 1, duration: 1.5, ease: "none" }, 13.7);
-        tl.to("#api-packet", { x: 515, y: 119, duration: .65, ease: "power2.inOut" }, 15.2);
-        tl.to("#api-packet", { x: 0, y: 119, duration: 1.15, ease: "power2.inOut" }, 15.85);
+        tl.fromTo(
+          '#input-scan',
+          { y: 0, opacity: 0 },
+          { y: 511, opacity: 1, duration: 2.4, repeat: 1, yoyo: true, ease: 'sine.inOut' },
+          6.35,
+        )
+        tl.fromTo(
+          '#api-packet',
+          { x: 0, y: 0, opacity: 0 },
+          { x: 515, y: 0, opacity: 1, duration: 1.5, ease: 'none' },
+          13.7,
+        )
+        tl.to('#api-packet', { x: 515, y: 119, duration: 0.65, ease: 'power2.inOut' }, 15.2)
+        tl.to('#api-packet', { x: 0, y: 119, duration: 1.15, ease: 'power2.inOut' }, 15.85)
 
-        tl.fromTo("#graph-packet", { x: 0, opacity: 0 }, { x: 1475, opacity: 1, duration: 4.6, ease: "none" }, 27.55);
-        tl.to("#graph-packet", { scale: 1.7, opacity: .35, duration: .18, repeat: 3, yoyo: true }, 32.15);
+        tl.fromTo(
+          '#graph-packet',
+          { x: 0, opacity: 0 },
+          { x: 1475, opacity: 1, duration: 4.6, ease: 'none' },
+          27.55,
+        )
+        tl.to(
+          '#graph-packet',
+          { scale: 1.7, opacity: 0.35, duration: 0.18, repeat: 3, yoyo: true },
+          32.15,
+        )
 
-        tl.fromTo("#p08 .dispatch-branches", { scaleY: 0 }, { scaleY: 1, duration: .6 }, 48.45);
-        tl.fromTo("#dispatch-packet", { x: 0, y: 0, opacity: 0 }, { x: 0, y: 76, opacity: 1, duration: .55, ease: "none" }, 48.75);
-        tl.to("#dispatch-packet", { x: 53, y: 177, duration: .85, ease: "power1.inOut" }, 49.3);
-        tl.to("#dispatch-packet", { x: 286, y: 200, duration: .85, ease: "power1.inOut" }, 50.15);
-        tl.to("#dispatch-packet", { x: 523, y: 177, duration: .85, ease: "power1.inOut" }, 51.0);
-        tl.to("#dispatch-packet", { scale: 1.8, opacity: .35, duration: .18, repeat: 3, yoyo: true }, 51.85);
+        tl.fromTo('#p08 .dispatch-branches', { scaleY: 0 }, { scaleY: 1, duration: 0.6 }, 48.45)
+        tl.fromTo(
+          '#dispatch-packet',
+          { x: 0, y: 0, opacity: 0 },
+          { x: 0, y: 76, opacity: 1, duration: 0.55, ease: 'none' },
+          48.75,
+        )
+        tl.to('#dispatch-packet', { x: 53, y: 177, duration: 0.85, ease: 'power1.inOut' }, 49.3)
+        tl.to('#dispatch-packet', { x: 286, y: 200, duration: 0.85, ease: 'power1.inOut' }, 50.15)
+        tl.to('#dispatch-packet', { x: 523, y: 177, duration: 0.85, ease: 'power1.inOut' }, 51.0)
+        tl.to(
+          '#dispatch-packet',
+          { scale: 1.8, opacity: 0.35, duration: 0.18, repeat: 3, yoyo: true },
+          51.85,
+        )
 
-        tl.fromTo("#pipeline-packet", { x: 0, opacity: 0 }, { x: 1483, opacity: 1, duration: 5.2, ease: "none" }, 62.55);
-        tl.to("#pipeline-packet", { scale: 1.7, opacity: .35, duration: .18, repeat: 3, yoyo: true }, 67.8);
-        tl.fromTo("#artifact-scan", { y: 0, opacity: 0 }, { y: 340, opacity: 1, duration: 2.1, repeat: 1, yoyo: true, ease: "sine.inOut" }, 69.45);
+        tl.fromTo(
+          '#pipeline-packet',
+          { x: 0, opacity: 0 },
+          { x: 1483, opacity: 1, duration: 5.2, ease: 'none' },
+          62.55,
+        )
+        tl.to(
+          '#pipeline-packet',
+          { scale: 1.7, opacity: 0.35, duration: 0.18, repeat: 3, yoyo: true },
+          67.8,
+        )
+        tl.fromTo(
+          '#artifact-scan',
+          { y: 0, opacity: 0 },
+          { y: 340, opacity: 1, duration: 2.1, repeat: 1, yoyo: true, ease: 'sine.inOut' },
+          69.45,
+        )
 
-        tl.fromTo("#bar-support, #bar-unknown, #bar-contradict", { scaleX: 0 }, { scaleX: 1, duration: 1.35, stagger: .18, ease: "power2.out" }, 83.45);
-        tl.fromTo("#ledger-packet", { x: 0, opacity: 0 }, { x: 920, opacity: 1, duration: 4.8, ease: "none" }, 84.05);
+        tl.fromTo(
+          '#bar-support, #bar-unknown, #bar-contradict',
+          { scaleX: 0 },
+          { scaleX: 1, duration: 1.35, stagger: 0.18, ease: 'power2.out' },
+          83.45,
+        )
+        tl.fromTo(
+          '#ledger-packet',
+          { x: 0, opacity: 0 },
+          { x: 920, opacity: 1, duration: 4.8, ease: 'none' },
+          84.05,
+        )
 
-        tl.fromTo("#p06 .hypothesis-line", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: .5, stagger: .2 }, 34.55);
-        tl.fromTo("#p09 .agent-row", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: .45, stagger: .18 }, 55.55);
-        tl.fromTo("#p12 .gate-row", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: .4, stagger: .14 }, 76.55);
-        tl.fromTo("#p14 .strict-item", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: .4, stagger: .13 }, 90.55);
-        tl.fromTo("#p18 .round-card", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: .55 }, 118.6);
-        tl.fromTo("#p19 .round-card", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: .55 }, 125.6);
-        tl.fromTo("#p20 .correction-row", { opacity: 0, x: 26 }, { opacity: 1, x: 0, duration: .42, stagger: .15 }, 132.55);
-        tl.fromTo("#p22 .verdict-hypothesis", { opacity: 0, x: 26 }, { opacity: 1, x: 0, duration: .42, stagger: .16 }, 146.55);
-        tl.fromTo("#p23 .handoff-row", { opacity: 0, x: 28 }, { opacity: 1, x: 0, duration: .45, stagger: .17 }, 153.65);
+        tl.fromTo(
+          '#p06 .hypothesis-line',
+          { opacity: 0, x: -30 },
+          { opacity: 1, x: 0, duration: 0.5, stagger: 0.2 },
+          34.55,
+        )
+        tl.fromTo(
+          '#p09 .agent-row',
+          { opacity: 0, x: 30 },
+          { opacity: 1, x: 0, duration: 0.45, stagger: 0.18 },
+          55.55,
+        )
+        tl.fromTo(
+          '#p12 .gate-row',
+          { opacity: 0, x: -24 },
+          { opacity: 1, x: 0, duration: 0.4, stagger: 0.14 },
+          76.55,
+        )
+        tl.fromTo(
+          '#p14 .strict-item',
+          { opacity: 0, x: 24 },
+          { opacity: 1, x: 0, duration: 0.4, stagger: 0.13 },
+          90.55,
+        )
+        tl.fromTo(
+          '#p18 .round-card',
+          { opacity: 0, y: 24 },
+          { opacity: 1, y: 0, duration: 0.55 },
+          118.6,
+        )
+        tl.fromTo(
+          '#p19 .round-card',
+          { opacity: 0, y: 24 },
+          { opacity: 1, y: 0, duration: 0.55 },
+          125.6,
+        )
+        tl.fromTo(
+          '#p20 .correction-row',
+          { opacity: 0, x: 26 },
+          { opacity: 1, x: 0, duration: 0.42, stagger: 0.15 },
+          132.55,
+        )
+        tl.fromTo(
+          '#p22 .verdict-hypothesis',
+          { opacity: 0, x: 26 },
+          { opacity: 1, x: 0, duration: 0.42, stagger: 0.16 },
+          146.55,
+        )
+        tl.fromTo(
+          '#p23 .handoff-row',
+          { opacity: 0, x: 28 },
+          { opacity: 1, x: 0, duration: 0.45, stagger: 0.17 },
+          153.65,
+        )
 
-        tl.fromTo("#route-main, #route-a, #route-b", { strokeDashoffset: 700 }, { strokeDashoffset: 0, duration: .95, stagger: .18, ease: "power2.inOut" }, 111.45);
-        tl.fromTo("#route-packet", { attr: { cx: 80, cy: 205, r: 8 }, opacity: 0 }, { attr: { cx: 305, cy: 205 }, opacity: 1, duration: .65, ease: "none" }, 111.75);
-        tl.to("#route-packet", { attr: { cx: 525, cy: 205 }, duration: .65, ease: "none" }, 112.45);
-        tl.to("#route-packet", { attr: { cx: 830, cy: 92 }, duration: 1.0, ease: "power1.inOut" }, 113.15);
-        tl.to("#route-packet", { attr: { cx: 525, cy: 205 }, duration: .9, ease: "power1.inOut" }, 114.2);
-        tl.to("#route-packet", { attr: { cx: 830, cy: 318 }, duration: 1.0, ease: "power1.inOut" }, 115.15);
-        tl.to("#route-packet", { attr: { r: 13 }, opacity: .35, duration: .18, repeat: 3, yoyo: true }, 116.25);
+        tl.fromTo(
+          '#route-main, #route-a, #route-b',
+          { strokeDashoffset: 700 },
+          { strokeDashoffset: 0, duration: 0.95, stagger: 0.18, ease: 'power2.inOut' },
+          111.45,
+        )
+        tl.fromTo(
+          '#route-packet',
+          { attr: { cx: 80, cy: 205, r: 8 }, opacity: 0 },
+          { attr: { cx: 305, cy: 205 }, opacity: 1, duration: 0.65, ease: 'none' },
+          111.75,
+        )
+        tl.to('#route-packet', { attr: { cx: 525, cy: 205 }, duration: 0.65, ease: 'none' }, 112.45)
+        tl.to(
+          '#route-packet',
+          { attr: { cx: 830, cy: 92 }, duration: 1.0, ease: 'power1.inOut' },
+          113.15,
+        )
+        tl.to(
+          '#route-packet',
+          { attr: { cx: 525, cy: 205 }, duration: 0.9, ease: 'power1.inOut' },
+          114.2,
+        )
+        tl.to(
+          '#route-packet',
+          { attr: { cx: 830, cy: 318 }, duration: 1.0, ease: 'power1.inOut' },
+          115.15,
+        )
+        tl.to(
+          '#route-packet',
+          { attr: { r: 13 }, opacity: 0.35, duration: 0.18, repeat: 3, yoyo: true },
+          116.25,
+        )
 
-        tl.fromTo("#trace-packet", { y: 0, opacity: 0 }, { y: 420, opacity: 1, duration: 5.2, ease: "none" }, 139.55);
+        tl.fromTo(
+          '#trace-packet',
+          { y: 0, opacity: 0 },
+          { y: 420, opacity: 1, duration: 5.2, ease: 'none' },
+          139.55,
+        )
 
-        tl.fromTo("#close-loop", { strokeDashoffset: 1500 }, { strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut" }, 162.4);
-        tl.fromTo("#close-packet", { attr: { cx: 115, cy: 195 }, opacity: 0 }, { attr: { cx: 115, cy: 70 }, opacity: 1, duration: 1.35, ease: "power1.inOut" }, 162.8);
-        tl.to("#close-packet", { attr: { cx: 390, cy: 120 }, duration: 1.5, ease: "power1.inOut" }, 164.2);
-        tl.to("#close-packet", { attr: { cx: 665, cy: 286 }, duration: 1.5, ease: "power1.inOut" }, 165.75);
-        tl.to("#close-packet", { attr: { cx: 390, cy: 286 }, duration: 1.5, ease: "power1.inOut" }, 167.35);
-        tl.to("#close-packet", { attr: { cx: 115, cy: 195 }, duration: 1.5, ease: "power1.inOut" }, 168.9);
-        tl.to("#close-packet", { attr: { r: 13 }, opacity: .35, duration: .2, repeat: 4, yoyo: true }, 170.55);
+        tl.fromTo(
+          '#close-loop',
+          { strokeDashoffset: 1500 },
+          { strokeDashoffset: 0, duration: 1.5, ease: 'power2.inOut' },
+          162.4,
+        )
+        tl.fromTo(
+          '#close-packet',
+          { attr: { cx: 115, cy: 195 }, opacity: 0 },
+          { attr: { cx: 115, cy: 70 }, opacity: 1, duration: 1.35, ease: 'power1.inOut' },
+          162.8,
+        )
+        tl.to(
+          '#close-packet',
+          { attr: { cx: 390, cy: 120 }, duration: 1.5, ease: 'power1.inOut' },
+          164.2,
+        )
+        tl.to(
+          '#close-packet',
+          { attr: { cx: 665, cy: 286 }, duration: 1.5, ease: 'power1.inOut' },
+          165.75,
+        )
+        tl.to(
+          '#close-packet',
+          { attr: { cx: 390, cy: 286 }, duration: 1.5, ease: 'power1.inOut' },
+          167.35,
+        )
+        tl.to(
+          '#close-packet',
+          { attr: { cx: 115, cy: 195 }, duration: 1.5, ease: 'power1.inOut' },
+          168.9,
+        )
+        tl.to(
+          '#close-packet',
+          { attr: { r: 13 }, opacity: 0.35, duration: 0.2, repeat: 4, yoyo: true },
+          170.55,
+        )
 
-        window.__timelines = window.__timelines || {};
-        window.__timelines["main"] = tl;
-      })();
+        window.__timelines = window.__timelines || {}
+        window.__timelines['main'] = tl
+      })()
     </script>
   </body>
 </html>

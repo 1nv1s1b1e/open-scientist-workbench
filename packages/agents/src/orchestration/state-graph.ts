@@ -61,9 +61,7 @@ export interface GraphRunOptions<TState extends object> {
   maxSteps?: number
   signal?: AbortSignal
   onEvent?: (event: GraphEvent) => void | Promise<void>
-  checkpoint?: (
-    checkpoint: GraphCheckpoint<TState>,
-  ) => void | Promise<void>
+  checkpoint?: (checkpoint: GraphCheckpoint<TState>) => void | Promise<void>
 }
 
 export interface GraphRunResult<TState extends object> {
@@ -100,11 +98,7 @@ export class StateGraph<TState extends object> {
   private readonly routers = new Map<string, GraphRouter<TState>>()
   private entryPoint: string | null = null
 
-  addNode(
-    name: string,
-    handler: GraphNode<TState>,
-    options: GraphNodeOptions = {},
-  ): this {
+  addNode(name: string, handler: GraphNode<TState>, options: GraphNodeOptions = {}): this {
     if (!name || name === GRAPH_END) {
       throw new Error('graph node name must be non-empty and cannot be GRAPH_END')
     }
@@ -241,9 +235,7 @@ export class CompiledStateGraph<TState extends object> {
           const patch = await definition.handler(state, context)
           nextState = patch ? { ...state, ...patch } : state
           const router = this.routers.get(nodeName)
-          nextTarget = router
-            ? await router(nextState)
-            : (this.edges.get(nodeName) ?? null)
+          nextTarget = router ? await router(nextState) : (this.edges.get(nodeName) ?? null)
           if (!nextTarget) {
             throw new Error(`graph node has no outgoing route: ${nodeName}`)
           }
@@ -258,8 +250,7 @@ export class CompiledStateGraph<TState extends object> {
           })
           break
         } catch (error) {
-          const canRetry =
-            attempt < definition.maxAttempts && definition.shouldRetry(error)
+          const canRetry = attempt < definition.maxAttempts && definition.shouldRetry(error)
           if (canRetry) {
             await dispatch({
               type: 'node-retry',

@@ -265,18 +265,17 @@ function reportForHypothesis(input: {
     localDataSufficient = true
   } else if (hasValidContradiction) {
     runDisposition = 'disfavored_not_falsified'
-    dispositionReason = '已有可审计的不利证据，但尚未同时满足重复、holdout 和检验功效门槛，因此降低优先级而不宣称已证伪。'
+    dispositionReason =
+      '已有可审计的不利证据，但尚未同时满足重复、holdout 和检验功效门槛，因此降低优先级而不宣称已证伪。'
     localDataSufficient = true
   } else if (plannedReadiness.includes('executable_now')) {
     runDisposition = 'incomplete_executable_work'
     dispositionReason = '仍有已注册且本地可执行的验证任务，当前运行不应宣称流程闭环。'
   } else if (plannedReadiness.includes('requires_data')) {
     runDisposition = 'deferred_requires_data'
-    dispositionReason = '现有本地数据已完成可执行检验，但具体机制裁决仍缺少任务明确指定的新证据维度。'
-  } else if (
-    plannedReadiness.includes('external') ||
-    plannedReadiness.includes('human_review')
-  ) {
+    dispositionReason =
+      '现有本地数据已完成可执行检验，但具体机制裁决仍缺少任务明确指定的新证据维度。'
+  } else if (plannedReadiness.includes('external') || plannedReadiness.includes('human_review')) {
     runDisposition = 'deferred_external_validation'
     dispositionReason = '本地证据处理已完成，最终裁决需要外部设施、模拟器或专家复核。'
   } else if (counterexampleSearchAttempted && !counterexampleSearchAdequate) {
@@ -408,9 +407,7 @@ export function assessScientificClosure(input: {
       ...(noExecutableTasksRemaining ? [] : ['仍有本地 executable_now 任务未执行。']),
       ...(noUnassessedTasksRemaining ? [] : ['仍有后续任务没有完成数据就绪性分类。']),
       ...(workflowComplete && status !== 'complete'
-        ? [
-            '本运行的工程闭环已完成；科学闭环仍保留外部数据或功效边界，不把流程完整误写为机制得证。',
-          ]
+        ? ['本运行的工程闭环已完成；科学闭环仍保留外部数据或功效边界，不把流程完整误写为机制得证。']
         : []),
     ],
   })

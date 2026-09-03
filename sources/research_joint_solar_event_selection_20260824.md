@@ -52,7 +52,7 @@ Ghosh 等对该事件报告了 IRIS/EIS/AIA 联合观测、跨仪器配准、足
 
 ## 数据与论文来源
 
-1. Ghosh, A. et al., *Fan Loops Observed by IRIS, EIS and AIA*, ApJ 835:244 (2017), DOI: https://doi.org/10.3847/1538-4357/835/2/244
+1. Ghosh, A. et al., _Fan Loops Observed by IRIS, EIS and AIA_, ApJ 835:244 (2017), DOI: https://doi.org/10.3847/1538-4357/835/2/244
 2. 论文预印本：https://arxiv.org/abs/1701.01617
 3. IRIS Level 2 数据说明：https://iris.lmsal.com/data.html
 4. IRIS 数据检索：https://iris.lmsal.com/search/
