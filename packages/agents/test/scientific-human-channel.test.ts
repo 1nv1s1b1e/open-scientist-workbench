@@ -90,7 +90,7 @@ function executableTask(round: number): ValidationTask {
     taskId: `task-local-${round}`,
     executorId: 'test-round-executor',
     readiness: 'executable_now',
-    route: 'B',
+    route: 'explorer',
     type: 'analysis',
     objective: '补充多波段时序处理',
     hypothesisIds: [hypothesis.id],
@@ -119,7 +119,7 @@ describe('scientific loop human channel', () => {
   it('reaches complete workflow closure with a planned human_review task and NO human channel', async () => {
     const humanReviewTask: ValidationTask = {
       taskId: 'task-expert-open-world-review',
-      route: 'A',
+      route: 'librarian',
       type: 'human-review',
       objective: '开放世界候选机制的专家复核',
       hypothesisIds: [hypothesis.id],

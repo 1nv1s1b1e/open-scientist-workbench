@@ -53,7 +53,7 @@ describe('four-layer scientific memory policy', () => {
           utility: 1,
         }),
       ],
-      'C',
+      'oracle',
       2,
     )
 

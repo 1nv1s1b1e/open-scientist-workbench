@@ -73,7 +73,7 @@ export interface WorkbenchEvidence {
 export interface WorkbenchValidationTask {
   taskId: string
   executorId?: string
-  route: 'A' | 'B' | string
+  route: 'librarian' | 'explorer' | string
   type?: string
   status: string
   objective: string
@@ -165,7 +165,7 @@ export interface ScientificOrchestrationRoute {
   round: number
   continue: boolean
   reason: string
-  nextRoute: 'A' | 'B' | 'END'
+  nextRoute: 'librarian' | 'explorer' | 'END'
 }
 
 export interface ScientificOrchestrationState {
@@ -329,7 +329,14 @@ export function reduceScientificChunk(
       round: typeof payload.round === 'number' ? payload.round : state.round,
       continue: payload.continue === true,
       reason: typeof payload.reason === 'string' ? payload.reason : '未提供路由原因',
-      nextRoute: nextRoute === 'A' || nextRoute === 'B' || nextRoute === 'END' ? nextRoute : 'END',
+      nextRoute:
+        nextRoute === 'A' || nextRoute === 'B'
+          ? nextRoute === 'A'
+            ? 'librarian'
+            : 'explorer'
+          : nextRoute === 'librarian' || nextRoute === 'explorer' || nextRoute === 'END'
+            ? nextRoute
+            : 'END',
     }
     return {
       ...state,

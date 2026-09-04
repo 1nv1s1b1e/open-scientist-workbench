@@ -114,7 +114,14 @@ export interface RunAgentWorkflowOptions<TOutput> {
   /** Agent role name (e.g. `'librarian'`) — used as the persistence key. */
   role: string
   /** Scientific-loop stage used only for the public audit event. */
-  stage?: 'A' | 'B' | 'C' | 'D'
+  stage?:
+    | 'librarian'
+    | 'self-correction-i'
+    | 'surveyor'
+    | 'explorer'
+    | 'self-correction-ii'
+    | 'oracle'
+    | 'prometheus'
   /** Stable agent id shown in the scientific trace. Defaults to `role`. */
   agentId?: string
   /**

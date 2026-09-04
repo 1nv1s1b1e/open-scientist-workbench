@@ -13,7 +13,7 @@ function externalTask(
   return {
     taskId: id,
     executorId: 'external',
-    route: 'B',
+    route: 'explorer',
     type: 'observation',
     objective: `为 ${predictionIds.join('、')} 获取事件匹配观测`,
     hypothesisIds: [`h-${id}`],
@@ -23,7 +23,7 @@ function externalTask(
     readiness: 'requires_data',
     blockedReason: '缺少任务指定的新观测维度',
     discriminatingOutcomes: ['获得事件匹配观测后可区分候选'],
-    triggeredBy: 'D.plan',
+    triggeredBy: 'prometheus.plan',
     status: 'planned',
     resultEvidenceIds: [],
     round: 1,

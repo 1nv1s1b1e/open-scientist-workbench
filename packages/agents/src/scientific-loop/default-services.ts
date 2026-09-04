@@ -92,7 +92,29 @@ const ModelEvidenceReviewSchema = z.object({
   corrections: z
     .array(
       z.object({
-        stage: z.enum(['A', 'B', 'C', 'D', 'memory', 'data-processing']),
+        stage: z.preprocess(
+          (value) =>
+            value === 'A'
+              ? 'librarian'
+              : value === 'B'
+                ? 'explorer'
+                : value === 'C'
+                  ? 'oracle'
+                  : value === 'D'
+                    ? 'prometheus'
+                    : value,
+          z.enum([
+            'librarian',
+            'self-correction-i',
+            'surveyor',
+            'explorer',
+            'self-correction-ii',
+            'oracle',
+            'prometheus',
+            'memory',
+            'data-processing',
+          ]),
+        ),
         kind: z.enum(['schema', 'provenance', 'factual', 'execution', 'memory-policy']),
         severity: z.enum(['info', 'warning', 'error']),
         message: z.string().min(1),
@@ -152,7 +174,10 @@ const ModelValidationPlanSchema = z.object({
       z.object({
         hypothesisId: z.string().min(1),
         diagnosticId: ModelDiagnosticIdSchema,
-        route: z.enum(['A', 'B']),
+        route: z.preprocess(
+          (value) => (value === 'A' ? 'librarian' : value === 'B' ? 'explorer' : value),
+          z.enum(['librarian', 'explorer']),
+        ),
         type: z.enum([
           'observation',
           'analysis',
@@ -638,13 +663,13 @@ function generationCorrection(
       message,
       round: context.round,
     }).slice(0, 16)}`,
-    stage: 'A',
+    stage: 'librarian',
     kind: severity === 'error' ? 'execution' : 'factual',
     severity,
     message,
     action,
     affectedIds: [],
-    triggeredBy: ['A.generate', 'librarian'],
+    triggeredBy: ['librarian.generate', 'librarian'],
     round: context.round,
     agentId: 'librarian',
   })
@@ -762,7 +787,7 @@ function buildHypothesisCoverageAudit(input: {
     residualAlternativeAllowed: true,
     limitations: [
       `${input.modeLabel} 按检索结果和可证伪差异生成候选，不设三类机制或固定候选数。`,
-      '开放世界审计不能证明穷尽全部太阳物理解释；新文献、新观测异常或专家提出的可证伪替代机制可以继续进入 A 阶段。',
+      '开放世界审计不能证明穷尽全部太阳物理解释；新文献、新观测异常或专家提出的可证伪替代机制可以继续进入 Librarian 假设阶段。',
       ...(unrepresentedMechanismFamilies.length > 0
         ? [`检索到但尚未形成合格候选的机制族：${unrepresentedMechanismFamilies.join('、')}。`]
         : []),
@@ -1237,7 +1262,7 @@ async function generateLocalGroundedHypotheses(
   input.emitChunk?.({
     type: 'custom',
     kind: 'scientific.retrieval',
-    stage: 'A',
+    stage: 'librarian',
     round: context.round,
     status: 'grounded',
     message: `本地资料模式完成：检索 ${papers.length} 篇核验文献，匹配 ${matches.cases.length} 个观测窗口；数据包核验 ${pack.verifiedAssetCount}/${pack.expectedAssetCount} 个文件。`,
@@ -1269,7 +1294,7 @@ async function generateLocalGroundedHypotheses(
   input.emitChunk?.({
     type: 'custom',
     kind: 'scientific.reasoning-summary',
-    stage: 'A',
+    stage: 'librarian',
 
     round: context.round,
     agentId: 'librarian',
@@ -1291,7 +1316,7 @@ async function generateLocalGroundedHypotheses(
 function revisionTargets(context: Readonly<HypothesisGenerationContext>): ScientificHypothesis[] {
   const targetIds = new Set<string>()
   for (const task of context.context.validationTasks) {
-    if (task.type !== 'model-update' && task.route !== 'A') continue
+    if (task.type !== 'model-update' && task.route !== 'librarian') continue
     if (context.existingHypotheses.some((item) => item.id === task.triggeredBy)) {
       targetIds.add(task.triggeredBy)
       continue
@@ -1313,7 +1338,7 @@ function localHypothesisRevisions(
   const targets = revisionTargets(context)
   if (targets.length === 0) return { hypotheses: [...context.existingHypotheses] }
   const relevantTasks = context.context.validationTasks.filter(
-    (task) => task.route === 'A' || task.type === 'model-update',
+    (task) => task.route === 'librarian' || task.type === 'model-update',
   )
   const revisedParents = targets.map((parent) => ({ ...parent, status: 'revised' as const }))
   const children = targets.map((parent) => {
@@ -1431,7 +1456,7 @@ async function modelHypothesisRevisions(
   input.emitChunk?.({
     type: 'custom',
     kind: 'scientific.reasoning-summary',
-    stage: 'A',
+    stage: 'librarian',
     round: context.round,
     agentId: 'librarian-hypothesis-revision',
     title: '证据驱动的假设修订',
@@ -1474,7 +1499,7 @@ async function generateHypotheses(
     input.emitChunk?.({
       type: 'custom',
       kind: 'scientific.retrieval',
-      stage: 'A',
+      stage: 'librarian',
       round: context.round,
       status,
       message,
@@ -1513,7 +1538,7 @@ async function generateHypotheses(
       input.emitChunk?.({
         type: 'custom',
         kind: 'scientific.reasoning-summary',
-        stage: 'A',
+        stage: 'librarian',
         round: context.round,
         agentId: 'librarian',
         title: '候选机制的形成依据',
@@ -1557,7 +1582,7 @@ async function generateHypotheses(
             context,
             'error',
             retrievalMessage,
-            '检查文献索引、本地数据目录和模型工具调用后重新运行 A 阶段。',
+            '检查文献索引、本地数据目录和模型工具调用后重新运行 Librarian 假设生成。',
           ),
         ],
       }
@@ -1623,7 +1648,7 @@ async function generateHypotheses(
             context,
             'error',
             '模型未提交满足结构与来源约束的候选假设。',
-            '调整现象描述或模型输出协议后重新运行 A 阶段。',
+            '调整现象描述或模型输出协议后重新运行 Librarian 假设生成。',
           ),
         ],
       }
@@ -1656,7 +1681,7 @@ async function generateHypotheses(
     input.emitChunk?.({
       type: 'custom',
       kind: 'scientific.self-correction',
-      stage: 'A',
+      stage: 'librarian',
       status: 'blocked',
       round: context.round,
       message,
@@ -1668,7 +1693,7 @@ async function generateHypotheses(
           context,
           'error',
           message,
-          '检查模型、HelixDB 和本地数据工具后重新运行 A 阶段。',
+          '检查模型、HelixDB 和本地数据工具后重新运行 Librarian 假设生成。',
         ),
       ],
     }
@@ -2619,7 +2644,7 @@ export function normalizeScopedImpulsiveStatement(
   const normalizedStatement = statementCohort
     ? hypothesis.statement
     : `所选跨事件样本中${withoutSingleRegionPrefix}`
-  const normalizedScope = `所选跨事件样本（验证集 + 留出集），不适用于单事件范围；验证与留出事件由 D.plan 的跨事件任务确定`
+  const normalizedScope = `所选跨事件样本（验证集 + 留出集），不适用于单事件范围；验证与留出事件由 prometheus.plan 的跨事件任务确定`
   return {
     ...hypothesis,
     statement: normalizedStatement,
@@ -3093,7 +3118,7 @@ function localDiagnosticsAgent(
         input.emitChunk?.({
           type: 'custom',
           kind: 'scientific.processing-result',
-          stage: 'B',
+          stage: 'explorer',
           round: context.round,
           processingRunId: processing.processingRunId,
           snapshotId: processing.snapshotId,
@@ -3133,7 +3158,7 @@ function localDiagnosticsAgent(
         .map((item) => item.evidenceId)
       // Correction→action bridge: the data-quality finding above must not stay
       // a note. Register the concrete follow-up (re-fetch + re-verify) as a
-      // planned task so D.plan tracks it like any other registered work item.
+      // planned task so prometheus.plan tracks it like any other registered work item.
       const refetchFingerprint = digest({
         kind: 'fits-read-failure-refetch',
         runIds: [...readFailureRunIds].sort(),
@@ -3143,7 +3168,7 @@ function localDiagnosticsAgent(
           ? [
               {
                 taskId: `task-refetch-${refetchFingerprint.slice(0, 12)}`,
-                route: 'B' as const,
+                route: 'explorer' as const,
                 type: 'analysis' as const,
                 objective:
                   '复核处理产物中的 readFailures 记录，重新获取未通过读取或抽样 SHA-256 校验的 FITS 文件，并重跑受影响窗口的指标。',
@@ -3556,7 +3581,7 @@ async function synthesizeModelConclusion(
   input.emitChunk?.({
     type: 'custom',
     kind: 'scientific.reasoning-summary',
-    stage: 'C',
+    stage: 'oracle',
     round: context.round,
     agentId: 'sisyphus-scientific-synthesis',
     title: '模型结论收敛依据',
@@ -3705,7 +3730,7 @@ async function planModelValidation(
       // may describe the scientific action as an "observation", but the
       // runtime action is a deterministic B-stage analysis over an already
       // registered local source.
-      const route = locallyRegistered ? ('B' as const) : task.route
+      const route = locallyRegistered ? ('explorer' as const) : task.route
       const type = locallyRegistered ? ('analysis' as const) : task.type
       const requiredSourceIds = locallyRegistered
         ? [...new Set([...task.requiredSourceIds, LOCAL_CORONAL_SOURCE_ID])]
@@ -3817,7 +3842,7 @@ async function planModelValidation(
   input.emitChunk?.({
     type: 'custom',
     kind: 'scientific.reasoning-summary',
-    stage: 'D',
+    stage: 'prometheus',
     round: context.round,
     agentId: 'prometheus-scientific-planner',
     title: '模型验证计划依据',
@@ -3955,7 +3980,7 @@ export function buildExternalCompletenessTasks(
       return {
         taskId: `task-gap-${fingerprint.slice(0, 12)}`,
         executorId: 'external',
-        route: 'B',
+        route: 'explorer',
         type,
         objective,
         hypothesisIds: [hypothesis.id],
@@ -4110,7 +4135,7 @@ function buildCrossEventHoldoutTasks(context: Readonly<PlanningContext>): Valida
     return {
       taskId: `task-holdout-${fingerprint.slice(0, 12)}`,
       executorId: 'coronal-cross-event-holdout-v1',
-      route: 'B',
+      route: 'explorer',
       type: 'analysis',
       objective,
       hypothesisIds: [hypothesis.id],
@@ -4319,7 +4344,7 @@ export function buildRegisteredLocalDiagnosticTasks(
       {
         taskId: `task-local-${fingerprint.slice(0, 12)}`,
         executorId: specification.executorId,
-        route: 'B' as const,
+        route: 'explorer' as const,
         type: 'analysis' as const,
         objective,
         hypothesisIds,
@@ -4353,7 +4378,7 @@ export function buildRegisteredLocalDiagnosticTasks(
 // (2026-08-29): governance review is maintained as a versioned dossier at
 // docs/expert-review/human-review-dossier.md instead of as deferred work in
 // every run's task list. The `human-review` task type remains valid for
-// model-planned (D.plan) review work.
+// model-planned (prometheus.plan) review work.
 
 const OPEN_WORLD_FOLLOWUP_SPECIFICATIONS: Record<
   string,
@@ -4463,7 +4488,7 @@ function buildOpenWorldFollowupTasks(context: Readonly<PlanningContext>): Valida
       return {
         taskId: 'task-followup-' + fingerprint.slice(0, 12),
         executorId: 'external',
-        route: 'B' as const,
+        route: 'explorer' as const,
         type: specification.type,
         objective,
         hypothesisIds: [hypothesis.id],
@@ -4527,7 +4552,7 @@ function buildTasks(context: Readonly<PlanningContext>, localGrounded = false): 
     const fingerprint = digest({ hypothesis: hypothesis.id, objective, sources })
     return {
       taskId: `task-${fingerprint.slice(0, 12)}`,
-      route: key === null ? ('A' as const) : ('B' as const),
+      route: key === null ? ('librarian' as const) : ('explorer' as const),
       type,
       objective,
       hypothesisIds: [hypothesis.id],
@@ -4707,7 +4732,7 @@ export function createDefaultScientificDependencies(
           kind: 'scientific.self-correction',
           correction: {
             correctionId: `model-planner-fallback-${context.round}-${Date.now()}`,
-            stage: 'D',
+            stage: 'prometheus',
             kind: 'execution',
             severity: 'warning',
             message: '模型验证计划未形成可接受的结构化提交，已改用确定性任务规划器。',
@@ -4733,7 +4758,7 @@ export function createDefaultScientificDependencies(
           kind: 'scientific.self-correction',
           correction: {
             correctionId: `model-synthesis-fallback-${context.round}-${Date.now()}`,
-            stage: 'C',
+            stage: 'oracle',
             kind: 'execution',
             severity: 'warning',
             message: '模型综合结论未形成可接受的结构化提交，已改用受约束的确定性结论。',

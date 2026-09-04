@@ -1,0 +1,15 @@
+{
+  "runId": "run-1787320503954-a90e1b94",
+  "executionMode": "model-assisted",
+  "maxRounds": 2,
+  "status": "completed",
+  "scientificStatus": "needs_data",
+  "closureStatus": "partial",
+  "terminationReason": "max_rounds_reached",
+  "hypothesisCount": 3,
+  "evidenceCount": 29,
+  "validationTaskCount": 11,
+  "startedAt": "2026-08-21T13:55:03.5449771Z",
+  "endedAt": "2026-08-21T14:06:16.0937056Z",
+  "durationSeconds": 672.5
+}

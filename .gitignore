@@ -30,4 +30,5 @@ filter.py
 tmp/
 docs/*.docx
 docs/~$*.docx
-outputs/
+outputs/*
+!outputs/p6-evidence-runs/

@@ -42,15 +42,25 @@ const RESULT_SECTIONS: Array<{ id: ResultSection; label: string; icon: typeof La
 ]
 
 const AGENT_STEPS: Array<{
-  key: 'A' | 'B' | 'C' | 'D'
+  key:
+    | 'librarian'
+    | 'self-correction-i'
+    | 'surveyor'
+    | 'explorer'
+    | 'self-correction-ii'
+    | 'oracle'
+    | 'prometheus'
   roles: AgentRole[]
   label: string
   color: string
 }> = [
-  { key: 'A', roles: ['librarian'], label: '形成假设', color: '#8ee8c2' },
-  { key: 'B', roles: ['looker', 'explore', 'oracle'], label: '寻找证据', color: '#a0c3ec' },
-  { key: 'C', roles: [], label: '整理结论', color: '#f6c77d' },
-  { key: 'D', roles: ['prometheus'], label: '生成任务', color: '#c8a7ff' },
+  { key: 'librarian', roles: ['librarian'], label: '形成假设', color: '#8ee8c2' },
+  { key: 'self-correction-i', roles: [], label: '自校正 I', color: '#8ee8c2' },
+  { key: 'surveyor', roles: [], label: '粗粒度分析', color: '#a0c3ec' },
+  { key: 'explorer', roles: ['explore', 'oracle'], label: '细粒度证据', color: '#a0c3ec' },
+  { key: 'self-correction-ii', roles: [], label: '自校正 II', color: '#f6c77d' },
+  { key: 'oracle', roles: [], label: '综合结论', color: '#f6c77d' },
+  { key: 'prometheus', roles: ['prometheus'], label: '验证规划', color: '#c8a7ff' },
 ]
 
 function statusText(status: string) {
@@ -106,10 +116,29 @@ function stageState(
     (role) => agentStates[role] === 'thinking' || agentStates[role] === 'executing-tool',
   )
   if (active) return 'active'
-  if (step.key === 'A' && state.hypotheses.length > 0) return 'finished'
-  if (step.key === 'B' && state.evidence.length > 0) return 'finished'
-  if (step.key === 'C' && state.conclusion) return 'finished'
-  if (step.key === 'D' && state.validationTasks.length > 0) return 'finished'
+  const orchestrationNode = (nodeId: string) =>
+    state.orchestration.nodes.find((item) => item.node === nodeId)?.state
+  const nodeActive = (nodeId: string) => orchestrationNode(nodeId) === 'running'
+  const nodeDone = (nodeId: string) => {
+    const nodeState = orchestrationNode(nodeId)
+    return nodeState === 'completed' || nodeState === 'failed'
+  }
+  if (step.key === 'librarian' && state.hypotheses.length > 0) return 'finished'
+  if (step.key === 'self-correction-i') {
+    if (nodeActive('self-correction-i.verify')) return 'active'
+    if (nodeDone('self-correction-i.verify')) return 'finished'
+  }
+  if (step.key === 'surveyor') {
+    if (nodeActive('surveyor.analyze')) return 'active'
+    if (nodeDone('surveyor.analyze')) return 'finished'
+  }
+  if (step.key === 'explorer' && state.evidence.length > 0) return 'finished'
+  if (step.key === 'self-correction-ii') {
+    if (nodeActive('self-correction-ii.verify')) return 'active'
+    if (nodeDone('self-correction-ii.verify')) return 'finished'
+  }
+  if (step.key === 'oracle' && state.conclusion) return 'finished'
+  if (step.key === 'prometheus' && state.validationTasks.length > 0) return 'finished'
   return 'idle'
 }
 
@@ -258,7 +287,10 @@ export function ScientificWorkbench({
   const terminationLabel = describeTerminationReason(state.terminationReason)
   const hypothesisBlock = [...state.corrections]
     .reverse()
-    .find((item) => item.stage === 'A' && (item.severity === 'error' || item.status === 'blocked'))
+    .find(
+      (item) =>
+        item.stage === 'librarian' && (item.severity === 'error' || item.status === 'blocked'),
+    )
   return (
     <div className="workbench-shell">
       <div className="workbench-ambient workbench-ambient-one" />
@@ -631,7 +663,7 @@ export function ScientificWorkbench({
                                   )}
                                 </ul>
                               ) : (
-                                <p>本假设尚未完成 C.verify 门槛裁决。</p>
+                                <p>本假设尚未完成 oracle.verify 门槛裁决。</p>
                               )}
                             </article>
                           </div>

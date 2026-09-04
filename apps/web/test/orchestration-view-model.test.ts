@@ -7,20 +7,28 @@ import {
 import { emptyScientificWorkbenchState } from '../src/lib/workbench/state.ts'
 
 describe('orchestration view model', () => {
-  it('groups the real graph nodes and exposes the active B stage', () => {
+  it('groups the real graph nodes and exposes the active explorer stage', () => {
     const view = buildOrchestrationViewModel(DEMO_ORCHESTRATION)
 
-    expect(view.stages.map((stage) => stage.id)).toEqual(['A', 'B', 'C', 'D'])
-    expect(view.stages.find((stage) => stage.id === 'B')?.nodes.map((node) => node.id)).toEqual([
-      'B.run',
-      'B.dispatch',
-      'B.aggregate',
-      'BC.verify',
+    expect(view.stages.map((stage) => stage.id)).toEqual([
+      'librarian',
+      'self-correction-i',
+      'surveyor',
+      'explorer',
+      'self-correction-ii',
+      'oracle',
+      'prometheus',
     ])
-    expect(view.suggestedSelection).toEqual({ kind: 'node', id: 'B.run' })
+    expect(
+      view.stages.find((stage) => stage.id === 'explorer')?.nodes.map((node) => node.id),
+    ).toEqual(['explorer.analyze', 'explorer.dispatch', 'explorer.aggregate'])
+    expect(
+      view.stages.find((stage) => stage.id === 'self-correction-ii')?.nodes.map((node) => node.id),
+    ).toEqual(['self-correction-ii.verify'])
+    expect(view.suggestedSelection).toEqual({ kind: 'node', id: 'explorer.analyze' })
   })
 
-  it('keeps B worker states distinct and maps workers to console roles', () => {
+  it('keeps explorer worker states distinct and maps workers to console roles', () => {
     const view = buildOrchestrationViewModel(DEMO_ORCHESTRATION)
 
     expect(view.workers.summary).toEqual({
@@ -38,11 +46,15 @@ describe('orchestration view model', () => {
     expect(toConsoleAgentRole('oracle-fact-check')).toBe('oracle')
   })
 
-  it('describes the D route without inventing a conclusion', () => {
+  it('describes the prometheus route without inventing a conclusion', () => {
     const view = buildOrchestrationViewModel(DEMO_ORCHESTRATION)
     const emptyView = buildOrchestrationViewModel(emptyScientificWorkbenchState().orchestration)
 
-    expect(view.route).toMatchObject({ target: 'B', label: '返回证据工作组', continuing: true })
+    expect(view.route).toMatchObject({
+      target: 'explorer',
+      label: '返回 Explorer 证据工作组',
+      continuing: true,
+    })
     expect(view.route.reason).toBe(DEMO_ORCHESTRATION.latestRoute?.reason)
     expect(emptyView.route).toMatchObject({
       target: 'WAIT',
@@ -64,7 +76,9 @@ describe('orchestration view model', () => {
       'explorer-model-diagnostic-review',
       'oracle-model-counterexample-review',
     ])
-    expect(view.stages.find((stage) => stage.id === 'B')?.description).toContain('确定性并行')
-    expect(view.stages.find((stage) => stage.id === 'B')?.description).toContain('模型串行')
+    expect(view.stages.find((stage) => stage.id === 'explorer')?.description).toContain(
+      '确定性并行',
+    )
+    expect(view.stages.find((stage) => stage.id === 'explorer')?.description).toContain('模型串行')
   })
 })

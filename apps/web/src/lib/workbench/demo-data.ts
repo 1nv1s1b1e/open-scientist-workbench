@@ -167,10 +167,10 @@ export const DEMO_EVIDENCE: WorkbenchEvidence[] = [
 export const DEMO_VALIDATION_TASKS: WorkbenchValidationTask[] = [
   {
     taskId: 'demo-task-b-time-lag',
-    route: 'B',
+    route: 'explorer',
     status: 'planned',
     objective: '对齐 EUV 与软 X 射线时间序列，估计峰值时差及其置信区间。',
-    triggeredBy: 'D · 区分局部释放与后续热传输',
+    triggeredBy: 'Prometheus · 区分局部释放与后续热传输',
     discriminatingOutcomes: [
       '稳定的 EUV 领先时差',
       '无统计显著时差',
@@ -180,28 +180,28 @@ export const DEMO_VALIDATION_TASKS: WorkbenchValidationTask[] = [
   },
   {
     taskId: 'demo-task-b-wave-track',
-    route: 'B',
+    route: 'explorer',
     status: 'planned',
     objective: '在多波段图像序列中追踪沿环结构传播的亮度和温度扰动。',
-    triggeredBy: 'D · 检验阿尔芬波耗散预测',
+    triggeredBy: 'Prometheus · 检验阿尔芬波耗散预测',
     discriminatingOutcomes: ['传播速度与波动模型一致', '只出现局部脉冲', '传播方向与磁拓扑不一致'],
     round: 2,
   },
   {
     taskId: 'demo-task-b-mhd-scan',
-    route: 'B',
+    route: 'explorer',
     status: 'planned',
     objective: '对波动耗散比例和纳耀斑释放频率做参数扫描，并投影到同一组观测量。',
-    triggeredBy: 'D · 约束耦合机制的贡献范围',
+    triggeredBy: 'Prometheus · 约束耦合机制的贡献范围',
     discriminatingOutcomes: ['只存在耦合参数区间', '单机制已足够解释', '模型与观测均无法匹配'],
     round: 2,
   },
   {
     taskId: 'demo-task-a-revise',
-    route: 'A',
+    route: 'librarian',
     status: 'planned',
     objective: '如果时差和传播证据相互冲突，重新拆分“主导机制”和“耦合贡献”的假设。',
-    triggeredBy: 'D · 证据方向冲突时回到假设阶段',
+    triggeredBy: 'Prometheus · 证据方向冲突时回到假设阶段',
     discriminatingOutcomes: ['保留耦合假设', '降低某一机制贡献', '提出新的机制组合'],
     round: 2,
   },
@@ -209,14 +209,15 @@ export const DEMO_VALIDATION_TASKS: WorkbenchValidationTask[] = [
 
 export const DEMO_ORCHESTRATION: ScientificOrchestrationState = {
   nodes: [
-    { node: 'A.generate', state: 'completed', round: 1 },
-    { node: 'A.verify', state: 'completed', round: 1 },
-    { node: 'B.run', state: 'running', round: 2 },
-    { node: 'BC.verify', state: 'idle', round: 2 },
-    { node: 'C.synthesize', state: 'idle', round: 2 },
-    { node: 'C.verify', state: 'idle', round: 2 },
-    { node: 'D.plan', state: 'idle', round: 2 },
-    { node: 'D.route', state: 'idle', round: 2 },
+    { node: 'librarian.generate', state: 'completed', round: 1 },
+    { node: 'self-correction-i.verify', state: 'completed', round: 1 },
+    { node: 'surveyor.analyze', state: 'completed', round: 2 },
+    { node: 'explorer.analyze', state: 'running', round: 2 },
+    { node: 'self-correction-ii.verify', state: 'idle', round: 2 },
+    { node: 'oracle.verify', state: 'idle', round: 2 },
+    { node: 'oracle.synthesize', state: 'idle', round: 2 },
+    { node: 'prometheus.plan', state: 'idle', round: 2 },
+    { node: 'prometheus.route', state: 'idle', round: 2 },
   ],
   agents: [
     {
@@ -255,8 +256,8 @@ export const DEMO_ORCHESTRATION: ScientificOrchestrationState = {
   latestRoute: {
     round: 2,
     continue: true,
-    reason: '当前证据仍不足，优先补充 B 阶段数据处理。',
-    nextRoute: 'B',
+    reason: '当前证据仍不足，优先补充 Explorer 阶段数据处理。',
+    nextRoute: 'explorer',
   },
 }
 
@@ -274,7 +275,7 @@ export const DEMO_SCIENTIFIC_STATE: ScientificWorkbenchState = {
   corrections: [
     {
       round: 2,
-      stage: 'B → C',
+      stage: 'explorer',
       status: 'unknown',
       message: '传播响应缺少可复核的处理溯源，已保留为 unknown，并生成下一步数据任务。',
       unavailableSourceIds: ['demo-aia-euv'],

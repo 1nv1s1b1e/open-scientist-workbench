@@ -7,7 +7,7 @@ import {
 } from '@open-scientist/schema'
 
 export interface EvidencePromotionContext {
-  stage: 'B' | 'C'
+  stage: 'explorer' | 'self-correction-ii' | 'oracle'
   round: number
   hypothesisIds: readonly string[]
   agentId?: string

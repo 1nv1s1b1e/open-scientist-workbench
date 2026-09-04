@@ -211,7 +211,7 @@ runs.post('/api/projects/:name/runs', async (c) => {
       // resolveRunAgentConfigs.
       agentConfigs,
       // Human-in-the-loop config: `off` (default) keeps the loop fully
-      // automatic; `plan_review` arms the D.route approval gate.
+      // automatic; `plan_review` arms the prometheus.route approval gate.
       humanGate,
       ...(humanGateTimeoutMs !== undefined ? { humanGateTimeoutMs } : {}),
     })
@@ -562,7 +562,7 @@ runs.post('/api/projects/:name/runs/:runId/resume', async (c) => {
  * These are opt-in interaction surfaces: a run started with the default
  * `humanGate: 'off'` reaches closure without any of them being called. When
  * used, they let a human pause between phases, inject advisory steering into
- * the next A-stage, or approve/reject the D.route continuation decision.
+ * the librarian stage, or approve/reject the prometheus.route continuation decision.
  * None of them can write evidence or alter a support/elimination gate verdict.
  */
 
@@ -610,7 +610,7 @@ runs.get('/api/projects/:name/runs/:runId/human', async (c) => {
 
 /**
  * POST /api/projects/:name/runs/:runId/steer 鈥?queue an advisory steering or
- * follow-up message. It is drained at the next A.generate entry; the
+ * follow-up message. It is drained at the next librarian.generate entry; the
  * model-assisted path may use it as emphasis, the local-grounded path records
  * it without consuming (deterministic generation stays reproducible).
  */

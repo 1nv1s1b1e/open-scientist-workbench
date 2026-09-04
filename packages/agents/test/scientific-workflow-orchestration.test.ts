@@ -82,14 +82,15 @@ describe('scientific workflow entrypoint', () => {
     })
 
     expect(nodes).toEqual([
-      'A.generate',
-      'A.verify',
-      'B.run',
-      'BC.verify',
-      'C.verify',
-      'C.synthesize',
-      'D.plan',
-      'D.route',
+      'librarian.generate',
+      'self-correction-i.verify',
+      'surveyor.analyze',
+      'explorer.analyze',
+      'self-correction-ii.verify',
+      'oracle.verify',
+      'oracle.synthesize',
+      'prometheus.plan',
+      'prometheus.route',
     ])
     expect(result.terminationReason).toBe('max_rounds_reached')
     expect(eventKinds.at(-1)).toBe('scientific.loop-complete')

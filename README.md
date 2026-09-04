@@ -42,7 +42,7 @@ sources/
 
 ## 科学智能体职责名称
 
-用户界面和新运行产物使用"代号 · 中文职责"的双身份制：**Librarian·文献溯源**、**Looker·观测质控**、**Explorer·物理诊断**、**Oracle·反证审计**、**Prometheus·验证设计**、**Sisyphus·闭环协调**。完整的身份表（英文键、代号、中英文显示名、A–D 阶段与职责）定义在 `packages/schema/src/scientific-agent-names.ts`。为了兼容旧配置、数据库和已保存运行，`librarian`、`looker`、`explore`、`oracle`、`prometheus`、`sisyphus` 仍是持久化的内部稳定键。
+用户界面和新运行产物使用"代号 · 中文职责"的双身份制：**Librarian·文献溯源**、**Looker·观测质控**、**Explorer·物理诊断**、**Oracle·反证审计**、**Prometheus·验证设计**、**Sisyphus·闭环协调**。完整的身份表（英文键、代号、中英文显示名、所属七阶段与职责）定义在 `packages/schema/src/scientific-agent-names.ts`。为了兼容旧配置、数据库和已保存运行，`librarian`、`looker`、`explore`、`oracle`、`prometheus`、`sisyphus` 仍是持久化的内部稳定键。
 
 ## 运行模式
 
@@ -56,7 +56,7 @@ sources/
 推荐在 Windows PowerShell 中运行。
 
 - Node.js 24 或更高版本；仓库 `.node-version` 给出推荐版本。
-- Corepack 和 pnpm 11.15.1；pnpm 版本锁定在 `package.json`。
+- Corepack 和 pnpm 11.17.0；pnpm 版本锁定在 `package.json`。
 - Python 3.11 或更高版本。
 - `curl`；Windows 10/11 通常已经包含 `curl.exe`。
 - starter 模式至少 10 GB 可用空间；完整证据包建议预留 72–75 GB，以容纳 65.514 GB 原始层及缓存、数据库和运行产物。
@@ -253,7 +253,7 @@ python scripts/process_coronal_pack.py `
 > 候选如实为 `uncertain/needs_data`。**v3 结果保留为历史标定**；恢复路径是
 > 按预注册规则补充独立/更长验证窗数据（判据不放宽、不事后挑选强尾部事件）。详见 `docs/闭环创新点总账.md` 附加-5/6。
 
-当前提交基线是 [run-1788431926970-1f3b6181](output/docker-helix-submission-20260903/scientific-result.json)：`coronal-evidence-70gb-v1`、15 条假设、144 条证据和 29 项验证任务，18 项本地任务完成，11 项外部数据/人审任务保留；`scientificStatus=needs_data`、`closureStatus=partial`，但 `workflowClosure=complete`、`operationalClosure=complete`。结果包含 A/B/C/D 四阶段共 15 条 `agentExecutions` 和 `roundBudget=2/2, exhausted=true`，终止原因为 `no_executable_validation_task`。归档包含 request、SSE、headers、代码补丁/状态清单以及运行元数据。历史 Qwen v3 运行仅用于证明旧标定下门禁路径可达，不代表当前数据支持某个过程或机制。详见 [最终说明](docs/competition-2b-final-backend-and-data.md) 和 [科学故事](docs/competition-2b-scientific-story.md)。
+当前提交基线是 [run-1788431926970-1f3b6181](output/docker-helix-submission-20260903/scientific-result.json)：`coronal-evidence-70gb-v1`、15 条假设、144 条证据和 29 项验证任务，18 项本地任务完成，11 项外部数据/人审任务保留；`scientificStatus=needs_data`、`closureStatus=partial`，但 `workflowClosure=complete`、`operationalClosure=complete`。结果包含 15 条 `agentExecutions`（该基线运行由七阶段命名引入前的代码产出，持久化记录沿用 A/B/C/D 旧代号，分别对应现行的 Librarian/Explorer/Oracle/Prometheus 四大阶段；新运行直接使用 `librarian.generate` 等七阶段命名，旧代号经 `normalizeLegacyStage` 自动归一）。`roundBudget=2/2, exhausted=true`，终止原因为 `no_executable_validation_task`。归档包含 request、SSE、headers、代码补丁/状态清单以及运行元数据。历史 Qwen v3 运行仅用于证明旧标定下门禁路径可达，不代表当前数据支持某个过程或机制。详见 [最终说明](docs/competition-2b-final-backend-and-data.md) 和 [科学故事](docs/competition-2b-scientific-story.md)。
 
 后端把“是否需要新增数据”下沉到验证任务：`readiness=executable_now` 表示现有数据和执行器可直接完成，`requires_data` 表示缺少明确的数据项，`external` 表示数据可能已有但本仓库没有执行器，`human_review` 表示需要专家复核。最终结果中的 `dataReadiness.requiresNewData` 只在存在 `requires_data` 任务时为真。不得因为结果为 `unknown` 就无条件增加数据；应先区分样本量不足、诊断缺失、效应小于可检测下限和预测本身不具区分力。
 

@@ -89,7 +89,7 @@ export function buildScientificContext(
   ).slice(0, policy.maxTasks)
 
   const targets = targetHypothesisIds(input.state, validationTasks)
-  const restrictToTask = input.stage === 'B' && validationTasks.length > 0
+  const restrictToTask = input.stage === 'explorer' && validationTasks.length > 0
   const hypotheses = input.state.hypotheses
     .filter((item) => item.status !== 'revised' && item.status !== 'eliminated')
     .filter((item) => !restrictToTask || targets.has(item.id))

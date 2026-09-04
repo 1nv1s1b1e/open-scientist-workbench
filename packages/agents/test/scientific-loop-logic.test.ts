@@ -8,7 +8,7 @@ import {
 
 const task = (overrides: Record<string, unknown> = {}) => ({
   taskId: 'task-1',
-  route: 'B' as const,
+  route: 'explorer' as const,
   type: 'analysis' as const,
   objective: '比较两个活动区的时序关系',
   requiredSourceIds: ['obs-1'],
@@ -25,17 +25,17 @@ const task = (overrides: Record<string, unknown> = {}) => ({
 })
 
 describe('scientific loop routing logic', () => {
-  it('routes executable data work to B and mechanism gaps to A', () => {
-    expect(decideNextRoute(task())).toBe('B')
+  it('routes executable data work to explorer and mechanism gaps to librarian', () => {
+    expect(decideNextRoute(task())).toBe('explorer')
     expect(
       decideNextRoute(
         task({
           type: 'model-update',
           objective: '现有机制不能解释观测，需要提出新的耦合机制',
-          route: 'A',
+          route: 'librarian',
         }),
       ),
-    ).toBe('A')
+    ).toBe('librarian')
   })
 
   it('deduplicates tasks by stable fingerprint while retaining the first trigger', () => {

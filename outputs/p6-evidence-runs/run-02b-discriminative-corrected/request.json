@@ -1,0 +1,19 @@
+{
+  "phenomenon": {
+    "phenomenonId": "phenomenon-ar11158-qwen-audit-discriminative-corrected-20260821",
+    "title": "日冕加热竞争机制的判别性预测与留出检验（规范区域字段）",
+    "description": "对 NOAA AR11158 发现窗、同活动区背景窗和后续路由的 NOAA AR11429 留出窗进行竞争机制分析。候选物理解释限定为波动耗散、低频纳耀斑重联和波动—重联耦合。重点不是扩写机制综述，而是将每种解释拆为能够由当前 AIA/HMI 数据检验的原子预测、反例条件和缺失诊断。",
+    "activeRegion": "NOAA 11158",
+    "observations": [],
+    "requestedQuestion": "发现窗定参数、背景窗查非特异性、第二轮 AR11429 只作 holdout。分别审核 2–10 分钟波动/传播、94/131 Å 间歇热增强、热到冷通道时延及波动—热事件相位关系。逐预测报告数据覆盖、确定性统计、反例、独立性和不能回答的部分。",
+    "constraints": [
+      "只生成三条物理机制候选；观测不足必须作为 limitation 或 needs_data，不得伪装成第四条物理机制假设",
+      "论文和模型判断不能计为当前活动区的经验支持",
+      "同一事件或同一原始数据指纹的重复记录只能计一次独立证据",
+      "没有执行器或没有对应诊断时必须标记 unknown 并生成带成功与失败判据的验证任务",
+      "不得在看到 holdout 结果后修改发现窗阈值"
+    ]
+  },
+  "maxRounds": 2,
+  "executionMode": "model-assisted"
+}

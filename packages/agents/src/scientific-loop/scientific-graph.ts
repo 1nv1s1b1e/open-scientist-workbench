@@ -40,6 +40,11 @@ import {
   withPreregisteredDetectability,
 } from './closure-gate.ts'
 import {
+  EXECUTOR_CAPABILITIES,
+  executorSupportsPrediction,
+  predictionRequiredFamilies,
+} from './executor-capabilities.ts'
+import {
   auditIndependenceConsistency,
   assessEliminationGate,
   assessSupportGate,
@@ -338,10 +343,13 @@ function mapAgentCorrection(
 ): ScientificCorrection {
   const lower = raw.stage.toLowerCase() + raw.message.toLowerCase()
   const structuredStages = new Set<ScientificCorrection['stage']>([
-    'A',
-    'B',
-    'C',
-    'D',
+    'librarian',
+    'self-correction-i',
+    'surveyor',
+    'explorer',
+    'self-correction-ii',
+    'oracle',
+    'prometheus',
     'memory',
     'data-processing',
   ])
@@ -350,12 +358,12 @@ function mapAgentCorrection(
   )
     ? (raw.stage as ScientificCorrection['stage'])
     : lower.startsWith('a')
-      ? 'A'
+      ? 'librarian'
       : lower.startsWith('c')
-        ? 'C'
+        ? 'oracle'
         : lower.startsWith('d')
-          ? 'D'
-          : 'B'
+          ? 'prometheus'
+          : 'explorer'
   const kind: ScientificCorrection['kind'] = raw.kind
     ? raw.kind
     : /schema|结构/.test(lower)
@@ -383,7 +391,7 @@ function mapAgentCorrection(
  * Cross-hypothesis reuse audit: the same quantitative metric from the same
  * deterministic processing run must not silently serve as "support" for many
  * competing mechanism candidates at once. Prediction-consistent reuse is
- * allowed, but it is a methodological boundary, so C.verify records it as a
+ * allowed, but it is a methodological boundary, so oracle.verify records it as a
  * self-correction listing every affected record. The records themselves stay
  * valid (evidenceAction 'none'): they constrain the shared thermal structure,
  * they just cannot discriminate mechanisms.
@@ -411,7 +419,7 @@ function auditSharedDiagnosticSupport(
     const processingRunId = key.slice(separatorIndex + 1)
     corrections.push(
       correction(
-        'C',
+        'oracle',
         'factual',
         'warning',
         `同一处理运行（${processingRunId}）中的诊断指标 ${metric} 被 ${group.hypothesisIds.size} 个不同机制假设同时标记为预测相容支持；该记录只约束共同热结构，不具机制区分力。`,
@@ -419,7 +427,7 @@ function auditSharedDiagnosticSupport(
         round,
         [...group.evidenceIds],
         [...group.evidenceIds],
-        'C.verify',
+        'oracle.verify',
       ),
     )
   }
@@ -478,7 +486,7 @@ function mapAgentExecution(
   round: number,
   evidenceIds: readonly string[],
   taskIds: readonly string[],
-  stage: AgentExecution['stage'] = 'B',
+  stage: AgentExecution['stage'] = 'explorer',
 ): AgentExecution {
   return AgentExecutionSchema.parse({
     agentId: execution.agentId,
@@ -520,13 +528,13 @@ function safeHypotheses(
     }
     corrections.push(
       correction(
-        'A',
+        'librarian',
         'schema',
         'error',
         '候选假设结构校验失败，已拒绝进入 State。',
-        '保留校正记录，并要求 A 阶段补齐可观测预测和证伪条件。',
+        '保留校正记录，并要求 Librarian 阶段补齐可观测预测和证伪条件。',
         round,
-        ['A.generate'],
+        ['librarian.generate'],
       ),
     )
   }
@@ -1018,9 +1026,9 @@ export function createScientificLoopGraph(
   }
 
   const graph = new StateGraph(ScientificGraphStateSchema)
-    .addNode('A.generate', async (state) =>
-      node(state, 'A.generate', async () => {
-        const context = buildScientificContext({ stage: 'A', state })
+    .addNode('librarian.generate', async (state) =>
+      node(state, 'librarian.generate', async () => {
+        const context = buildScientificContext({ stage: 'librarian', state })
         // Drain advisory human steering queued since the last round. Local
         // deterministic generation records it without consuming it; the model
         // path may use it as emphasis. Neither path lets it alter verdicts.
@@ -1065,7 +1073,7 @@ export function createScientificLoopGraph(
         )
         const validationTasks = hasRevision
           ? state.validationTasks.map((task) =>
-              task.status === 'planned' && decideNextRoute(task) === 'A'
+              task.status === 'planned' && decideNextRoute(task) === 'librarian'
                 ? { ...task, status: 'completed' as const }
                 : task,
             )
@@ -1090,7 +1098,7 @@ export function createScientificLoopGraph(
           agentExecutions: appendStageExecution(state, {
             agentId: 'librarian',
             label: '文献溯源智能体：候选机制生成',
-            stage: 'A',
+            stage: 'librarian',
             status: 'completed',
             capabilities: ['literature-retrieval', 'observation-analysis', 'fact-check'],
             round: state.round,
@@ -1109,8 +1117,8 @@ export function createScientificLoopGraph(
         }
       }),
     )
-    .addNode('A.verify', async (state) =>
-      node(state, 'A.verify', () => {
+    .addNode('self-correction-i.verify', async (state) =>
+      node(state, 'self-correction-i.verify', () => {
         const valid = state.hypotheses.filter(
           (item) => ScientificHypothesisSchema.safeParse(item).success,
         )
@@ -1119,18 +1127,20 @@ export function createScientificLoopGraph(
             .reverse()
             .find(
               (item) =>
-                item.stage === 'A' && item.round === state.round && item.severity === 'error',
+                item.stage === 'librarian' &&
+                item.round === state.round &&
+                item.severity === 'error',
             )
           const item =
             generationFailure ??
             correction(
-              'A',
+              'librarian',
               'schema',
               'error',
               '本轮没有满足结构约束的候选假设。',
               '停止后续证据判断，要求补充可观测预测、证伪条件或有效输入。',
               state.round,
-              ['A.verify'],
+              ['self-correction-i.verify'],
             )
           return {
             hypotheses: [],
@@ -1141,15 +1151,124 @@ export function createScientificLoopGraph(
             limitations: appendLimitations(state.limitations, [item.message]),
           }
         }
+        // 自校正(I)实质校验：在结构校验之外，检查文献依据与本地可检验性。
+        const plausibilityCorrections: ScientificCorrection[] = []
+        const executorIds = Object.keys(EXECUTOR_CAPABILITIES)
+        for (const hypothesis of valid) {
+          if (hypothesis.sourceIds.length === 0) {
+            plausibilityCorrections.push(
+              correction(
+                'librarian',
+                'provenance',
+                'warning',
+                '候选假设未绑定任何文献或观测来源（sourceIds 为空）。',
+                '补充文献语料检索，将假设绑定到可核验来源后再参与结论综合。',
+                state.round,
+                ['self-correction-i.verify'],
+                [hypothesis.id],
+                'self-correction-i.verify',
+              ),
+            )
+          }
+          const checkable = hypothesis.predictions.some((statement) => {
+            const required = predictionRequiredFamilies(statement)
+            if (required.length === 0) return true
+            return executorIds.some((executorId) =>
+              executorSupportsPrediction(executorId, statement),
+            )
+          })
+          if (!checkable) {
+            plausibilityCorrections.push(
+              correction(
+                'librarian',
+                'execution',
+                'warning',
+                '候选假设的全部原子预测都超出当前登记执行器的能力范围。',
+                '保留为候选并标记为缺数据待判；等待外部数据或新增执行器后再检验。',
+                state.round,
+                ['self-correction-i.verify'],
+                [hypothesis.id],
+                'self-correction-i.verify',
+              ),
+            )
+          }
+        }
         return {
           hypotheses: valid,
           terminationReason: null,
+          corrections:
+            plausibilityCorrections.length > 0
+              ? appendCorrections(input, state.corrections, plausibilityCorrections)
+              : state.corrections,
+          limitations: appendLimitations(
+            state.limitations,
+            plausibilityCorrections.map((item) => item.message),
+          ),
         }
       }),
     )
-    .addNode('B.run', async (state) =>
-      node(state, 'B.run', async () => {
-        const context = buildScientificContext({ stage: 'B', state })
+    .addNode('surveyor.analyze', async (state) =>
+      node(state, 'surveyor.analyze', () => {
+        // Surveyor 全局粗粒度分析：确定性任务优先级排序 + 观测覆盖摘要。
+        // 只做排序与摘要，不产生任何证据、结论或裁决。
+        const readinessRank: Record<string, number> = {
+          executable_now: 0,
+          requires_data: 1,
+          unassessed: 2,
+          external: 3,
+          human_review: 4,
+        }
+        const planned = state.validationTasks.filter((task) => task.status === 'planned')
+        const prioritized = [...planned].sort((left, right) => {
+          const byReadiness =
+            (readinessRank[left.readiness ?? 'unassessed'] ?? 2) -
+            (readinessRank[right.readiness ?? 'unassessed'] ?? 2)
+          if (byReadiness !== 0) return byReadiness
+          const byDetectability = (left.detectability ? 0 : 1) - (right.detectability ? 0 : 1)
+          if (byDetectability !== 0) return byDetectability
+          return left.taskId.localeCompare(right.taskId)
+        })
+        const reordered = [
+          ...prioritized,
+          ...state.validationTasks.filter((task) => task.status !== 'planned'),
+        ]
+        const highFocus = prioritized
+          .filter((task) => (readinessRank[task.readiness ?? 'unassessed'] ?? 2) <= 1)
+          .slice(0, 3)
+        const summary = compactSummary([
+          `第 ${state.round} 轮全局粗粒度分析：候选假设 ${state.hypotheses.length} 条、累计证据 ${state.evidence.length} 条、待执行验证任务 ${planned.length} 项。`,
+          highFocus.length > 0
+            ? `高关注目标：${highFocus.map((task) => task.objective).join('；')}`
+            : '当前没有可本地执行的高关注验证目标。',
+        ])
+        emit(input, 'scientific.reasoning-summary', {
+          stage: 'surveyor',
+          round: state.round,
+          agentId: 'surveyor-coarse-analysis',
+          title: '全局粗粒度分析',
+          summary,
+        })
+        return {
+          validationTasks: reordered.some((task, index) => task !== state.validationTasks[index])
+            ? reordered
+            : state.validationTasks,
+          agentExecutions: appendStageExecution(state, {
+            agentId: 'looker',
+            label: '观测质控智能体：全局粗粒度分析',
+            stage: 'surveyor',
+            status: 'completed',
+            capabilities: ['observation-analysis'],
+            round: state.round,
+            outputHypothesisIds: [],
+            outputEvidenceIds: [],
+            outputTaskIds: [],
+          }),
+        }
+      }),
+    )
+    .addNode('explorer.analyze', async (state) =>
+      node(state, 'explorer.analyze', async () => {
+        const context = buildScientificContext({ stage: 'explorer', state })
         const registered =
           typeof dependencies.evidenceAgents === 'function'
             ? await dependencies.evidenceAgents({
@@ -1225,7 +1344,7 @@ export function createScientificLoopGraph(
         const promotionLimitations: string[] = []
         for (const candidate of workgroup.evidence) {
           const result = await promoteEvidence(candidate, {
-            stage: 'B',
+            stage: 'explorer',
             round: state.round,
             hypothesisIds: state.hypotheses.map((item) => item.id),
             agentId: candidate.agentId,
@@ -1257,7 +1376,7 @@ export function createScientificLoopGraph(
         for (const execution of workgroup.executions) {
           if (execution.status !== 'failed') continue
           const item = correction(
-            'B',
+            'explorer',
             'execution',
             'error',
             `${execution.label} 未能提交可校验的结构化结果：${execution.error ?? '未返回错误说明'}`,
@@ -1283,13 +1402,13 @@ export function createScientificLoopGraph(
           } else {
             taskCorrections.push(
               correction(
-                'B',
+                'explorer',
                 'schema',
                 'error',
-                'B 阶段生成的验证任务结构校验失败，已拒绝进入 State。',
+                'Explorer 阶段生成的验证任务结构校验失败，已拒绝进入 State。',
                 '要求数据处理智能体补齐任务目标和可区分结果。',
                 state.round,
-                ['B.run'],
+                ['explorer.analyze'],
               ),
             )
           }
@@ -1332,7 +1451,7 @@ export function createScientificLoopGraph(
           ])
           if (summary) {
             emit(input, 'scientific.reasoning-summary', {
-              stage: 'B',
+              stage: 'explorer',
               round: state.round,
               agentId: execution.agentId,
               title: `${execution.label}的核验摘要`,
@@ -1368,7 +1487,7 @@ export function createScientificLoopGraph(
               : task,
           )
           const item = correction(
-            'B',
+            'explorer',
             'execution',
             'error',
             `${strandedExecutableTasks.length} 项已调度的本地诊断没有返回任务级结果，已标记 failed。`,
@@ -1376,7 +1495,7 @@ export function createScientificLoopGraph(
             state.round,
             strandedExecutableTasks.map((task) => task.taskId),
             strandedExecutableTasks.map((task) => task.taskId),
-            'B.run',
+            'explorer.analyze',
           )
           corrections = appendCorrections(input, corrections, [item])
         }
@@ -1393,14 +1512,14 @@ export function createScientificLoopGraph(
         }
       }),
     )
-    .addNode('BC.verify', async (state) =>
-      node(state, 'BC.verify', async () => {
+    .addNode('self-correction-ii.verify', async (state) =>
+      node(state, 'self-correction-ii.verify', async () => {
         let corrections = state.corrections
         const evidence: EvidenceRecord[] = []
         const limitations: string[] = []
         for (const candidate of state.evidence) {
           const result = await promoteEvidence(candidate, {
-            stage: 'C',
+            stage: 'self-correction-ii',
             round: state.round,
             hypothesisIds: state.hypotheses.map((item) => item.id),
             agentId: candidate.agentId,
@@ -1421,9 +1540,9 @@ export function createScientificLoopGraph(
         }
       }),
     )
-    .addNode('C.synthesize', async (state) =>
-      node(state, 'C.synthesize', async () => {
-        const context = buildScientificContext({ stage: 'C', state })
+    .addNode('oracle.synthesize', async (state) =>
+      node(state, 'oracle.synthesize', async () => {
+        const context = buildScientificContext({ stage: 'oracle', state })
         const conclusion = dependencies.synthesizeConclusion
           ? await dependencies.synthesizeConclusion({
               projectId: state.projectId,
@@ -1450,13 +1569,13 @@ export function createScientificLoopGraph(
             normalizedConclusion.replace(/\s+/g, ' ') !== verifiedConclusion.replace(/\s+/g, ' ')
           ) {
             const item = correction(
-              'C',
+              'oracle',
               'factual',
               'info',
               '模型综合文字与最终逐假设门槛状态不完全一致。',
               '以最终验证状态重新生成受约束结论；保留“预测相容不等于具体机制得证”的边界。',
               state.round,
-              ['C.verify', 'C.synthesize'],
+              ['oracle.verify', 'oracle.synthesize'],
               activeHypotheses.map((item) => item.id),
             )
             corrections = appendCorrections(input, corrections, [item])
@@ -1467,13 +1586,13 @@ export function createScientificLoopGraph(
           /已证明|已证实|确认.*主导|机制成立|得到支持|支持.*机制/.test(normalizedConclusion)
         ) {
           const item = correction(
-            'C',
+            'oracle',
             'factual',
             'warning',
             '综合结论把尚未通过证据门槛的候选写成了已支持结论。',
             '按逐假设验证状态收紧结论，并保留未覆盖预测与下一步验证需求。',
             state.round,
-            ['C.synthesize'],
+            ['oracle.synthesize'],
             activeHypotheses
               .filter((hypothesis) => hypothesis.status !== 'supported')
               .map((item) => item.id),
@@ -1488,7 +1607,7 @@ export function createScientificLoopGraph(
           evidenceSummary: summarizeEvidence(state.evidence),
         })
         emit(input, 'scientific.reasoning-summary', {
-          stage: 'C',
+          stage: 'oracle',
           round: state.round,
           agentId: 'sisyphus-synthesis',
           title: '结论如何收敛',
@@ -1501,14 +1620,14 @@ export function createScientificLoopGraph(
         }
       }),
     )
-    .addNode('C.verify', async (state) =>
-      node(state, 'C.verify', () => {
+    .addNode('oracle.verify', async (state) =>
+      node(state, 'oracle.verify', () => {
         let corrections = state.corrections
         const independenceIssues = auditIndependenceConsistency(state.evidence)
         for (const issue of independenceIssues) {
           corrections = appendCorrections(input, corrections, [
             correction(
-              'C',
+              'oracle',
               'provenance',
               'warning',
               issue.message,
@@ -1516,7 +1635,7 @@ export function createScientificLoopGraph(
               state.round,
               issue.evidenceIds,
               issue.evidenceIds,
-              'C.verify',
+              'oracle.verify',
               'downgrade_to_unknown',
             ),
           ])
@@ -1656,7 +1775,7 @@ export function createScientificLoopGraph(
           )
           if (support && !supported) {
             const item = correction(
-              'C',
+              'oracle',
               'factual',
               'warning',
               `假设“${hypothesis.statement}”尚未形成事件独立、预测绑定且含定量区间的完整证据链，不能升级为 supported。`,
@@ -1664,7 +1783,7 @@ export function createScientificLoopGraph(
               state.round,
               gate.supportRecords.map((record) => record.evidenceId),
               [hypothesis.id, ...gate.supportRecords.map((record) => record.evidenceId)],
-              'C.verify',
+              'oracle.verify',
             )
             const gateCorrection = ScientificCorrectionSchema.parse({
               ...item,
@@ -1685,7 +1804,7 @@ export function createScientificLoopGraph(
           }
           if (falsified) {
             const item = correction(
-              'C',
+              'oracle',
               'factual',
               'info',
               `假设“${hypothesis.statement}”已满足严格淘汰门槛，从后续活跃候选池移除。`,
@@ -1696,7 +1815,7 @@ export function createScientificLoopGraph(
                 hypothesis.id,
                 ...elimination.eliminationEvidenceRecords.map((record) => record.evidenceId),
               ],
-              'C.verify',
+              'oracle.verify',
             )
             corrections = appendCorrections(input, corrections, [item])
           }
@@ -1722,9 +1841,9 @@ export function createScientificLoopGraph(
               }
             : task,
         )
-        // A.generate emits the initial candidate rows. Publish the adjudicated
+        // librarian.generate emits the initial candidate rows. Publish the adjudicated
         // rows again so live/replayed clients do not remain stuck on the
-        // pre-verification status while C.verify has already reached a verdict.
+        // pre-verification status while oracle.verify has already reached a verdict.
         for (const hypothesis of hypotheses) {
           emit(input, 'scientific.hypothesis', {
             round: state.round,
@@ -1742,7 +1861,7 @@ export function createScientificLoopGraph(
         const adjudicationExecution = {
           agentId: 'sisyphus',
           label: '闭环协调智能体：证据门禁与裁决',
-          stage: 'C' as const,
+          stage: 'oracle' as const,
           status: 'completed' as const,
           capabilities: ['cross-validation', 'fact-check'],
           round: state.round,
@@ -1755,13 +1874,13 @@ export function createScientificLoopGraph(
           /已证明|已证实|确认.*主导|机制成立|得到支持|支持.*机制/.test(state.conclusion)
         ) {
           const item = correction(
-            'C',
+            'oracle',
             'factual',
             'warning',
             '结论强度超过当前可验证证据边界。',
             '改写为候选机制和未知状态，并保留下一步验证计划。',
             state.round,
-            ['C.verify'],
+            ['oracle.verify'],
           )
           return {
             conclusion: boundedConclusion(state.hypotheses, evidence),
@@ -1788,9 +1907,9 @@ export function createScientificLoopGraph(
         }
       }),
     )
-    .addNode('D.plan', async (state) =>
-      node(state, 'D.plan', async () => {
-        const context = buildScientificContext({ stage: 'D', state })
+    .addNode('prometheus.plan', async (state) =>
+      node(state, 'prometheus.plan', async () => {
+        const context = buildScientificContext({ stage: 'prometheus', state })
         const planned = dependencies.planValidation
           ? await dependencies.planValidation({
               projectId: state.projectId,
@@ -1814,13 +1933,13 @@ export function createScientificLoopGraph(
             )
           } else {
             const item = correction(
-              'D',
+              'prometheus',
               'schema',
               'error',
               '下一步验证计划结构校验失败，已拒绝进入下一轮。',
-              '要求 D 阶段补齐可区分结果和触发来源。',
+              '要求 Prometheus 阶段补齐可区分结果和触发来源。',
               state.round,
-              ['D.plan'],
+              ['prometheus.plan'],
             )
             corrections = appendCorrections(input, corrections, [item])
           }
@@ -1872,7 +1991,7 @@ export function createScientificLoopGraph(
               (inferredReadiness === 'unassessed' && !task.executorId && !task.readiness)
           ;(executable ? executableCandidates : deferredTasks).push(task)
         }
-        // A task accepted in the final round can never reach B.run. Keep
+        // A task accepted in the final round can never reach explorer.analyze. Keep
         // deferred/external work as an honest future plan, but do not register
         // new local work that the configured run budget cannot execute.
         const atExecutionBoundary = state.round >= state.maxRounds
@@ -1890,15 +2009,15 @@ export function createScientificLoopGraph(
         )
         if (mergedStateTasks.size > 0) {
           const item = correction(
-            'D',
+            'prometheus',
             'execution',
             'info',
-            `D.plan 将 ${mergedStateTasks.size} 项语义重复的外部数据需求合并到既有任务，绑定其假设与预测覆盖而非简单删除。`,
+            `prometheus.plan 将 ${mergedStateTasks.size} 项语义重复的外部数据需求合并到既有任务，绑定其假设与预测覆盖而非简单删除。`,
             '以合并后的任务作为该数据需求的唯一追踪入口。',
             state.round,
             [...mergedStateTasks.keys()],
             [...mergedStateTasks.keys()],
-            'D.plan',
+            'prometheus.plan',
           )
           corrections = appendCorrections(input, corrections, [item])
         }
@@ -1912,7 +2031,7 @@ export function createScientificLoopGraph(
         }
         if (deferredTasks.length > 0) {
           const item = correction(
-            'D',
+            'prometheus',
             'execution',
             'warning',
             `本轮有 ${deferredTasks.length} 项验证任务没有已注册的执行器，已保留为 planned，但不会伪装成下一轮已执行工作。`,
@@ -1920,13 +2039,13 @@ export function createScientificLoopGraph(
             state.round,
             deferredTasks.map((task) => task.triggeredBy),
             deferredTasks.map((task) => task.taskId),
-            'D.plan',
+            'prometheus.plan',
           )
           corrections = appendCorrections(input, corrections, [item])
         }
         if (omittedExecutableTasks.length > 0) {
           const item = correction(
-            'D',
+            'prometheus',
             'execution',
             'info',
             `最终轮规划器又建议了 ${omittedExecutableTasks.length} 项本地可执行任务；由于已无后续执行轮，这些建议未登记为 planned，避免产生伪待办。`,
@@ -1934,13 +2053,13 @@ export function createScientificLoopGraph(
             state.round,
             omittedExecutableTasks.map((task) => task.triggeredBy),
             [],
-            'D.plan',
+            'prometheus.plan',
           )
           corrections = appendCorrections(input, corrections, [item])
         }
         // Stale executable work: a task that still claims `executable_now` but
         // that no registered executor can claim is not actually executable.
-        // At the execution boundary there is no further B.run to claim it, so
+        // At the execution boundary there is no further explorer.analyze to claim it, so
         // leaving it planned would block workflowClosure forever with a false
         // promise. Downgrade it honestly to requires_data with the reason, so
         // registering the executor later can restore it.
@@ -1968,7 +2087,7 @@ export function createScientificLoopGraph(
               )
         if (staleExecutableTaskIds.size > 0) {
           const item = correction(
-            'D',
+            'prometheus',
             'execution',
             'warning',
             `终局发现 ${staleExecutableTaskIds.size} 项登记为 executable_now 的任务没有已注册执行器可认领，已诚实降级为 requires_data 并保留恢复路径，不再阻塞流程闭环。`,
@@ -1976,12 +2095,12 @@ export function createScientificLoopGraph(
             state.round,
             [...staleExecutableTaskIds],
             [...staleExecutableTaskIds],
-            'D.plan',
+            'prometheus.plan',
           )
           corrections = appendCorrections(input, corrections, [item])
         }
         emit(input, 'scientific.reasoning-summary', {
-          stage: 'D',
+          stage: 'prometheus',
           round: state.round,
           agentId: 'prometheus-planner',
           title: '下一步验证计划',
@@ -2004,7 +2123,7 @@ export function createScientificLoopGraph(
           agentExecutions: appendStageExecution(state, {
             agentId: 'prometheus',
             label: '验证设计智能体：任务规划与预算审计',
-            stage: 'D',
+            stage: 'prometheus',
             status: 'completed',
             capabilities: ['cross-validation', 'fact-check'],
             round: state.round,
@@ -2016,8 +2135,8 @@ export function createScientificLoopGraph(
         }
       }),
     )
-    .addNode('D.route', async (state) =>
-      node(state, 'D.route', async () => {
+    .addNode('prometheus.route', async (state) =>
+      node(state, 'prometheus.route', async () => {
         const roundTaskIds = new Set(state.roundTaskIds)
         const hasBlockingDeferredTask = state.validationTasks.some(
           (task) =>
@@ -2040,9 +2159,9 @@ export function createScientificLoopGraph(
         const nextRoute = state.roundTaskIds
           .map((taskId) => state.validationTasks.find((task) => task.taskId === taskId))
           .filter((task): task is ValidationTask => Boolean(task))
-          .some((task) => decideNextRoute(task) === 'A')
-          ? ('A' as const)
-          : ('B' as const)
+          .some((task) => decideNextRoute(task) === 'librarian')
+          ? ('librarian' as const)
+          : ('explorer' as const)
         let finalDecision: {
           continue: boolean
           reason: ScientificGraphState['terminationReason']
@@ -2100,19 +2219,23 @@ export function createScientificLoopGraph(
             }
       }),
     )
-    .addEdge(START, 'A.generate')
-    .addEdge('A.generate', 'A.verify')
-    .addConditionalEdges('A.verify', (state) =>
-      state.terminationReason === 'no_valid_hypotheses' ? END : 'B.run',
+    .addEdge(START, 'librarian.generate')
+    .addEdge('librarian.generate', 'self-correction-i.verify')
+    .addConditionalEdges('self-correction-i.verify', (state) =>
+      state.terminationReason === 'no_valid_hypotheses' ? END : 'surveyor.analyze',
     )
-    .addEdge('B.run', 'BC.verify')
-    .addEdge('BC.verify', 'C.verify')
-    .addEdge('C.verify', 'C.synthesize')
-    .addEdge('C.synthesize', 'D.plan')
-    .addEdge('D.plan', 'D.route')
-    .addConditionalEdges('D.route', (state) => {
+    .addEdge('surveyor.analyze', 'explorer.analyze')
+    .addEdge('explorer.analyze', 'self-correction-ii.verify')
+    .addEdge('self-correction-ii.verify', 'oracle.verify')
+    .addEdge('oracle.verify', 'oracle.synthesize')
+    .addEdge('oracle.synthesize', 'prometheus.plan')
+    .addEdge('prometheus.plan', 'prometheus.route')
+    .addConditionalEdges('prometheus.route', (state) => {
       if (state.nextRoute === 'END') return END
-      return state.nextRoute === 'A' ? 'A.generate' : 'B.run'
+      // Every iteration re-enters through surveyor.analyze so later rounds get
+      // a fresh deterministic re-prioritization of the task queue, matching the
+      // P3 contract that each round starts from the global coarse analysis.
+      return state.nextRoute === 'librarian' ? 'librarian.generate' : 'surveyor.analyze'
     })
     .compile({ checkpointer: runtime.checkpointer })
 
@@ -2162,7 +2285,7 @@ export async function runScientificLoopGraph(
       budgetDeferredTaskCount: 0,
       roundTaskIds: [],
       completedRounds: 0,
-      nextRoute: 'B' as const,
+      nextRoute: 'explorer' as const,
       terminationReason: null,
     }
     if (!input.resume) {

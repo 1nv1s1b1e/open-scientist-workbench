@@ -115,9 +115,9 @@ Helix 文献库当前登记 80 条去重且已核验的论文记录，达到 80�
 
 每条假设都有机器可读的主状态和原因状态；当前 14 条因数据或执行器边界延期，1 条仅为受限过程层的暂定支持。`workflowClosure.status=complete` 表示本轮假设和任务均已处置；`operationalClosure.status=complete` 表示智能体、执行器和数据完整性没有失败；`closureStatus=partial` 则诚实表示科学证据仍不足。这三个状态不得合并。`maxRounds` 只是硬计算预算，结果新增 `roundBudget={maxRounds,roundsUsed,exhausted,deferredTaskCount}`；本次为 `2/2` 且 `exhausted=true`，但终止原因仍为更有科学含义的 `no_executable_validation_task`，不会为了跑满轮数重复同一处理。
 
-实时工作台不再把“支持性证据条数”标成“支持假设数”。`C.verify` 现在会重新发布裁决后的假设状态，并单独发布 `scientific.verification-report`；界面显示假设支持/排除/待裁决数，同时展开有效支持证据、独立事件、方法族、holdout 和预测覆盖。新运行的智能体展示名统一为文献溯源、观测质控、物理诊断、反证审计、验证设计和闭环协调智能体；英文 role key 仅作为内部兼容契约保留。
+实时工作台不再把“支持性证据条数”标成“支持假设数”。`oracle.verify` 现在会重新发布裁决后的假设状态，并单独发布 `scientific.verification-report`；界面显示假设支持/排除/待裁决数，同时展开有效支持证据、独立事件、方法族、holdout 和预测覆盖。新运行的智能体展示名统一为文献溯源、观测质控、物理诊断、反证审计、验证设计和闭环协调智能体；英文 role key 仅作为内部兼容契约保留。
 
-最新结果额外包含 15 条 `agentExecutions`，覆盖 A/B/C/D 四阶段，逐条记录 agent、能力、轮次和假设/证据/任务输出 ID。D 阶段会将最终轮无法实际执行的本地建议计入预算审计，而不会登记成虚假的 `executable_now`；C 阶段裁决也会进入同一执行账本，避免“智能体运行过但没有科学责任边界”的黑箱。
+最新结果额外包含 15 条 `agentExecutions`，覆盖四大执行阶段（该基线运行由七阶段命名引入前的代码产出，持久化记录沿用 A/B/C/D 旧代号，分别对应现行的 Librarian/Explorer/Oracle/Prometheus；新运行直接使用 `librarian.generate` 等七阶段命名），逐条记录 agent、能力、轮次和假设/证据/任务输出 ID。Prometheus 阶段会将最终轮无法实际执行的本地建议计入预算审计，而不会登记成虚假的 `executable_now`；Oracle 阶段裁决也会进入同一执行账本，避免“智能体运行过但没有科学责任边界”的黑箱。
 
 后端具备真实淘汰能力：只有至少两条独立事件/原始谱系上的、命中预注册致命证伪条件的定量反证，包含 holdout 且对应完成任务的功效与最小可检出效应达到预注册要求，才把候选标为 `eliminated` 并从活动池移除；审计记录永久保留。本次 0 条淘汰不是功能缺失，而是当前反例没有达到该门槛。单事件阴性、诊断不特异和“未发现”均不能用于强行淘汰。
 

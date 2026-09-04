@@ -324,7 +324,7 @@ describe('scientific loop contracts', () => {
       fingerprint: 'task-fingerprint-1',
     })
 
-    expect(result.route).toBe('B')
+    expect(result.route).toBe('explorer')
     expect(result.hypothesisIds).toEqual(['h-wave-reconnection'])
     expect(result.readiness).toBe('executable_now')
   })
@@ -354,6 +354,6 @@ describe('scientific loop contracts', () => {
     })
 
     expect(correction.triggeredBy).toEqual(['e-1'])
-    expect(execution.stage).toBe('B')
+    expect(execution.stage).toBe('explorer')
   })
 })

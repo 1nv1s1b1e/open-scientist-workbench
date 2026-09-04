@@ -36,7 +36,14 @@ export async function runScientificModelTask<TOutput>(
   const tools: ToolSet = {
     submit_result: makeSubmitResultTool(input.schema),
   }
-  const stage = input.role === 'sisyphus' ? 'C' : input.role === 'prometheus' ? 'D' : 'B'
+  const stage =
+    input.role === 'librarian'
+      ? 'librarian'
+      : input.role === 'sisyphus'
+        ? 'oracle'
+        : input.role === 'prometheus'
+          ? 'prometheus'
+          : 'explorer'
   const instructions = `你是太阳物理科研工作流中的 ${input.agentId}。
 只使用用户消息中明确提供的现象、文献条目、数据处理指标、来源 ID 和状态记录。不得补写不存在的观测、数值、论文或因果关系。
 你的输出会直接进入可审计的 LangGraph State。summary/reasoningSummary 是面向用户的公开工作摘要，应说明使用了哪些事实、得出了什么有限判断、仍有哪些边界；不要声称它是内部隐藏思维链。

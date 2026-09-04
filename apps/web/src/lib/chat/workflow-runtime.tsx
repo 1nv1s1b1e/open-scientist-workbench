@@ -110,7 +110,6 @@ export function WorkflowRuntimeProvider({
     initialScientificState,
     initialAgentStates,
     skipHistoryLoad,
-    onFinish: () => console.log('[workflow] run finished'),
     onError: (e) => console.error('[workflow] run error', e),
   })
 

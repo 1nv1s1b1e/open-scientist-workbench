@@ -322,7 +322,7 @@ export const ValidationTaskSchema = z.object({
   taskId: z.string().min(1),
   /** Explicit runtime binding. `external` means planned but not executable here. */
   executorId: z.string().min(1).optional(),
-  route: z.enum(['A', 'B']),
+  route: z.preprocess(normalizeLegacyStage, z.enum(['librarian', 'explorer'])),
   type: z.enum([
     'observation',
     'analysis',
@@ -561,9 +561,31 @@ export const MemoryEntrySchema = z.object({
 })
 export type MemoryEntry = z.infer<typeof MemoryEntrySchema>
 
+/** Legacy A–D stage codes → canonical stage names (runs persisted before v1.1). */
+export function normalizeLegacyStage(value: unknown): unknown {
+  if (value === 'A') return 'librarian'
+  if (value === 'B') return 'explorer'
+  if (value === 'C') return 'oracle'
+  if (value === 'D') return 'prometheus'
+  return value
+}
+
 export const ScientificCorrectionSchema = z.object({
   correctionId: z.string().min(1),
-  stage: z.enum(['A', 'B', 'C', 'D', 'memory', 'data-processing']),
+  stage: z.preprocess(
+    normalizeLegacyStage,
+    z.enum([
+      'librarian',
+      'self-correction-i',
+      'surveyor',
+      'explorer',
+      'self-correction-ii',
+      'oracle',
+      'prometheus',
+      'memory',
+      'data-processing',
+    ]),
+  ),
   kind: z.enum(['schema', 'provenance', 'factual', 'execution', 'memory-policy']),
   severity: z.enum(['info', 'warning', 'error']),
   message: z.string().min(1),
@@ -579,7 +601,18 @@ export type ScientificCorrection = z.infer<typeof ScientificCorrectionSchema>
 export const AgentExecutionSchema = z.object({
   agentId: z.string().min(1),
   label: z.string().min(1),
-  stage: z.enum(['A', 'B', 'C', 'D']),
+  stage: z.preprocess(
+    normalizeLegacyStage,
+    z.enum([
+      'librarian',
+      'self-correction-i',
+      'surveyor',
+      'explorer',
+      'self-correction-ii',
+      'oracle',
+      'prometheus',
+    ]),
+  ),
   status: z.enum(['queued', 'running', 'completed', 'skipped', 'failed']),
   capabilities: z.array(z.string().min(1)).default([]),
   round: z.number().int().min(0),

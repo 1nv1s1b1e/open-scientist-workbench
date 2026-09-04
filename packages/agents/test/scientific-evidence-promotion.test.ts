@@ -22,7 +22,7 @@ describe('scientific evidence promotion gate', () => {
     const result = await promoteEvidence(
       { ...base, status: 'support' },
       {
-        stage: 'B',
+        stage: 'explorer',
         round: 1,
         hypothesisIds: ['h-1'],
         agentId: 'analysis-agent',
@@ -55,7 +55,7 @@ describe('scientific evidence promotion gate', () => {
         },
       },
       {
-        stage: 'C',
+        stage: 'oracle',
         round: 1,
         hypothesisIds: ['h-1'],
         agentId: 'counterexample-agent',
@@ -83,7 +83,7 @@ describe('scientific evidence promotion gate', () => {
         },
       },
       {
-        stage: 'B',
+        stage: 'explorer',
         round: 1,
         hypothesisIds: ['h-1'],
         agentId: 'analysis-agent',
@@ -111,7 +111,7 @@ describe('scientific evidence promotion gate', () => {
         },
       },
       {
-        stage: 'B',
+        stage: 'explorer',
         round: 1,
         hypothesisIds: ['h-1'],
         agentId: 'analysis-agent',
@@ -137,7 +137,7 @@ describe('scientific evidence promotion gate', () => {
       },
     }
     const result = await promoteEvidence(candidate, {
-      stage: 'B',
+      stage: 'explorer',
       round: 1,
       hypothesisIds: ['h-1'],
       agentId: 'analysis-agent',

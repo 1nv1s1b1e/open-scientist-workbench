@@ -171,7 +171,7 @@ export async function librarianWorkflow(
     projectId: input.projectId,
     runId: input.runId,
     role: 'librarian',
-    stage: 'A',
+    stage: 'librarian',
     agentId: 'librarian',
     modelConfig: resolvedModelConfig,
     prompt,

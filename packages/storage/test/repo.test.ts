@@ -473,7 +473,7 @@ describe('scientific loop memory and validation task repos', () => {
   it('deduplicates validation tasks by fingerprint and records result evidence', async () => {
     const task = {
       taskId: 'task-1',
-      route: 'B' as const,
+      route: 'explorer' as const,
       type: 'analysis' as const,
       objective: '比较活动区的高频功率谱',
       hypothesisIds: [],
@@ -509,7 +509,7 @@ describe('scientific loop memory and validation task repos', () => {
     const task = {
       taskId: 'task-run-1',
       executorId: 'coronal-timeseries-lag-v1',
-      route: 'B' as const,
+      route: 'explorer' as const,
       type: 'analysis' as const,
       objective: 'measure a registered lag diagnostic',
       hypothesisIds: ['hypothesis-1'],

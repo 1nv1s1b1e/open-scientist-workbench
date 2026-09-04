@@ -1,6 +1,13 @@
 import type { MemoryEntry, MemoryKind, MemoryLayer } from '@open-scientist/schema'
 
-export type ScientificLoopStage = 'A' | 'B' | 'C' | 'D'
+export type ScientificLoopStage =
+  | 'librarian'
+  | 'self-correction-i'
+  | 'surveyor'
+  | 'explorer'
+  | 'self-correction-ii'
+  | 'oracle'
+  | 'prometheus'
 
 export interface ScientificMemoryPolicy {
   readLayers: readonly MemoryLayer[]
@@ -17,7 +24,31 @@ export interface RejectedMemoryWrite {
 }
 
 const STAGE_POLICIES: Record<ScientificLoopStage, ScientificMemoryPolicy> = {
-  A: {
+  'self-correction-i': {
+    readLayers: ['working', 'semantic'],
+    readKinds: ['hypothesis', 'revision', 'lesson'],
+    writeLayers: ['working', 'episodic'],
+    writeKinds: ['revision', 'failure', 'lesson'],
+    requireVerified: true,
+    maxItems: 12,
+  },
+  surveyor: {
+    readLayers: ['working', 'semantic', 'procedural-data'],
+    readKinds: ['phenomenon', 'validation-task', 'data-snapshot', 'processing-run'],
+    writeLayers: ['working'],
+    writeKinds: ['decision'],
+    requireVerified: false,
+    maxItems: 12,
+  },
+  'self-correction-ii': {
+    readLayers: ['working', 'episodic', 'procedural-data'],
+    readKinds: ['evidence', 'counterexample', 'processing-run', 'artifact', 'failure'],
+    writeLayers: ['episodic'],
+    writeKinds: ['revision', 'failure', 'lesson'],
+    requireVerified: true,
+    maxItems: 16,
+  },
+  librarian: {
     readLayers: ['working', 'semantic'],
     readKinds: ['phenomenon', 'hypothesis', 'evidence', 'counterexample', 'revision', 'lesson'],
     writeLayers: ['semantic', 'episodic'],
@@ -25,7 +56,7 @@ const STAGE_POLICIES: Record<ScientificLoopStage, ScientificMemoryPolicy> = {
     requireVerified: true,
     maxItems: 16,
   },
-  B: {
+  explorer: {
     readLayers: ['working', 'episodic', 'semantic', 'procedural-data'],
     readKinds: [
       'phenomenon',
@@ -52,7 +83,7 @@ const STAGE_POLICIES: Record<ScientificLoopStage, ScientificMemoryPolicy> = {
     requireVerified: false,
     maxItems: 24,
   },
-  C: {
+  oracle: {
     readLayers: ['semantic'],
     readKinds: ['evidence', 'counterexample', 'revision'],
     writeLayers: ['semantic', 'episodic'],
@@ -60,7 +91,7 @@ const STAGE_POLICIES: Record<ScientificLoopStage, ScientificMemoryPolicy> = {
     requireVerified: true,
     maxItems: 12,
   },
-  D: {
+  prometheus: {
     readLayers: ['episodic', 'semantic', 'procedural-data'],
     readKinds: [
       'hypothesis',
@@ -81,7 +112,7 @@ const STAGE_POLICIES: Record<ScientificLoopStage, ScientificMemoryPolicy> = {
 
 const AGENT_POLICIES: Record<string, ScientificMemoryPolicy> = {
   'history-search': {
-    ...STAGE_POLICIES.B,
+    ...STAGE_POLICIES.explorer,
     readLayers: ['working', 'semantic'],
     readKinds: ['phenomenon', 'hypothesis', 'evidence', 'counterexample', 'validation-task'],
     writeLayers: ['semantic', 'episodic'],
@@ -89,7 +120,7 @@ const AGENT_POLICIES: Record<string, ScientificMemoryPolicy> = {
     maxItems: 16,
   },
   'literature-retrieval': {
-    ...STAGE_POLICIES.B,
+    ...STAGE_POLICIES.explorer,
     readLayers: ['working', 'semantic'],
     readKinds: ['phenomenon', 'hypothesis', 'evidence', 'counterexample'],
     writeLayers: ['semantic', 'episodic'],
@@ -97,7 +128,7 @@ const AGENT_POLICIES: Record<string, ScientificMemoryPolicy> = {
     maxItems: 16,
   },
   'source-audit': {
-    ...STAGE_POLICIES.B,
+    ...STAGE_POLICIES.explorer,
     readLayers: ['working', 'procedural-data'],
     readKinds: ['phenomenon', 'data-snapshot', 'artifact', 'validation-task'],
     writeLayers: ['procedural-data', 'episodic'],
@@ -105,7 +136,7 @@ const AGENT_POLICIES: Record<string, ScientificMemoryPolicy> = {
     maxItems: 12,
   },
   'timeseries-analysis': {
-    ...STAGE_POLICIES.B,
+    ...STAGE_POLICIES.explorer,
     readLayers: ['working', 'semantic', 'procedural-data'],
     readKinds: [
       'phenomenon',
@@ -121,14 +152,14 @@ const AGENT_POLICIES: Record<string, ScientificMemoryPolicy> = {
     maxItems: 20,
   },
   'counterexample-search': {
-    ...STAGE_POLICIES.B,
+    ...STAGE_POLICIES.explorer,
     readLayers: ['working', 'semantic', 'procedural-data'],
     writeLayers: ['semantic', 'episodic'],
     writeKinds: ['evidence', 'counterexample', 'validation-task', 'failure'],
     maxItems: 20,
   },
   'fact-check': {
-    ...STAGE_POLICIES.C,
+    ...STAGE_POLICIES.oracle,
     readLayers: ['episodic', 'semantic', 'procedural-data'],
     readKinds: [
       'hypothesis',
@@ -159,7 +190,7 @@ export function memoryPolicyForStage(stage: ScientificLoopStage): ScientificMemo
 }
 
 export function memoryPolicyForAgent(agentId: string): ScientificMemoryPolicy {
-  return AGENT_POLICIES[agentId] ?? STAGE_POLICIES.B
+  return AGENT_POLICIES[agentId] ?? STAGE_POLICIES.explorer
 }
 
 export function selectMemoryForAgent(

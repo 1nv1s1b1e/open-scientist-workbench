@@ -310,7 +310,7 @@ describe('scientific support gate', () => {
     const task: ValidationTask = {
       taskId: 'task-fatal-test',
       executorId: 'test-counterexample-executor',
-      route: 'B',
+      route: 'explorer',
       type: 'analysis',
       objective: '以冻结阈值复测预注册证伪条件',
       hypothesisIds: ['h-1'],

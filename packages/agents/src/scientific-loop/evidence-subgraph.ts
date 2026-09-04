@@ -129,7 +129,7 @@ export function createEvidenceSubgraph(
   }
 
   return new StateGraph(EvidenceSubgraphState)
-    .addNode('B.dispatch', async () => {
+    .addNode('explorer.dispatch', async () => {
       throwIfAborted(options.signal)
       await Promise.all(
         agents.map((agent) =>
@@ -142,7 +142,7 @@ export function createEvidenceSubgraph(
       )
       return {}
     })
-    .addNode('B.worker', async (state: EvidenceSubgraphStateValue) => {
+    .addNode('explorer.worker', async (state: EvidenceSubgraphStateValue) => {
       throwIfAborted(options.signal)
       const agentId = state.workerAgentId
       const order = state.workerIndex
@@ -153,7 +153,7 @@ export function createEvidenceSubgraph(
       if (!agent) throw new Error(`evidence agent is not registered: ${agentId}`)
 
       const projected = buildScientificContext({
-        stage: 'B',
+        stage: 'explorer',
         state,
         capabilities: agent.capabilities,
       })
@@ -243,15 +243,15 @@ export function createEvidenceSubgraph(
         }
       }
     })
-    .addNode('B.aggregate', (state: EvidenceSubgraphStateValue) => ({
+    .addNode('explorer.aggregate', (state: EvidenceSubgraphStateValue) => ({
       result: aggregateExecutions(state.workerExecutions),
     }))
-    .addEdge(START, 'B.dispatch')
-    .addConditionalEdges('B.dispatch', (state: EvidenceSubgraphStateValue) => {
-      if (agents.length === 0) return 'B.aggregate'
+    .addEdge(START, 'explorer.dispatch')
+    .addConditionalEdges('explorer.dispatch', (state: EvidenceSubgraphStateValue) => {
+      if (agents.length === 0) return 'explorer.aggregate'
       return agents.map(
         (agent, order) =>
-          new Send('B.worker', {
+          new Send('explorer.worker', {
             phenomenon: state.phenomenon,
             hypotheses: state.hypotheses,
             evidence: state.evidence,
@@ -262,8 +262,8 @@ export function createEvidenceSubgraph(
           }),
       )
     })
-    .addEdge('B.worker', 'B.aggregate')
-    .addEdge('B.aggregate', END)
+    .addEdge('explorer.worker', 'explorer.aggregate')
+    .addEdge('explorer.aggregate', END)
     .compile()
 }
 

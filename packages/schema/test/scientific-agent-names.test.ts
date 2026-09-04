@@ -23,7 +23,15 @@ describe('scientific agent identities', () => {
 
   it('assigns every agent a valid loop stage and a one-line responsibility', () => {
     for (const agent of SCIENTIFIC_AGENTS) {
-      expect(['A', 'B', 'C', 'D']).toContain(agent.stage)
+      expect([
+        'librarian',
+        'self-correction-i',
+        'surveyor',
+        'explorer',
+        'self-correction-ii',
+        'oracle',
+        'prometheus',
+      ]).toContain(agent.stage)
       expect(agent.responsibility.length).toBeGreaterThan(8)
       expect(agent.codename.length).toBeGreaterThan(2)
     }

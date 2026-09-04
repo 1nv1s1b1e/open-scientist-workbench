@@ -28,7 +28,7 @@ export const ScientificGraphStateSchema = new StateSchema({
     representedMechanismFamilies: [],
     unrepresentedMechanismFamilies: [],
     residualAlternativeAllowed: true,
-    limitations: ['尚未完成 A 阶段假设覆盖审计。'],
+    limitations: ['尚未完成 Librarian 阶段假设覆盖审计。'],
   }),
   evidence: z.array(EvidenceRecordSchema).default([]),
   verificationReports: z.array(HypothesisVerificationReportSchema).default([]),
@@ -42,7 +42,10 @@ export const ScientificGraphStateSchema = new StateSchema({
   budgetDeferredTaskCount: z.number().int().min(0).default(0),
   roundTaskIds: z.array(z.string().min(1)).default([]),
   completedRounds: z.number().int().min(0).default(0),
-  nextRoute: z.enum(['A', 'B', 'END']).default('B'),
+  nextRoute: z.preprocess(
+    (value: unknown) => (value === 'A' ? 'librarian' : value === 'B' ? 'explorer' : value),
+    z.enum(['librarian', 'explorer', 'END']).default('explorer'),
+  ),
   terminationReason: z
     .enum([
       'max_rounds_reached',

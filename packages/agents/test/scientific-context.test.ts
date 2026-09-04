@@ -44,7 +44,7 @@ function evidence(evidenceId: string, hypothesisId: string): EvidenceRecord {
 function task(taskId: string, triggeredBy: string): ValidationTask {
   return {
     taskId,
-    route: 'B',
+    route: 'explorer',
     type: 'analysis',
     objective: `验证 ${triggeredBy}`,
     hypothesisIds: [],
@@ -94,7 +94,7 @@ function state(): ScientificGraphState {
       {
         agentId: 'previous-agent',
         label: '前序智能体',
-        stage: 'B',
+        stage: 'explorer',
         status: 'completed',
         capabilities: ['history-search'],
         round: 1,
@@ -110,7 +110,7 @@ function state(): ScientificGraphState {
     roundTaskIds: [],
     completedRounds: 0,
     budgetDeferredTaskCount: 0,
-    nextRoute: 'B',
+    nextRoute: 'explorer',
     terminationReason: null,
   }
 }
@@ -118,7 +118,7 @@ function state(): ScientificGraphState {
 describe('scientific working-context projection', () => {
   it('projects only the hypothesis and evidence targeted by a B task', () => {
     const projected = buildScientificContext({
-      stage: 'B',
+      stage: 'explorer',
       state: state(),
       taskId: 'task-1',
       capabilities: ['timeseries-analysis'],
@@ -136,7 +136,7 @@ describe('scientific working-context projection', () => {
       corrections: [
         {
           correctionId: 'correction-1',
-          stage: 'B',
+          stage: 'explorer',
           kind: 'provenance',
           severity: 'warning',
           message: '有 3 个抽样 FITS 读取或校验异常，已登记重取工单。',
@@ -148,31 +148,31 @@ describe('scientific working-context projection', () => {
         },
         {
           correctionId: 'correction-2',
-          stage: 'C',
+          stage: 'oracle',
           kind: 'factual',
           severity: 'warning',
           message: '同一处理运行的 DEM 指标被 6 个假设复用，不具机制区分力。',
           action: '各假设需独立满足支持义务。',
           evidenceAction: 'none',
           affectedIds: [],
-          triggeredBy: ['C.verify'],
+          triggeredBy: ['oracle.verify'],
           round: 1,
         },
         {
           correctionId: 'correction-3',
-          stage: 'D',
+          stage: 'prometheus',
           kind: 'execution',
           severity: 'info',
           message: '本轮有 2 项外部任务保持 planned。',
           action: '保留追踪。',
           evidenceAction: 'none',
           affectedIds: [],
-          triggeredBy: ['D.plan'],
+          triggeredBy: ['prometheus.plan'],
           round: 1,
         },
         {
           correctionId: 'correction-4',
-          stage: 'B',
+          stage: 'explorer',
           kind: 'provenance',
           severity: 'warning',
           message: '同一处理运行的 DEM 指标被 6 个假设复用，不具机制区分力。',
@@ -184,19 +184,21 @@ describe('scientific working-context projection', () => {
         },
       ],
     } as ScientificGraphState
-    const projected = buildScientificContext({ stage: 'B', state: stateWithLessons })
+    const projected = buildScientificContext({ stage: 'explorer', state: stateWithLessons })
 
     // info 级不入课；跨轮重复发现去重（保留最新一条）；最新在前。
     expect(projected.recentLessons).toHaveLength(2)
-    expect(projected.recentLessons[0]).toContain('R2/B: 同一处理运行的 DEM 指标被 6 个假设复用')
-    expect(projected.recentLessons[1]).toContain('R1/B: 有 3 个抽样 FITS 读取或校验异常')
+    expect(projected.recentLessons[0]).toContain(
+      'R2/explorer: 同一处理运行的 DEM 指标被 6 个假设复用',
+    )
+    expect(projected.recentLessons[1]).toContain('R1/explorer: 有 3 个抽样 FITS 读取或校验异常')
     // 原始 corrections 仍然不整体暴露给智能体。
     expect(Object.keys(projected)).not.toContain('corrections')
   })
 
   it('does not expose orchestration internals or credentials to an Agent', () => {
     const projected = buildScientificContext({
-      stage: 'A',
+      stage: 'librarian',
       state: state(),
     })
     const keys = Object.keys(projected)
@@ -219,7 +221,7 @@ describe('scientific working-context projection', () => {
     ]
 
     const projected = buildScientificContext({
-      stage: 'B',
+      stage: 'explorer',
       state: current,
       taskId: 'task-explicit',
     })
@@ -236,9 +238,9 @@ describe('scientific working-context projection', () => {
     )
     current.validationTasks = [task('task-late', 'e-18')]
 
-    const first = buildScientificContext({ stage: 'B', state: current })
+    const first = buildScientificContext({ stage: 'explorer', state: current })
     const second = buildScientificContext({
-      stage: 'B',
+      stage: 'explorer',
       state: { ...first, corrections: [] },
       capabilities: ['timeseries-analysis'],
     })
@@ -267,7 +269,7 @@ describe('scientific working-context projection', () => {
     current.validationTasks = [task('task-1', 'e-1')]
 
     const projected = buildScientificContext({
-      stage: 'C',
+      stage: 'oracle',
       state: current,
     })
 

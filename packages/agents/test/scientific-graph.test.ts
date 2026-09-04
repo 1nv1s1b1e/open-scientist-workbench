@@ -147,14 +147,15 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     )
 
     expect(completed).toEqual([
-      'A.generate',
-      'A.verify',
-      'B.run',
-      'BC.verify',
-      'C.verify',
-      'C.synthesize',
-      'D.plan',
-      'D.route',
+      'librarian.generate',
+      'self-correction-i.verify',
+      'surveyor.analyze',
+      'explorer.analyze',
+      'self-correction-ii.verify',
+      'oracle.verify',
+      'oracle.synthesize',
+      'prometheus.plan',
+      'prometheus.route',
     ])
     expect(emitted).toEqual(
       expect.arrayContaining([
@@ -168,13 +169,13 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     expect(result.evidence[0]?.status).toBe('unknown')
     expect(result.terminationReason).toBe('max_rounds_reached')
     expect(new Set(result.agentExecutions.map((execution) => execution.stage))).toEqual(
-      new Set(['A', 'B', 'C', 'D']),
+      new Set(['librarian', 'surveyor', 'explorer', 'oracle', 'prometheus']),
     )
     expect(result.agentExecutions).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ agentId: 'librarian', stage: 'A' }),
-        expect.objectContaining({ agentId: 'sisyphus', stage: 'C' }),
-        expect.objectContaining({ agentId: 'prometheus', stage: 'D' }),
+        expect.objectContaining({ agentId: 'librarian', stage: 'librarian' }),
+        expect.objectContaining({ agentId: 'sisyphus', stage: 'oracle' }),
+        expect.objectContaining({ agentId: 'prometheus', stage: 'prometheus' }),
       ]),
     )
     expect(result.roundBudget).toEqual({
@@ -199,7 +200,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     const dataTask: ValidationTask = {
       taskId: 'task-needs-third-event',
       executorId: 'external',
-      route: 'B',
+      route: 'explorer',
       type: 'observation',
       objective: '在第三个独立目标事件上复测预注册时序预测',
       hypothesisIds: [hypothesis.id],
@@ -238,7 +239,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     const finalRoundTask: ValidationTask = {
       taskId: 'task-final-round-budget',
       executorId: 'test-round-executor',
-      route: 'B',
+      route: 'explorer',
       type: 'analysis',
       objective: '在最终轮登记一项可执行的时序复核',
       hypothesisIds: [hypothesis.id],
@@ -321,7 +322,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
       taskId: 'task-round-1',
       executorId: 'test-round-executor',
       readiness: 'executable_now',
-      route: 'B',
+      route: 'explorer',
       type: 'analysis',
       objective: '补充多波段时序处理',
       hypothesisIds: [hypothesis.id],
@@ -387,7 +388,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     const localTask = (round: number): ValidationTask => ({
       taskId: `task-local-${round}`,
       executorId: 'coronal-timeseries-lag-v1',
-      route: 'B',
+      route: 'explorer',
       type: 'analysis',
       objective: round === 1 ? '计算 171/193 时序' : '再次检验 171/193 时序',
       hypothesisIds: [hypothesis.id],
@@ -418,7 +419,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
       taskId: 'task-revise',
       executorId: 'test-revision-executor',
       readiness: 'executable_now',
-      route: 'A',
+      route: 'librarian',
       type: 'model-update',
       objective: 'revise the mechanism after a discriminating counterexample',
       hypothesisIds: [hypothesis.id],
@@ -465,7 +466,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     const emitted: Array<Record<string, unknown>> = []
     const task: ValidationTask = {
       taskId: 'task-repeat-check',
-      route: 'B',
+      route: 'explorer',
       type: 'analysis',
       objective: 'repeat the evidence projection without creating new evidence',
       hypothesisIds: [hypothesis.id],
@@ -823,7 +824,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     }
     const completedTask: ValidationTask = {
       taskId: 'task-test-1',
-      route: 'B',
+      route: 'explorer',
       type: 'analysis',
       objective: '测一下已注册的时序预测',
       hypothesisIds: [twoPredictionHypothesis.id],
@@ -872,7 +873,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
   it('downgrades stale executable tasks honestly at the execution boundary', async () => {
     const staleTask: ValidationTask = {
       taskId: 'task-stale-exec',
-      route: 'B',
+      route: 'explorer',
       type: 'analysis',
       objective: '一个声称可执行但没有任何执行器能认领的任务',
       hypothesisIds: [hypothesis.id],
@@ -910,7 +911,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
 
   it('deduplicates the same correction re-observed in different stages', async () => {
     const duplicateMessage = '同一来源边界问题只应记录一次。'
-    const correctingAgent = (id: string, stage: 'B' | 'memory'): EvidenceAgent => ({
+    const correctingAgent = (id: string, stage: 'explorer' | 'memory'): EvidenceAgent => ({
       id,
       label: id,
       capabilities: ['fact-check'],
@@ -931,7 +932,10 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     const result = await runScientificLoopGraph(
       input(undefined, 1),
       dependencies({
-        evidenceAgents: [correctingAgent('review-a', 'B'), correctingAgent('review-b', 'memory')],
+        evidenceAgents: [
+          correctingAgent('review-a', 'explorer'),
+          correctingAgent('review-b', 'memory'),
+        ],
       }),
     )
 
@@ -1016,7 +1020,7 @@ describe('LangGraph A-B-C-D scientific root graph', () => {
     const eliminationTask: ValidationTask = {
       taskId: 'task-replicated-falsification',
       executorId: 'counterexample-executor',
-      route: 'B',
+      route: 'explorer',
       type: 'analysis',
       objective: '冻结阈值后在独立事件复测致命证伪条件',
       hypothesisIds: [hypothesis.id],

@@ -7,7 +7,14 @@ import type {
   ScientificOrchestrationState,
 } from './state'
 
-export type OrchestrationStageId = 'A' | 'B' | 'C' | 'D'
+export type OrchestrationStageId =
+  | 'librarian'
+  | 'self-correction-i'
+  | 'surveyor'
+  | 'explorer'
+  | 'self-correction-ii'
+  | 'oracle'
+  | 'prometheus'
 export type OrchestrationSelection = { kind: 'node'; id: string } | { kind: 'worker'; id: string }
 
 interface NodeDefinition {
@@ -55,7 +62,7 @@ function roleFromWorkerId(workerId: string): AgentRole {
 }
 
 export interface OrchestrationRouteView {
-  target: 'A' | 'B' | 'END' | 'WAIT'
+  target: 'librarian' | 'explorer' | 'END' | 'WAIT'
   label: string
   reason: string | null
   continuing: boolean
@@ -64,80 +71,88 @@ export interface OrchestrationRouteView {
 
 const NODE_DEFINITIONS: NodeDefinition[] = [
   {
-    id: 'A.generate',
-    stage: 'A',
+    id: 'librarian.generate',
+    stage: 'librarian',
     title: '生成候选假设',
     description: '从现象与已知资料中提出可比较的解释。',
     reads: '现象描述',
     writes: '候选机制与预测',
   },
   {
-    id: 'A.verify',
-    stage: 'A',
-    title: '检查假设边界',
-    description: '补全可证伪条件和资料边界。',
+    id: 'self-correction-i.verify',
+    stage: 'self-correction-i',
+    title: '自校正 I：检查假设边界',
+    description: '校验结构约束、文献依据与本地可检验性。',
     reads: '候选机制与预测',
     writes: '可检验假设',
   },
   {
-    id: 'B.run',
-    stage: 'B',
+    id: 'surveyor.analyze',
+    stage: 'surveyor',
+    title: '全局粗粒度分析',
+    description: '汇总观测覆盖并对候选任务做优先级排序。',
+    reads: '可检验假设',
+    writes: '带优先级的任务队列',
+  },
+  {
+    id: 'explorer.analyze',
+    stage: 'explorer',
     title: '启动证据工作组',
     description: '先运行确定性处理，再让模型依次审阅前序证据。',
     reads: '可检验假设',
     writes: '证据任务',
   },
   {
-    id: 'B.dispatch',
-    stage: 'B',
+    id: 'explorer.dispatch',
+    stage: 'explorer',
     title: '分发确定性任务',
     description: '并行执行数据计算、目录核验、背景对照和溯源检查。',
     reads: '证据任务',
     writes: '确定性工作项',
   },
   {
-    id: 'B.aggregate',
-    stage: 'B',
+    id: 'explorer.aggregate',
+    stage: 'explorer',
     title: '汇总工作组证据',
     description: '合并确定性结果、模型审阅、限制和冲突。',
     reads: '全部工作项结果',
     writes: '证据记录',
   },
   {
-    id: 'BC.verify',
-    stage: 'B',
-    title: '核验事实与处理',
+    id: 'self-correction-ii.verify',
+    stage: 'self-correction-ii',
+    title: '自校正 II：核验事实与处理',
     description: '检查来源、数据处理和结论是否越过证据边界。',
     reads: '证据记录',
     writes: '校正后的证据',
   },
   {
-    id: 'C.synthesize',
-    stage: 'C',
-    title: '形成阶段结论',
-    description: '只根据本轮已登记的证据归纳结果。',
-    reads: '校正后的证据',
-    writes: '本轮结论',
-  },
-  {
-    id: 'C.verify',
-    stage: 'C',
+    id: 'oracle.verify',
+    stage: 'oracle',
     title: '检查结论强度',
-    description: '把不足以支持的内容保留为未知。',
-    reads: '本轮结论',
+    description: '按证据门禁逐条裁决，不足以支持的内容保留为未知。',
+    reads: '校正后的证据',
     writes: '结论边界',
   },
   {
-    id: 'D.plan',
-    stage: 'D',
+    id: 'oracle.synthesize',
+    stage: 'oracle',
+    title: '形成阶段结论',
+    description: '只根据本轮已登记的证据归纳结果。',
+    reads: '结论边界',
+    writes: '本轮结论',
+  },
+  {
+    id: 'prometheus.plan',
+    stage: 'prometheus',
     title: '生成验证任务',
     description: '把未解决的问题转成下一步可执行任务。',
     reads: '结论边界',
     writes: '验证计划',
   },
   {
-    id: 'D.route',
-    stage: 'D',
+    id: 'prometheus.route',
+    stage: 'prometheus',
     title: '选择下一条路径',
     description: '决定补充证据、重写假设或结束本轮。',
     reads: '验证计划',
@@ -146,10 +161,13 @@ const NODE_DEFINITIONS: NodeDefinition[] = [
 ]
 
 const STAGE_DEFINITIONS: Array<Pick<OrchestrationStageView, 'id' | 'title' | 'description'>> = [
-  { id: 'A', title: '假设', description: '提出并校验可检验的解释' },
-  { id: 'B', title: '证据', description: '确定性并行计算后进行模型串行审阅' },
-  { id: 'C', title: '结论', description: '整理证据并校验结论边界' },
-  { id: 'D', title: '验证', description: '生成任务并决定是否继续' },
+  { id: 'librarian', title: 'Librarian 假设', description: '文献检索与候选机制生成' },
+  { id: 'self-correction-i', title: '自校正 I', description: '假设合理性与可检验性评估' },
+  { id: 'surveyor', title: 'Surveyor 粗析', description: '全局粗粒度分析与任务优先级' },
+  { id: 'explorer', title: 'Explorer 证据', description: '确定性并行计算后进行模型串行审阅' },
+  { id: 'self-correction-ii', title: '自校正 II', description: '事实校正与数据处理检查' },
+  { id: 'oracle', title: 'Oracle 结论', description: '证据裁决与综合推理' },
+  { id: 'prometheus', title: 'Prometheus 验证', description: '生成任务并决定是否继续' },
 ]
 
 const WORKER_DEFINITIONS: WorkerDefinition[] = [
@@ -231,19 +249,19 @@ export function describeScientificRoute(
   if (!route) {
     return { target: 'WAIT', label: '等待本轮路由', reason: null, continuing: false, round: null }
   }
-  if (route.nextRoute === 'A') {
+  if (route.nextRoute === 'librarian') {
     return {
-      target: 'A',
-      label: '返回假设阶段',
+      target: 'librarian',
+      label: '返回 Librarian 假设阶段',
       reason: route.reason,
       continuing: route.continue,
       round: route.round,
     }
   }
-  if (route.nextRoute === 'B') {
+  if (route.nextRoute === 'explorer') {
     return {
-      target: 'B',
-      label: '返回证据工作组',
+      target: 'explorer',
+      label: '返回 Explorer 证据工作组',
       reason: route.reason,
       continuing: route.continue,
       round: route.round,

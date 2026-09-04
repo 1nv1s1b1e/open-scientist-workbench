@@ -102,7 +102,7 @@ function evidence(status: EvidenceRecord['status']): EvidenceRecord {
 const validationTask: ValidationTask = {
   taskId: 'scientific-task-1',
   executorId: 'test-agent',
-  route: 'B',
+  route: 'explorer',
   type: 'analysis',
   objective: 'Compare the candidate mechanisms with an independent processing run.',
   hypothesisIds: [hypothesis.id],
@@ -156,7 +156,7 @@ describe('scientific domain record repository', () => {
   it('round-trips hypotheses, unknown/traceable evidence, and corrections', async () => {
     const correction: ScientificCorrection = {
       correctionId: 'correction-1',
-      stage: 'B',
+      stage: 'explorer',
       kind: 'provenance',
       severity: 'warning',
       message: '证据边界校正',

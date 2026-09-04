@@ -25,8 +25,8 @@ export interface ScientificAgentIdentity {
   readonly displayName: string
   /** English display name. */
   readonly englishName: string
-  /** Primary stage in the A–D scientific loop. */
-  readonly stage: 'A' | 'B' | 'C' | 'D'
+  /** Primary stage in the seven-stage scientific loop. */
+  readonly stage: 'librarian' | 'surveyor' | 'explorer' | 'oracle' | 'prometheus'
   /** One-line responsibility used in prompts and workbench copy. */
   readonly responsibility: string
 }
@@ -37,7 +37,7 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
     codename: 'Librarian',
     displayName: '文献溯源智能体',
     englishName: 'Literature Provenance Agent',
-    stage: 'A',
+    stage: 'librarian',
     responsibility:
       '检索并冻结文献与观测来源，把候选假设绑定到可核验的 sourceIds，禁止无来源候选进入 State。',
   },
@@ -46,7 +46,7 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
     codename: 'Looker',
     displayName: '观测质控智能体',
     englishName: 'Observation Quality Agent',
-    stage: 'B',
+    stage: 'surveyor',
     responsibility: '审计数据覆盖、质量标记与预处理边界，拒绝不合格输入进入证据层并登记缺失维度。',
   },
   {
@@ -54,7 +54,7 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
     codename: 'Explorer',
     displayName: '物理诊断智能体',
     englishName: 'Physical Diagnostics Agent',
-    stage: 'B',
+    stage: 'explorer',
     responsibility:
       '执行注册的确定性诊断（DEM、冷却时延、空间相干、事件目录、矢量磁场），产出带溯源的定量证据。',
   },
@@ -63,7 +63,7 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
     codename: 'Oracle',
     displayName: '反证审计智能体',
     englishName: 'Counter-Evidence Auditor',
-    stage: 'B',
+    stage: 'explorer',
     responsibility: '构造同区背景对照与反例搜索，检验候选机制是否具有机制区分力而非共同预测。',
   },
   {
@@ -71,7 +71,7 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
     codename: 'Prometheus',
     displayName: '验证设计智能体',
     englishName: 'Validation Design Agent',
-    stage: 'D',
+    stage: 'prometheus',
     responsibility:
       '把未检验预测下沉为验证任务，标注 readiness、所需数据与成功/失败判据，维护闭环完整性。',
   },
@@ -80,7 +80,7 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
     codename: 'Sisyphus',
     displayName: '闭环协调智能体',
     englishName: 'Loop Coordinator Agent',
-    stage: 'C',
+    stage: 'oracle',
     responsibility: '驱动支持/淘汰门禁评估，综合有限结论并保持科学状态与工作流闭环状态分离。',
   },
 ] as const satisfies readonly ScientificAgentIdentity[]

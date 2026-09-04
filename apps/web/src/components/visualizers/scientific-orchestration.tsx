@@ -59,7 +59,7 @@ function NodeCard({
   dimmed: boolean
   onSelect: () => void
 }) {
-  const structural = node.id === 'B.dispatch' || node.id === 'B.aggregate'
+  const structural = node.id === 'explorer.dispatch' || node.id === 'explorer.aggregate'
   const visibleStatus = structural && node.state === 'idle' ? '图内步骤' : node.stateLabel
   return (
     <motion.button
@@ -173,7 +173,20 @@ export function ScientificOrchestration({
     ? (view.stages.find((stage) => stage.nodes.some((node) => node.id === selectedNode.id))?.id ??
       null)
     : selectedWorker
-      ? 'B'
+      ? (view.stages.find((stage) =>
+          stage.nodes.some(
+            (node) =>
+              node.stage ===
+              ({
+                librarian: 'librarian',
+                looker: 'surveyor',
+                explore: 'explorer',
+                oracle: 'explorer',
+                sisyphus: 'oracle',
+                prometheus: 'prometheus',
+              }[selectedWorker.role] ?? 'explorer'),
+          ),
+        )?.id ?? null)
       : null
   const selectedStageIndex = selectedStageId
     ? view.stages.findIndex((stage) => stage.id === selectedStageId)
@@ -197,7 +210,7 @@ export function ScientificOrchestration({
     activeFocusedRound != null && itemRound != null && itemRound !== activeFocusedRound
   const runtimeNodes = view.stages
     .flatMap((stage) => stage.nodes)
-    .filter((node) => node.id !== 'B.dispatch' && node.id !== 'B.aggregate')
+    .filter((node) => node.id !== 'explorer.dispatch' && node.id !== 'explorer.aggregate')
   const completedNodes = runtimeNodes.filter((node) => node.state === 'completed').length
   const activeWorkers = view.workers.summary.running
   const completedWorkers = view.workers.summary.completed
@@ -360,16 +373,18 @@ export function ScientificOrchestration({
                     </div>
                   </header>
                   <div className="orchestration-stage-nodes">
-                    {stage.nodes.slice(0, stage.id === 'B' ? 2 : stage.nodes.length).map((node) => (
-                      <NodeCard
-                        key={node.id}
-                        node={node}
-                        selected={selection?.kind === 'node' && selection.id === node.id}
-                        dimmed={isRoundDimmed(node.round)}
-                        onSelect={() => selectNode(node.id)}
-                      />
-                    ))}
-                    {stage.id === 'B' && (
+                    {stage.nodes
+                      .slice(0, stage.id === 'explorer' ? 2 : stage.nodes.length)
+                      .map((node) => (
+                        <NodeCard
+                          key={node.id}
+                          node={node}
+                          selected={selection?.kind === 'node' && selection.id === node.id}
+                          dimmed={isRoundDimmed(node.round)}
+                          onSelect={() => selectNode(node.id)}
+                        />
+                      ))}
+                    {stage.id === 'explorer' && (
                       <>
                         <div className="orchestration-worker-lane orchestration-worker-lane-deterministic">
                           <header>
@@ -450,10 +465,10 @@ export function ScientificOrchestration({
             <div>
               <span>循环控制</span>
               <strong>{view.route.label}</strong>
-              <p>{view.route.reason ?? 'D 阶段完成后会在这里登记下一条路径。'}</p>
+              <p>{view.route.reason ?? 'Prometheus 阶段完成后会在这里登记下一条路径。'}</p>
             </div>
             <div className="orchestration-route-target">
-              <span>D</span>
+              <span>prometheus</span>
               <ChevronRight className="h-3.5 w-3.5" />
               <b>{view.route.target === 'WAIT' ? '—' : view.route.target}</b>
             </div>

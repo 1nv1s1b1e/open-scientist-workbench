@@ -97,7 +97,7 @@ describe('scientific workbench state replay', () => {
         taskId: 'task-1',
         executorId: 'coronal-wave-validation',
         type: 'analysis',
-        route: 'B',
+        route: 'explorer',
         status: 'completed',
         objective: '完成时序分析',
         requiredSourceIds: ['local-coronal-observations'],
@@ -143,7 +143,7 @@ describe('scientific workbench state replay', () => {
       provenance: { processingRunId: 'processing-1', deterministic: true },
     })
     expect(state.validationTasks[0]).toMatchObject({
-      route: 'B',
+      route: 'explorer',
       executorId: 'coronal-wave-validation',
       type: 'analysis',
       requiredSourceIds: ['local-coronal-observations'],
@@ -182,7 +182,7 @@ describe('scientific workbench state replay', () => {
     state = reduceScientificChunk(state, {
       type: 'custom',
       kind: 'scientific.node-state',
-      node: 'A.generate',
+      node: 'librarian.generate',
       state: 'running',
       round: 1,
     })
@@ -200,10 +200,12 @@ describe('scientific workbench state replay', () => {
       round: 1,
       continue: true,
       reason: 'new evidence',
-      nextRoute: 'B',
+      nextRoute: 'explorer',
     })
 
-    expect(state.orchestration.nodes).toEqual([{ node: 'A.generate', state: 'running', round: 1 }])
+    expect(state.orchestration.nodes).toEqual([
+      { node: 'librarian.generate', state: 'running', round: 1 },
+    ])
     expect(state.orchestration.agents).toEqual([
       {
         agentId: 'looker-source-audit',
@@ -216,7 +218,7 @@ describe('scientific workbench state replay', () => {
       round: 1,
       continue: true,
       reason: 'new evidence',
-      nextRoute: 'B',
+      nextRoute: 'explorer',
     })
   })
   it('hydrates saved entities from the final completion event', () => {
@@ -250,10 +252,10 @@ describe('scientific workbench state replay', () => {
           },
         ],
         validationTasks: [
-          { taskId: 't-final', route: 'B', status: 'planned', objective: 'validate' },
+          { taskId: 't-final', route: 'explorer', status: 'planned', objective: 'validate' },
         ],
         corrections: [
-          { correctionId: 'c-final', stage: 'C', status: 'passed', message: 'checked' },
+          { correctionId: 'c-final', stage: 'oracle', status: 'passed', message: 'checked' },
         ],
         verificationReports: [
           {

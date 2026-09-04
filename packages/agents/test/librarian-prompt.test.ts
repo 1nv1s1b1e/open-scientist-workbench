@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
+import { join } from 'node:path'
 import { buildLibrarianPrompt } from '../src/librarian/workflow.ts'
 
 describe('buildLibrarianPrompt', () => {
@@ -24,7 +25,7 @@ describe('buildLibrarianPrompt', () => {
       datasetDir: 'C:\\data\\jwfd',
     })
 
-    expect(prompt).toContain('C:\\data\\jwfd\\dataset_manifest.json')
+    expect(prompt).toContain(join('C:\\data\\jwfd', 'dataset_manifest.json'))
   })
 
   it('uses an open-world mechanism space instead of a fixed mainstream trio', () => {

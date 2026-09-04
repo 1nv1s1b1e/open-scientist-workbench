@@ -126,8 +126,8 @@ function roleFromScientificAgent(agentId: unknown, stage?: unknown): AgentRole |
   if (id.includes('explore')) return 'explore'
   if (id.includes('oracle')) return 'oracle'
   if (id.includes('prometheus')) return 'prometheus'
-  if (stage === 'C') return 'sisyphus'
-  if (stage === 'D') return 'prometheus'
+  if (stage === 'oracle') return 'sisyphus'
+  if (stage === 'prometheus') return 'prometheus'
   return undefined
 }
 

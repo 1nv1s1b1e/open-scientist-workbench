@@ -37,7 +37,14 @@ type TraceCategory =
   | 'route'
   | 'result'
 type TraceStatus = 'idle' | 'queued' | 'running' | 'completed' | 'skipped' | 'failed'
-type TraceStage = 'A' | 'B' | 'C' | 'D'
+type TraceStage =
+  | 'librarian'
+  | 'self-correction-i'
+  | 'surveyor'
+  | 'explorer'
+  | 'self-correction-ii'
+  | 'oracle'
+  | 'prometheus'
 
 type TraceDetail = { label: string; value: unknown }
 
@@ -89,10 +96,6 @@ const COPY = {
   skipped: '\u5df2\u8df3\u8fc7',
   failed: '\u5931\u8d25',
   idle: '\u7b49\u5f85\u4e2d',
-  stageA: 'A / \u5047\u8bbe\u751f\u6210',
-  stageB: 'B / \u8bc1\u636e\u67e5\u9a8c',
-  stageC: 'C / \u7ed3\u8bba\u7efc\u5408',
-  stageD: 'D / \u9a8c\u8bc1\u89c4\u5212',
   system: '\u7cfb\u7edf\u4e8b\u4ef6',
   toolPrefix: '\u5de5\u5177\uff1a',
   toolFailedPrefix: '\u5de5\u5177\u5931\u8d25\uff1a',
@@ -181,17 +184,51 @@ function formatValue(value: unknown): string {
   }
 }
 
+const TRACE_STAGES: readonly TraceStage[] = [
+  'librarian',
+  'self-correction-i',
+  'surveyor',
+  'explorer',
+  'self-correction-ii',
+  'oracle',
+  'prometheus',
+]
+
+/** 兼容 v1.0 冻结运行记录里的 A–D 阶段码与旧节点名。 */
+const TRACE_STAGE_ALIASES: Record<string, TraceStage> = {
+  A: 'librarian',
+  B: 'explorer',
+  C: 'oracle',
+  D: 'prometheus',
+  'librarian.generate': 'librarian',
+  'self-correction-i.verify': 'self-correction-i',
+  'surveyor.analyze': 'surveyor',
+  'explorer.analyze': 'explorer',
+  'explorer.dispatch': 'explorer',
+  'explorer.worker': 'explorer',
+  'explorer.aggregate': 'explorer',
+  'self-correction-ii.verify': 'self-correction-ii',
+  'oracle.verify': 'oracle',
+  'oracle.synthesize': 'oracle',
+  'prometheus.plan': 'prometheus',
+  'prometheus.route': 'prometheus',
+}
+
 function stageFrom(value: unknown): TraceStage | undefined {
   if (typeof value !== 'string') return undefined
-  const stage = value.trim().charAt(0).toUpperCase()
-  return stage === 'A' || stage === 'B' || stage === 'C' || stage === 'D' ? stage : undefined
+  const key = value.trim()
+  if ((TRACE_STAGES as readonly string[]).includes(key)) return key as TraceStage
+  return TRACE_STAGE_ALIASES[key] ?? TRACE_STAGE_ALIASES[key.charAt(0).toUpperCase()]
 }
 
 function stageLabel(stage?: TraceStage): string {
-  if (stage === 'A') return COPY.stageA
-  if (stage === 'B') return COPY.stageB
-  if (stage === 'C') return COPY.stageC
-  if (stage === 'D') return COPY.stageD
+  if (stage === 'librarian') return 'Librarian / 假设生成'
+  if (stage === 'self-correction-i') return '自校正 I / 假设评估'
+  if (stage === 'surveyor') return 'Surveyor / 粗粒度分析'
+  if (stage === 'explorer') return 'Explorer / 证据工作'
+  if (stage === 'self-correction-ii') return '自校正 II / 事实核验'
+  if (stage === 'oracle') return 'Oracle / 综合推理'
+  if (stage === 'prometheus') return 'Prometheus / 验证规划'
   return COPY.system
 }
 
@@ -317,7 +354,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       id: `input:${String(phenomenon?.phenomenonId ?? index)}`,
       category: 'input',
       status: 'completed',
-      stage: 'A',
+      stage: 'librarian',
       round,
       title: COPY.input,
       summary:
@@ -350,7 +387,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       id: `retrieval:${round ?? 0}:${index}`,
       category: 'tool',
       status: payload.status === 'failed' ? 'failed' : 'completed',
-      stage: 'A',
+      stage: 'librarian',
       round,
       title: '\u8d44\u6599\u68c0\u7d22\u6c47\u603b',
       summary:
@@ -425,7 +462,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       id: `agent:${agentId}:${round ?? 0}:${index}`,
       category: 'agent',
       status,
-      stage: 'B',
+      stage: 'explorer',
       round,
       title: cleanText(payload.label) || agentId,
       summary:
@@ -450,7 +487,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       id: `hypothesis:${String(hypothesis?.id ?? index)}`,
       category: 'model',
       status: 'completed',
-      stage: 'A',
+      stage: 'librarian',
       round,
       title: COPY.generatedHypothesis,
       summary:
@@ -478,7 +515,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       id: `evidence:${String(evidence?.evidenceId ?? index)}`,
       category: 'evidence',
       status: 'completed',
-      stage: 'B',
+      stage: 'explorer',
       round,
       title: `${COPY.evidenceStatus}\uff1a${verdict}`,
       summary:
@@ -509,7 +546,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       id: `processing:${processingRunId}`,
       category: 'processing',
       status: 'completed',
-      stage: 'B',
+      stage: 'explorer',
       round,
       title: `\u786e\u5b9a\u6027\u5904\u7406\uff1a${cleanText(payload.caseLabel) || processingRunId}`,
       summary: `${mode}\uff0c\u5b9e\u9645\u8bfb\u53d6 ${usedObservationCount} \u6761\u89c2\u6d4b\uff1b\u5904\u7406\u8fd0\u884c ${processingRunId}\u3002`,
@@ -554,7 +591,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       id: `summary:${round ?? index}`,
       category: 'result',
       status: 'completed',
-      stage: 'C',
+      stage: 'oracle',
       round,
       title: COPY.roundSummary,
       summary:
@@ -574,7 +611,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       id: `task:${String(task?.taskId ?? index)}`,
       category: 'task',
       status: taskStatus,
-      stage: 'D',
+      stage: 'prometheus',
       round,
       title: COPY.nextValidation,
       summary: cleanText(task?.objective) || '\u672a\u63d0\u4f9b\u9a8c\u8bc1\u76ee\u6807\u3002',
@@ -595,7 +632,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       id: `route:${round ?? index}`,
       category: 'route',
       status: 'completed',
-      stage: 'D',
+      stage: 'prometheus',
       round,
       title: `${COPY.routing}\uff1a${nextRoute}`,
       summary:
@@ -654,7 +691,7 @@ export function buildScientificTrace(chunks: readonly UIMessageChunk[]): TraceEn
             id,
             category: 'model',
             status: 'completed',
-            stage: 'A',
+            stage: 'librarian',
             title: COPY.modelOutput,
             summary: delta,
           })
@@ -690,7 +727,7 @@ function fallbackTrace(state: ScientificWorkbenchState): TraceEntry[] {
       id: 'saved-input',
       category: 'input',
       status: 'completed',
-      stage: 'A',
+      stage: 'librarian',
       title: COPY.savedResult,
       summary: state.phenomenon.title,
       details: [{ label: COPY.inputDetails, value: state.phenomenon }],
@@ -701,7 +738,7 @@ function fallbackTrace(state: ScientificWorkbenchState): TraceEntry[] {
       id: `saved-hypothesis:${hypothesis.id}`,
       category: 'model',
       status: 'completed',
-      stage: 'A',
+      stage: 'librarian',
       round: hypothesis.round,
       title: COPY.generatedHypothesis,
       summary: hypothesis.statement,
@@ -713,7 +750,7 @@ function fallbackTrace(state: ScientificWorkbenchState): TraceEntry[] {
       id: `saved-evidence:${evidence.evidenceId}`,
       category: 'evidence',
       status: 'completed',
-      stage: 'B',
+      stage: 'explorer',
       round: evidence.round,
       title: COPY.evidenceStatus,
       summary: evidence.claim,
@@ -736,7 +773,7 @@ function fallbackTrace(state: ScientificWorkbenchState): TraceEntry[] {
       id: 'saved-summary',
       category: 'result',
       status: 'completed',
-      stage: 'C',
+      stage: 'oracle',
       round: state.round,
       title: COPY.roundSummary,
       summary: state.conclusion,
@@ -957,7 +994,7 @@ export function ScientificTrace({
 
       <div className="trace-layout">
         <div className="trace-ribbon" aria-hidden="true">
-          {(['A', 'B', 'C', 'D'] as const).map((stage) => (
+          {TRACE_STAGES.map((stage) => (
             <div
               key={stage}
               className={`trace-ribbon-stage trace-ribbon-stage-${stage.toLowerCase()}`}

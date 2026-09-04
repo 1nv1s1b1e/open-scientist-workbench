@@ -25,7 +25,7 @@ describe('local-grounded scientific pipeline', () => {
   it('registers only diagnostics the local processor actually implements', () => {
     const baseTask = {
       taskId: 'task-local',
-      route: 'B' as const,
+      route: 'explorer' as const,
       type: 'analysis' as const,
       hypothesisIds: ['h-1'],
       predictionIds: [],
@@ -146,7 +146,7 @@ describe('local-grounded scientific pipeline', () => {
   it('claims objectives whose embedded prediction-id hashes collide with domain keywords', () => {
     const baseTask = {
       taskId: 'task-local',
-      route: 'B' as const,
+      route: 'explorer' as const,
       type: 'analysis' as const,
       hypothesisIds: ['h-1'],
       predictionIds: [],
@@ -222,7 +222,7 @@ describe('local-grounded scientific pipeline', () => {
     const irisTask = {
       taskId: 'task-iris-holdout',
       executorId: 'coronal-iris-spectroscopy-v1',
-      route: 'B' as const,
+      route: 'explorer' as const,
       type: 'analysis' as const,
       objective:
         '在预注册 AR11899 留出事件中读取 IRIS Level-2 raster，以 O I 校正并报告 Si IV Doppler 速度。',
@@ -408,7 +408,7 @@ describe('local-grounded scientific pipeline', () => {
       expect.arrayContaining([
         expect.objectContaining({
           executorId: 'coronal-cross-event-holdout-v1',
-          route: 'B',
+          route: 'explorer',
           type: 'analysis',
           status: 'planned',
         }),

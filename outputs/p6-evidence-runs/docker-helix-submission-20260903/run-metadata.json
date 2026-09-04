@@ -1,0 +1,29 @@
+{
+    "runId":  "run-1788431926970-1f3b6181",
+    "datasetId":  "coronal-evidence-70gb-v1",
+    "datasetManifestSha256":  "98a3baf95b026f2ea4601fe503f688a9cca9adcd91facef3d7c8101ac35c8760",
+    "requestSha256":  "ce79405b9fbacdabf0ee2556993fa12b7afa0a712e293b59fa48ae5440a1e7d2",
+    "requestTemplate":  "C:\\vscode_project\\ali_competition\\scientist_code\\open-scientist\\examples\\ar11158-scientific-demo.request.json",
+    "sseStreamPath":  "response.sse",
+    "responseHeadersPath":  "response.headers.txt",
+    "codeStatePatchPath":  "code-state.patch",
+    "codeStatePatchSha256":  "d4cfe679824f6b9e62fc97eeb5aa4e032bf8ffb68e73da48bcc5a8c2927a3126",
+    "codeStateStatusPath":  "code-state.status.txt",
+    "codeCommit":  "59a9006c8f7ecd06d4229515347b0ac6a140944c",
+    "codeDirtyFileCount":  19,
+    "preprocessingVersions":  [
+                                  "wcs-roi-dem-v5"
+                              ],
+    "executionMode":  "local-grounded",
+    "maxRounds":  2,
+    "status":  "completed",
+    "scientificStatus":  "needs_data",
+    "closureStatus":  "partial",
+    "workflowClosureStatus":  "complete",
+    "operationalClosureStatus":  "complete",
+    "terminationReason":  "no_executable_validation_task",
+    "hypothesisCount":  15,
+    "evidenceCount":  144,
+    "validationTaskCount":  29,
+    "exportedAt":  "2026-09-03T10:44:04.5864581Z"
+}

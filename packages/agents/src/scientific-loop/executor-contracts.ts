@@ -23,7 +23,7 @@ import type { LocalCoronalAnalysis } from './local-processing.ts'
 export type LocalExecutorMechanismKey = keyof LocalCoronalAnalysis['diagnostics']
 
 export interface LocalExecutorContract {
-  /** Pre-registered diagnostic identifier the model planner (D.plan) emits. */
+  /** Pre-registered diagnostic identifier the model planner (prometheus.plan) emits. */
   readonly diagnosticId: string
   /** Deterministic executor that claims this diagnostic. */
   readonly executorId: string

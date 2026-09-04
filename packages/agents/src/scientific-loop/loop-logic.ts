@@ -5,11 +5,11 @@ type ScientificTaskLike = Pick<
   'route' | 'type' | 'objective' | 'fingerprint' | 'triggeredBy'
 >
 
-/** Decide whether D can send the next task to data work (B) or must revisit A. */
-export function decideNextRoute(task: ScientificTaskLike): 'A' | 'B' {
-  if (task.type === 'model-update') return 'A'
-  if (/新.*机制|无法解释|unexplained|missing mechanism/i.test(task.objective)) return 'A'
-  return 'B'
+/** Decide whether prometheus can send the next task to evidence work (explorer) or must revisit librarian. */
+export function decideNextRoute(task: ScientificTaskLike): 'librarian' | 'explorer' {
+  if (task.type === 'model-update') return 'librarian'
+  if (/新.*机制|无法解释|unexplained|missing mechanism/i.test(task.objective)) return 'librarian'
+  return 'explorer'
 }
 
 export function deduplicateValidationTasks(tasks: ValidationTask[]): ValidationTask[] {

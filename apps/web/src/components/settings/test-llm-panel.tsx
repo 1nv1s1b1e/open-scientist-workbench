@@ -178,7 +178,7 @@ export function TestLlmPanel() {
               <Input
                 value={baseURL}
                 onChange={(e) => setBaseURL(e.target.value)}
-                placeholder="http://10.191.80.76:8084/v1"
+                placeholder="http://localhost:8080/v1"
                 className="font-mono text-xs"
               />
             </FieldGroup>
