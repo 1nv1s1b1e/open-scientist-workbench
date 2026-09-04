@@ -17,9 +17,12 @@ import {
   createRun,
   createValidationTask,
   deleteProject,
+  getArtifact,
+  getDataSnapshot,
   getHypothesis,
   getLatestProjectPhenomenon,
   getProject,
+  getProcessingRun,
   getRun,
   getRunChunks,
   listHypothesesByRun,
@@ -468,6 +471,22 @@ describe('scientific loop memory and validation task repos', () => {
         outputArtifactIds: ['artifact-1'],
       }),
     ])
+    expect(await getDataSnapshot('proj-a', 'snapshot-1')).toEqual(
+      expect.objectContaining({ snapshotId: 'snapshot-1', sourceIds: ['aia-171'] }),
+    )
+    expect(await getArtifact('proj-a', 'artifact-1')).toEqual(
+      expect.objectContaining({ artifactId: 'artifact-1', processingRunId: 'processing-1' }),
+    )
+    expect(await getProcessingRun('proj-a', 'processing-1')).toEqual(
+      expect.objectContaining({
+        processingRunId: 'processing-1',
+        snapshotIds: ['snapshot-1'],
+        outputArtifactIds: ['artifact-1'],
+      }),
+    )
+    expect(await getDataSnapshot('proj-a', 'snapshot-missing')).toBeNull()
+    expect(await getArtifact('proj-a', 'artifact-missing')).toBeNull()
+    expect(await getProcessingRun('proj-a', 'processing-missing')).toBeNull()
   })
 
   it('deduplicates validation tasks by fingerprint and records result evidence', async () => {

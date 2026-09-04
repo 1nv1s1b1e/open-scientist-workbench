@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
-import { getProjectDir } from '@open-scientist/config'
+import { getProjectDir, resolveRepoPath } from '@open-scientist/config'
 import { ProjectNameSchema } from '@open-scientist/schema'
 import { getProject, listArtifacts } from '@open-scientist/storage'
 import { Hono } from 'hono'
@@ -21,7 +21,7 @@ artifacts.get('/api/projects/:project/artifacts/:artifactId/content', async (c) 
     return c.json({ error: 'not_found', message: `Artifact "${artifactId}" not found` }, 404)
   }
   const projectRoot = resolve(getProjectDir(projectName))
-  const artifactPath = resolve(artifact.path)
+  const artifactPath = resolveRepoPath(artifact.path)
   const withinProject = relative(projectRoot, artifactPath)
   if (withinProject.startsWith('..') || resolve(projectRoot, withinProject) !== artifactPath) {
     return c.json(

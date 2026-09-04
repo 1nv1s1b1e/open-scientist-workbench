@@ -152,6 +152,25 @@ export interface ScientificOrchestrationNode {
   round: number
 }
 
+/** v1.0-competition 冻结运行记录使用 A–D 节点代号，回放时归一化为七阶段节点名。 */
+const ORCHESTRATION_NODE_ALIASES: Record<string, string> = {
+  'A.generate': 'librarian.generate',
+  'A.verify': 'self-correction-i.verify',
+  'B.run': 'explorer.analyze',
+  'B.dispatch': 'explorer.dispatch',
+  'B.worker': 'explorer.worker',
+  'B.aggregate': 'explorer.aggregate',
+  'BC.verify': 'self-correction-ii.verify',
+  'C.verify': 'oracle.verify',
+  'C.synthesize': 'oracle.synthesize',
+  'D.plan': 'prometheus.plan',
+  'D.route': 'prometheus.route',
+}
+
+function normalizeOrchestrationNode(node: string): string {
+  return ORCHESTRATION_NODE_ALIASES[node] ?? node
+}
+
 export interface ScientificOrchestrationAgent {
   agentId: string
   label: string
@@ -280,7 +299,7 @@ export function reduceScientificChunk(
     const nodeState = payload.state
     if (!node || !['running', 'completed', 'failed'].includes(String(nodeState))) return state
     const item: ScientificOrchestrationNode = {
-      node,
+      node: normalizeOrchestrationNode(node),
       state: nodeState as ScientificOrchestrationNodeState,
       round: typeof payload.round === 'number' ? payload.round : state.round,
     }

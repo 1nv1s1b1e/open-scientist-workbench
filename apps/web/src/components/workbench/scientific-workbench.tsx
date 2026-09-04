@@ -160,7 +160,11 @@ function StageRail({
               className={`stage-node ${current === 'active' ? 'stage-node-active' : current === 'finished' ? 'stage-node-finished' : ''}`}
               style={{ '--stage-color': step.color } as React.CSSProperties}
             >
-              {current === 'finished' ? <Check className="h-3.5 w-3.5" /> : <span>{step.key}</span>}
+              {current === 'finished' ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <span>{index + 1}</span>
+              )}
             </div>
             <div className="min-w-0">
               <div className="text-[12px] font-medium text-white">{step.label}</div>

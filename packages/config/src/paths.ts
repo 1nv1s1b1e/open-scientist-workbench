@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { env } from './env.ts'
 
@@ -58,4 +58,27 @@ export function getRoundsDir(project: string, round: number): string {
 export function getDatasetDir(): string {
   if (process.env.DATASET_DIR) return resolve(process.env.DATASET_DIR)
   return resolve(getBaseDir(), 'dataset')
+}
+
+/**
+ * Normalize an absolute path under the monorepo root to a root-relative
+ * POSIX path so records stored in project databases stay portable across
+ * platforms (Windows dev machines vs Linux servers). Paths outside the
+ * monorepo are returned resolved-but-absolute.
+ */
+export function toRepoRelativePath(absolutePath: string): string {
+  const normalized = resolve(absolutePath)
+  const rel = relative(MONOREPO_ROOT, normalized)
+  if (!rel || rel.startsWith('..')) return normalized
+  return rel.split(sep).join('/')
+}
+
+/**
+ * Resolve a possibly repo-relative stored path back to an absolute path on
+ * the current platform. Absolute inputs pass through unchanged, so records
+ * written before the relative-path convention keep working.
+ */
+export function resolveRepoPath(storedPath: string): string {
+  if (isAbsolute(storedPath)) return resolve(storedPath)
+  return resolve(MONOREPO_ROOT, storedPath)
 }

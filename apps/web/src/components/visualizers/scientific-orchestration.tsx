@@ -258,7 +258,7 @@ export function ScientificOrchestration({
           <div className="eyebrow-mono">运行编排</div>
           <h1 className="orchestration-title">科学闭环控制台</h1>
           <p className="orchestration-description">
-            查看 A→D 节点、B
+            查看七阶段节点、Explorer
             阶段的确定性并行计算与模型串行审阅，以及本轮最终路由。点击节点可核对读写内容。
           </p>
         </div>
@@ -366,7 +366,7 @@ export function ScientificOrchestration({
                   aria-label={`${stage.id} 阶段：${stage.title}`}
                 >
                   <header>
-                    <span>{stage.id}</span>
+                    <span>{index + 1}</span>
                     <div>
                       <h2>{stage.title}</h2>
                       <p>{stage.description}</p>

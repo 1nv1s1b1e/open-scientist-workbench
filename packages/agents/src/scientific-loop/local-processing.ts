@@ -4,12 +4,15 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
-import { getDatasetDir, getProjectDir } from '@open-scientist/config'
+import { getDatasetDir, getProjectDir, resolveRepoPath } from '@open-scientist/config'
 import { getCoronalDatasetId, LOCAL_CORONAL_SOURCE_ID } from '@open-scientist/tools'
 import {
   createArtifact,
   createDataSnapshot,
   createProcessingRun,
+  getArtifact,
+  getDataSnapshot,
+  getProcessingRun,
   listArtifacts,
   listDataSnapshots,
   listProcessingRuns,
@@ -395,26 +398,21 @@ export async function verifyLocalEvidenceProvenance(
 ): Promise<boolean> {
   const provenance = evidence.provenance
   if (!provenance) return evidence.status === 'unknown'
-  const runs = await listProcessingRuns(projectId, { limit: 200 })
-  const run = runs.find((item) => item.processingRunId === provenance.processingRunId)
+  // Primary-key lookups: paginated listings silently truncated on long runs
+  // and made otherwise valid evidence fail verification.
+  const run = await getProcessingRun(projectId, provenance.processingRunId)
   if (!run || run.status !== 'completed' || !run.deterministic) return false
   if (!provenance.dataSnapshotIds.every((id) => run.snapshotIds.includes(id))) return false
   if (!provenance.artifactIds.every((id) => run.outputArtifactIds.includes(id))) return false
-  const [snapshots, artifacts] = await Promise.all([
-    listDataSnapshots(projectId, { runId: run.runId, limit: 200 }),
-    listArtifacts(projectId, {
-      runId: run.runId,
-      processingRunId: run.processingRunId,
-      limit: 400,
-    }),
-  ])
-  if (!provenance.dataSnapshotIds.every((id) => snapshots.some((item) => item.snapshotId === id)))
-    return false
+  for (const snapshotId of provenance.dataSnapshotIds) {
+    const snapshot = await getDataSnapshot(projectId, snapshotId)
+    if (!snapshot) return false
+  }
   for (const artifactId of provenance.artifactIds) {
-    const artifact = artifacts.find((item) => item.artifactId === artifactId)
+    const artifact = await getArtifact(projectId, artifactId)
     if (!artifact || artifact.processingRunId !== provenance.processingRunId) return false
     try {
-      if ((await fileSha256(artifact.path)) !== artifact.checksum) return false
+      if ((await fileSha256(resolveRepoPath(artifact.path))) !== artifact.checksum) return false
     } catch {
       return false
     }

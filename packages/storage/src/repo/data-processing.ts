@@ -1,4 +1,4 @@
-import { desc } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import {
   ArtifactRefSchema,
   DataSnapshotRefSchema,
@@ -7,6 +7,7 @@ import {
   type DataSnapshotRef,
   type ProcessingRun,
 } from '@open-scientist/schema'
+import { toRepoRelativePath } from '@open-scientist/config'
 import { createProjectDb } from '../db.ts'
 import { artifacts, dataSnapshots, processingRuns } from '../schema/project.ts'
 
@@ -24,7 +25,7 @@ export async function createDataSnapshot(
       projectId,
       runId,
       sourceIdsJson: JSON.stringify(parsed.sourceIds),
-      manifestPath: parsed.manifestPath,
+      manifestPath: toRepoRelativePath(parsed.manifestPath),
       checksumsJson: JSON.stringify(parsed.checksums),
       selectionJson: JSON.stringify(parsed.selection),
       createdAt: parsed.createdAt,
@@ -40,16 +41,27 @@ export async function listDataSnapshots(
   const { db } = createProjectDb(projectName)
   let rows = db.select().from(dataSnapshots).orderBy(desc(dataSnapshots.createdAt)).all()
   if (options?.runId) rows = rows.filter((row) => row.runId === options.runId)
-  return rows.slice(0, options?.limit ?? 50).map((row) =>
-    DataSnapshotRefSchema.parse({
-      snapshotId: row.id,
-      sourceIds: JSON.parse(row.sourceIdsJson),
-      manifestPath: row.manifestPath,
-      checksums: JSON.parse(row.checksumsJson),
-      selection: JSON.parse(row.selectionJson),
-      createdAt: row.createdAt,
-    }),
-  )
+  return rows.slice(0, options?.limit ?? 50).map(toDataSnapshotRef)
+}
+
+export async function getDataSnapshot(
+  projectName: string,
+  snapshotId: string,
+): Promise<DataSnapshotRef | null> {
+  const { db } = createProjectDb(projectName)
+  const row = db.select().from(dataSnapshots).where(eq(dataSnapshots.id, snapshotId)).get()
+  return row ? toDataSnapshotRef(row) : null
+}
+
+function toDataSnapshotRef(row: typeof dataSnapshots.$inferSelect): DataSnapshotRef {
+  return DataSnapshotRefSchema.parse({
+    snapshotId: row.id,
+    sourceIds: JSON.parse(row.sourceIdsJson),
+    manifestPath: row.manifestPath,
+    checksums: JSON.parse(row.checksumsJson),
+    selection: JSON.parse(row.selectionJson),
+    createdAt: row.createdAt,
+  })
 }
 
 export async function createArtifact(
@@ -66,7 +78,7 @@ export async function createArtifact(
       projectId,
       runId,
       kind: parsed.kind,
-      path: parsed.path,
+      path: toRepoRelativePath(parsed.path),
       checksum: parsed.checksum,
       mediaType: parsed.mediaType ?? null,
       generatedBy: parsed.generatedBy,
@@ -88,19 +100,30 @@ export async function listArtifacts(
   if (options?.processingRunId) {
     rows = rows.filter((row) => row.processingRunId === options.processingRunId)
   }
-  return rows.slice(0, options?.limit ?? 100).map((row) =>
-    ArtifactRefSchema.parse({
-      artifactId: row.id,
-      kind: row.kind,
-      path: row.path,
-      checksum: row.checksum,
-      ...(row.mediaType ? { mediaType: row.mediaType } : {}),
-      generatedBy: row.generatedBy,
-      processingRunId: row.processingRunId,
-      sourceIds: JSON.parse(row.sourceIdsJson),
-      createdAt: row.createdAt,
-    }),
-  )
+  return rows.slice(0, options?.limit ?? 100).map(toArtifactRef)
+}
+
+export async function getArtifact(
+  projectName: string,
+  artifactId: string,
+): Promise<ArtifactRef | null> {
+  const { db } = createProjectDb(projectName)
+  const row = db.select().from(artifacts).where(eq(artifacts.id, artifactId)).get()
+  return row ? toArtifactRef(row) : null
+}
+
+function toArtifactRef(row: typeof artifacts.$inferSelect): ArtifactRef {
+  return ArtifactRefSchema.parse({
+    artifactId: row.id,
+    kind: row.kind,
+    path: row.path,
+    checksum: row.checksum,
+    ...(row.mediaType ? { mediaType: row.mediaType } : {}),
+    generatedBy: row.generatedBy,
+    processingRunId: row.processingRunId,
+    sourceIds: JSON.parse(row.sourceIdsJson),
+    createdAt: row.createdAt,
+  })
 }
 
 export async function createProcessingRun(
@@ -141,25 +164,36 @@ export async function listProcessingRuns(
   let rows = db.select().from(processingRuns).orderBy(desc(processingRuns.startedAt)).all()
   if (options?.runId) rows = rows.filter((row) => row.runId === options.runId)
   if (options?.agentId) rows = rows.filter((row) => row.agentId === options.agentId)
-  return rows.slice(0, options?.limit ?? 50).map((row) =>
-    ProcessingRunSchema.parse({
-      processingRunId: row.id,
-      projectId: row.projectId,
-      runId: row.runId,
-      round: row.round,
-      agentId: row.agentId,
-      ...(row.taskId ? { taskId: row.taskId } : {}),
-      triggeredBy: row.triggeredBy,
-      snapshotIds: JSON.parse(row.snapshotIdsJson),
-      steps: JSON.parse(row.stepsJson),
-      deterministic: row.deterministic,
-      status: row.status,
-      outputArtifactIds: JSON.parse(row.outputArtifactIdsJson),
-      ...(row.metricsArtifactId ? { metricsArtifactId: row.metricsArtifactId } : {}),
-      limitations: JSON.parse(row.limitationsJson),
-      fingerprint: row.fingerprint,
-      startedAt: row.startedAt,
-      ...(row.completedAt ? { completedAt: row.completedAt } : {}),
-    }),
-  )
+  return rows.slice(0, options?.limit ?? 50).map(toProcessingRun)
+}
+
+export async function getProcessingRun(
+  projectName: string,
+  processingRunId: string,
+): Promise<ProcessingRun | null> {
+  const { db } = createProjectDb(projectName)
+  const row = db.select().from(processingRuns).where(eq(processingRuns.id, processingRunId)).get()
+  return row ? toProcessingRun(row) : null
+}
+
+function toProcessingRun(row: typeof processingRuns.$inferSelect): ProcessingRun {
+  return ProcessingRunSchema.parse({
+    processingRunId: row.id,
+    projectId: row.projectId,
+    runId: row.runId,
+    round: row.round,
+    agentId: row.agentId,
+    ...(row.taskId ? { taskId: row.taskId } : {}),
+    triggeredBy: row.triggeredBy,
+    snapshotIds: JSON.parse(row.snapshotIdsJson),
+    steps: JSON.parse(row.stepsJson),
+    deterministic: row.deterministic,
+    status: row.status,
+    outputArtifactIds: JSON.parse(row.outputArtifactIdsJson),
+    ...(row.metricsArtifactId ? { metricsArtifactId: row.metricsArtifactId } : {}),
+    limitations: JSON.parse(row.limitationsJson),
+    fingerprint: row.fingerprint,
+    startedAt: row.startedAt,
+    ...(row.completedAt ? { completedAt: row.completedAt } : {}),
+  })
 }
