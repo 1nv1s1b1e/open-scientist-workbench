@@ -6,3 +6,5 @@ demregpy==1.0.0
 scikit-learn==1.7.2
 eispac==0.99.4
 fiasco==0.8.2
+sunpy==8.0.0
+joblib==1.5.3
