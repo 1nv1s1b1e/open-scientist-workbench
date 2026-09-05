@@ -12,11 +12,15 @@ describe('scientific agent identities', () => {
     expect(keys).toEqual(['explore', 'librarian', 'looker', 'oracle', 'prometheus', 'sisyphus'])
   })
 
-  it('keeps codenames, display names and English names unique', () => {
+  it('keeps display names and English names unique, codenames stage-aligned', () => {
     const codenames = SCIENTIFIC_AGENTS.map((agent) => agent.codename)
     const displayNames = SCIENTIFIC_AGENTS.map((agent) => agent.displayName)
     const englishNames = SCIENTIFIC_AGENTS.map((agent) => agent.englishName)
-    expect(new Set(codenames).size).toBe(codenames.length)
+    // Codenames intentionally repeat the five document-facing stage names
+    // (Explorer covers 观测质控/物理诊断/反证审计 sub-agents), so uniqueness
+    // is asserted against the stage vocabulary, not across agents.
+    const stageNames = new Set(['Librarian', 'Surveyor', 'Explorer', 'Oracle', 'Prometheus'])
+    for (const codename of codenames) expect(stageNames.has(codename)).toBe(true)
     expect(new Set(displayNames).size).toBe(displayNames.length)
     expect(new Set(englishNames).size).toBe(englishNames.length)
   })
@@ -47,7 +51,7 @@ describe('scientific agent identities', () => {
   })
 
   it('resolves identities by key and returns undefined for unknown or empty keys', () => {
-    expect(scientificAgentIdentity('oracle')?.codename).toBe('Oracle')
+    expect(scientificAgentIdentity('oracle')?.codename).toBe('Explorer')
     expect(scientificAgentIdentity('LIBRARIAN')).toBeUndefined()
     expect(scientificAgentIdentity('')).toBeUndefined()
     expect(scientificAgentIdentity(null)).toBeUndefined()

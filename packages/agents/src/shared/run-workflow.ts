@@ -20,7 +20,7 @@
  * identical across the 5 workflows. `resolveAgentConfigArgs` concentrates
  * that idiom so a change to the spread contract lands in one place.
  *
- * Sisyphus is excluded — `tournamentWorkflow` is deterministic control flow
+ * The Oracle loop-coordination role (config key sisyphus) is excluded — `tournamentWorkflow` is deterministic control flow
  * that direct-awaits the 4 sub-workflows; it does not call this helper.
  */
 import type { AgentRuntimeConfig, ModelArg } from '@open-scientist/config'

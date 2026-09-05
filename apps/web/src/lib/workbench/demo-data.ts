@@ -222,7 +222,7 @@ export const DEMO_ORCHESTRATION: ScientificOrchestrationState = {
   agents: [
     {
       agentId: 'looker-source-audit',
-      label: 'Looker·观测质控智能体：数据来源审计',
+      label: 'Surveyor·观测质控智能体：数据来源审计',
       state: 'running',
       round: 2,
       message: '核对观测数据的来源与可复核性',
@@ -242,13 +242,13 @@ export const DEMO_ORCHESTRATION: ScientificOrchestrationState = {
     },
     {
       agentId: 'oracle-counterexample-search',
-      label: 'Oracle·反证审计智能体：反例与事实核验',
+      label: 'Explorer·反证审计智能体：反例与事实核验',
       state: 'queued',
       round: 2,
     },
     {
       agentId: 'oracle-fact-check',
-      label: 'Oracle·反证审计智能体：事实性校正',
+      label: 'Explorer·反证审计智能体：事实性校正',
       state: 'queued',
       round: 2,
     },

@@ -2154,7 +2154,7 @@ function recentLessonsPromptBlock(lessons: readonly string[] | undefined): strin
     .join('\n')}\n`
 }
 
-function modelLookerAgent(
+function modelObservationQcAgent(
   input: DefaultScientificServicesInput,
   schedule: ModelScheduler,
 ): EvidenceAgent {
@@ -4717,7 +4717,7 @@ export function createDefaultScientificDependencies(
           localCounterexampleAgent(localProcessing),
           localProcessingFactCheckAgent(localProcessing),
           supplementDiagnosticsAgent(input),
-          modelLookerAgent(input, scheduleModel),
+          modelObservationQcAgent(input, scheduleModel),
           modelExplorerAgent(input, localProcessing, scheduleModel),
           modelOracleAgent(input, localProcessing, scheduleModel),
         ],

@@ -8,7 +8,7 @@
  * 当前已知工具名（从 packages/tools/src/index.ts 导出）：
  *   - bash-tool（Explore）
  *   - helix-query（Librarian）
- *   - fits-align（Looker）
+ *   - fits-align（Explorer·观测质控）
  *   - mhd-config（Prometheus）
  *   - load-skill（Skills）
  *   - 以及 agent 内联定义的工具（librarian-generate / explore-eval / oracle-critique 等）
@@ -126,7 +126,7 @@ export const HelixQueryToolUI = makeAssistantToolUI({
   ),
 })
 
-// ── fits-align (Looker) ──────────────────────────────────────────────────
+// ── fits-align (Explorer·观测质控) ──────────────────────────────────────────────────
 export const FitsAlignToolUI = makeAssistantToolUI({
   toolName: 'fits-align',
   render: ({ args, result, status }: ToolProps) => (

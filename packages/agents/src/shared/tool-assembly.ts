@@ -19,7 +19,7 @@
  * bug (MCP tools silently overwriting base tools on name clash) is fixed in one
  * place, and the skill-discovery + bash-toolkit wiring is not duplicated 5×.
  *
- * Sisyphus is the exception: it has no bash tool and no skills, only the
+ * The Oracle loop-coordination role (config key sisyphus) is the exception: it has no bash tool and no skills, only the
  * `review_leading_hypothesis` tool + optional MCP merge. Pass
  * `workspaceSlot: undefined` (or omit it) to skip bash/skill assembly — the
  * caller supplies its sole tool via `extraTools`.
@@ -39,7 +39,7 @@ export interface AssembleDefaultToolsOptions {
   /** Run identifier — used for workspace dir isolation. */
   runId: string
   /**
-   * Workspace slot name. When omitted (Sisyphus), no bash / readFile /
+   * Workspace slot name. When omitted (loop-coordination role), no bash / readFile /
    * writeFile / loadSkill tools are assembled — the caller supplies its own
    * `extraTools`.
    */
@@ -69,7 +69,7 @@ export interface AssembleDefaultToolsOptions {
 /**
  * Assemble the default toolset shared across the 5 specialist agents.
  *
- * When `workspaceSlot` is omitted (Sisyphus), only `extraTools` + MCP tools
+ * When `workspaceSlot` is omitted (loop-coordination role), only `extraTools` + MCP tools
  * are assembled — no bash / readFile / writeFile / loadSkill.
  */
 export async function assembleDefaultTools({
@@ -114,7 +114,7 @@ export async function assembleDefaultTools({
  *
  * `projectName` scopes MCP server connections per-project.
  *
- * Exported so Sisyphus (which bypasses `assembleDefaultTools` but still needs
+ * Exported so the loop-coordination role (which bypasses `assembleDefaultTools` but still needs
  * MCP merge) can reuse the same collision-aware merge.
  */
 export async function mergeMcpTools(

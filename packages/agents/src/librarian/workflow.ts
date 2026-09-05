@@ -83,7 +83,7 @@ targets.jsonl 或任何目标/标签字段。不得编造论文、DOI、来源�
 }
 
 export interface LibrarianWorkflowInput {
-  /** Seed hypothesis text from the user / Sisyphus. */
+  /** Seed hypothesis text from the user / Oracle loop-coordination role. */
   seed: string
   /** Project name — drives workspace dir + HelixDB scoping. */
   projectId: string

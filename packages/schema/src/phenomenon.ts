@@ -30,7 +30,7 @@ export const PhenomenonInputSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
   activeRegion: z.string().min(1).optional(),
-  /** Optional at intake; Looker/Explore agents may discover and attach sources later. */
+  /** Optional at intake; Explorer 观测质控/物理诊断 agents may discover and attach sources later. */
   observations: z.array(ObservationRefSchema).default([]),
   requestedQuestion: z.string().min(1).optional(),
   constraints: z.array(z.string().min(1)).default([]),

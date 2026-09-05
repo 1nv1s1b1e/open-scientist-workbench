@@ -3,8 +3,9 @@
  *
  * English role keys are persisted API and configuration contracts. Keep them
  * stable for backward compatibility. Each agent carries a legacy framework
- * codename (Librarian, Looker, Explorer, Oracle, Prometheus, Sisyphus) that
- * is shown on user-facing surfaces together with the Chinese role name, so
+ * codename that is always one of the five document-facing stage names
+ * (Librarian, Surveyor, Explorer, Oracle, Prometheus) shown on user-facing
+ * surfaces together with the Chinese role name, so
  * runs, workbench panels and prompts refer to the same actor unambiguously.
  */
 /** Stable API and configuration keys (persisted; do not change). */
@@ -43,9 +44,9 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
   },
   {
     key: 'looker',
-    codename: 'Looker',
+    codename: 'Surveyor',
     displayName: '观测质控智能体',
-    englishName: 'Observation Quality Agent',
+    englishName: 'Surveyor · Observation Quality',
     stage: 'surveyor',
     responsibility: '审计数据覆盖、质量标记与预处理边界，拒绝不合格输入进入证据层并登记缺失维度。',
   },
@@ -60,9 +61,9 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
   },
   {
     key: 'oracle',
-    codename: 'Oracle',
+    codename: 'Explorer',
     displayName: '反证审计智能体',
-    englishName: 'Counter-Evidence Auditor',
+    englishName: 'Explorer · Counter-Evidence Audit',
     stage: 'explorer',
     responsibility: '构造同区背景对照与反例搜索，检验候选机制是否具有机制区分力而非共同预测。',
   },
@@ -77,9 +78,9 @@ export const SCIENTIFIC_AGENTS: readonly ScientificAgentIdentity[] = [
   },
   {
     key: 'sisyphus',
-    codename: 'Sisyphus',
+    codename: 'Oracle',
     displayName: '闭环协调智能体',
-    englishName: 'Loop Coordinator Agent',
+    englishName: 'Oracle · Loop Coordination',
     stage: 'oracle',
     responsibility: '驱动支持/淘汰门禁评估，综合有限结论并保持科学状态与工作流闭环状态分离。',
   },

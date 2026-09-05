@@ -1254,7 +1254,7 @@ export function createScientificLoopGraph(
             : state.validationTasks,
           agentExecutions: appendStageExecution(state, {
             agentId: 'looker',
-            label: '观测质控智能体：全局粗粒度分析',
+            label: 'Surveyor·观测质控智能体：全局粗粒度分析',
             stage: 'surveyor',
             status: 'completed',
             capabilities: ['observation-analysis'],
@@ -1609,7 +1609,7 @@ export function createScientificLoopGraph(
         emit(input, 'scientific.reasoning-summary', {
           stage: 'oracle',
           round: state.round,
-          agentId: 'sisyphus-synthesis',
+          agentId: 'oracle-synthesis',
           title: '结论如何收敛',
           summary: normalizedConclusion,
         })
