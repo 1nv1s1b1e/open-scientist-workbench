@@ -1,10 +1,12 @@
 # API 契约（前后端）— 基于实际代码
 
-> 本文档基于 `apps/api/src/routes/` 实际实现。所有字段名、状态码、行为均与代码一一对应。前端 agent 以本文档为唯一权威。
+> 本文档基于 `apps/api/src/routes/` 实际实现（非设计期）。所有字段名、状态码、行为均与代码一一对应。前端 agent 以本文档为唯一权威。
+>
+> **实现版本**：Phase 4 末（VM 修复 + type stripping 之后）。`tournamentWorkflow` 已能跑通 librarian 首轮；looker/explore/oracle/prometheus 链路代码就绪但需真实数据集 + 模型才能端到端验证。
 
 ## 基础
 
-- **Base URL**：`http://localhost:3000`（apps/api，@hono/node-server + tsx）
+- **Base URL**：`http://localhost:3000`（nitro dev，apps/api）
 - **Content-Type**：`application/json`（除 SSE 流式端点为 `text/event-stream`）
 - **错误格式**：`{ "error": "<code>", "message": "<human readable>" }`
 - **路径参数 `:project` / `:name`**：project 名（slug），用于定位 `data/projects/<name>/` 目录 + SQLite。
@@ -398,26 +400,6 @@ Project 是逻辑隔离单位，每个 project 有独立 SQLite + FS 产物目�
 
 > 注：此端点 `thinkingLevel` 强制为 `'off'`，纯连通性测试。
 
-### `POST /api/test-llm/credential/:id`
-
-用已存凭证测试 LLM 连通性（前端无需传 apiKey/provider/baseURL，后端从加密存储取）。
-
-**路径参数**：`:id` = credential id
-
-**Request body**：`TestLlmByCredentialRequest`
-
-```ts
-{
-  model: string,                        // 必填
-  prompt: string,                       // 默认 'Say hi in 3 words.'
-  maxTokens: number,                    // 1-4096，默认 50
-}
-```
-
-**Response**：同 `POST /api/test-llm`（`TestLlmResponse`）
-
-> `provider` / `baseURL` / `apiKey` 全部从 credential 存储读取，`thinkingLevel` 强制 `'off'`，`apiMode` 强制 `'chat'`。
-
 ---
 
 ## 6. Runs（Tournament Workflow）
@@ -603,7 +585,7 @@ SSE 侧对应 `scientific.human-paused` / `scientific.human-resumed` 事件。
 
 ## 8. SSE 事件类型（UIMessageChunk）
 
-所有 SSE 流端点（`POST /runs`, `GET /runs/:id/stream`, `POST /dev-probe/stream-test`）输出统一的 `UIMessageChunk` 格式（`toUIMessageStream` 转换）。
+所有 SSE 流端点（`POST /runs`, `GET /runs/:id/stream`, `POST /dev-probe/stream-test`）输出统一的 `UIMessageChunk` 格式（来自 `@ai-sdk/workflow` 的 `createModelCallToUIChunkTransform`）。
 
 每个事件格式：`data: <JSON>\n\n`（无 `event:` 字段，全部用 `data`）。流结束发送 `data: [DONE]\n\n`。
 
@@ -762,13 +744,9 @@ POST /api/credentials
 PUT /api/settings/models/default
   { model: 'llab/Qwen3-Next-80B-A3B-Instruct', thinkingLevel: 'medium', credentialId: 'openai-main' }
 
-// 3. 测试 LLM 连通（两种方式）
-//    a) 独立路径，直接传完整 config
+// 3. 测试 LLM 连通（独立路径，直接传完整 config）
 POST /api/test-llm
   { provider: 'openai', model: '...', baseURL: '...', apiKey: '...', prompt: 'hi' }
-//    b) 用已存凭证，无需传 key
-POST /api/test-llm/credential/openai-main
-  { model: '...', prompt: 'hi' }
 
 // 4. 创建 project
 POST /api/projects

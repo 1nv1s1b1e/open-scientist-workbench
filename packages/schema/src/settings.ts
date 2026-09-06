@@ -128,15 +128,6 @@ export const TestLlmResponseSchema = z.object({
 })
 export type TestLlmResponse = z.infer<typeof TestLlmResponseSchema>
 
-// 用已存凭证测试 LLM 连通性（无需前端传 apiKey/provider/baseURL）。
-// 路径参数 :id 为 credential id，后端从存储取 key + endpoint 组装 ModelArg。
-export const TestLlmByCredentialRequestSchema = z.object({
-  model: z.string().min(1),
-  prompt: z.string().default('Say hi in 3 words.'),
-  maxTokens: z.number().int().min(1).max(4096).default(50),
-})
-export type TestLlmByCredentialRequest = z.infer<typeof TestLlmByCredentialRequestSchema>
-
 // ── Credential 存储接口 ──────────────────────────────────────────────
 // 这三个接口定义 credential 存储层契约，由 storage 包实现，config 包消费。
 // 放在 schema（零依赖）避免 config → storage 的循环依赖

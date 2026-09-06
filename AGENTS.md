@@ -10,7 +10,7 @@ vp fmt --write    # oxfmt（format）
 vp check          # format + lint + typecheck 一条命令
 vp run -r typecheck  # 全 11 包 tsc --noEmit
 vp test run       # vitest run（测试文件 *.test.ts）
-vp run --filter @open-scientist/api dev  # 启动 apps/api（tsx watch src/server.ts）
+vp dev            # 启动 apps/api（tsx watch src/server.ts）
 vp run --filter @open-scientist/storage db:generate    # drizzle-kit generate（storage 包，重新生成 migration SQL）
 ```
 
@@ -35,7 +35,7 @@ Node.js + pnpm + TypeScript 6 + Vite+（Oxlint + Oxfmt + Vitest）+ Zod 4 + Hono
 ## Monorepo 结构（11 包）
 
 ```
-apps/api        — Hono + @hono/node-server REST 入口（8 routes：health/settings/credentials/projects/test-llm（含 credential/:id 子路由）/runs/dev-probe，settings 下含 model-aliases 子路由）
+apps/api        — Hono + @hono/node-server REST 入口（8 routes：health/settings/credentials/projects/test-llm/runs/dev-probe，settings 下含 model-aliases 子路由）
 apps/web        — Next.js 16 + React 19 + assistant-ui 前端（Tailwind v4 + xAI 风格）
 packages/
   agents        — 6 ToolLoopAgent（sisyphus/librarian/looker/explore/oracle/prometheus）
@@ -81,7 +81,7 @@ packages/
 - `stopWhen: isStepCount(N)`（从 `ai` 导入，别名 `stepCountIs`），**不是** `{ type: 'stepCount', count: N }`
 - `tools: ToolSet`（从 `ai` 导入），**不是** `Record<string, unknown>`
 - `output: Output.object({ schema: ZodSchema })`（从 `ai` 导入 `Output`），**不是** 裸 Zod schema
-- `tool({ description, inputSchema: z.object(), outputSchema?, execute })` — 人机协同审批用 `ToolLoopAgent` 构造时或 `prepareCall` 返回值里的 `toolApproval`（`ToolApprovalConfiguration`：per-tool map 或 `GenericToolApprovalFunction`）。返回 `'user-approval'` → stream 暂停并 emit `tool-approval-request` chunk。
+- `tool({ description, inputSchema: z.object(), outputSchema?, execute, needsApproval? })` — AI SDK 7 把 tool-level `needsApproval` **deprecated**，推荐 `ToolLoopAgent` 构造时或 `prepareCall` 返回值里的 `toolApproval`（`ToolApprovalConfiguration`：per-tool map 或 `GenericToolApprovalFunction`）。返回 `'user-approval'` → stream 暂停并 emit `tool-approval-request` chunk。
 - `createMCPClient(config): Promise<MCPClient>` — async，需 await；`client.tools(): Promise<McpToolSet>` 也 async
 - `createBashTool(options?): Promise<BashToolkit>` — async，options 用 `destination`（非 `cwd`）作 working dir
 - `MCPTransportConfig`（`@ai-sdk/mcp`）只有 'http'|'sse'；stdio 需用 `StdioClientTransport`（`@modelcontextprotocol/sdk/client/stdio.js`）构造 `MCPTransport` 对象传入
@@ -94,7 +94,7 @@ packages/
 - **源码内部相对 import 用 `.ts` 后缀**（不是 `.js`）——`tsx` + Node type stripping **不做 `.js`→`.ts` fallback**
 - **`tsconfig.base.json`** 开 `allowImportingTsExtensions: true` + `rewriteRelativeImportExtensions: true`
 - **package.json exports 指向 `./src/index.ts`**——workspace 包间 import 走 Node type stripping 加载
-- 无 build-time bundle，无 VM sandbox，无 externalize 配置
+- 无 build-time bundle，无 VM sandbox，无 externalize 配置——比原来 workflow/nitro + esbuild 大幅简化
 
 ## 配置层
 
@@ -124,7 +124,7 @@ FS 产物在 `data/projects/<name>/` 下：runs/ / rounds/ / hypotheses/ / evide
 | Oracle            | Co-Scientist 批判 + 突变 + 反例 debug                  | Critique + Mutation |
 | Prometheus        | 多轮规划，末轮输出 MHD .cfg + 观测建议书               | Plan + MhdConfig    |
 
-编排：`tournamentWorkflow` 是 plain async 函数，直接 await 5 个子 workflow——顺序用 `await xxxWorkflow(input)`（共享 run ID），并行 Explore 用 `Promise.all(hypotheses.map(h => exploreWorkflow(input)))`。**Explore workflow 用 `taggedEmitChunk` 给每个 agent-stream chunk 注入 `_exploreHypoId`**，前端 `useRunStream` 据此按 hypoId 分键 StreamContext，避免并行 Explore 互相覆盖消息。SSE 流通过 `emitChunk` 回调从子 workflow 逐层冒泡到 `RunRegistry`（`apps/api/src/lib/run-stream.ts`）。`run.result` 完成后调 `completeRun` 更新 SQLite status（`completed`/`failed`）+ bestF1 + currentRound。
+编排：`tournamentWorkflow` 是 plain async 函数，直接 await 5 个子 workflow——顺序用 `await xxxWorkflow(input)`（共享 run ID），并行 Explore 用 `Promise.all(hypotheses.map(h => exploreWorkflow(input)))`。SSE 流通过 `emitChunk` 回调从子 workflow 逐层冒泡到 `RunRegistry`（`apps/api/src/lib/run-stream.ts`）。`run.result` 完成后调 `completeRun` 更新 SQLite status（`completed`/`failed`）+ bestF1 + currentRound。
 
 ## Tournament Evolution 工作流
 

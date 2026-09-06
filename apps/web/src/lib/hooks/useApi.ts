@@ -69,13 +69,3 @@ export function useTestLlm() {
     mutationFn: (body: import('@open-scientist/schema').TestLlmRequest) => api.testLlm(body),
   })
 }
-
-/** Test LLM using a stored credential (no apiKey needed in the UI) */
-export function useTestLlmByCredential() {
-  return useMutation({
-    mutationFn: (args: {
-      credentialId: string
-      body: import('@open-scientist/schema').TestLlmByCredentialRequest
-    }) => api.testLlmByCredential(args.credentialId, args.body),
-  })
-}

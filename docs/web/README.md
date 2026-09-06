@@ -12,10 +12,10 @@
 
 ## 核心定位
 
-- **后端**：Node.js + Hono + @hono/node-server + ToolLoopAgent（见根目录 [SPEC.md](../../SPEC.md)）
+- **后端**：Node.js + Hono + Nitro + WorkflowAgent（见根目录 [SPEC.md](../../SPEC.md)）
 - **前端**：Next.js 16 + React 19 + assistant-ui，独立部署在 `apps/web/`
-- **通信**：REST + SSE（useRunStream hook 自带断线重连，不需要 Redis）
-- **前后端分离**：前端通过 HTTP 调后端 Hono API，不做进程内直连
+- **通信**：REST + SSE（`WorkflowChatTransport` 自带断线重连，不需要 Redis）
+- **前后端分离**：前端通过 HTTP transport 调后端 Hono API，不做进程内直连（`DirectChatTransport` 不适用）
 
 ## 三个 WOW 效果（比赛答辩核心卖点）
 
@@ -23,7 +23,7 @@
 
 1. **三维太阳物理知识图谱**（`react-force-graph-3d`）— 左侧悬浮 3D 概念认知图谱，节点随 Oracle/Explore 引入新物理参量约束实时重构连线，点击触发粒子散开特效
 2. **Co-Scientist 智能体协作大厅 + 辩论剧场**（React Flow）— 中央圆形 6 agent Avatar 环形排列，实时展示"科学辩论与协作"过程（Oracle 抛红色警告 → Sisyphus 响应 → Librarian 生长 CoT 树）
-3. **锦标赛假说演化谱系树**（d3-hierarchy + Motion）— 右侧假说进化树，被证伪分支枯萎断裂，获胜分支开花发光
+3. **锦标赛假说演化谱系树**（d3-hierarchy + Motion/GSAP）— 右侧假说进化树，被证伪分支枯萎断裂，获胜分支开花发光
 
 ## 选型速查
 
@@ -32,11 +32,12 @@
 | 框架         | Next.js 16（App Router） |
 | React        | 19                       |
 | Chat UI 框架 | assistant-ui             |
-| Transport    | useRunStream (SSE)       |
+| Transport    | WorkflowChatTransport    |
 | 行为层       | Radix Primitives         |
 | 业务 UI 层   | shadcn/ui                |
 | 视觉效果层   | React Bits               |
 | 动画主力     | Motion                   |
+| 动画辅助     | GSAP                     |
 | 3D 图谱      | react-force-graph-3d     |
 | 演化树       | d3-hierarchy + 自写 SVG  |
 | 协作大厅     | React Flow               |

@@ -1,12 +1,12 @@
 # Electron 适配方案
 
-将 `apps/web`（Next.js）+ `apps/api`（Hono + @hono/node-server）打包为 Electron 桌面应用。
+将 `apps/web`（Next.js）+ `apps/api`（Hono/Nitro）打包为 Electron 桌面应用。
 
 ## 结论：可行，改动量小
 
 当前架构对 Electron 友好，主要因为：
 
-1. **前后端分离**：`apps/api` 是独立 Hono + @hono/node-server 服务，`apps/web` 通过 `next.config.ts` rewrites 代理 `/api/*`。Electron 只需把「代理目标」从 `http://localhost:3000` 改为内嵌服务地址。
+1. **前后端分离**：`apps/api` 是独立 Hono/Nitro 服务，`apps/web` 通过 `next.config.ts` rewrites 代理 `/api/*`。Electron 只需把「代理目标」从 `http://localhost:3000` 改为内嵌服务地址。
 2. **无 CORS 依赖**：后端未配 CORS，靠 Next.js 同源代理规避。Electron 里同源策略仍成立（`file://` 或 custom protocol）。
 3. **无服务端文件系统硬依赖**：`apps/web` 是纯前端，不读本地文件；`apps/api` 的 `BASE_DIR` 可指向 Electron `app.getPath('userData')`。
 4. **依赖原生模块少**：`apps/web` 仅 `sharp`（Next.js 图片优化，可关闭）和 `better-sqlite3`（在 `apps/api` 侧，已有 prebuild）。
@@ -15,17 +15,17 @@
 
 ```
 Electron Main Process
-├─ 启动 apps/api (@hono/node-server + tsx) 作为 child process 或内嵌
+├─ 启动 apps/api (Nitro) 作为 child process 或内嵌
 │   └─ BASE_DIR = app.getPath('userData')
 ├─ 创建 BrowserWindow
 │   └─ 加载 apps/web (Next.js standalone build) 或 file://
 └─ 生命周期管理（退出时 kill api）
 ```
 
-### 方案 A：Next.js standalone + 本地 @hono/node-server（推荐）
+### 方案 A：Next.js standalone + 本地 Nitro（推荐）
 
 - `apps/web` 执行 `next build` 生成 `.next/standalone/`，用 `next start` 或 Node 直接跑
-- `apps/api` 用 `tsc` 编译为 `dist/`，main process `spawn` 启动 `node dist/server.js`
+- `apps/api` 用 `nitro build` 生成单文件 server entry，main process `spawn` 启动
 - BrowserWindow 加载 `http://localhost:<web-port>`，`apps/web` 的 rewrite 指向 `http://localhost:<api-port>`
 - **优点**：改动最小，dev/prod 一致，SSE 流正常
 - **缺点**：需管理两个端口 + 两个进程
@@ -150,19 +150,19 @@ electron-builder
 2. **进程管理**：api 进程崩溃需 main process 监听 `exit` 事件并重启 + 通知前端。可用 Electron `ipcMain` + renderer `ipcRenderer` 通信。
 3. **端口冲突**：随机端口方案需等待 api 就绪后再加载 web。轮询 `/api/health` 或监听 stdout ready 信号。
 4. **auto-update**：electron-updater 可集成，但 `apps/api` 和 `apps/web` 的更新需同步。建议整包更新。
-5. **Node 版本**：Electron 内置 Node 版本可能与系统 Node 26 不一致。`apps/api` 若用了 Node 26 特性（如 type stripping），需确认 Electron 内置版本兼容，或用 `tsc` 预编译为 ES2022。
+5. **Node 版本**：Electron 内置 Node 版本可能与系统 Node 26 不一致。`apps/api` 若用了 Node 26 特性（如 type stripping），需确认 Electron 内置版本兼容，或用 `nitro build` 预编译为 ES2022。
 6. **DevTools**：开发期 `win.webContents.openDevTools()`，生产可按需关闭。
 
 ## 工作量估算
 
-| 任务                                                    | 工作量      |
-| ------------------------------------------------------- | ----------- |
-| 新建 `apps/electron/`（main + preload + builder 配置）  | 1 天        |
-| `apps/api` tsc 编译适配（确保 `dist/server.js` 可启动） | 0.5 天      |
-| `apps/web` standalone build + images.unoptimized        | 0.5 天      |
-| 进程管理 + 健康检查 + 端口分配                          | 0.5 天      |
-| electron-builder 配置 + 多平台测试                      | 1 天        |
-| **合计**                                                | **~3.5 天** |
+| 任务                                                   | 工作量      |
+| ------------------------------------------------------ | ----------- |
+| 新建 `apps/electron/`（main + preload + builder 配置） | 1 天        |
+| `apps/api` nitro build 适配（确保单文件 entry）        | 0.5 天      |
+| `apps/web` standalone build + images.unoptimized       | 0.5 天      |
+| 进程管理 + 健康检查 + 端口分配                         | 0.5 天      |
+| electron-builder 配置 + 多平台测试                     | 1 天        |
+| **合计**                                               | **~3.5 天** |
 
 ## 不需要改动的部分
 

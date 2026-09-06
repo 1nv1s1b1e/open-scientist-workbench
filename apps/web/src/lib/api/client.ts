@@ -14,7 +14,6 @@ import type {
   CredentialResponse,
   GlobalSettings,
   ModelConfig,
-  TestLlmByCredentialRequest,
   TestLlmRequest,
   TestLlmResponse,
   PhenomenonInput,
@@ -222,21 +221,6 @@ export async function testLlm(
 ): Promise<TestLlmResponse> {
   return jsonOrThrow(
     await fetchFn(apiEndpoint('/api/test-llm'), {
-      method: 'POST',
-      headers: JSON_HEADERS,
-      body: JSON.stringify(body),
-    }),
-  )
-}
-
-/** 用已存凭证测试连通性（无需传 apiKey） */
-export async function testLlmByCredential(
-  credentialId: string,
-  body: TestLlmByCredentialRequest,
-  fetchFn: typeof fetch = fetch,
-): Promise<TestLlmResponse> {
-  return jsonOrThrow(
-    await fetchFn(`/api/test-llm/credential/${encodeURIComponent(credentialId)}`, {
       method: 'POST',
       headers: JSON_HEADERS,
       body: JSON.stringify(body),
@@ -514,7 +498,6 @@ export const api = {
   deleteProject,
   // test llm
   testLlm,
-  testLlmByCredential,
   // runs
   startRun,
   reconnectRunStream,

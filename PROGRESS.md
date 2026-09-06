@@ -157,13 +157,13 @@
 
 **lib 层**（`apps/web/src/lib/`）：
 
-- `api/client.ts`：完整 REST 客户端覆盖全部 8 端点组。`ApiError` class。`startRun` 返回 `{response, runId}`（从 `x-workflow-run-id` header 提取 SDK run id）。`reconnectRunStream` 返回 `{response, tailIndex}`（`x-workflow-stream-tail-index` header 仅 startIndex<0 时存在）。`testLlmByCredential(credentialId, body)` 走 `/api/test-llm/credential/:id`。聚合导出 `api` 对象。
+- `api/client.ts`：完整 REST 客户端覆盖全部 8 端点组。`ApiError` class。`startRun` 返回 `{response, runId}`（从 `x-workflow-run-id` header 提取 SDK run id）。`reconnectRunStream` 返回 `{response, tailIndex}`（`x-workflow-stream-tail-index` header 仅 startIndex<0 时存在）。聚合导出 `api` 对象。
 - `types/sse-events.ts`：UIMessageChunk 完整类型（生命周期/文本/reasoning/tool/审批/其他）+ CustomEventKind 常量
 - `types/visualizers.ts`：ConceptNode/Link/NetData, AgentNodeData/MessageEdgeData/OrchestratorData, HypothesisTreeNode/EvolutionTreeData
 - `visualizers/`：colorTheme（6 agent 色 + 概念色常量）、concept-net-data（POC 从假设列表构建概念图）、evolution-tree-data（d3-hierarchy 树构建）、orchestrator-data（TOOL_TO_AGENT 映射 + 环形坐标 + edge 推导）
 - `store/`：run-store（Zustand：runId/status/currentRound/bestF1/selectedHypothesisId/activeView/chatCollapsed）、ui-store（sidebarCollapsed）
-- `hooks/useRunStream.ts`：核心 SSE 流 hook。state: idle/connecting/streaming/reconnecting/done/error/stopped。start(seed, modelAlias?) → POST + 消费 SSE body 解析 `data: JSON\n\n`。累积 MessagePart（text/reasoning/tool）。**per-stream StreamContext**（按 `_exploreHypoId` 分键）解决并行 Explore 互相覆盖消息的问题；custom chunks（agent-state/round-update/phase-start）只更新 React state 不作为 message parts 推送。流中断自动 reconnect（-50 tail-relative, maxConsecutiveErrors=5）。stop() + reset()。
-- `hooks/useApi.ts`：TanStack Query hooks（projects/project/createProject/deleteProject/globalSettings/updateGlobalSettings/projectSettings/credentials/addCredential/deleteCredential/testLlm/testLlmByCredential/runStatus 轮询/modelAliases）。queryFn 包装成箭头函数避免 TanStack context 传入类型不匹配。
+- `hooks/useRunStream.ts`：核心 SSE 流 hook。state: idle/connecting/streaming/reconnecting/done/error/stopped。start(seed, modelAlias?) → POST + 消费 SSE body 解析 `data: JSON\n\n`。累积 MessagePart（text/reasoning/tool/custom）。流中断自动 reconnect（-50 tail-relative, maxConsecutiveErrors=5）。stop() + reset()。
+- `hooks/useApi.ts`：TanStack Query hooks（projects/project/createProject/deleteProject/globalSettings/updateGlobalSettings/projectSettings/credentials/addCredential/deleteCredential/testLlm/runStatus 轮询/modelAliases）。queryFn 包装成箭头函数避免 TanStack context 传入类型不匹配。
 - `transport/workflow-transport.ts`：TRANSPORT_CONFIG 常量（initialStartIndex:-50, maxConsecutiveErrors:5, throttle:50）
 
 **components 层**（`apps/web/src/components/`）：
@@ -174,16 +174,16 @@
 - `projects/project-list.tsx`：3 列卡片网格 + deterministic accent 色 + Motion stagger
 - `credentials/credential-list.tsx`：3 列卡片 + provider 色点 + detail 行
 - `settings/settings-panel.tsx`：4 Tabs（模型配置/锦标赛/并发/引导）+ SectionShell + per-role 配置卡片
-- `settings/test-llm-panel.tsx`：两栏布局 + 结果面板 + usage 3 列 + 凭证模式（选中已存凭证后隐藏 API Key 输入，走 `/api/test-llm/credential/:id`）
-- `chat/chat-panel.tsx`：assistant-ui Thread + WorkflowRuntimeProvider + ChatToolbar（含 Tools On/Off 切换按钮，控制 tool-call parts 显示/隐藏）
+- `settings/test-llm-panel.tsx`：两栏布局 + 结果面板 + usage 3 列
+- `chat/chat-panel.tsx`：assistant-ui Thread + WorkflowRuntimeProvider + ChatToolbar
 
 **assistant-ui 集成**（`apps/web/src/lib/chat/` + `apps/web/src/components/assistant-ui/`）：
 
 - 选 **ExternalStoreRuntime** 模式（非 useChatRuntime + 自定义 transport），原因：请求形状不匹配（useChat 发 {messages}，我们发 {seed, modelAlias}）、重连协议不匹配（assistant-ui 用 GET /resume/:streamId，我们用 GET /runs/:id/stream?startIndex=N）、单轮约束、useRunStream 已实现重连
-- `to-thread-messages.ts`：RunMessage[] → ThreadMessageLike[] 转换（text→text, reasoning→reasoning, tool→tool-call）。保留 parts 在流中的原始时间序（不重排 reasoning→tool→text）。支持 `hideTools` 参数过滤所有 tool-call parts。用 `Extract<NonNullable<ThreadMessageLike['content']>, { type: string }>` 提取 part 类型，无 any
-- `workflow-runtime.tsx`：`useExternalStoreRuntime<ThreadMessageLike>` + `convertMessage` 恒等函数（`useCallback` memoize，防止每次 render 新引用导致 useExternalStoreRuntime 内部 converter 重建 → 无限循环）。onNew 从 AppendMessage.content 找 textPart → setSeed + start。onCancel → stop。isSendDisabled: hasStarted && !isRunning（单轮）。不提供 onEdit/onReload → 编辑/重生成按钮不渲染。支持 `hideTools` prop 透传给 `toThreadMessages`。ResetContext 暴露 reset
+- `to-thread-messages.ts`：RunMessage[] → ThreadMessageLike[] 转换（text→text, reasoning→reasoning, tool→tool-call, custom→data-{kind}）。用 `Extract<NonNullable<ThreadMessageLike['content']>, { type: string }>` 提取 part 类型，无 any
+- `workflow-runtime.tsx`：`useExternalStoreRuntime<ThreadMessageLike>` + `convertMessage: (msg) => msg` 恒等函数（ThreadMessageLike 不 extends ThreadMessage 需提供 convertMessage）。onNew 从 AppendMessage.content 找 textPart → setSeed + start。onCancel → stop。isSendDisabled: hasStarted && !isRunning（单轮）。不提供 onEdit/onReload → 编辑/重生成按钮不渲染。ResetContext 暴露 reset
 - `toolkit.tsx`：6 个 makeAssistantToolUI 注册（bash-tool/helix-query/fits-align/mhd-config/load-skill + GenericToolUI fallback `toolName:'*'`），每个用 ToolShell 外壳 + JsonPreview 折叠 JSON
-- `data-ui.tsx`：3 个 makeAssistantDataUI 注册（steering-injected/round-transition/convergence）。注：custom chunks 现已只更新 React state 不作为 message parts，这些注册暂不触发
+- `data-ui.tsx`：3 个 makeAssistantDataUI 注册（steering-injected/round-transition/convergence）
 - `components/assistant-ui/thread.tsx`：基于 ThreadPrimitive 自建（方案 B）。ThreadPrimitive.Root → Viewport(Empty + Messages) + ViewportFooter(Composer)。Messages components={{ UserMessage, AssistantMessage }}。AssistantMessage 的 MessagePrimitive.Parts components={{ Text, Reasoning, tools: { Fallback } }}。Composer 用 AuiIf 切换 Send/Cancel
 - `components/assistant-ui/markdown-text.tsx`：轻量 markdown（code fence + inline code + bold + 段落），无 react-markdown 依赖
 - `components/assistant-ui/reasoning.tsx`：可折叠推理过程，running 时自动展开
@@ -456,4 +456,4 @@
 - **HelixDB** v3.0.8 CLI（`helix init local --path . --no-skills --quiet` + `helix start`，localhost:6969，dev instance in-memory；Docker `ghcr.io/helixdb/enterprise-dev` 也可用；`helix.toml` gitignored）
 - **Python** v3.9.6 系统 + `data/dataset/.venv`（numpy 2.5.1 + scipy 1.18.0）
 - **LLM 测试端点**：内部端点 + key（已脱敏） + 模型 `llab/Qwen3-Next-80B-A3B-Instruct`
-- **服务重启**：`pkill -f 'tsx.*server'; nohup vp run --filter @open-scientist/api dev > /tmp/opencode-api.log 2>&1 &`
+- **服务重启**：`pkill -f 'tsx.*server'; nohup vp dev > /tmp/opencode-api.log 2>&1 &`
