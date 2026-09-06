@@ -436,6 +436,14 @@ powershell -NoProfile -ExecutionPolicy Bypass `
 
 结果默认写入 `output/scientific-demo/`。可直接检查的脱敏真实运行样例在 [outputs/ar11158-qwen-demo/README.md](outputs/ar11158-qwen-demo/README.md)。
 
+Linux / macOS 使用等价的 bash 脚本（同一请求模板与输出目录；自动启动 API、预检 Python 科学栈与数据集清单，并在 `run-metadata.json` 中归档代码 commit、请求与数据清单的 SHA-256 溯源）：
+
+```bash
+bash scripts/run-scientific-demo.sh
+# 真实模型辅助版：
+bash scripts/run-scientific-demo.sh --execution-mode model-assisted
+```
+
 已测资源基线：AMD Ryzen AI 7 H 350（8 核/16 线程）、31.1 GiB 内存、CPU 执行 FITS 处理，本地 GPU 未使用。全量帧版本首次生成完整缓存的两轮本地闭环约 82.4 秒，缓存完整后的同流程约 10.7 秒；新验证契约下的真实 Qwen 两轮回归约 12.8 分钟。远程模型耗时会随 API 负载变化，提交前应基于冻结代码重新运行 Qwen 基线。
 
 ## 9. 常见问题
