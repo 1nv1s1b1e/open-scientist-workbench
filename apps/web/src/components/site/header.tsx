@@ -9,8 +9,8 @@ interface SiteHeaderProps {
 }
 
 const NAV_LINKS = [
-  { href: '/', label: 'Projects' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/', label: '项目' },
+  { href: '/settings', label: '设置' },
 ]
 
 export function SiteHeader({ children }: SiteHeaderProps) {

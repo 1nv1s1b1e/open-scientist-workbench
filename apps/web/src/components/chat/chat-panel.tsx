@@ -1,5 +1,6 @@
 'use client'
 
+import { scientificAgentIdentity } from '@open-scientist/schema'
 import { ArrowRight, RotateCcw, Square, X } from 'lucide-react'
 import { useState } from 'react'
 import { Thread } from '@/components/assistant-ui/thread'
@@ -86,7 +87,11 @@ function ChatToolbar({
               onClick={() => onSelectAgent?.(null)}
               className="mt-2 flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 font-mono text-[12px] tracking-[.5px] text-muted hover:text-white"
             >
-              当前聚焦：{selectedAgent}
+              当前聚焦：
+              {(() => {
+                const identity = scientificAgentIdentity(selectedAgent)
+                return identity ? `${identity.codename} · ${identity.displayName}` : selectedAgent
+              })()}
               <X className="h-2.5 w-2.5" />
             </button>
           )}
@@ -123,7 +128,7 @@ function ChatToolbar({
           <summary className="console-filter-summary">
             <span>消息范围</span>
             <span className="console-filter-current">
-              {selectedRound == null ? '全部轮次' : `Round ${selectedRound}`}
+              {selectedRound == null ? '全部轮次' : `第 ${selectedRound} 轮`}
             </span>
           </summary>
           <div className="console-filter-body">
@@ -138,7 +143,7 @@ function ChatToolbar({
                 <option value="">全部轮次</option>
                 {(availableRounds ?? []).map((r) => (
                   <option key={r} value={r}>
-                    Round {r}
+                    第 {r} 轮
                   </option>
                 ))}
               </select>

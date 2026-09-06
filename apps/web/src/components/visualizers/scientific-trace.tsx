@@ -119,7 +119,7 @@ const COPY = {
   noRun: '\u5c1a\u672a\u8fd0\u884c',
   modelEvents: '\u6a21\u578b\u8bb0\u5f55',
   modelCalls: '\u771f\u5b9e\u6a21\u578b\u8c03\u7528',
-  reasoningTokens: 'Reasoning tokens',
+  reasoningTokens: '思考 Token 用量',
   processingRuns: '\u786e\u5b9a\u6027\u5904\u7406',
   toolEvents: '\u5de5\u5177\u4e8b\u4ef6',
   completedEvents: '\u5df2\u5b8c\u6210',
@@ -449,7 +449,7 @@ function customEntry(chunk: UIMessageChunk, index: number): TraceEntry | null {
       status,
       stage: stageFrom(node),
       round,
-      title: node,
+      title: stageLabel(stageFrom(node)),
       summary: status === 'running' ? COPY.stageRunning : COPY.stageComplete,
     }
   }

@@ -39,7 +39,7 @@ export function ToolFallback({ toolName, args, result, status, isError }: ToolFa
           </span>
         )}
       </div>
-      {isError && <p className="mt-2 font-mono text-[12px] text-red-400">tool execution error</p>}
+      {isError && <p className="mt-2 font-mono text-[12px] text-red-400">工具执行失败</p>}
       {args != null && (
         <details className="mt-2 group">
           <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[1px] text-muted transition-colors hover:text-body">

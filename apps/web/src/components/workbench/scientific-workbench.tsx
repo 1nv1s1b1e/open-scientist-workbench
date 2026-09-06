@@ -575,7 +575,9 @@ export function ScientificWorkbench({
                           <header>
                             <div>
                               <span>当前选中假设</span>
-                              <strong>{selectedHypothesis.id}</strong>
+                              <strong className="block truncate font-mono text-[12px] text-muted">
+                                {selectedHypothesis.id}
+                              </strong>
                             </div>
                             <p>
                               以下内容说明该假设如何进入第 {resultRound}{' '}
@@ -868,8 +870,13 @@ export function ScientificWorkbench({
                         className="workbench-correction"
                       >
                         <span>
-                          {correction.stage} 阶段 ·{' '}
-                          {correction.kind ?? correction.severity ?? correction.status}
+                          {{
+                            A: 'Librarian',
+                            B: 'Explorer',
+                            C: 'Oracle',
+                            D: 'Prometheus',
+                          }[correction.stage as string] ?? correction.stage}{' '}
+                          阶段 · {correction.kind ?? correction.severity ?? correction.status}
                         </span>
                         <div>
                           {formatCorrectionMessage(correction.message)}

@@ -148,7 +148,7 @@ export function SettingsPanel() {
         modelAliases: partial.modelAliases ?? data.modelAliases,
       }
       await updateMutation.mutateAsync(merged)
-      setStatus({ type: 'success', msg: 'saved' })
+      setStatus({ type: 'success', msg: '已保存' })
     } catch (err) {
       setStatus({
         type: 'error',
@@ -230,7 +230,7 @@ export function SettingsPanel() {
           {Object.keys(models).length === 0 ? (
             <div className="rounded-sm border border-dashed border-[var(--color-border)] py-16 text-center">
               <p className="font-mono text-[12px] uppercase tracking-[1.4px] text-muted">
-                No roles configured
+                暂未配置角色
               </p>
               <p className="mt-1 text-xs text-muted">添加第一个角色以开始</p>
             </div>

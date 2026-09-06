@@ -23,6 +23,7 @@ import {
   type OrchestrationWorkerView,
 } from '@/lib/workbench/orchestration-view-model'
 import type { ScientificOrchestrationState } from '@/lib/workbench/state'
+import { scientificAgentIdentity } from '@open-scientist/schema'
 
 const EMPTY_ORCHESTRATION: ScientificOrchestrationState = {
   nodes: [],
@@ -236,7 +237,7 @@ export function ScientificOrchestration({
     view.stages.find((stage) => stage.id === view.route.target) ??
     view.stages.find((stage) => stage.nodes.some((node) => node.state !== 'completed')) ??
     view.stages[0]
-  const activeStageLabel = activeStage ? `${activeStage.id} · ${activeStage.title}` : '等待运行'
+  const activeStageLabel = activeStage ? activeStage.title : '等待运行'
 
   const selectWorker = (worker: OrchestrationWorkerView) => {
     setSelection({ kind: 'worker', id: worker.id })
@@ -468,9 +469,17 @@ export function ScientificOrchestration({
               <p>{view.route.reason ?? 'Prometheus 阶段完成后会在这里登记下一条路径。'}</p>
             </div>
             <div className="orchestration-route-target">
-              <span>prometheus</span>
+              <span>Prometheus</span>
               <ChevronRight className="h-3.5 w-3.5" />
-              <b>{view.route.target === 'WAIT' ? '—' : view.route.target}</b>
+              <b>
+                {view.route.target === 'WAIT'
+                  ? '—'
+                  : view.route.target === 'END'
+                    ? '本轮结束'
+                    : view.route.target === 'librarian'
+                      ? 'Librarian'
+                      : 'Explorer'}
+              </b>
             </div>
           </section>
         </div>
@@ -501,7 +510,11 @@ export function ScientificOrchestration({
                 </div>
                 <div>
                   <dt>所属阶段</dt>
-                  <dd>{selectedStageId ?? '—'}</dd>
+                  <dd>
+                    {view.stages.find((stage) => stage.id === selectedStageId)?.title ??
+                      selectedStageId ??
+                      '—'}
+                  </dd>
                 </div>
                 <div>
                   <dt>记录轮次</dt>
@@ -524,7 +537,7 @@ export function ScientificOrchestration({
               <dl>
                 <div>
                   <dt>所属工作组</dt>
-                  <dd>B / 证据</dd>
+                  <dd>Explorer · 证据工作组</dd>
                 </div>
                 <div>
                   <dt>执行方式</dt>
@@ -534,7 +547,14 @@ export function ScientificOrchestration({
                 </div>
                 <div>
                   <dt>控制台筛选</dt>
-                  <dd>{selectedWorker.role}</dd>
+                  <dd>
+                    {(() => {
+                      const identity = scientificAgentIdentity(selectedWorker.role)
+                      return identity
+                        ? `${identity.codename} · ${identity.displayName}`
+                        : selectedWorker.role
+                    })()}
+                  </dd>
                 </div>
                 <div>
                   <dt>记录轮次</dt>
