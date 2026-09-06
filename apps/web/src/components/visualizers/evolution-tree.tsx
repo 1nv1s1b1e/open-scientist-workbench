@@ -715,6 +715,16 @@ export function EvolutionTree({ state }: { state: ScientificWorkbenchState }) {
       <div ref={viewportRef} className="evolution-tree-viewport">
         <motion.div
           className="evolution-tree-canvas evolution-lineage-canvas"
+          style={{
+            // 每个 lineage 节点单元宽 190px；节点多时按数量加宽画布（视口横向滚动），
+            // 否则百分比定位会把相邻节点的标注挤压重叠。
+            minWidth: `${Math.max(
+              100,
+              ...tree.processes.map(
+                (p) => (p.continuedHypothesisCount + p.newHypothesisCount) * 14,
+              ),
+            )}rem`,
+          }}
           animate={{ height: canvasHeight }}
           transition={{ duration: reduceMotion ? 0.01 : 0.34, ease: 'easeOut' }}
         >

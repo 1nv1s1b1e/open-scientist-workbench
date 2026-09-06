@@ -994,13 +994,13 @@ export function ScientificTrace({
 
       <div className="trace-layout">
         <div className="trace-ribbon" aria-hidden="true">
-          {TRACE_STAGES.map((stage) => (
+          {TRACE_STAGES.map((stage, index) => (
             <div
               key={stage}
               className={`trace-ribbon-stage trace-ribbon-stage-${stage.toLowerCase()}`}
             >
               <i />
-              <span>{stage}</span>
+              <span>{index + 1}</span>
               <small>{stageLabel(stage).split(' / ')[1]}</small>
             </div>
           ))}
