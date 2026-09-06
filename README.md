@@ -40,6 +40,34 @@ sources/
 
 核心文献语料随仓库提供，当前包含 80 篇去重且已核验的日冕加热论文记录，覆盖热过程、波动、纳耀斑/重联、硬 X 射线、光谱、反例和前向模型，已达到 80–150 篇冻结区间下限并通过分层覆盖审计。每条保存题名、作者、年份、DOI/公开来源、受控注释和证据边界。`node scripts/audit-literature-corpus.ts --require-freeze-ready` 会检查数量、分层覆盖、必填元数据和重复 ID/题名/DOI。检索工具还会联合 Helix/本地语料与免费的 OpenAlex、Crossref 元数据 API，并把 provider、来源链接、检索时间和缓存状态返回给文献溯源智能体；网络不可用时回退到 7 天缓存和本地语料。外部论文只用于提出假设、预测、替代解释和反例线索，不能直接创建观测 `support`。仓库不分发论文 PDF 全文；需要阅读全文时，应通过记录的 DOI 或公开来源获取。
 
+## 评审快速开始（从克隆到复现）
+
+最低成本路径：纯 CPU、不调用任何模型，端到端约 30–60 分钟（数据下载占绝大部分时间）。逐步说明见下方 §1–§8。
+
+```bash
+# 0. 克隆并锁定到评审提交（不可变引用）
+git clone https://github.com/1nv1s1b1e/open-scientist-workbench.git
+cd open-scientist-workbench
+git checkout v1.0-competition          # commit 84a169918729af18a79a9edf94c1534a7d37f96f
+
+# 1. 依赖：Node 24（.node-version）+ pnpm 11.17 + Python 3.11+
+corepack pnpm install
+python -m pip install -r requirements.txt
+
+# 2. 配置：从模板创建 .env，并替换 CREDENTIAL_ENCRYPTION_KEY（见 §3 与 §9）
+cp .env.example .env                   # Windows PowerShell: Copy-Item .env.example .env
+
+# 3. 数据：约 7.4GB，含 SHA-256 校验与断点续传（§4）
+python scripts/fetch_coronal_starter.py --plan
+python scripts/fetch_coronal_starter.py --download --download-workers 4
+
+# 4. 一键复现核心科学输出（确定性模式，零模型调用、零密钥依赖）
+corepack pnpm demo:scientific          # Windows
+bash scripts/run-scientific-demo.sh    # Linux / macOS
+```
+
+产出位于 `output/scientific-demo/`：`scientific-result.json`（候选假设、证据、验证任务、终止原因）＋ `run-metadata.json`（代码 commit、数据清单与请求的 SHA-256 溯源）＋ 完整 SSE 流归档。要启用通义千问模型辅助模式，先按 §6 配置凭据与角色模型，再改用 model-assisted 入口。
+
 ## 科学智能体职责名称
 
 用户界面和新运行产物使用"代号 · 中文职责"的双身份制：**Librarian·文献溯源**、**Looker·观测质控**、**Explorer·物理诊断**、**Oracle·反证审计**、**Prometheus·验证设计**、**Sisyphus·闭环协调**。完整的身份表（英文键、代号、中英文显示名、所属七阶段与职责）定义在 `packages/schema/src/scientific-agent-names.ts`。为了兼容旧配置、数据库和已保存运行，`librarian`、`looker`、`explore`、`oracle`、`prometheus`、`sisyphus` 仍是持久化的内部稳定键。
@@ -351,6 +379,25 @@ credentialId: <刚创建的 credential ID>
 ```
 
 本地已验证的 Qwen3.5-Plus 配置使用 `thinkingLevel=low`。部分兼容网关不接受 `medium`；若网关没有明确声明支持，不要假设把 `medium` 改高会提高科学可靠性，严格性由确定性证据门禁而不是思考档位保证。
+
+操作入口与连通性验证：
+
+1. 服务启动后打开 `http://localhost:5173/settings`（左侧导航也可进入）。
+2. 「凭证」标签：点右上「添加」，填写 provider / base URL / API key（key 保存后仅显示 set，不再回显）。
+3. 「全局设置 → 模型配置」标签：为每个角色卡填写 model 与 credential ID（卡片主标题为五角色显示名，右下角小字是持久化键）。
+4. 「LLM 测试」标签：选择 credential 与 model，点测试即可直接调用 `generate_text` 验证连通性，无需发起完整 run。
+
+通义千问经阿里云百炼接入时，使用 OpenAI 兼容端点：
+
+```text
+provider:      openai
+model:         qwen3.5-plus          # 或百炼实际提供的模型名
+baseURL:       https://dashscope.aliyuncs.com/compatible-mode/v1
+apiMode:       chat
+credentialId:  <创建的百炼 credential ID>
+```
+
+角卡主标题显示五角色词表（Librarian / Surveyor / Explorer / Oracle / Prometheus · 中文职责名），右下角小字是持久化配置键（librarian/looker/explore/oracle/prometheus/sisyphus），二者等价——键用于配置契约，不会改名。
 
 至少配置以下角色，或提供可供它们回退的默认模型配置：
 
