@@ -1,6 +1,7 @@
 'use client'
 
 import type { GlobalSettings, ModelConfig } from '@open-scientist/schema'
+import { scientificAgentIdentity } from '@open-scientist/schema'
 import { Plus, X } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
@@ -243,11 +244,19 @@ export function SettingsPanel() {
                   animate={{ opacity: 1, y: 0 }}
                   className="group relative rounded-sm border border-[var(--color-border)] bg-[var(--color-bg)] p-5 transition-colors hover:border-white/20"
                 >
-                  {/* Role header */}
+                  {/* Role header — document-facing name first, persisted key as the contract */}
                   <div className="mb-4 flex items-center justify-between">
-                    <span className="font-mono text-sm uppercase tracking-[1.6px] text-white">
-                      {role}
-                    </span>
+                    <div className="flex min-w-0 items-baseline gap-2">
+                      <span className="text-sm font-medium text-white">
+                        {(() => {
+                          const identity = scientificAgentIdentity(role)
+                          return identity ? `${identity.codename} · ${identity.displayName}` : role
+                        })()}
+                      </span>
+                      <span className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
+                        {role}
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeRole(role)}
