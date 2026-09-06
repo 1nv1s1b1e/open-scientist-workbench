@@ -39,6 +39,24 @@ read_env() {
   printf '%s' "$value"
 }
 
+# Import the project .env into this process (mirrors start-local.ps1). The API
+# resolves the python interpreter from its own process env only
+# (PYTHON_EXECUTABLE || 'python') — without this export the PATH fallback can
+# pick an unrelated interpreter (e.g. one bundled with Inkscape) and every
+# deterministic diagnostic then fails with ModuleNotFoundError.
+if [[ -f "$ROOT/.env" ]]; then
+  while IFS='=' read -r key value; do
+    key="${key//[[:space:]]/}"
+    [[ -z "$key" || "$key" == \#* ]] && continue
+    value="${value%$'\r'}"
+    value="${value#\"}"; value="${value%\"}"
+    value="${value#\'}"; value="${value%\'}"
+    if [[ -n "$key" && -n "$value" ]]; then
+      export "$key=$value"
+    fi
+  done < <(grep -v '^[[:space:]]*$' "$ROOT/.env")
+fi
+
 CORONAL_DATASET_ID="$(read_env CORONAL_DATASET_ID)"
 CORONAL_DATASET_ID="${CORONAL_DATASET_ID:-coronal-starter-v1}"
 export CORONAL_DATASET_ID

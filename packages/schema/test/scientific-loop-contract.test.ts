@@ -37,6 +37,22 @@ describe('scientific loop contracts', () => {
     expect(JSON.stringify(parsed)).not.toContain('"contribution"')
   })
 
+  it('tolerates model submit_result payloads that omit bookkeeping fields', () => {
+    const parsed = ScientificHypothesisCandidateSchema.parse({
+      id: 'AR11158-impulsive-nanoflare',
+      statement: 'NOAA 11158 的持续性 EUV 增亮由低频脉冲加热驱动，机制归属待证。',
+      mechanism: '活动区磁场的随机小尺度耗散产生大量纳耀斑脉冲加热。',
+      mechanismComposition: [{ mechanism: '纳耀斑风暴（低频脉冲加热）', role: 'dominant' }],
+      predictions: ['AIA 94/131 与 171/193 互相关延迟非零。'],
+      falsificationConditions: ['互相关时延接近于零则不支持。'],
+    })
+
+    expect(parsed.sourceIds).toEqual([])
+    expect(parsed.parentId).toBeNull()
+    expect(parsed.round).toBe(1)
+    expect(parsed.status).toBe('candidate')
+  })
+
   const observation = {
     sourceId: 'aia-171-2024-01-01',
     kind: 'image' as const,

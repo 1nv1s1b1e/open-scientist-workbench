@@ -71,6 +71,13 @@ export const ScientificHypothesisCandidateSchema = HypothesisSchema.omit({
   status: z.literal('candidate').default('candidate'),
   /** Claim population/window; required by the prompt and optional for legacy artifacts. */
   scope: z.string().min(1).optional(),
+  // Model-facing submit_result tolerance: tool-callers routinely omit
+  // bookkeeping fields even when the scientific payload is complete. Empty
+  // sourceIds still enter state and are flagged by the self-correction I
+  // provenance warning instead of rejecting an otherwise valid submission.
+  sourceIds: z.array(z.string().min(1)).default([]),
+  parentId: z.string().nullable().default(null),
+  round: z.number().default(1),
 })
 
 export const ScientificHypothesisPoolSchema = z.object({
