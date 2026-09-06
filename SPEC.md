@@ -19,7 +19,7 @@
 | 层            | 选型                                                   | 理由                                                                                                                                                               |
 | ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Runtime       | **Node.js**                                            | AI SDK 7 纯 TS 兼容；better-sqlite3                                                                                                                                |
-| Lint/Format   | **Vite+**（Oxlint + Oxfmt）                            | 统一工具链，替代 ESLint+Prettier+Biome，零配置                                                                                                                     |
+| Lint/Format   | **Vite+**（Oxlint + Oxfmt）                            | 统一工具链，零配置                                                                                                                                                 |
 | Schema 校验   | **Zod**                                                | AI SDK `tool.inputSchema` / `Output.object(zodSchema)` 必选                                                                                                        |
 | HTTP 框架     | **Hono**                                               | 轻量、Node 原生适配；返回标准 Response 可直返                                                                                                                      |
 | Server        | **@hono/node-server**                                  | hono 官方推荐生产 server；无 build-time bundle，dev 用 `tsx watch` 热重载                                                                                          |
@@ -40,13 +40,13 @@
 
 ### 关键决策说明
 
-**为什么用 ToolLoopAgent 而非 WorkflowAgent**
+**为什么用 ToolLoopAgent**
 
-- `WorkflowAgent` 本质就是 durable 版 `ToolLoopAgent`，agent 核心循环（LLM + tool calls + `stopWhen: isStepCount(N)` + `Output.object({schema})`）完全一样，从 `ai` 包直接 `import { ToolLoopAgent }` 即可
-- WorkflowAgent 的三文件边界（agent.ts / workflow.ts 薄壳 / steps/）是为绕开 `@workflow/core` VM sandbox 无 `importModuleDynamically` 的限制，纯样板代码；ToolLoopAgent 在 host Node runtime 直接跑，`await import()` 随便用
-- `toolApproval` 在 `streamText` / ToolLoopAgent 上是一等 option（构造时或 `prepareCall` 返回值），人机协同审批可真正接上（WorkflowAgent 不暴露 `toolApproval`）
-- 并行 Explore 用 `Promise.all(hypotheses.map(h => exploreWorkflow(input)))`，事件共享父流——UI 可视化无影响
-- 失去的是 crash 后 durable resume（补法：每轮已写 `snapshot.json`，加 resume-from-snapshot 入口点）和 SSE 断线重连（补法：自实现 `RunRegistry` chunk ring buffer，~150 行）
+- `ToolLoopAgent` 从 `ai` 包直接导入，agent 核心循环（LLM + tool calls + `stopWhen: isStepCount(N)` + `Output.object({schema})`）
+- 在 host Node runtime 直接跑，`await import()` 随便用
+- `toolApproval` 在 `streamText` / ToolLoopAgent 上是一等 option（构造时或 `prepareCall` 返回值），支持人机协同审批
+- 并行 Explore 用 `Promise.all(hypotheses.map(h => exploreWorkflow(input)))`，每个 Explore 的 emitChunk 用 `taggedEmitChunk` 注入 `_exploreHypoId`，前端按 hypoId 分键 StreamContext
+- crash 后 resume 通过每轮写 `snapshot.json` + resume-from-snapshot 入口点；SSE 断线重连通过 `RunRegistry` chunk ring buffer
 
 **为什么 Explore 不用 Docker**
 
@@ -155,7 +155,7 @@ packages/agents/src/
 - `outputSchema?: z.object(...)` — 输出校验（结构化结果）
 - `contextSchema?: z.object(...)` — per-call context（project name、working dir、credentials）
 - `execute: async ({...input}, {context, ...}) => result`
-- `needsApproval?: true | async fn` — **deprecated**（AI SDK 7），推荐用 `ToolLoopAgent` 构造时的 `toolApproval`（per-tool map 或 `GenericToolApprovalFunction`，返回 `'user-approval'` 暂停流 emit `tool-approval-request` chunk）；或 `prepareCall` 返回值里的 `toolApproval`（per-call 动态注入）
+- `needsApproval?: true | async fn` — 人机协同审批用 `ToolLoopAgent` 构造时的 `toolApproval`（per-tool map 或 `GenericToolApprovalFunction`，返回 `'user-approval'` 暂停流 emit `tool-approval-request` chunk）；或 `prepareCall` 返回值里的 `toolApproval`（per-call 动态注入）
 
 **依赖**：`packages/{schema, config, helix}`，`bash-tool`
 
@@ -233,7 +233,6 @@ const mcpTools = await mcpClient.tools({schemas: {...}})  // 类型安全
 - **双数据库**：全局 `data/global.sqlite`（credentials/settings）+ per-project `data/projects/<name>/db.sqlite`（run/message/hypothesis 等）
 - per-project database：project 间无锁竞争
 - WAL mode：多读并发 + 写串行，支持单 project 多 run 并发
-- resume state 用 opaque blob 存储（workflow DevKit 序列化格式），`INSERT OR REPLACE`
 - 文件产物（Python 代码、FITS、MHD cfg）走 FS，SQLite 只存结构化数据 + 路径引用
 - **CredentialStore 串行 modify**（借鉴 Pi）：OAuth refresh 在 `modify` 内加锁，防止并发双刷 token
 
@@ -388,7 +387,7 @@ export async function tournamentWorkflow(input: TournamentWorkflowInput) {
 }
 ```
 
-**并行 fan-out**（`Promise.all`，事件共享父流）：
+**并行 fan-out**（`Promise.all`，每个 Explore chunk 带 `_exploreHypoId` 标签）：
 
 ```ts
 // 用于并行评估多个假设——SSE 流通过 emitChunk 回调从子 workflow 逐层冒泡到 RunRegistry

@@ -50,10 +50,10 @@ apps/web/
 │   │
 │   ├── visualizers/                        # 三个 WOW 效果
 │   │   ├── ConceptNet3D.tsx                # WOW #1（react-force-graph-3d）
-│   │   ├── DebateTheater.tsx               # WOW #2（React Flow + GSAP 剧本）
+│   │   ├── DebateTheater.tsx               # WOW #2（React Flow + Motion 剧本）
 │   │   ├── EvolutionTree.tsx               # WOW #3（d3-hierarchy + SVG）
 │   │   └── shared/
-│   │       ├── ParticleEffects.ts          # GSAP 粒子特效封装
+│   │       ├── ParticleEffects.ts          # Motion 粒子特效封装
 │   │       ├── NodeAnimations.ts           # Motion 节点动画封装
 │   │       └── colorTheme.ts               # agent 配色常量
 │   │
@@ -113,9 +113,9 @@ apps/web/
 │   │   ├── credentials.ts                  # credentials CRUD
 │   │   └── mcp.ts                          # MCP presets 查询
 │   │
-│   ├── transport/                          # chat transport 配置
-│   │   ├── workflow-transport.ts           # WorkflowChatTransport 实例
-│   │   └── runtime.ts                      # useChatRuntime + toolkit 配置
+│   ├── transport/                          # SSE transport 配置
+│   │   ├── workflow-transport.ts           # useRunStream SSE 配置常量
+│   │   └── runtime.ts                      # ExternalStoreRuntime + toolkit 配置
 │   │
 │   ├── store/                              # Zustand stores
 │   │   ├── run-store.ts                    # Run 主界面状态
@@ -163,7 +163,7 @@ app/（页面）
   │   └─ settings/projects/runs/hypotheses/evidence（依赖 lib/api）
   └─ lib/
       ├─ api/（后端 REST 客户端，依赖 packages/schema）
-      ├─ transport/（WorkflowChatTransport，依赖 @ai-sdk/workflow）
+      ├─ transport/（useRunStream SSE hook）
       ├─ store/（Zustand，零依赖）
       ├─ hooks/（依赖 lib/api + lib/store + lib/transport）
       ├─ types/（零依赖）
